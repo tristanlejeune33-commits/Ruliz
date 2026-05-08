@@ -2,8 +2,16 @@
 
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, ChevronRight, Sparkles, X } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronRight,
+  Sparkles,
+  X,
+} from "lucide-react";
 import type { PublicMenu } from "@/server/public/menu";
+import { DishPlaceholder } from "./dish-placeholder";
+import type { CarteTheme } from "./theme";
+import { withAlpha } from "./theme";
 
 type Produit = PublicMenu["categories"][number]["produits"][number];
 
@@ -13,7 +21,8 @@ interface ProduitSheetProps {
   onClose: () => void;
   suggestionMap: Map<string, Produit>;
   onOpenSuggestion: (id: string) => void;
-  accentColor: string;
+  theme: CarteTheme;
+  deviseDefault: string;
 }
 
 export function ProduitSheet({
@@ -22,7 +31,8 @@ export function ProduitSheet({
   onClose,
   suggestionMap,
   onOpenSuggestion,
-  accentColor,
+  theme,
+  deviseDefault,
 }: ProduitSheetProps) {
   const suggestions = produit
     ? produit.suggestionsIds
@@ -40,7 +50,7 @@ export function ProduitSheet({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md"
           />
           <motion.div
             initial={{ y: "100%" }}
@@ -53,25 +63,33 @@ export function ProduitSheet({
             onDragEnd={(_, info) => {
               if (info.offset.y > 120 || info.velocity.y > 600) onClose();
             }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[92vh] overflow-hidden rounded-t-3xl bg-white shadow-2xl"
+            className="fixed inset-x-0 bottom-0 z-50 max-h-[94vh] overflow-hidden rounded-t-3xl shadow-2xl md:inset-x-auto md:left-1/2 md:bottom-auto md:top-1/2 md:max-h-[88vh] md:max-w-2xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
+            style={{ background: theme.bgElevated, color: theme.text }}
           >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-2.5">
-              <span className="h-1 w-10 rounded-full bg-neutral-300" />
+            {/* Drag handle (mobile) */}
+            <div className="flex justify-center pt-2.5 md:hidden">
+              <span
+                className="h-1 w-10 rounded-full"
+                style={{ background: withAlpha(theme.text, 0.2) }}
+              />
             </div>
 
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 z-10 flex size-9 items-center justify-center rounded-full bg-white/80 text-neutral-700 shadow-md backdrop-blur"
+              className="absolute right-4 top-4 z-10 flex size-9 items-center justify-center rounded-full shadow-md backdrop-blur"
+              style={{
+                background: withAlpha(theme.bgElevated, 0.85),
+                color: theme.text,
+              }}
               aria-label="Fermer"
             >
               <X className="size-4" />
             </button>
 
-            <div className="max-h-[92vh] overflow-y-auto pb-12">
-              {produit.imageUrl && (
-                <div className="relative mt-4 h-64 w-full overflow-hidden">
+            <div className="max-h-[94vh] overflow-y-auto pb-12 md:max-h-[88vh]">
+              <div className="relative mt-4 h-72 w-full overflow-hidden md:mt-0 md:h-80">
+                {produit.imageUrl ? (
                   <Image
                     src={produit.imageUrl}
                     alt={produit.titre}
@@ -80,23 +98,34 @@ export function ProduitSheet({
                     unoptimized
                     className="object-cover"
                   />
-                </div>
-              )}
+                ) : (
+                  <DishPlaceholder
+                    accent={theme.accent}
+                    className="size-full"
+                  />
+                )}
+              </div>
 
-              <div className="px-6 pt-5">
+              <div className="px-6 pt-6 md:px-8">
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-balance text-2xl font-semibold tracking-tight">
+                  <h2
+                    className="text-balance text-2xl font-medium leading-tight tracking-tight md:text-3xl"
+                    style={{
+                      color: theme.textTitre,
+                      fontFamily: theme.fontDisplay,
+                    }}
+                  >
                     {produit.titre}
                   </h2>
                   {produit.estNouveau && (
                     <span
-                      className="rounded-full px-2 py-0.5 text-[11px] font-medium"
+                      className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider"
                       style={{
-                        backgroundColor: `${accentColor}1a`,
-                        color: accentColor,
+                        background: withAlpha(theme.accent, 0.15),
+                        color: theme.accent,
                       }}
                     >
-                      <Sparkles className="mr-1 inline size-3" />
+                      <Sparkles className="size-3" />
                       Nouveau
                     </span>
                   )}
@@ -104,11 +133,20 @@ export function ProduitSheet({
 
                 {produit.prix !== null && (
                   <div className="mt-3 flex items-baseline gap-2">
-                    <span className="font-mono text-2xl font-semibold tabular-nums">
-                      {produit.prix.toFixed(2)} {produit.devise}
+                    <span
+                      className="font-mono text-2xl font-semibold tabular-nums md:text-3xl"
+                      style={{
+                        color: theme.textTitre,
+                        fontFamily: theme.fontDisplay,
+                      }}
+                    >
+                      {formatPrice(produit.prix, produit.devise || deviseDefault)}
                     </span>
                     {produit.descriptionPrix && (
-                      <span className="text-xs text-neutral-500">
+                      <span
+                        className="text-xs italic"
+                        style={{ color: theme.textMuted }}
+                      >
                         {produit.descriptionPrix}
                       </span>
                     )}
@@ -116,18 +154,24 @@ export function ProduitSheet({
                 )}
 
                 {produit.description && (
-                  <p className="mt-4 text-sm leading-relaxed text-neutral-700">
+                  <p
+                    className="mt-5 text-base leading-relaxed"
+                    style={{ color: theme.text }}
+                  >
                     {produit.description}
                   </p>
                 )}
 
-                {/* Vignettes */}
                 {produit.vignettes.length > 0 && (
-                  <div className="mt-5 flex flex-wrap gap-1.5">
+                  <div className="mt-6 flex flex-wrap gap-1.5">
                     {produit.vignettes.map((v) => (
                       <span
                         key={v.code}
-                        className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700"
+                        className="rounded-full px-3 py-1 text-xs font-medium"
+                        style={{
+                          background: withAlpha(theme.text, 0.06),
+                          color: theme.text,
+                        }}
                       >
                         {v.labelFr}
                       </span>
@@ -135,40 +179,61 @@ export function ProduitSheet({
                   </div>
                 )}
 
-                {/* Allergènes */}
                 {produit.allergenes.length > 0 && (
-                  <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50/50 p-3">
-                    <p className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-amber-900">
+                  <div
+                    className="mt-6 rounded-xl border p-4"
+                    style={{
+                      background: withAlpha("#f59e0b", 0.05),
+                      borderColor: withAlpha("#f59e0b", 0.25),
+                    }}
+                  >
+                    <p
+                      className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: "#92400e" }}
+                    >
                       <AlertTriangle className="size-3" />
                       Allergènes
                     </p>
-                    <p className="text-xs text-amber-900/80">
+                    <p className="text-xs" style={{ color: "#92400e" }}>
                       {produit.allergenes.map((a) => a.labelFr).join(" · ")}
                     </p>
                   </div>
                 )}
 
-                {/* Remarque */}
                 {produit.titreRemarque && (
                   <div
-                    className="mt-5 rounded-xl border-l-4 bg-neutral-50 p-4"
-                    style={{ borderLeftColor: accentColor }}
+                    className="mt-6 rounded-xl border-l-4 p-4"
+                    style={{
+                      borderLeftColor: theme.accent,
+                      background: withAlpha(theme.accent, 0.04),
+                    }}
                   >
-                    <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                    <p
+                      className="text-xs font-semibold uppercase tracking-wider"
+                      style={{ color: theme.accent }}
+                    >
                       {produit.titreRemarque}
                     </p>
                     {produit.descriptionRemarque && (
-                      <p className="mt-1 text-sm text-neutral-700">
+                      <p
+                        className="mt-1.5 text-sm leading-relaxed italic"
+                        style={{
+                          color: theme.text,
+                          fontFamily: theme.fontDisplay,
+                        }}
+                      >
                         {produit.descriptionRemarque}
                       </p>
                     )}
                   </div>
                 )}
 
-                {/* Suggestions */}
                 {suggestions.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-neutral-500">
+                  <div className="mt-10">
+                    <h3
+                      className="mb-4 text-xs font-semibold uppercase tracking-[0.2em]"
+                      style={{ color: theme.textMuted }}
+                    >
                       Avec ce plat, on suggère
                     </h3>
                     <ul className="space-y-2">
@@ -177,31 +242,52 @@ export function ProduitSheet({
                           <button
                             type="button"
                             onClick={() => onOpenSuggestion(s.id)}
-                            className="flex w-full items-center gap-3 rounded-xl border border-neutral-200 p-2 text-left transition-colors hover:border-neutral-400"
+                            className="flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition-colors duration-200 hover:border-[var(--accent)]"
+                            style={{ borderColor: theme.border }}
                           >
-                            {s.imageUrl ? (
-                              <div className="relative size-12 shrink-0 overflow-hidden rounded-lg">
+                            <div
+                              className="relative size-14 shrink-0 overflow-hidden rounded-xl"
+                              style={{ background: withAlpha(theme.accent, 0.05) }}
+                            >
+                              {s.imageUrl ? (
                                 <Image
                                   src={s.imageUrl}
                                   alt=""
                                   fill
-                                  sizes="48px"
+                                  sizes="56px"
                                   unoptimized
                                   className="object-cover"
                                 />
-                              </div>
-                            ) : (
-                              <div className="size-12 shrink-0 rounded-lg bg-neutral-100" />
-                            )}
+                              ) : (
+                                <DishPlaceholder
+                                  accent={theme.accent}
+                                  className="size-full"
+                                />
+                              )}
+                            </div>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium">{s.titre}</p>
+                              <p
+                                className="truncate text-sm font-medium"
+                                style={{
+                                  color: theme.textTitre,
+                                  fontFamily: theme.fontDisplay,
+                                }}
+                              >
+                                {s.titre}
+                              </p>
                               {s.prix !== null && (
-                                <p className="font-mono text-xs text-neutral-500">
-                                  {s.prix.toFixed(2)} {s.devise}
+                                <p
+                                  className="font-mono text-xs"
+                                  style={{ color: theme.textMuted }}
+                                >
+                                  {formatPrice(s.prix, s.devise || deviseDefault)}
                                 </p>
                               )}
                             </div>
-                            <ChevronRight className="size-4 text-neutral-300" />
+                            <ChevronRight
+                              className="size-4"
+                              style={{ color: theme.textMuted }}
+                            />
                           </button>
                         </li>
                       ))}
@@ -215,4 +301,12 @@ export function ProduitSheet({
       )}
     </AnimatePresence>
   );
+}
+
+function formatPrice(prix: number, devise: string): string {
+  const formatted = prix
+    .toFixed(2)
+    .replace(/\.00$/, "")
+    .replace(".", ",");
+  return `${formatted} ${devise}`;
 }
