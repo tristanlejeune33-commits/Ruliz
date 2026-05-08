@@ -1,16 +1,11 @@
 # Railway deployment config
 # https://docs.railway.app/reference/config-as-code
-
-[build]
-builder = "NIXPACKS"
-buildCommand = "pnpm install --frozen-lockfile && pnpm build && pnpm db:generate"
+#
+# Build commands are configured in `nixpacks.toml` to pin Node 22 LTS
+# (Node 24 default breaks Corepack + pnpm).
 
 [deploy]
-startCommand = "pnpm db:deploy && pnpm start"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
-
-[[services]]
-name = "ruliz-app"

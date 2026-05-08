@@ -1,0 +1,15 @@
+# Nixpacks build config for Railway.
+# Pin Node.js 22 LTS — Node 24 (default) breaks Corepack + pnpm with
+# ERR_VM_DYNAMIC_IMPORT_CALLBACK_MISSING.
+
+[phases.setup]
+nixPkgs = ["nodejs_22", "pnpm"]
+
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm db:generate", "pnpm build"]
+
+[start]
+cmd = "pnpm db:deploy && pnpm start"
