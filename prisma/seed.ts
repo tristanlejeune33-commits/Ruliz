@@ -39,10 +39,9 @@ async function createAuthUser(opts: {
   email: string;
   password: string;
   name: string;
-  role: "admin" | "client" | "team";
   domainUserId: number;
 }) {
-  // Better-Auth signUpEmail ; les additionalFields role/userId sont input:false → on les patch après.
+  // Better-Auth crée le AuthUser ; on le link ensuite à notre User métier.
   const { user } = await auth.api.signUpEmail({
     body: {
       email: opts.email,
@@ -54,7 +53,6 @@ async function createAuthUser(opts: {
   await prisma.authUser.update({
     where: { id: user.id },
     data: {
-      role: opts.role,
       userId: opts.domainUserId,
     },
   });
@@ -138,7 +136,6 @@ async function main() {
     email: adminUser.email,
     password: "RulizAdmin2026!",
     name: `${adminUser.prenom} ${adminUser.nom}`,
-    role: "admin",
     domainUserId: adminUser.id,
   });
 
@@ -162,7 +159,6 @@ async function main() {
     email: marie.email,
     password: "MarieDemo2026!",
     name: "Marie Dubois",
-    role: "client",
     domainUserId: marie.id,
   });
 
@@ -186,7 +182,6 @@ async function main() {
     email: pierre.email,
     password: "PierreDemo2026!",
     name: "Pierre Martin",
-    role: "client",
     domainUserId: pierre.id,
   });
 

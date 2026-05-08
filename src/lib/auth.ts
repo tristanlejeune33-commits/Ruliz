@@ -1,7 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
-import { admin } from "better-auth/plugins";
 import { prisma } from "./db";
 import { sendMail } from "./resend";
 import { getAuthUrl } from "./url";
@@ -43,13 +42,9 @@ export const auth = betterAuth({
   user: {
     // Notre Prisma `User` est la table métier ; Better-Auth utilise `AuthUser`.
     modelName: "AuthUser",
+    // Le rôle (admin/client/team) est stocké dans la table métier `users`,
+    // pas dans `auth_user`. On garde juste un lien `userId` vers le User métier.
     additionalFields: {
-      role: {
-        type: "string",
-        required: false,
-        defaultValue: "client",
-        input: false,
-      },
       userId: {
         type: "number",
         required: false,
@@ -83,7 +78,7 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [admin(), nextCookies()],
+  plugins: [nextCookies()],
 });
 
 export type Session = typeof auth.$Infer.Session;

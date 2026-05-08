@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "./auth";
+import { prisma } from "./db";
 
 export type UserRole = "admin" | "client" | "team";
 
@@ -14,20 +15,30 @@ export async function requireSession() {
   return session;
 }
 
-function getRole(session: Awaited<ReturnType<typeof getCurrentSession>>): UserRole {
-  return ((session?.user as { role?: UserRole } | undefined)?.role ?? "client") as UserRole;
+/**
+ * Retourne le rôle métier (admin/client/team) en lisant la table `users`
+ * via le `userId` stocké sur `auth_user`.
+ */
+async function getRole(authUserId: string): Promise<UserRole> {
+  const authUser = await prisma.authUser.findUnique({
+    where: { id: authUserId },
+    select: { user: { select: { role: true, statut: true } } },
+  });
+  if (!authUser?.user) return "client";
+  return authUser.user.role as UserRole;
 }
 
 export async function requireAdmin() {
   const session = await requireSession();
-  if (getRole(session) !== "admin") redirect("/dashboard");
+  const role = await getRole(session.user.id);
+  if (role !== "admin") redirect("/dashboard");
   return session;
 }
 
 export async function requireDashboard() {
   // Dashboard est accessible aux rôles client + team. Les admin sont redirigés vers /admin.
   const session = await requireSession();
-  const role = getRole(session);
+  const role = await getRole(session.user.id);
   if (role === "admin") redirect("/admin");
   return session;
 }

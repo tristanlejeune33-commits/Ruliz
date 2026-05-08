@@ -58,7 +58,7 @@ export async function signupClient(input: unknown): Promise<ActionResult> {
 
     await prisma.authUser.update({
       where: { id: authUser.id },
-      data: { role: "client", userId: user.id },
+      data: { userId: user.id },
     });
   } catch (err) {
     // Rollback : Better-Auth a échoué, on supprime le User pour pas bloquer l'email

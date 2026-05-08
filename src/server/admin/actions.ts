@@ -105,7 +105,7 @@ export async function createClient(input: unknown): Promise<ActionResult<{ id: n
 
   await prisma.authUser.update({
     where: { id: authUser.id },
-    data: { role: "client", userId: user.id },
+    data: { userId: user.id },
   });
 
   await logAdminAction("client.create", { id: user.id, email: user.email });
