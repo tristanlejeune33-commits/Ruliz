@@ -7,6 +7,8 @@ import {
   setActiveRestaurantCookie,
 } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { canCreateRestaurant } from "@/lib/restaurant-limits";
+import { requireDashboard } from "@/lib/session";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -105,4 +107,63 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
   revalidatePath("/dashboard/restaurant");
   revalidatePath(`/carte/${bigId.toString()}`);
   return { ok: true };
+}
+
+// ---------------- Create first restaurant (onboarding) ----------------
+
+const createRestaurantSchema = z.object({
+  nom: z.string().min(1).max(255),
+  ville: z.string().max(100).optional().or(z.literal("")),
+  email: z.string().max(255).optional().or(z.literal("")),
+  telephone: z.string().max(20).optional().or(z.literal("")),
+});
+
+export async function createFirstRestaurant(
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  const parsed = createRestaurantSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Données invalides",
+    };
+  }
+
+  const session = await requireDashboard();
+  const authUser = await prisma.authUser.findUnique({
+    where: { id: session.user.id },
+    select: { userId: true },
+  });
+  if (!authUser?.userId) {
+    return { ok: false, error: "Compte introuvable." };
+  }
+
+  const limit = await canCreateRestaurant(authUser.userId);
+  if (!limit.ok) {
+    return {
+      ok: false,
+      error: `Ton plan ${limit.plan} est limité à ${limit.max} restaurant${limit.max && limit.max > 1 ? "s" : ""}. Passe Pro pour en ajouter d'autres.`,
+    };
+  }
+
+  const empty = (v: string | undefined) => (v && v.trim().length > 0 ? v : null);
+
+  const restaurant = await prisma.restaurant.create({
+    data: {
+      userId: authUser.userId,
+      nom: parsed.data.nom,
+      ville: empty(parsed.data.ville),
+      email: empty(parsed.data.email),
+      telephone: empty(parsed.data.telephone),
+      pays: "France",
+      plan: "freemium",
+      statut: "actif",
+    },
+  });
+
+  // Set as active restaurant cookie
+  await setActiveRestaurantCookie(restaurant.id);
+
+  revalidatePath("/dashboard");
+  return { ok: true, data: { id: restaurant.id.toString() } };
 }

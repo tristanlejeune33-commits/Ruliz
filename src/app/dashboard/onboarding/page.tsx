@@ -1,31 +1,52 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { prisma } from "@/lib/db";
+import { requireDashboard } from "@/lib/session";
+import { OnboardingForm } from "./onboarding-form";
 
 export const metadata: Metadata = {
-  title: "Onboarding · Ruliz",
+  title: "Bienvenue · Ruliz",
 };
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const session = await requireDashboard();
+  const authUser = await prisma.authUser.findUnique({
+    where: { id: session.user.id },
+    select: { userId: true },
+  });
+
+  // Si l'utilisateur a déjà un restaurant, on ne devrait pas être ici.
+  if (authUser?.userId) {
+    const existing = await prisma.restaurant.findFirst({
+      where: { userId: authUser.userId },
+      select: { id: true },
+    });
+    if (existing) redirect("/dashboard");
+  }
+
   return (
-    <div className="mx-auto max-w-xl py-16">
+    <div className="mx-auto max-w-xl py-12">
       <Card>
         <CardHeader>
           <div className="mb-3 flex size-10 items-center justify-center rounded-lg bg-[var(--accent)]/15">
             <Sparkles className="size-5 text-[var(--accent)]" />
           </div>
-          <CardTitle>Bienvenue sur Ruliz</CardTitle>
+          <CardTitle>Bienvenue sur Ruliz 🎉</CardTitle>
           <CardDescription>
-            Tu n&apos;as pas encore de restaurant configuré. Contacte ton admin pour
-            qu&apos;il en ajoute un, ou crée le premier dès maintenant.
+            Crée ton premier restaurant pour démarrer. Tu pourras affiner les
+            détails (logo, couleurs, réseaux sociaux) juste après.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button disabled>Créer mon premier restaurant (bientôt)</Button>
-          <p className="mt-3 text-xs text-[var(--text-muted)]">
-            Le wizard de création arrive en Phase 4.
-          </p>
+          <OnboardingForm />
         </CardContent>
       </Card>
     </div>

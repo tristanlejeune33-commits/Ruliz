@@ -47,7 +47,7 @@ export default function HomePage() {
         />
         <div className="mx-auto max-w-4xl text-center">
           <Badge className="mb-6">
-            <Sparkles className="size-3" /> Phase 1 — design system livré
+            <Sparkles className="size-3" /> 14 jours d&apos;essai Pro offerts
           </Badge>
           <h1 className="text-balance text-5xl font-semibold leading-[1.05] tracking-tight md:text-7xl">
             Le menu digital{" "}
