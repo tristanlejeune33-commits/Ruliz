@@ -7,6 +7,7 @@ import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { getMenuRefData, getMenuTree } from "@/server/dashboard/menu-queries";
 import { serialize } from "@/lib/serialize";
 import { MenuEditor } from "./menu-editor";
+import { RetranslateButton } from "./retranslate-button";
 
 export const metadata: Metadata = {
   title: "Éditeur de carte · Ruliz",
@@ -28,16 +29,19 @@ export default async function MenuEditorPage() {
             {restaurant.nom}
           </h1>
         </div>
-        <Button asChild variant="outline" size="sm">
-          <Link
-            href={`/carte/${restaurant.id.toString()}`}
-            target="_blank"
-            rel="noreferrer"
-          >
-            <ExternalLink className="size-3.5" />
-            Voir la carte publique
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <RetranslateButton restaurantId={restaurant.id.toString()} />
+          <Button asChild variant="outline" size="sm">
+            <Link
+              href={`/carte/${restaurant.id.toString()}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <ExternalLink className="size-3.5" />
+              Voir la carte publique
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <MenuEditor

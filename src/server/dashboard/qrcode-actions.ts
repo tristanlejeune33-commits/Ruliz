@@ -40,56 +40,78 @@ export async function createQrcode(input: unknown): Promise<ActionResult<{ id: s
   const restaurant = await assertRestaurantOwner(restoBigId);
   if (!restaurant) return { ok: false, error: "Accès refusé" };
 
-  // Code unique avec retries (collisions ultra rares mais on protège)
-  let codeUnique = generateUniqueCode();
-  for (let i = 0; i < 5; i++) {
-    const exists = await prisma.qrcode.findUnique({ where: { codeUnique } });
-    if (!exists) break;
-    codeUnique = generateUniqueCode();
-  }
+  try {
+    // Code unique avec retries (collisions ultra rares mais on protège)
+    let codeUnique = generateUniqueCode();
+    for (let i = 0; i < 5; i++) {
+      const exists = await prisma.qrcode.findUnique({ where: { codeUnique } });
+      if (!exists) break;
+      codeUnique = generateUniqueCode();
+    }
 
-  // Génération du PNG QR
-  const url = carteUrl(codeUnique);
-  const buffer = await QRCode.toBuffer(url, {
-    type: "png",
-    width: 1024,
-    margin: 2,
-    errorCorrectionLevel: "H",
-    color: {
-      dark: "#0f172a",
-      light: "#ffffff",
-    },
-  });
+    // Génération du PNG QR
+    const url = carteUrl(codeUnique);
+    let buffer: Buffer;
+    try {
+      buffer = await QRCode.toBuffer(url, {
+        type: "png",
+        width: 1024,
+        margin: 2,
+        errorCorrectionLevel: "H",
+        color: {
+          dark: "#0f172a",
+          light: "#ffffff",
+        },
+      });
+    } catch (qrErr) {
+      console.error("[createQrcode] QRCode.toBuffer failed:", qrErr);
+      return {
+        ok: false,
+        error: "Impossible de générer le QR code (PNG). Vérifie NEXT_PUBLIC_APP_URL.",
+      };
+    }
 
-  let pngUrl: string | null = null;
-  if (isR2Configured()) {
-    const key = buildR2Key({
-      restaurantId: restoBigId,
-      kind: "qrcode",
-      filename: `${codeUnique}.png`,
+    let pngUrl: string | null = null;
+    if (isR2Configured()) {
+      try {
+        const key = buildR2Key({
+          restaurantId: restoBigId,
+          kind: "qrcode",
+          filename: `${codeUnique}.png`,
+        });
+        pngUrl = await uploadBuffer({
+          key,
+          body: buffer,
+          contentType: "image/png",
+        });
+      } catch (r2Err) {
+        console.error("[createQrcode] R2 upload failed, falling back to dataURL:", r2Err);
+        pngUrl = `data:image/png;base64,${buffer.toString("base64")}`;
+      }
+    } else {
+      // Fallback : encode en data URL (lourd mais fonctionne sans R2)
+      pngUrl = `data:image/png;base64,${buffer.toString("base64")}`;
+    }
+
+    const created = await prisma.qrcode.create({
+      data: {
+        restaurantId: restoBigId,
+        codeUnique,
+        pngUrl,
+        assignedAt: new Date(),
+        statut: "actif",
+      },
     });
-    pngUrl = await uploadBuffer({
-      key,
-      body: buffer,
-      contentType: "image/png",
-    });
-  } else {
-    // Fallback : encode en data URL pour l'instant (pas idéal mais fonctionne sans R2)
-    pngUrl = `data:image/png;base64,${buffer.toString("base64")}`;
+
+    revalidatePath("/dashboard/qrcodes");
+    return { ok: true, data: { id: created.id.toString() } };
+  } catch (err) {
+    console.error("[createQrcode] unexpected error:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Erreur inattendue lors de la création du QR code.",
+    };
   }
-
-  const created = await prisma.qrcode.create({
-    data: {
-      restaurantId: restoBigId,
-      codeUnique,
-      pngUrl,
-      assignedAt: new Date(),
-      statut: "actif",
-    },
-  });
-
-  revalidatePath("/dashboard/qrcodes");
-  return { ok: true, data: { id: created.id.toString() } };
 }
 
 const updateStatutSchema = z.object({
