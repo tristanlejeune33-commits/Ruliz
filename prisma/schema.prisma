@@ -1,0 +1,440 @@
+// Ruliz — Prisma schema (port de docs/schema.sql)
+// Convention : tables snake_case en DB, modèles PascalCase en TS, fields camelCase via @map.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// AUTH (Better-Auth — tables séparées du domaine métier)
+// ============================================
+
+model AuthUser {
+  id            String   @id
+  email         String   @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
+  name          String?
+  image         String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  // Lien vers l'utilisateur métier (1-1 optionnel)
+  userId Int?  @unique @map("user_id")
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  sessions Session[]
+  accounts Account[]
+
+  @@map("auth_user")
+}
+
+model Session {
+  id        String   @id
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_session")
+}
+
+model Account {
+  id                    String    @id
+  userId                String    @map("user_id")
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  idToken               String?   @map("id_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  user                  AuthUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("auth_account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("auth_verification")
+}
+
+// ============================================
+// DOMAINE MÉTIER (port de docs/schema.sql)
+// ============================================
+
+enum UserRole {
+  admin
+  client
+  team
+
+  @@map("user_role")
+}
+
+enum UserStatut {
+  actif
+  suspendu
+  archive
+  demo_terminee
+
+  @@map("user_statut")
+}
+
+enum Plan {
+  freemium
+  pro
+  premium
+
+  @@map("plan")
+}
+
+enum CategorieMode {
+  liste
+  grille
+  carrousel
+
+  @@map("categorie_mode")
+}
+
+model User {
+  id               Int        @id @default(autoincrement())
+  email            String     @unique @db.VarChar(255)
+  passwordHash     String     @default("") @map("password_hash") // legacy column ; auth via Better-Auth
+  prenom           String?    @db.VarChar(100)
+  nom              String?    @db.VarChar(100)
+  telephone        String?    @db.VarChar(20)
+  adresse          String?
+  codePostal       String?    @map("code_postal") @db.VarChar(10)
+  ville            String?    @db.VarChar(100)
+  pays             String?    @default("France") @db.VarChar(100)
+  role             UserRole   @default(client)
+  statut           UserStatut @default(actif)
+  demoActive       Boolean    @default(false) @map("demo_active")
+  stripeCustomerId String?    @unique @map("stripe_customer_id") @db.VarChar(255)
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  lastLoginAt      DateTime?  @map("last_login_at") @db.Timestamptz()
+
+  authUser     AuthUser?
+  restaurants  Restaurant[]
+  teamOf       TeamMember[] @relation("OwnerTeam")
+  teamMemberOf TeamMember[] @relation("MemberOf")
+  logs         Log[]
+
+  @@index([email], map: "idx_users_email")
+  @@index([statut], map: "idx_users_statut")
+  @@map("users")
+}
+
+model TeamMember {
+  id           BigInt   @id @default(autoincrement())
+  userId       Int      @map("user_id")
+  memberUserId Int      @map("member_user_id")
+  roleMember   String   @default("editor") @map("role_member") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  owner  User @relation("OwnerTeam", fields: [userId], references: [id], onDelete: Cascade)
+  member User @relation("MemberOf", fields: [memberUserId], references: [id], onDelete: Cascade)
+
+  @@map("team_members")
+}
+
+model Restaurant {
+  id                       BigInt    @id @default(autoincrement())
+  userId                   Int       @map("user_id")
+  nom                      String    @db.VarChar(255)
+  email                    String?   @db.VarChar(255)
+  telephone                String?   @db.VarChar(20)
+  adresse                  String?
+  codePostal               String?   @map("code_postal") @db.VarChar(10)
+  ville                    String?   @db.VarChar(100)
+  pays                     String?   @db.VarChar(100)
+  plan                     Plan      @default(freemium)
+  statut                   String    @default("actif") @db.VarChar(20)
+  stripeSubscriptionId     String?   @unique @map("stripe_subscription_id") @db.VarChar(255)
+  stripePriceId            String?   @map("stripe_price_id") @db.VarChar(255)
+  stripeSubscriptionStatus String?   @map("stripe_subscription_status") @db.VarChar(50)
+  stripeCurrentPeriodEnd   DateTime? @map("stripe_current_period_end") @db.Timestamptz()
+  logoUrl                  String?   @map("logo_url")
+  banniereUrl              String?   @map("banniere_url")
+  couleurPrimaire          String?   @default("#1F2937") @map("couleur_primaire") @db.VarChar(7)
+  couleurSecondaire        String?   @map("couleur_secondaire") @db.VarChar(7)
+  facebookUrl              String?   @map("facebook_url")
+  instagramUrl             String?   @map("instagram_url")
+  tiktokUrl                String?   @map("tiktok_url")
+  siteWeb                  String?   @map("site_web")
+  googleReviewUrl          String?   @map("google_review_url")
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  qrcodes     Qrcode[]
+  categories  Categorie[]
+  jeux        Jeu[]
+  popups      Popup[]
+  baseClients BaseClient[]
+
+  @@index([userId], map: "idx_restaurants_user")
+  @@map("restaurants")
+}
+
+model Qrcode {
+  id           BigInt    @id @default(autoincrement())
+  restaurantId BigInt    @map("restaurant_id")
+  codeUnique   String    @unique @map("code_unique") @db.VarChar(20)
+  pngUrl       String?   @map("png_url")
+  statut       String    @default("actif") @db.VarChar(20)
+  assignedAt   DateTime? @map("assigned_at") @db.Timestamptz()
+  scanTotal    BigInt    @default(0) @map("scan_total")
+  scanMois     BigInt    @default(0) @map("scan_mois")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId], map: "idx_qrcodes_restaurant")
+  @@index([codeUnique], map: "idx_qrcodes_code")
+  @@map("qrcodes")
+}
+
+model Categorie {
+  id            BigInt        @id @default(autoincrement())
+  restaurantId  BigInt        @map("restaurant_id")
+  parentId      BigInt?       @map("parent_id")
+  titre         String        @db.VarChar(255)
+  icone         String?       @db.VarChar(50)
+  position      Int           @default(0)
+  affiche       Boolean       @default(true)
+  modeAffichage CategorieMode @default(liste) @map("mode_affichage")
+  createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+
+  restaurant   Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  parent       Categorie?             @relation("CategorieParent", fields: [parentId], references: [id], onDelete: Cascade)
+  children     Categorie[]            @relation("CategorieParent")
+  produits     Produit[]
+  translations CategorieTranslation[]
+
+  @@index([restaurantId, position], map: "idx_categories_restaurant")
+  @@index([parentId], map: "idx_categories_parent")
+  @@map("categories")
+}
+
+model Produit {
+  id                  BigInt   @id @default(autoincrement())
+  categorieId         BigInt   @map("categorie_id")
+  titre               String   @db.VarChar(255)
+  description         String?
+  imageUrl            String?  @map("image_url")
+  prix                Decimal? @db.Decimal(10, 2)
+  devise              String?  @default("€") @db.VarChar(5)
+  descriptionPrix     String?  @map("description_prix")
+  position            Int      @default(0)
+  statut              String   @default("affiche") @db.VarChar(20)
+  estNouveau          Boolean  @default(false) @map("est_nouveau")
+  origine             String?  @db.VarChar(2)
+  titreRemarque       String?  @map("titre_remarque") @db.VarChar(255)
+  descriptionRemarque String?  @map("description_remarque")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  categorie     Categorie            @relation(fields: [categorieId], references: [id], onDelete: Cascade)
+  vignettes     ProduitVignette[]
+  allergenes    ProduitAllergene[]
+  suggestionsIn ProduitSuggestion[]  @relation("ProduitSrc")
+  suggestionsOf ProduitSuggestion[]  @relation("ProduitDst")
+  translations  ProduitTranslation[]
+
+  @@index([categorieId, position], map: "idx_produits_categorie_pos")
+  @@map("produits")
+}
+
+model Vignette {
+  id      Int     @id @default(autoincrement())
+  code    String  @unique @db.VarChar(30)
+  labelFr String  @map("label_fr") @db.VarChar(100)
+  icone   String? @db.VarChar(50)
+
+  produits ProduitVignette[]
+
+  @@map("vignettes")
+}
+
+model ProduitVignette {
+  produitId  BigInt @map("produit_id")
+  vignetteId Int    @map("vignette_id")
+
+  produit  Produit  @relation(fields: [produitId], references: [id], onDelete: Cascade)
+  vignette Vignette @relation(fields: [vignetteId], references: [id], onDelete: Cascade)
+
+  @@id([produitId, vignetteId])
+  @@map("produit_vignettes")
+}
+
+model Allergene {
+  id      Int    @id @default(autoincrement())
+  code    String @unique @db.VarChar(30)
+  labelFr String @map("label_fr") @db.VarChar(100)
+
+  produits ProduitAllergene[]
+
+  @@map("allergenes")
+}
+
+model ProduitAllergene {
+  produitId   BigInt @map("produit_id")
+  allergeneId Int    @map("allergene_id")
+
+  produit   Produit   @relation(fields: [produitId], references: [id], onDelete: Cascade)
+  allergene Allergene @relation(fields: [allergeneId], references: [id], onDelete: Cascade)
+
+  @@id([produitId, allergeneId])
+  @@map("produit_allergenes")
+}
+
+model ProduitSuggestion {
+  produitId    BigInt @map("produit_id")
+  suggestionId BigInt @map("suggestion_id")
+  position     Int    @default(0)
+
+  produit    Produit @relation("ProduitSrc", fields: [produitId], references: [id], onDelete: Cascade)
+  suggestion Produit @relation("ProduitDst", fields: [suggestionId], references: [id], onDelete: Cascade)
+
+  @@id([produitId, suggestionId])
+  @@index([produitId, position], map: "idx_suggestions_produit")
+  @@map("produit_suggestions")
+}
+
+model ProduitTranslation {
+  produitId       BigInt   @map("produit_id")
+  lang            String   @db.VarChar(2)
+  titre           String?
+  description     String?
+  descriptionPrix String?  @map("description_prix")
+  source          String   @default("anthropic") @db.VarChar(20)
+  translatedAt    DateTime @default(now()) @map("translated_at") @db.Timestamptz()
+
+  produit Produit @relation(fields: [produitId], references: [id], onDelete: Cascade)
+
+  @@id([produitId, lang])
+  @@map("produit_translations")
+}
+
+model CategorieTranslation {
+  categorieId BigInt  @map("categorie_id")
+  lang        String  @db.VarChar(2)
+  titre       String?
+
+  categorie Categorie @relation(fields: [categorieId], references: [id], onDelete: Cascade)
+
+  @@id([categorieId, lang])
+  @@map("categorie_translations")
+}
+
+// NOTE: La table `scans` est partitionnée mensuellement en SQL natif Postgres.
+// Prisma ne supporte pas le partitioning déclaratif → on déclare le modèle ici
+// et la commande PARTITION BY est ajoutée via une migration SQL custom.
+model Scan {
+  id           BigInt   @default(autoincrement())
+  qrcodeId     BigInt?  @map("qrcode_id")
+  restaurantId BigInt?  @map("restaurant_id")
+  lang         String?  @db.VarChar(2)
+  userAgent    String?  @map("user_agent")
+  pays         String?  @db.VarChar(2)
+  scannedAt    DateTime @default(now()) @map("scanned_at") @db.Timestamptz()
+
+  @@id([id, scannedAt])
+  @@index([restaurantId, scannedAt(sort: Desc)], map: "idx_scans_restaurant_date")
+  @@map("scans")
+}
+
+model Jeu {
+  id           BigInt   @id @default(autoincrement())
+  restaurantId BigInt   @map("restaurant_id")
+  nom          String?  @db.VarChar(255)
+  actif        Boolean  @default(true)
+  configJson   Json?    @map("config_json")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  restaurant     Restaurant         @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  participations JeuParticipation[]
+
+  @@map("jeux")
+}
+
+model JeuParticipation {
+  id             BigInt   @id @default(autoincrement())
+  jeuId          BigInt   @map("jeu_id")
+  email          String?  @db.VarChar(255)
+  prenom         String?  @db.VarChar(100)
+  telephone      String?  @db.VarChar(20)
+  lotGagne       String?  @map("lot_gagne") @db.VarChar(255)
+  participatedAt DateTime @default(now()) @map("participated_at") @db.Timestamptz()
+
+  jeu Jeu @relation(fields: [jeuId], references: [id], onDelete: Cascade)
+
+  @@index([jeuId, participatedAt(sort: Desc)], map: "idx_participations_jeu")
+  @@map("jeu_participations")
+}
+
+model Popup {
+  id           BigInt    @id @default(autoincrement())
+  restaurantId BigInt    @map("restaurant_id")
+  titre        String?   @db.VarChar(255)
+  description  String?
+  imageUrl     String?   @map("image_url")
+  ctaLabel     String?   @map("cta_label") @db.VarChar(100)
+  ctaUrl       String?   @map("cta_url")
+  dateDebut    DateTime? @map("date_debut") @db.Timestamptz()
+  dateFin      DateTime? @map("date_fin") @db.Timestamptz()
+  actif        Boolean   @default(true)
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@map("popups")
+}
+
+model BaseClient {
+  id           BigInt   @id @default(autoincrement())
+  restaurantId BigInt   @map("restaurant_id")
+  email        String?  @db.VarChar(255)
+  telephone    String?  @db.VarChar(20)
+  prenom       String?  @db.VarChar(100)
+  source       String?  @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId], map: "idx_baseclients_restaurant")
+  @@map("base_clients")
+}
+
+model Log {
+  id        BigInt   @id @default(autoincrement())
+  userId    Int?     @map("user_id")
+  action    String?  @db.VarChar(50)
+  details   Json?
+  ip        String?  @db.VarChar(45)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_logs_user")
+  @@map("logs")
+}

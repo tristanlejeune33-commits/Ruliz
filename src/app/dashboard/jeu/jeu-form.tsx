@@ -1,0 +1,420 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useFieldArray, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { upsertJeu } from "@/server/dashboard/jeu-actions";
+
+const schema = z.object({
+  nom: z.string().min(1).max(255),
+  actif: z.boolean(),
+  cta: z.string().min(1).max(255),
+  requireGoogleReview: z.boolean(),
+  lots: z
+    .array(
+      z.object({
+        label: z.string().min(1).max(100),
+        probabilite: z.number().int().min(1).max(100),
+      }),
+    )
+    .min(1)
+    .max(12),
+});
+
+type Values = z.infer<typeof schema>;
+
+interface JeuFormProps {
+  restaurantId: string;
+  jeu: {
+    id: string;
+    nom: string;
+    actif: boolean;
+    cta: string;
+    lots: Array<{ label: string; probabilite: number }>;
+    requireGoogleReview: boolean;
+  } | null;
+}
+
+const DEFAULT_LOTS = [
+  { label: "Café offert", probabilite: 40 },
+  { label: "Dessert offert", probabilite: 25 },
+  { label: "Apéritif maison", probabilite: 20 },
+  { label: "10% sur ta prochaine note", probabilite: 10 },
+  { label: "Menu offert pour 2", probabilite: 5 },
+];
+
+export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [showPreview, setShowPreview] = useState(false);
+
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: jeu
+      ? {
+          nom: jeu.nom,
+          actif: jeu.actif,
+          cta: jeu.cta || "Laisse-nous un avis Google et tente de gagner !",
+          requireGoogleReview: jeu.requireGoogleReview,
+          lots: jeu.lots.length > 0 ? jeu.lots : DEFAULT_LOTS,
+        }
+      : {
+          nom: "Roulette des avis",
+          actif: true,
+          cta: "Laisse-nous un avis Google et tente de gagner !",
+          requireGoogleReview: true,
+          lots: DEFAULT_LOTS,
+        },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "lots",
+  });
+
+  const lots = form.watch("lots");
+  const total = lots.reduce((acc, l) => acc + (Number(l.probabilite) || 0), 0);
+  const isTotalOk = total >= 95 && total <= 105;
+
+  const onSubmit = (values: Values) => {
+    startTransition(async () => {
+      const res = await upsertJeu({
+        restaurantId,
+        jeuId: jeu?.id ?? null,
+        nom: values.nom,
+        actif: values.actif,
+        config: {
+          cta: values.cta,
+          lots: values.lots,
+          require_google_review: values.requireGoogleReview,
+        },
+      });
+      if (res.ok) {
+        toast.success(jeu ? "Roulette mise à jour" : "Roulette créée");
+        router.refresh();
+      } else toast.error(res.error);
+    });
+  };
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Configuration</CardTitle>
+            <CardDescription>
+              Le client choisit son lot, on capte ses coordonnées en échange.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            <FormField
+              control={form.control}
+              name="nom"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nom du jeu (interne)</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="cta"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Message d&apos;invitation</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    Affiché en haut de la modale roulette sur la carte publique.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="actif"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3">
+                  <FormControl>
+                    <Switch
+                      id="actif"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="flex-1">
+                    <Label htmlFor="actif" className="cursor-pointer">
+                      Jeu activé
+                    </Label>
+                    <FormDescription>
+                      Décoche pour mettre en pause sans supprimer la config.
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="requireGoogleReview"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3">
+                  <FormControl>
+                    <Switch
+                      id="reviewRequired"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="flex-1">
+                    <Label htmlFor="reviewRequired" className="cursor-pointer">
+                      Demander un avis Google avant de jouer
+                    </Label>
+                    <FormDescription>
+                      Le bouton Spin redirige d&apos;abord vers ton lien Google Review.
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>Lots et probabilités</CardTitle>
+                <CardDescription>
+                  La somme des probabilités doit faire ~100. Maximum 12 lots.
+                </CardDescription>
+              </div>
+              <span
+                className={
+                  isTotalOk
+                    ? "rounded-md bg-[oklch(0.7_0.18_145)]/15 px-2 py-1 font-mono text-xs text-[oklch(0.75_0.18_145)]"
+                    : "rounded-md bg-[var(--color-destructive)]/15 px-2 py-1 font-mono text-xs text-[var(--color-destructive)]"
+                }
+              >
+                Total : {total}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {fields.map((f, i) => (
+                <li key={f.id} className="grid grid-cols-[1fr_100px_40px] gap-2">
+                  <FormField
+                    control={form.control}
+                    name={`lots.${i}.label`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input placeholder="Label du lot" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`lots.${i}.probabilite`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={100}
+                            value={field.value}
+                            onChange={(e) =>
+                              field.onChange(Number(e.target.value) || 0)
+                            }
+                            placeholder="%"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => remove(i)}
+                    disabled={fields.length === 1}
+                    aria-label="Supprimer le lot"
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => append({ label: "", probabilite: 5 })}
+              disabled={fields.length >= 12}
+              className="mt-3"
+            >
+              <Plus className="size-3.5" />
+              Ajouter un lot
+            </Button>
+          </CardContent>
+        </Card>
+
+        <div className="flex items-center justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowPreview((s) => !s)}
+            disabled={pending}
+          >
+            {showPreview ? "Masquer la preview" : "Aperçu de la roue"}
+          </Button>
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Save className="size-4" />
+            )}
+            Enregistrer
+          </Button>
+        </div>
+
+        {showPreview && (
+          <Card className="bg-[var(--bg-elevated)]/30">
+            <CardHeader>
+              <CardTitle>Aperçu</CardTitle>
+              <CardDescription>
+                Voici à quoi ressemblera la roue côté carte publique.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center py-8">
+              <RoulettePreview lots={lots} />
+            </CardContent>
+          </Card>
+        )}
+      </form>
+    </Form>
+  );
+}
+
+function RoulettePreview({
+  lots,
+}: {
+  lots: Array<{ label: string; probabilite: number }>;
+}) {
+  const valid = lots.filter((l) => l.label && l.probabilite > 0);
+  if (valid.length === 0) return null;
+  const total = valid.reduce((acc, l) => acc + l.probabilite, 0);
+  const colors = [
+    "var(--accent)",
+    "oklch(0.7 0.2 25)",
+    "oklch(0.7 0.2 145)",
+    "oklch(0.65 0.2 280)",
+    "oklch(0.7 0.2 60)",
+    "oklch(0.7 0.2 200)",
+    "oklch(0.65 0.2 320)",
+    "oklch(0.65 0.2 100)",
+  ];
+
+  // Pre-compute segments to avoid mutating during render.
+  const segments: Array<{
+    lot: { label: string; probabilite: number };
+    startAngle: number;
+    angle: number;
+    color: string;
+  }> = [];
+  let cumulative = 0;
+  for (let i = 0; i < valid.length; i++) {
+    const lot = valid[i]!;
+    const angle = (lot.probabilite / total) * 360;
+    segments.push({
+      lot,
+      startAngle: cumulative,
+      angle,
+      color: colors[i % colors.length] ?? colors[0]!,
+    });
+    cumulative += angle;
+  }
+
+  return (
+    <svg viewBox="0 0 200 200" className="size-64">
+      {segments.map((seg, i) => {
+        const angle = seg.angle;
+        const startAngle = seg.startAngle;
+        const endAngle = startAngle + angle;
+
+        const startRad = ((startAngle - 90) * Math.PI) / 180;
+        const endRad = ((endAngle - 90) * Math.PI) / 180;
+        const x1 = 100 + 90 * Math.cos(startRad);
+        const y1 = 100 + 90 * Math.sin(startRad);
+        const x2 = 100 + 90 * Math.cos(endRad);
+        const y2 = 100 + 90 * Math.sin(endRad);
+        const largeArc = angle > 180 ? 1 : 0;
+
+        const midRad = ((startAngle + angle / 2 - 90) * Math.PI) / 180;
+        const labelX = 100 + 55 * Math.cos(midRad);
+        const labelY = 100 + 55 * Math.sin(midRad);
+
+        return (
+          <g key={i}>
+            <path
+              d={`M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`}
+              fill={seg.color}
+              opacity={0.8}
+              stroke="white"
+              strokeWidth={1.5}
+            />
+            <text
+              x={labelX}
+              y={labelY}
+              textAnchor="middle"
+              alignmentBaseline="middle"
+              className="fill-white text-[6px] font-medium"
+              transform={`rotate(${
+                startAngle + angle / 2
+              } ${labelX} ${labelY})`}
+            >
+              {seg.lot.label.length > 16
+                ? seg.lot.label.slice(0, 14) + "…"
+                : seg.lot.label}
+            </text>
+          </g>
+        );
+      })}
+      <circle cx={100} cy={100} r={12} fill="white" stroke="var(--accent)" strokeWidth={3} />
+    </svg>
+  );
+}

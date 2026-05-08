@@ -1,0 +1,145 @@
+import "server-only";
+import { prisma } from "@/lib/db";
+import {
+  SUPPORTED_LANGS,
+  translateProduitFields,
+  translateText,
+  type SupportedLang,
+} from "./anthropic";
+
+/**
+ * Translate one produit into one target lang.
+ * Idempotent : skips work if translation already exists in DB.
+ */
+export async function translateProduitToLang(opts: {
+  produitId: bigint;
+  targetLang: SupportedLang;
+}): Promise<{ ok: boolean }> {
+  const { produitId, targetLang } = opts;
+
+  // Skip if already cached
+  const existing = await prisma.produitTranslation.findUnique({
+    where: { produitId_lang: { produitId, lang: targetLang } },
+  });
+  if (existing) return { ok: true };
+
+  const produit = await prisma.produit.findUnique({
+    where: { id: produitId },
+    select: { titre: true, description: true, descriptionPrix: true },
+  });
+  if (!produit) return { ok: false };
+
+  const result = await translateProduitFields({
+    titre: produit.titre,
+    description: produit.description,
+    descriptionPrix: produit.descriptionPrix,
+    targetLang,
+  });
+
+  if (!result.ok) {
+    console.error(`[translation] produit ${produitId} → ${targetLang}: ${result.error}`);
+    return { ok: false };
+  }
+
+  await prisma.produitTranslation.upsert({
+    where: { produitId_lang: { produitId, lang: targetLang } },
+    create: {
+      produitId,
+      lang: targetLang,
+      titre: result.titre,
+      description: result.description,
+      descriptionPrix: result.descriptionPrix,
+      source: "anthropic",
+    },
+    update: {
+      titre: result.titre,
+      description: result.description,
+      descriptionPrix: result.descriptionPrix,
+      source: "anthropic",
+      translatedAt: new Date(),
+    },
+  });
+
+  return { ok: true };
+}
+
+export async function translateCategorieToLang(opts: {
+  categorieId: bigint;
+  targetLang: SupportedLang;
+}): Promise<{ ok: boolean }> {
+  const { categorieId, targetLang } = opts;
+
+  const existing = await prisma.categorieTranslation.findUnique({
+    where: { categorieId_lang: { categorieId, lang: targetLang } },
+  });
+  if (existing) return { ok: true };
+
+  const cat = await prisma.categorie.findUnique({
+    where: { id: categorieId },
+    select: { titre: true },
+  });
+  if (!cat) return { ok: false };
+
+  const result = await translateText({
+    text: cat.titre,
+    targetLang,
+    sourceLang: "fr",
+  });
+
+  if (!result.ok) {
+    console.error(`[translation] categorie ${categorieId} → ${targetLang}: ${result.error}`);
+    return { ok: false };
+  }
+
+  await prisma.categorieTranslation.upsert({
+    where: { categorieId_lang: { categorieId, lang: targetLang } },
+    create: {
+      categorieId,
+      lang: targetLang,
+      titre: result.text,
+    },
+    update: {
+      titre: result.text,
+    },
+  });
+  return { ok: true };
+}
+
+/**
+ * Translate the entire menu of a restaurant to all target langs (excluding 'fr').
+ * Designed to be called from a background worker (Inngest).
+ */
+export async function translateRestaurantMenu(opts: {
+  restaurantId: bigint;
+  langs?: SupportedLang[];
+}): Promise<{ produits: number; categories: number }> {
+  const langs = (opts.langs ?? SUPPORTED_LANGS).filter((l) => l !== "fr");
+
+  const [categories, produits] = await Promise.all([
+    prisma.categorie.findMany({
+      where: { restaurantId: opts.restaurantId },
+      select: { id: true },
+    }),
+    prisma.produit.findMany({
+      where: { categorie: { restaurantId: opts.restaurantId } },
+      select: { id: true },
+    }),
+  ]);
+
+  let categoriesCount = 0;
+  let produitsCount = 0;
+
+  // Run sequentially per (item, lang) to keep API rate-limit safe.
+  for (const lang of langs) {
+    for (const c of categories) {
+      const r = await translateCategorieToLang({ categorieId: c.id, targetLang: lang });
+      if (r.ok) categoriesCount += 1;
+    }
+    for (const p of produits) {
+      const r = await translateProduitToLang({ produitId: p.id, targetLang: lang });
+      if (r.ok) produitsCount += 1;
+    }
+  }
+
+  return { produits: produitsCount, categories: categoriesCount };
+}

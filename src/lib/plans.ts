@@ -1,0 +1,140 @@
+/**
+ * Plans Ruliz et matrice de fonctionnalités.
+ * Pure TypeScript — safe to import from Server ET Client Components.
+ */
+
+export type Plan = "freemium" | "pro" | "premium";
+
+export interface PlanConfig {
+  id: Plan;
+  name: string;
+  monthlyPriceHT: number;
+  yearlyPriceHT: number | null;
+  /** Stripe price IDs (null pour freemium). */
+  stripePriceIdMonthly?: string;
+  stripePriceIdYearly?: string;
+  features: PlanFeatures;
+  highlighted?: boolean;
+  cta: string;
+}
+
+export interface PlanFeatures {
+  /** Nombre maximum de restaurants (null = illimité). */
+  maxRestaurants: number | null;
+  /** Nombre de QR codes par restaurant (null = illimité). */
+  maxQrcodes: number | null;
+  /** Nombre de produits par carte (null = illimité). */
+  maxProduits: number | null;
+  /** Nombre maximum de membres d'équipe par compte (null = illimité). */
+  maxTeamMembers: number | null;
+  /** Traduction Anthropic activée. */
+  iaTranslation: boolean;
+  /** Jeu roulette d'avis activé. */
+  rouletteGame: boolean;
+  /** Pop-ups événements. */
+  popups: boolean;
+  /** Stats avancées (heatmap horaire, langues, top produits). */
+  advancedStats: boolean;
+  /** Domaine personnalisé pour la carte publique. */
+  customDomain: boolean;
+  /** Module SMS marketing. */
+  smsMarketing: boolean;
+  /** Suppression du watermark "Propulsé par Ruliz". */
+  removeBranding: boolean;
+}
+
+export const PLANS: Record<Plan, PlanConfig> = {
+  freemium: {
+    id: "freemium",
+    name: "Freemium",
+    monthlyPriceHT: 0,
+    yearlyPriceHT: 0,
+    cta: "Démarrer gratuitement",
+    features: {
+      maxRestaurants: 1,
+      maxQrcodes: 1,
+      maxProduits: 30,
+      maxTeamMembers: 1,
+      iaTranslation: false,
+      rouletteGame: false,
+      popups: false,
+      advancedStats: false,
+      customDomain: false,
+      smsMarketing: false,
+      removeBranding: false,
+    },
+  },
+  pro: {
+    id: "pro",
+    name: "Pro",
+    monthlyPriceHT: 29.9,
+    yearlyPriceHT: 287, // 29.9 × 12 - 20% ≈ 287
+    stripePriceIdMonthly: process.env.STRIPE_PRO_PRICE_ID,
+    cta: "Essayer Pro 14 jours",
+    highlighted: true,
+    features: {
+      maxRestaurants: 3,
+      maxQrcodes: null,
+      maxProduits: null,
+      maxTeamMembers: 3,
+      iaTranslation: true,
+      rouletteGame: true,
+      popups: true,
+      advancedStats: true,
+      customDomain: false,
+      smsMarketing: false,
+      removeBranding: false,
+    },
+  },
+  premium: {
+    id: "premium",
+    name: "Premium",
+    monthlyPriceHT: 44.9,
+    yearlyPriceHT: 431, // 44.9 × 12 - 20%
+    stripePriceIdMonthly: process.env.STRIPE_PREMIUM_PRICE_ID,
+    cta: "Passer Premium",
+    features: {
+      maxRestaurants: null,
+      maxQrcodes: null,
+      maxProduits: null,
+      maxTeamMembers: null,
+      iaTranslation: true,
+      rouletteGame: true,
+      popups: true,
+      advancedStats: true,
+      customDomain: true,
+      smsMarketing: true,
+      removeBranding: true,
+    },
+  },
+};
+
+export const PLAN_ORDER: Plan[] = ["freemium", "pro", "premium"];
+
+export function planRank(p: Plan): number {
+  return PLAN_ORDER.indexOf(p);
+}
+
+export function isAtLeastPlan(current: Plan, target: Plan): boolean {
+  return planRank(current) >= planRank(target);
+}
+
+export function priceIdToPlan(priceId: string | null | undefined): Plan {
+  if (!priceId) return "freemium";
+  if (priceId === process.env.STRIPE_PRO_PRICE_ID) return "pro";
+  if (priceId === process.env.STRIPE_PREMIUM_PRICE_ID) return "premium";
+  return "freemium";
+}
+
+/**
+ * Retourne true si le restaurant peut utiliser cette feature avec son plan actuel.
+ */
+export function canUseFeature(plan: Plan, feature: keyof PlanFeatures): boolean {
+  const v = PLANS[plan].features[feature];
+  return typeof v === "boolean" ? v : v !== 0;
+}
+
+export function formatPriceEuro(priceHT: number): string {
+  if (priceHT === 0) return "Gratuit";
+  return `${priceHT.toFixed(2).replace(".", ",")} €`;
+}
