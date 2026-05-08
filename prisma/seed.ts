@@ -85,18 +85,16 @@ async function main() {
   ]);
 
   // 2. Wipe demo data (clean reseeds)
+  // On supprime AuthUser AVANT User : Better-Auth peut avoir créé un AuthUser
+  // orphelin (userId null) qui ne serait pas cascade-supprimé sinon.
   console.log("→ Reset des comptes de démo");
-  await prisma.user.deleteMany({
-    where: {
-      email: {
-        in: [
-          "tristan@ruliz.app",
-          "marie.dubois@tirebouchon.fr",
-          "pierre.martin@chezpierre.fr",
-        ],
-      },
-    },
-  });
+  const demoEmails = [
+    "tristan@ruliz.app",
+    "marie.dubois@tirebouchon.fr",
+    "pierre.martin@chezpierre.fr",
+  ];
+  await prisma.authUser.deleteMany({ where: { email: { in: demoEmails } } });
+  await prisma.user.deleteMany({ where: { email: { in: demoEmails } } });
 
   // 3. Admin Tristan
   console.log("→ Admin");
