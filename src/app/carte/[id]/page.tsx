@@ -3,27 +3,19 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import { after } from "next/server";
-import { getPublicMenu, isSupportedLang, listPublishableRestaurantIds } from "@/server/public/menu";
+import { getPublicMenu } from "@/server/public/menu";
 import { recordScan } from "@/server/public/scan";
-import type { SupportedLang } from "@/server/translation/anthropic";
+import { isSupportedLang, type SupportedLang } from "@/lib/langs";
 import { CartePublic } from "./carte-public";
 
-export const revalidate = 60;
-export const dynamicParams = true;
+// Page dynamique car on lit headers() pour le tracking. Le cache vit dans
+// `unstable_cache` au niveau du service (par restaurantId+lang) pour 60s.
+// Pas de generateStaticParams : on regenere a la demande via le cache service.
+export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ lang?: string; qr?: string; preview?: string }>;
-}
-
-export async function generateStaticParams() {
-  // Pre-build static pages for restaurants on Pro/Premium plans only.
-  try {
-    const ids = await listPublishableRestaurantIds();
-    return ids.map((id) => ({ id }));
-  } catch {
-    return [];
-  }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {

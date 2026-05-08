@@ -23,9 +23,14 @@ model AuthUser {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
-  // Lien vers l'utilisateur métier (1-1 optionnel)
+  // Lien vers l'utilisateur métier (1-1 optionnel).
   userId Int?  @unique @map("user_id")
   user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Champ shadow pour Better-Auth (peut écrire dessus si plugin admin réactivé,
+  // ou si une vieille session/cache demande la colonne). Le rôle métier
+  // canonique reste sur `users.role`.
+  role String? @default("user")
 
   sessions Session[]
   accounts Account[]
