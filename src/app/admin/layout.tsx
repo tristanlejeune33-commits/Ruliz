@@ -1,38 +1,8 @@
 import Link from "next/link";
-import {
-  ActivitySquare,
-  Building2,
-  ScrollText,
-  Settings,
-  ShieldCheck,
-  Users,
-} from "lucide-react";
 import { AppShell } from "@/components/shared/app-shell";
 import { Logo } from "@/components/shared/logo";
 import { SidebarNav } from "@/components/shared/sidebar-nav";
 import { requireAdmin } from "@/lib/session";
-
-const navSections = [
-  {
-    title: "Pilotage",
-    items: [
-      { label: "Vue d'ensemble", href: "/admin", icon: ShieldCheck },
-      { label: "Activité", href: "/admin/activity", icon: ActivitySquare },
-    ],
-  },
-  {
-    title: "Données",
-    items: [
-      { label: "Clients", href: "/admin/clients", icon: Users },
-      { label: "Restaurants", href: "/admin/restaurants", icon: Building2 },
-      { label: "Logs", href: "/admin/logs", icon: ScrollText },
-    ],
-  },
-  {
-    title: "Système",
-    items: [{ label: "Paramètres", href: "/admin/settings", icon: Settings }],
-  },
-];
 
 export default async function AdminLayout({
   children,
@@ -57,7 +27,7 @@ export default async function AdminLayout({
             </Link>
           </div>
           <div className="flex-1 overflow-y-auto px-3 py-4">
-            <SidebarNav sections={navSections} />
+            <SidebarNav scope="admin" />
           </div>
         </>
       }
