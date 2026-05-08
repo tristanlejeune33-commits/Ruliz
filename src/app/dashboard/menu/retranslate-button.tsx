@@ -13,9 +13,16 @@ export function RetranslateButton({ restaurantId }: { restaurantId: string }) {
     startTransition(async () => {
       const res = await retranslateMenu(restaurantId);
       if (res.ok) {
-        toast.success(
-          "Re-traduction lancée. Les langues seront mises à jour dans 1-2 min.",
-        );
+        const mode = res.data?.mode;
+        if (mode === "inngest") {
+          toast.success(
+            "Re-traduction lancée via Inngest. Disponible dans 1-2 min.",
+          );
+        } else {
+          toast.success(
+            "Re-traduction en cours en arrière-plan. Recharge la carte dans ~1 min.",
+          );
+        }
       } else {
         toast.error(res.error);
       }
