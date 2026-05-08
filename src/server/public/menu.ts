@@ -11,9 +11,24 @@ export type PublicMenu = {
   restaurant: {
     id: string;
     nom: string;
+    description: string | null;
     logoUrl: string | null;
     banniereUrl: string | null;
+    /** Devise par défaut affichée si un produit n'a pas la sienne. */
+    deviseDefault: string;
+    /** light | dark */
+    theme: "light" | "dark";
+    /** modern | editorial | elegant — pilote le choix de typo display. */
+    fontStyle: "modern" | "editorial" | "elegant";
+    /** Couleur d'accent (CTA, boutons). */
     couleurPrimaire: string | null;
+    couleurSecondaire: string | null;
+    /** Couleur de fond de la carte. */
+    couleurFond: string | null;
+    /** Couleur du titre du restaurant. */
+    couleurTexteTitre: string | null;
+    /** Couleur des titres de catégories. */
+    couleurCategorie: string | null;
     ville: string | null;
     pays: string | null;
     adresse: string | null;
@@ -104,9 +119,17 @@ export async function getPublicMenu(
       select: {
         id: true,
         nom: true,
+        description: true,
         logoUrl: true,
         banniereUrl: true,
+        deviseDefault: true,
+        theme: true,
+        fontStyle: true,
         couleurPrimaire: true,
+        couleurSecondaire: true,
+        couleurFond: true,
+        couleurTexteTitre: true,
+        couleurCategorie: true,
         ville: true,
         pays: true,
         adresse: true,
@@ -238,9 +261,18 @@ export async function getPublicMenu(
     restaurant: {
       id: restaurant.id.toString(),
       nom: restaurant.nom,
+      description: restaurant.description,
       logoUrl: restaurant.logoUrl,
       banniereUrl: restaurant.banniereUrl,
+      deviseDefault: restaurant.deviseDefault ?? "€",
+      theme: (restaurant.theme as "light" | "dark") ?? "light",
+      fontStyle:
+        (restaurant.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",
       couleurPrimaire: restaurant.couleurPrimaire,
+      couleurSecondaire: restaurant.couleurSecondaire,
+      couleurFond: restaurant.couleurFond,
+      couleurTexteTitre: restaurant.couleurTexteTitre,
+      couleurCategorie: restaurant.couleurCategorie,
       ville: restaurant.ville,
       pays: restaurant.pays,
       adresse: restaurant.adresse,

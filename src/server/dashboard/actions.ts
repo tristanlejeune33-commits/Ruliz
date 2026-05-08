@@ -35,25 +35,33 @@ export async function setActiveRestaurant(id: string): Promise<ActionResult> {
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
+const optHex = z
+  .string()
+  .regex(HEX_COLOR, "Format hexa #RRGGBB")
+  .optional()
+  .or(z.literal(""));
+
 const restaurantSchema = z.object({
   id: z.string(),
   nom: z.string().min(1, "Requis").max(255),
+  description: z.string().max(2000).optional().or(z.literal("")),
   email: z.string().max(255).optional().or(z.literal("")),
   telephone: z.string().max(20).optional().or(z.literal("")),
   adresse: z.string().max(500).optional().or(z.literal("")),
   codePostal: z.string().max(10).optional().or(z.literal("")),
   ville: z.string().max(100).optional().or(z.literal("")),
   pays: z.string().max(100).optional().or(z.literal("")),
-  couleurPrimaire: z
-    .string()
-    .regex(HEX_COLOR, "Format hexa #RRGGBB")
-    .optional()
-    .or(z.literal("")),
-  couleurSecondaire: z
-    .string()
-    .regex(HEX_COLOR, "Format hexa #RRGGBB")
-    .optional()
-    .or(z.literal("")),
+  deviseDefault: z.string().max(5).optional().or(z.literal("")),
+  // Theme
+  theme: z.enum(["light", "dark"]).optional(),
+  fontStyle: z.enum(["modern", "editorial", "elegant"]).optional(),
+  // Colors
+  couleurPrimaire: optHex,
+  couleurSecondaire: optHex,
+  couleurFond: optHex,
+  couleurTexteTitre: optHex,
+  couleurCategorie: optHex,
+  // Social
   facebookUrl: z.string().max(500).optional().or(z.literal("")),
   instagramUrl: z.string().max(500).optional().or(z.literal("")),
   tiktokUrl: z.string().max(500).optional().or(z.literal("")),
@@ -85,14 +93,21 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
     where: { id: bigId },
     data: {
       nom: data.nom,
+      description: empty(data.description),
       email: empty(data.email),
       telephone: empty(data.telephone),
       adresse: empty(data.adresse),
       codePostal: empty(data.codePostal),
       ville: empty(data.ville),
       pays: empty(data.pays),
+      deviseDefault: empty(data.deviseDefault) ?? "€",
+      theme: data.theme ?? "light",
+      fontStyle: data.fontStyle ?? "editorial",
       couleurPrimaire: empty(data.couleurPrimaire),
       couleurSecondaire: empty(data.couleurSecondaire),
+      couleurFond: empty(data.couleurFond),
+      couleurTexteTitre: empty(data.couleurTexteTitre),
+      couleurCategorie: empty(data.couleurCategorie),
       facebookUrl: empty(data.facebookUrl),
       instagramUrl: empty(data.instagramUrl),
       tiktokUrl: empty(data.tiktokUrl),

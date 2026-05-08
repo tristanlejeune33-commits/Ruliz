@@ -181,8 +181,17 @@ model Restaurant {
   stripeCurrentPeriodEnd   DateTime? @map("stripe_current_period_end") @db.Timestamptz()
   logoUrl                  String?   @map("logo_url")
   banniereUrl              String?   @map("banniere_url")
+  description              String?
+  deviseDefault            String?   @default("€") @map("devise_default") @db.VarChar(5)
+  // ----- Personnalisation visuelle de la carte publique -----
+  theme                    String?   @default("light") @db.VarChar(10) // light | dark
+  fontStyle                String?   @default("editorial") @map("font_style") @db.VarChar(20) // modern | editorial | elegant
   couleurPrimaire          String?   @default("#1F2937") @map("couleur_primaire") @db.VarChar(7)
   couleurSecondaire        String?   @map("couleur_secondaire") @db.VarChar(7)
+  couleurFond              String?   @map("couleur_fond") @db.VarChar(7)
+  couleurTexteTitre        String?   @map("couleur_texte_titre") @db.VarChar(7)
+  couleurCategorie         String?   @map("couleur_categorie") @db.VarChar(7)
+  // ----- Réseaux sociaux -----
   facebookUrl              String?   @map("facebook_url")
   instagramUrl             String?   @map("instagram_url")
   tiktokUrl                String?   @map("tiktok_url")
