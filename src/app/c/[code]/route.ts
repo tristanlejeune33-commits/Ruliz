@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAppUrl } from "@/lib/url";
 
 /**
  * Short URL for QR codes : `/c/{codeUnique}` → 302 to `/carte/{restaurantId}`.
@@ -26,7 +27,7 @@ export async function GET(
 
   const target = new URL(
     `/carte/${qr.restaurantId.toString()}?qr=${qr.id.toString()}`,
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    getAppUrl(),
   );
 
   return NextResponse.redirect(target, 302);

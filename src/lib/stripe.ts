@@ -1,5 +1,6 @@
 import "server-only";
 import Stripe from "stripe";
+import { getAppUrl } from "./url";
 
 let cached: Stripe | null = null;
 
@@ -21,4 +22,4 @@ export function isStripeConfigured() {
 
 export const TRIAL_PERIOD_DAYS = 14;
 
-export const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+export const APP_URL = getAppUrl();

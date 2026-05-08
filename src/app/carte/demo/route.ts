@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAppUrl } from "@/lib/url";
 
 /**
  * Public demo redirect — points to the first active restaurant we find.
  * Used by the marketing landing "Voir une carte démo" CTA.
  */
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   // Prefer a Pro/Premium restaurant if available (richer cards), fallback to any.
   const restaurant =
     (await prisma.restaurant.findFirst({
@@ -19,7 +20,7 @@ export async function GET(req: Request) {
       select: { id: true },
     }));
 
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin;
+  const base = getAppUrl();
 
   if (!restaurant) {
     return NextResponse.redirect(new URL("/?demo=unavailable", base), 302);

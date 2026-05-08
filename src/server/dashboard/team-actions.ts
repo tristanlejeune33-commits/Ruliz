@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { canAddTeamMember } from "@/lib/restaurant-limits";
 import { sendMail } from "@/lib/resend";
 import { requireDashboard } from "@/lib/session";
+import { getAppUrl } from "@/lib/url";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -96,7 +97,7 @@ export async function inviteTeamMember(input: unknown): Promise<ActionResult> {
           Tu as été ajouté comme <strong>${parsed.data.role}</strong> à une équipe Ruliz. Connecte-toi pour gérer la carte avec tes collègues.
         </p>
         <p style="margin:0 0 32px">
-          <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "https://ruliz.app"}/login" style="background:#4870e0;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">
+          <a href="${getAppUrl()}/login" style="background:#4870e0;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">
             Me connecter à Ruliz
           </a>
         </p>

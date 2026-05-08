@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { getAppUrl } from "@/lib/url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   title: "Ruliz — Menus digitaux pour restaurants",
   description:
     "SaaS de menus digitaux : QR code, traduction IA en 7 langues, dashboard pro pour restaurateurs.",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(getAppUrl()),
 };
 
 export default function RootLayout({

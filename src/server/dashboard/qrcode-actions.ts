@@ -7,6 +7,7 @@ import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
 import { buildR2Key, isR2Configured, uploadBuffer } from "@/lib/r2";
+import { getAppUrl } from "@/lib/url";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -19,8 +20,7 @@ function generateUniqueCode() {
 }
 
 function carteUrl(code: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  return `${base.replace(/\/$/, "")}/c/${code}`;
+  return `${getAppUrl()}/c/${code}`;
 }
 
 const createSchema = z.object({
