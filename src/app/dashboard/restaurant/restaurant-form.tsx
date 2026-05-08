@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Save, Upload } from "lucide-react";
+import { Loader2, Save, Sun, Moon, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,26 +25,36 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { updateRestaurant } from "@/server/dashboard/actions";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const optHex = z.union([z.string().regex(HEX_COLOR, "Format #RRGGBB"), z.literal("")]);
 
 const schema = z.object({
   nom: z.string().min(1, "Requis").max(255),
+  description: z.string().max(2000),
   email: z.string().max(255),
   telephone: z.string().max(20),
   adresse: z.string().max(500),
   codePostal: z.string().max(10),
   ville: z.string().max(100),
   pays: z.string().max(100),
-  couleurPrimaire: z.union([z.string().regex(HEX_COLOR, "Format #RRGGBB"), z.literal("")]),
-  couleurSecondaire: z.union([z.string().regex(HEX_COLOR, "Format #RRGGBB"), z.literal("")]),
+  deviseDefault: z.string().max(5),
+  theme: z.enum(["light", "dark"]),
+  fontStyle: z.enum(["modern", "editorial", "elegant"]),
+  couleurPrimaire: optHex,
+  couleurSecondaire: optHex,
+  couleurFond: optHex,
+  couleurTexteTitre: optHex,
+  couleurCategorie: optHex,
   facebookUrl: z.string().max(500),
   instagramUrl: z.string().max(500),
   tiktokUrl: z.string().max(500),
@@ -80,7 +90,6 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
 
   const logoUrl = form.watch("logoUrl");
   const banniereUrl = form.watch("banniereUrl");
-  const couleurPrimaire = form.watch("couleurPrimaire");
 
   return (
     <Form {...form}>
@@ -88,16 +97,19 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
         <Tabs defaultValue="infos">
           <TabsList>
             <TabsTrigger value="infos">Infos</TabsTrigger>
-            <TabsTrigger value="branding">Branding</TabsTrigger>
+            <TabsTrigger value="theme">Thème</TabsTrigger>
+            <TabsTrigger value="couleurs">Couleurs</TabsTrigger>
+            <TabsTrigger value="branding">Médias</TabsTrigger>
             <TabsTrigger value="social">Réseaux</TabsTrigger>
           </TabsList>
 
+          {/* ===================== INFOS ===================== */}
           <TabsContent value="infos">
             <Card>
               <CardHeader>
                 <CardTitle>Coordonnées</CardTitle>
                 <CardDescription>
-                  Ces informations apparaissent dans le footer de la carte publique.
+                  Le nom et la description s&apos;affichent en hero de ta carte publique.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-5 md:grid-cols-2">
@@ -106,10 +118,30 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                   name="nom"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Nom du restaurant</FormLabel>
+                      <FormLabel>Nom du restaurant *</FormLabel>
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Description (optionnel)</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          rows={2}
+                          placeholder="Bistronomie sud-ouest dans une cave voûtée du XVIIIe."
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        Une phrase courte sous le titre. Italique automatique.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -183,7 +215,7 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                   control={form.control}
                   name="pays"
                   render={({ field }) => (
-                    <FormItem className="md:col-span-2">
+                    <FormItem>
                       <FormLabel>Pays</FormLabel>
                       <FormControl>
                         <Input {...field} />
@@ -192,22 +224,186 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                     </FormItem>
                   )}
                 />
+                <FormField
+                  control={form.control}
+                  name="deviseDefault"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Devise par défaut</FormLabel>
+                      <FormControl>
+                        <Input placeholder="€" {...field} />
+                      </FormControl>
+                      <FormDescription className="text-[10px]">
+                        Affichée si un produit n&apos;a pas la sienne.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* ===================== THÈME ===================== */}
+          <TabsContent value="theme" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Mode clair / sombre</CardTitle>
+                <CardDescription>
+                  Le mode sombre donne une carte chic style restaurant haut de gamme.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="theme"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="grid grid-cols-2 gap-3">
+                        <ThemeOption
+                          value="light"
+                          current={field.value}
+                          onSelect={field.onChange}
+                          icon={Sun}
+                          label="Clair"
+                          description="Lumineux, food-friendly"
+                        />
+                        <ThemeOption
+                          value="dark"
+                          current={field.value}
+                          onSelect={field.onChange}
+                          icon={Moon}
+                          label="Sombre"
+                          description="Élégant, gastronomique"
+                        />
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Style de typographie</CardTitle>
+                <CardDescription>
+                  Influence le caractère visuel des titres sur la carte publique.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="fontStyle"
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <FontOption
+                          value="modern"
+                          current={field.value}
+                          onSelect={field.onChange}
+                          name="Modern"
+                          description="Brasserie, café, vegan, healthy"
+                          fontFamily="ui-sans-serif, system-ui, sans-serif"
+                          sample="Le Tire-Bouchon"
+                        />
+                        <FontOption
+                          value="editorial"
+                          current={field.value}
+                          onSelect={field.onChange}
+                          name="Editorial"
+                          description="Bistronomie, bar à vins, signature"
+                          fontFamily="'Fraunces', ui-serif, Georgia, serif"
+                          sample="Le Tire-Bouchon"
+                        />
+                        <FontOption
+                          value="elegant"
+                          current={field.value}
+                          onSelect={field.onChange}
+                          name="Elegant"
+                          description="Fine dining, sushi, hôtel"
+                          fontFamily="'DM Serif Display', ui-serif, Georgia, serif"
+                          sample="Le Tire-Bouchon"
+                        />
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ===================== COULEURS ===================== */}
+          <TabsContent value="couleurs">
+            <Card>
+              <CardHeader>
+                <CardTitle>Couleurs de la carte publique</CardTitle>
+                <CardDescription>
+                  Format hexadécimal <code>#RRGGBB</code>. Laisse vide pour utiliser les
+                  couleurs par défaut élégantes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-5 md:grid-cols-2">
+                <ColorField
+                  control={form.control}
+                  name="couleurPrimaire"
+                  label="Accent / CTA"
+                  helper="Boutons, badges, surlignages"
+                  defaultPreview="#4870e0"
+                />
+                <ColorField
+                  control={form.control}
+                  name="couleurFond"
+                  label="Fond de la carte"
+                  helper="Couleur générale derrière le contenu"
+                  defaultPreview={
+                    form.watch("theme") === "dark" ? "#1a1a1a" : "#fdfcf8"
+                  }
+                />
+                <ColorField
+                  control={form.control}
+                  name="couleurTexteTitre"
+                  label="Titre du restaurant"
+                  helper="Le grand titre en haut de la carte"
+                  defaultPreview={
+                    form.watch("theme") === "dark" ? "#f5f5f5" : "#1a1a1a"
+                  }
+                />
+                <ColorField
+                  control={form.control}
+                  name="couleurCategorie"
+                  label="Titres de catégories"
+                  helper="« Entrées », « Plats », etc."
+                  defaultPreview={
+                    form.watch("theme") === "dark" ? "#e0e0e0" : "#3a3a3a"
+                  }
+                />
+                <ColorField
+                  control={form.control}
+                  name="couleurSecondaire"
+                  label="Secondaire (réservé)"
+                  helper="Pour future utilisation"
+                  defaultPreview="—"
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ===================== MÉDIAS (logo + bannière) ===================== */}
           <TabsContent value="branding" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>Logo et bannière</CardTitle>
                 <CardDescription>
-                  Logo carré, bannière en hero. Upload R2 arrive prochainement — colle
-                  une URL pour l&apos;instant.
+                  Logo carré (idéal 150×150px). Bannière en hero, ratio 16/9.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-3">
-                  <p className="text-sm font-medium">Logo</p>
+                  <p className="text-sm font-medium">
+                    Logo <span className="text-[var(--text-muted)]">(150×150px)</span>
+                  </p>
                   <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50">
                     {logoUrl ? (
                       <Image
@@ -231,7 +427,7 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                     render={({ field }) => (
                       <FormItem>
                         <FormControl>
-                          <Input placeholder="https://…" {...field} />
+                          <Input placeholder="https://… (ou upload R2)" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -239,7 +435,9 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                   />
                 </div>
                 <div className="space-y-3">
-                  <p className="text-sm font-medium">Bannière</p>
+                  <p className="text-sm font-medium">
+                    Bannière <span className="text-[var(--text-muted)]">(ratio 16/9)</span>
+                  </p>
                   <div className="flex aspect-[16/9] items-center justify-center overflow-hidden rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50">
                     {banniereUrl ? (
                       <Image
@@ -272,58 +470,16 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Couleurs</CardTitle>
-                <CardDescription>
-                  Couleur primaire utilisée sur les CTA de la carte publique.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-5 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="couleurPrimaire"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Couleur primaire</FormLabel>
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="size-10 shrink-0 rounded-md border border-[var(--border-subtle)]"
-                          style={{ backgroundColor: couleurPrimaire || "transparent" }}
-                          aria-hidden
-                        />
-                        <FormControl>
-                          <Input className="font-mono" placeholder="#4870e0" {...field} />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="couleurSecondaire"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Couleur secondaire (optionnelle)</FormLabel>
-                      <FormControl>
-                        <Input className="font-mono" placeholder="#…" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
           </TabsContent>
 
+          {/* ===================== RÉSEAUX ===================== */}
           <TabsContent value="social">
             <Card>
               <CardHeader>
                 <CardTitle>Réseaux sociaux & avis</CardTitle>
                 <CardDescription>
-                  Affichés en footer de la carte publique. Le lien Google Review alimente le jeu roulette.
+                  Affichés en footer de la carte publique. Le lien Google Review alimente
+                  le jeu roulette.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-5 md:grid-cols-2">
@@ -401,9 +557,11 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center justify-end gap-3">
+        <div className="sticky bottom-4 z-10 flex items-center justify-end gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)]/85 p-3 backdrop-blur-md">
           {form.formState.isDirty && (
-            <p className="text-xs text-[var(--text-muted)]">Modifications non enregistrées</p>
+            <p className="text-xs text-[var(--text-muted)]">
+              Modifications non enregistrées
+            </p>
           )}
           <Button type="submit" disabled={!form.formState.isDirty || pending}>
             {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
@@ -412,5 +570,165 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
         </div>
       </form>
     </Form>
+  );
+}
+
+// ============================================================================
+// Composants utilitaires
+// ============================================================================
+
+function ThemeOption({
+  value,
+  current,
+  onSelect,
+  icon: Icon,
+  label,
+  description,
+}: {
+  value: "light" | "dark";
+  current: string;
+  onSelect: (v: string) => void;
+  icon: typeof Sun;
+  label: string;
+  description: string;
+}) {
+  const active = current === value;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      className={cn(
+        "flex flex-col items-start gap-2 rounded-xl border p-4 text-left transition-all duration-200",
+        active
+          ? "border-[var(--accent)] bg-[var(--accent)]/5 shadow-sm"
+          : "border-[var(--border-subtle)] hover:border-[var(--text-muted)]",
+      )}
+    >
+      <Icon
+        className={cn(
+          "size-5",
+          active ? "text-[var(--accent)]" : "text-[var(--text-muted)]",
+        )}
+      />
+      <div>
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="text-xs text-[var(--text-muted)]">{description}</p>
+      </div>
+    </button>
+  );
+}
+
+function FontOption({
+  value,
+  current,
+  onSelect,
+  name,
+  description,
+  fontFamily,
+  sample,
+}: {
+  value: "modern" | "editorial" | "elegant";
+  current: string;
+  onSelect: (v: string) => void;
+  name: string;
+  description: string;
+  fontFamily: string;
+  sample: string;
+}) {
+  const active = current === value;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      className={cn(
+        "flex flex-col gap-3 rounded-xl border p-4 text-left transition-all duration-200",
+        active
+          ? "border-[var(--accent)] bg-[var(--accent)]/5 shadow-sm"
+          : "border-[var(--border-subtle)] hover:border-[var(--text-muted)]",
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-semibold">{name}</p>
+        {active && (
+          <span className="rounded bg-[var(--accent)]/15 px-1.5 py-0.5 text-[10px] font-medium text-[var(--accent)]">
+            Actif
+          </span>
+        )}
+      </div>
+      <p
+        className="truncate text-2xl font-medium leading-tight tracking-tight"
+        style={{ fontFamily }}
+      >
+        {sample}
+      </p>
+      <p className="text-xs text-[var(--text-muted)]">{description}</p>
+    </button>
+  );
+}
+
+import type { Control } from "react-hook-form";
+
+function ColorField({
+  control,
+  name,
+  label,
+  helper,
+  defaultPreview,
+}: {
+  control: Control<Values>;
+  name:
+    | "couleurPrimaire"
+    | "couleurSecondaire"
+    | "couleurFond"
+    | "couleurTexteTitre"
+    | "couleurCategorie";
+  label: string;
+  helper: string;
+  defaultPreview: string;
+}) {
+  return (
+    <FormField
+      control={control}
+      name={name}
+      render={({ field }) => {
+        const value = field.value || "";
+        const swatchColor = value.match(HEX_COLOR) ? value : null;
+        return (
+          <FormItem>
+            <FormLabel>{label}</FormLabel>
+            <div className="flex items-center gap-3">
+              <div
+                className="relative size-12 shrink-0 overflow-hidden rounded-lg border border-[var(--border-subtle)]"
+                style={{
+                  backgroundColor: swatchColor ?? "transparent",
+                  backgroundImage: swatchColor
+                    ? "none"
+                    : "linear-gradient(45deg, var(--bg-elevated) 25%, transparent 25%), linear-gradient(-45deg, var(--bg-elevated) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--bg-elevated) 75%), linear-gradient(-45deg, transparent 75%, var(--bg-elevated) 75%)",
+                  backgroundSize: "8px 8px",
+                  backgroundPosition: "0 0, 0 4px, 4px -4px, -4px 0",
+                }}
+              >
+                <input
+                  type="color"
+                  value={swatchColor ?? "#4870e0"}
+                  onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                  className="absolute inset-0 size-full cursor-pointer opacity-0"
+                  aria-label={`${label} (color picker)`}
+                />
+              </div>
+              <FormControl>
+                <Input
+                  className="font-mono"
+                  placeholder={defaultPreview}
+                  {...field}
+                />
+              </FormControl>
+            </div>
+            <FormDescription className="text-[10px]">{helper}</FormDescription>
+            <FormMessage />
+          </FormItem>
+        );
+      }}
+    />
   );
 }

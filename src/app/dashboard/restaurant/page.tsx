@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
-import { Building2 } from "lucide-react";
+import Link from "next/link";
+import { Building2, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PlanBadge, type Plan } from "@/components/shared/status-badge";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { serialize } from "@/lib/serialize";
@@ -26,21 +28,36 @@ export default async function RestaurantPage() {
             Ces infos apparaissent sur la carte publique scannée par tes clients.
           </p>
         </div>
-        <PlanBadge plan={data.plan as Plan} />
+        <div className="flex items-center gap-2">
+          <PlanBadge plan={data.plan as Plan} />
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/carte/${data.id}`} target="_blank" rel="noreferrer">
+              <ExternalLink className="size-3.5" />
+              Voir la carte
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <RestaurantForm
         restaurant={{
           id: data.id,
           nom: data.nom,
+          description: data.description ?? "",
           email: data.email ?? "",
           telephone: data.telephone ?? "",
           adresse: data.adresse ?? "",
           codePostal: data.codePostal ?? "",
           ville: data.ville ?? "",
           pays: data.pays ?? "France",
+          deviseDefault: data.deviseDefault ?? "€",
+          theme: (data.theme as "light" | "dark") ?? "light",
+          fontStyle: (data.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",
           couleurPrimaire: data.couleurPrimaire ?? "#4870e0",
           couleurSecondaire: data.couleurSecondaire ?? "",
+          couleurFond: data.couleurFond ?? "",
+          couleurTexteTitre: data.couleurTexteTitre ?? "",
+          couleurCategorie: data.couleurCategorie ?? "",
           facebookUrl: data.facebookUrl ?? "",
           instagramUrl: data.instagramUrl ?? "",
           tiktokUrl: data.tiktokUrl ?? "",
