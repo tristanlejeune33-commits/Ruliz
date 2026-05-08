@@ -63,12 +63,21 @@ export function resolveTheme(restaurant: PublicMenu["restaurant"]): CarteTheme {
   };
 }
 
-/** Convertit un hex #RRGGBB en variante avec alpha (#RRGGBBAA). */
-export function withAlpha(hex: string, alpha: number): string {
-  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return hex;
-  const a = Math.round(alpha * 255)
-    .toString(16)
-    .padStart(2, "0");
-  return `#${m[1]}${a}`;
+/**
+ * Applique de l'alpha à n'importe quelle couleur CSS (hex, oklch, rgb, hsl, named).
+ * - Hex `#RRGGBB` → `#RRGGBBAA` (rapide, parfaitement compatible)
+ * - Tout le reste (`oklch(...)`, `rgb(...)`, etc.) → `color-mix(in oklab, COLOR PCT%, transparent)`
+ *   (supporté Chrome 111+/Safari 16.2+/Firefox 113+, qui couvre 95%+ des smartphones 2024)
+ */
+export function withAlpha(color: string, alpha: number): string {
+  const c = color.trim();
+  const hex = /^#?([0-9a-f]{6})$/i.exec(c);
+  if (hex) {
+    const a = Math.round(alpha * 255)
+      .toString(16)
+      .padStart(2, "0");
+    return `#${hex[1]}${a}`;
+  }
+  const pct = Math.max(0, Math.min(100, Math.round(alpha * 100)));
+  return `color-mix(in oklab, ${c} ${pct}%, transparent)`;
 }

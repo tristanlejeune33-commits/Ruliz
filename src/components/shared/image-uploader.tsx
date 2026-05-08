@@ -43,43 +43,38 @@ export function ImageUploader({
 
     setPending(true);
     try {
-      const presignRes = await fetch("/api/upload", {
+      // Stratégie : on uploade côté serveur (proxy Next.js) pour éviter
+      // tout problème CORS avec R2.
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("restaurantId", restaurantId);
+      fd.append("kind", kind);
+
+      const res = await fetch("/api/upload-direct", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          restaurantId,
-          filename: file.name,
-          contentType: file.type,
-          kind,
-        }),
+        body: fd,
       });
-      const presign = await presignRes.json();
+      const json = await res.json().catch(() => ({}));
 
-      if (!presignRes.ok) {
-        // R2 pas configuré — on bascule en mode URL pour que ça reste utilisable
-        toast.error(
-          presign.error?.includes("R2")
-            ? "Stockage R2 non configuré. Colle une URL d'image à la place."
-            : presign.error ?? "Upload impossible.",
-        );
+      if (!res.ok) {
+        const msg =
+          typeof json?.error === "string"
+            ? json.error
+            : "Upload impossible. Colle une URL à la place.";
+        toast.error(msg);
         setShowUrlInput(true);
         setPending(false);
         return;
       }
 
-      const uploadRes = await fetch(presign.uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!uploadRes.ok) {
-        toast.error("Échec de l'upload. Colle une URL à la place.");
+      if (!json?.publicUrl) {
+        toast.error("Réponse serveur invalide. Colle une URL à la place.");
         setShowUrlInput(true);
         setPending(false);
         return;
       }
 
-      onChange(presign.publicUrl);
+      onChange(json.publicUrl);
       toast.success("Image uploadée.");
     } catch (err) {
       console.error(err);
