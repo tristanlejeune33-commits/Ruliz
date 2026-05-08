@@ -331,7 +331,18 @@ src/
    - Mets à jour `DISCOVERY.md`
    - Tests manuels (ou unit tests si critique)
    - Commit avec message clair (`feat(carte): drag&drop categories`)
+   - **Push automatique sur `origin main`** dès qu'une feature/fix est terminé(e). Railway redéploie tout seul après.
    - Explique en 5 lignes ce que tu as fait + comment tester
+
+### Règles Git
+
+- **Repo** : `https://github.com/tristanlejeune33-commits/Ruliz` (branch `main`)
+- **Push auto** à chaque tâche cohérente complétée — pas besoin de demander
+- **Jamais** de `git push --force` sans demande explicite
+- **Jamais** de `git commit --no-verify` ni `--no-gpg-sign`
+- Messages de commit en français acceptés, type conventionnel préféré (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`)
+- Ajouter `Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>` à chaque commit
+- **Ne pas regrouper** des changements logiquement séparés dans le même commit
 
 ---
 
