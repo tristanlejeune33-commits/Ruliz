@@ -5,6 +5,29 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   typedRoutes: true,
+  // Speed up dev compilation on Windows (especially when project is in OneDrive).
+  // - On-demand entries TTL plus long → moins de recompiles inutiles.
+  // - Webpack ignore les watchers les plus lourds.
+  onDemandEntries: {
+    maxInactiveAge: 1000 * 60 * 5, // garde les pages compilées 5 min en RAM
+    pagesBufferLength: 5,
+  },
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        // Polling désactivé (utilise les events natifs Windows) + ignorés OneDrive/.next/.git
+        ignored: [
+          "**/node_modules/**",
+          "**/.next/**",
+          "**/.git/**",
+          "**/.cache/**",
+        ],
+        aggregateTimeout: 200,
+      };
+    }
+    return config;
+  },
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [

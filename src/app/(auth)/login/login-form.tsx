@@ -38,16 +38,27 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 
   async function onSubmit(values: LoginValues) {
     setIsPending(true);
-    const { error } = await authClient.signIn.email({
-      email: values.email,
-      password: values.password,
-    });
+    let error: { message?: string; code?: string; status?: number } | null = null;
+    try {
+      const res = await authClient.signIn.email({
+        email: values.email,
+        password: values.password,
+      });
+      error = res.error;
+    } catch (err) {
+      // Erreur réseau / runtime (DB injoignable, secret manquant, etc.)
+      console.error("[login] signIn.email threw:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(`Erreur serveur : ${msg}`);
+      setIsPending(false);
+      return;
+    }
     setIsPending(false);
 
     if (error) {
-      toast.error(
-        error.message ?? "Identifiants incorrects. Vérifie ton email et ton mot de passe.",
-      );
+      console.error("[login] auth error:", error);
+      const detail = error.message ?? error.code ?? "inconnue";
+      toast.error(`Connexion impossible : ${detail}`);
       return;
     }
 
