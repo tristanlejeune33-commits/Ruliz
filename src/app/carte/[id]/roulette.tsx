@@ -852,9 +852,9 @@ function WheelStep({
           ◀
         </span>
 
-        {/* Fenêtre du slot — overflow hidden */}
+        {/* Fenêtre du slot — overflow hidden, force text-black pour les lots */}
         <div
-          className="relative mx-auto w-[260px] overflow-hidden rounded-[16px] border-2 border-[#FF9B4A] bg-white/95 shadow-2xl md:w-[300px]"
+          className="relative mx-auto w-[260px] overflow-hidden rounded-[16px] border-2 border-[#FF9B4A] bg-white/95 text-black shadow-2xl md:w-[300px]"
           style={{ height: `${reelHeight}px` }}
         >
           {/* Fade haut + bas pour effet 3D */}
@@ -893,7 +893,7 @@ function WheelStep({
               return (
                 <div
                   key={i}
-                  className="flex shrink-0 items-center justify-center gap-3 px-4 text-center"
+                  className="flex shrink-0 items-center justify-center gap-3 px-4 text-center text-black"
                   style={{ height: `${SLOT_HEIGHT}px` }}
                 >
                   <motion.div
@@ -909,11 +909,11 @@ function WheelStep({
                       duration: 0.6,
                       repeat: isWinning ? 3 : 0,
                     }}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-3 text-black"
                   >
                     <span className="text-3xl md:text-4xl">{emoji}</span>
                     <span
-                      className="text-balance text-base font-bold leading-tight md:text-lg"
+                      className="text-balance text-base font-bold leading-tight text-black md:text-lg"
                       style={{ fontFamily: "var(--font-display)" }}
                     >
                       {text}
