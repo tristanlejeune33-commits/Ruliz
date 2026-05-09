@@ -2,162 +2,147 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { MapPin } from "lucide-react";
 import type { PublicMenu } from "@/server/public/menu";
 import type { CarteTheme } from "./theme";
-import { withAlpha } from "./theme";
 
 interface HeroSectionProps {
   restaurant: PublicMenu["restaurant"];
   theme: CarteTheme;
 }
 
+/**
+ * Hero du template Ruliz : banner photo + wave SVG en bas + logo circulaire
+ * à cheval sur la wave + h1 du restaurant en dessous.
+ *
+ * Structure (réplique de l'ancien #banner / #welcome) :
+ *   - banner 200px (mobile) → 245px (tablet) → 300-400px (desktop)
+ *   - dégradé noir solide sur les 5% du haut puis transparent
+ *   - wave SVG (couleur --bg-body) collée au bas
+ *   - logo rond 120-150px, bordure blanche 7px, à cheval sur la wave
+ *   - h1 (Magra 43px navy) + description sous le logo
+ */
 export function HeroSection({ restaurant, theme }: HeroSectionProps) {
-  const hasBanniere = !!restaurant.banniereUrl;
-
-  return hasBanniere ? (
-    <HeroPhoto restaurant={restaurant} theme={theme} />
-  ) : (
-    <HeroTypographic restaurant={restaurant} theme={theme} />
+  return (
+    <>
+      <Banner restaurant={restaurant} theme={theme} />
+      <Welcome restaurant={restaurant} theme={theme} />
+    </>
   );
 }
 
-/** Variant avec photo full-bleed : gradient overlay + titre serif blanc */
-function HeroPhoto({ restaurant, theme }: HeroSectionProps) {
-  return (
-    <header className="relative">
-      <div className="relative h-[60vh] min-h-[360px] w-full overflow-hidden md:h-[70vh] md:max-h-[600px]">
-        <Image
-          src={restaurant.banniereUrl!}
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 768px) 100vw, 1024px"
-          unoptimized
-          className="object-cover"
-        />
-        {/* Top gradient pour lisibilité du switcher de langue */}
-        <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/30 to-transparent" />
-        {/* Bottom gradient pour le titre */}
-        <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+function Banner({ restaurant, theme }: HeroSectionProps) {
+  // Si pas de bannière, on utilise un fond uni primary (navy)
+  const backgroundImage = restaurant.banniereUrl
+    ? `linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 5%, rgba(255, 255, 255, 0) 100%), url('${restaurant.banniereUrl}')`
+    : undefined;
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="absolute inset-x-0 bottom-0 px-6 pb-10 text-center md:pb-14"
+  return (
+    <section className="relative" id="banner">
+      <div
+        className="relative h-[200px] w-full bg-cover bg-no-repeat md:h-[245px] lg:h-[300px] xl:h-[400px]"
+        style={{
+          backgroundImage,
+          backgroundColor: !restaurant.banniereUrl ? theme.primary : undefined,
+        }}
+      >
+        {/* Wave SVG en bas — réplique exacte de l'ancien template */}
+        <svg
+          className="absolute bottom-0 left-0 z-[1] -mb-px w-full"
+          viewBox="0 0 320 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden
         >
-          {restaurant.logoUrl && (
-            <div className="mx-auto mb-5 size-20 overflow-hidden rounded-full border-4 border-white/95 bg-white shadow-2xl">
-              <Image
-                src={restaurant.logoUrl}
-                alt={restaurant.nom}
-                width={80}
-                height={80}
-                unoptimized
-                className="size-full object-cover"
-              />
-            </div>
-          )}
-          <h1
-            className="text-balance text-4xl font-medium leading-[1.05] tracking-tight text-white md:text-6xl"
-            style={{ fontFamily: theme.fontDisplay }}
-          >
-            {restaurant.nom}
-          </h1>
-          {restaurant.description && (
-            <p className="mx-auto mt-3 max-w-md text-balance text-sm italic leading-relaxed text-white/85 md:text-base">
-              {restaurant.description}
-            </p>
-          )}
-          {restaurant.ville && (
-            <p className="mt-4 inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] text-white/80">
-              <MapPin className="size-3" />
-              {restaurant.ville}
-              {restaurant.pays && restaurant.pays !== "France"
-                ? ` · ${restaurant.pays}`
-                : ""}
-            </p>
-          )}
-        </motion.div>
-      </div>
-    </header>
-  );
-}
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M13.3333 19.9209L0 21.922V24H320V9.9532L306.667 13.9365C293.333 17.9947 266.667 25.8493 240 22.9132C226.012 21.3142 212.024 16.7462 198.036 12.1782C185.358 8.03774 172.679 3.89723 160 1.96773C135.745 -1.65532 111.49 2.96779 87.2354 7.59096C84.8236 8.05068 82.4118 8.51039 80 8.96199C53.3333 13.8804 26.6667 17.9947 13.3333 19.9209Z"
+            fill={theme.bgBody}
+          />
+        </svg>
 
-/** Variant sans photo : fond pastel + titre serif géant + ornement géo */
-function HeroTypographic({ restaurant, theme }: HeroSectionProps) {
-  const accentBg = withAlpha(theme.accent, theme.isDark ? 0.18 : 0.08);
-
-  return (
-    <header
-      className="relative overflow-hidden px-6 py-16 text-center md:py-24"
-      style={{
-        background: `radial-gradient(ellipse at top, ${accentBg} 0%, transparent 70%)`,
-      }}
-    >
-      {/* Ornement géométrique discret */}
-      <svg
-        className="absolute left-1/2 top-8 -z-10 size-24 -translate-x-1/2 opacity-20 md:top-12 md:size-32"
-        viewBox="0 0 100 100"
-        fill="none"
-        stroke={theme.accent}
-        strokeWidth="0.5"
-        aria-hidden
-      >
-        <circle cx="50" cy="50" r="40" />
-        <circle cx="50" cy="50" r="30" />
-        <circle cx="50" cy="50" r="20" />
-        <line x1="10" y1="50" x2="90" y2="50" />
-        <line x1="50" y1="10" x2="50" y2="90" />
-      </svg>
-
-      <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-      >
+        {/* Logo circulaire — overlay sur la wave */}
         {restaurant.logoUrl && (
-          <div className="mx-auto mb-6 size-20 overflow-hidden rounded-full bg-white shadow-lg ring-1 ring-black/5">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute z-[2] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
+            style={{
+              top: "84%",
+              left: "50%",
+              width: "120px",
+              height: "120px",
+              border: "7px solid white",
+              boxShadow: "0px 10px 15px -3px rgba(0, 0, 0, 0.1)",
+              background: "white",
+            }}
+          >
             <Image
               src={restaurant.logoUrl}
               alt={restaurant.nom}
-              width={80}
-              height={80}
+              fill
+              sizes="120px"
               unoptimized
-              className="size-full object-cover"
+              className="object-cover"
+              priority
             />
-          </div>
+          </motion.div>
         )}
+
+        {/* Variant desktop : logo plus gros */}
+        <style jsx>{`
+          @media (min-width: 768px) {
+            section :global(.banner-logo) {
+              top: 75% !important;
+            }
+          }
+          @media (min-width: 1200px) {
+            section :global(.banner-logo) {
+              width: 150px !important;
+              height: 150px !important;
+              top: 70% !important;
+            }
+          }
+        `}</style>
+      </div>
+    </section>
+  );
+}
+
+function Welcome({ restaurant, theme }: HeroSectionProps) {
+  return (
+    <section
+      id="welcome"
+      className="mx-auto mt-[50px] w-[90%] text-center md:mt-[20px] xl:mt-0 xl:w-[70%]"
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+      >
         <h1
-          className="text-balance text-4xl font-medium leading-[1.05] tracking-tight md:text-6xl lg:text-7xl"
+          id="anchor"
+          className="mb-[10px] text-[43px] font-bold leading-tight"
           style={{
-            fontFamily: theme.fontDisplay,
-            color: theme.textTitre,
+            color: theme.title,
+            fontFamily: "var(--font-display)",
           }}
         >
           {restaurant.nom}
         </h1>
         {restaurant.description && (
           <p
-            className="mx-auto mt-4 max-w-md text-balance text-sm italic leading-relaxed md:text-base"
-            style={{ color: theme.textMuted, fontFamily: theme.fontDisplay }}
+            className="text-base font-light leading-relaxed"
+            style={{
+              color: theme.textBody,
+              fontFamily: "var(--font-body)",
+            }}
           >
             {restaurant.description}
           </p>
         )}
-        {restaurant.ville && (
-          <p
-            className="mt-5 inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.25em]"
-            style={{ color: theme.textMuted }}
-          >
-            <span className="block h-px w-8" style={{ background: theme.textMuted }} />
-            <MapPin className="size-3" />
-            {restaurant.ville}
-            <span className="block h-px w-8" style={{ background: theme.textMuted }} />
-          </p>
-        )}
       </motion.div>
-    </header>
+    </section>
   );
 }

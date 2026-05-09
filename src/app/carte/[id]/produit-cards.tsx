@@ -2,11 +2,9 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
 import type { PublicMenu } from "@/server/public/menu";
-import { DishPlaceholder } from "./dish-placeholder";
+import { VignetteIcon, hasVignetteVisual } from "./vignette-icon";
 import type { CarteTheme } from "./theme";
-import { withAlpha } from "./theme";
 
 type Categorie = PublicMenu["categories"][number];
 type Produit = Categorie["produits"][number];
@@ -18,12 +16,18 @@ interface ProduitCardsProps {
   onOpen: (produit: Produit) => void;
 }
 
-const STAGGER = (i: number) => ({
-  initial: { opacity: 0, y: 12 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.4, delay: i * 0.04, ease: [0.16, 1, 0.3, 1] as const },
-});
-
+/**
+ * Liste des produits d'une catégorie — réplique de l'ancien `.list-choice-item`.
+ *
+ * Pour chaque produit :
+ *  - Carte blanche, shadow soft, radius 10
+ *  - wrapper-item : flex justify-between align-center, padding 15, gap 15
+ *  - infos-wrapper :
+ *     - h3 (Magra 20px weight 600) avec badge "Nouveau" + flag origine + vignettes inline
+ *     - p.desc (Roboto 300, 1 ligne ellipsis)
+ *     - bouton "Voir photo" (italique 600) qui ouvre modal
+ *  - p.price (20px weight 600) à droite
+ */
 export function ProduitCards({
   categorie,
   theme,
@@ -33,349 +37,180 @@ export function ProduitCards({
   if (categorie.produits.length === 0) {
     return (
       <p
-        className="px-6 py-12 text-center text-sm italic"
-        style={{ color: theme.textMuted, fontFamily: theme.fontDisplay }}
+        className="px-4 py-6 text-center italic"
+        style={{
+          color: theme.textBody,
+          opacity: 0.6,
+          fontFamily: "var(--font-body)",
+        }}
       >
         Aucun plat dans cette catégorie pour l&apos;instant.
       </p>
     );
   }
 
-  switch (categorie.modeAffichage) {
-    case "grille":
-      return (
-        <ModeGrille
-          produits={categorie.produits}
-          theme={theme}
-          deviseDefault={deviseDefault}
-          onOpen={onOpen}
-        />
-      );
-    case "carrousel":
-      return (
-        <ModeCarrousel
-          produits={categorie.produits}
-          theme={theme}
-          deviseDefault={deviseDefault}
-          onOpen={onOpen}
-        />
-      );
-    case "liste":
-    default:
-      return (
-        <ModeListe
-          produits={categorie.produits}
-          theme={theme}
-          deviseDefault={deviseDefault}
-          onOpen={onOpen}
-        />
-      );
-  }
-}
-
-// ----------------------------------------------------------------------------
-// Mode Liste — photo carrée gauche 88×88, infos centre, prix droite
-// ----------------------------------------------------------------------------
-
-function ModeListe({
-  produits,
-  theme,
-  deviseDefault,
-  onOpen,
-}: {
-  produits: Produit[];
-  theme: CarteTheme;
-  deviseDefault: string;
-  onOpen: (p: Produit) => void;
-}) {
   return (
-    <ul className="divide-y" style={{ borderColor: theme.border }}>
-      {produits.map((p, i) => (
-        <motion.li key={p.id} {...STAGGER(i)}>
-          <button
-            type="button"
-            onClick={() => onOpen(p)}
-            className="group flex w-full items-start gap-4 px-4 py-4 text-left transition-colors duration-200 md:px-6"
-            style={{ color: theme.text }}
-          >
-            <div
-              className="relative size-20 shrink-0 overflow-hidden rounded-xl md:size-24"
-              style={{ background: withAlpha(theme.accent, 0.05) }}
-            >
-              {p.imageUrl ? (
-                <Image
-                  src={p.imageUrl}
-                  alt=""
-                  fill
-                  sizes="96px"
-                  unoptimized
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              ) : (
-                <DishPlaceholder accent={theme.accent} className="size-full" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline justify-between gap-3">
-                <h3
-                  className="text-balance text-base font-medium leading-snug tracking-tight md:text-lg"
-                  style={{
-                    color: theme.textTitre,
-                    fontFamily: theme.fontDisplay,
-                  }}
-                >
-                  {p.titre}
-                </h3>
-                {p.estNouveau && (
-                  <NouveauBadge accent={theme.accent} />
-                )}
-              </div>
-              {p.description && (
-                <p
-                  className="mt-1 line-clamp-2 text-xs leading-relaxed md:text-sm"
-                  style={{ color: theme.textMuted }}
-                >
-                  {p.description}
-                </p>
-              )}
-              {p.vignettes.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {p.vignettes.slice(0, 3).map((v) => (
-                    <Pill key={v.code} theme={theme}>
-                      {v.labelFr}
-                    </Pill>
-                  ))}
-                </div>
-              )}
-            </div>
-            {p.prix !== null && (
-              <div className="shrink-0 text-right">
-                <span
-                  className="font-mono text-base font-semibold tabular-nums md:text-lg"
-                  style={{
-                    color: theme.textTitre,
-                    fontFamily: theme.fontDisplay,
-                  }}
-                >
-                  {formatPrice(p.prix, p.devise || deviseDefault)}
-                </span>
-                {p.descriptionPrix && (
-                  <p className="mt-0.5 text-[10px]" style={{ color: theme.textMuted }}>
-                    {p.descriptionPrix}
-                  </p>
-                )}
-              </div>
-            )}
-          </button>
-        </motion.li>
-      ))}
-    </ul>
-  );
-}
-
-// ----------------------------------------------------------------------------
-// Mode Grille — 2 cols mobile, 3 desktop, photo en hero + infos dessous
-// ----------------------------------------------------------------------------
-
-function ModeGrille({
-  produits,
-  theme,
-  deviseDefault,
-  onOpen,
-}: {
-  produits: Produit[];
-  theme: CarteTheme;
-  deviseDefault: string;
-  onOpen: (p: Produit) => void;
-}) {
-  return (
-    <ul className="grid grid-cols-2 gap-3 px-4 py-3 md:grid-cols-3 md:gap-4 md:px-6">
-      {produits.map((p, i) => (
-        <motion.li key={p.id} {...STAGGER(i)}>
-          <button
-            type="button"
-            onClick={() => onOpen(p)}
-            className="group flex w-full flex-col text-left"
-          >
-            <div
-              className="relative aspect-square w-full overflow-hidden rounded-2xl"
-              style={{ background: withAlpha(theme.accent, 0.05) }}
-            >
-              {p.imageUrl ? (
-                <Image
-                  src={p.imageUrl}
-                  alt=""
-                  fill
-                  sizes="(max-width: 768px) 50vw, 33vw"
-                  unoptimized
-                  className="object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-              ) : (
-                <DishPlaceholder accent={theme.accent} className="size-full" />
-              )}
-              {p.estNouveau && (
-                <span className="absolute right-2 top-2">
-                  <NouveauBadge accent={theme.accent} />
-                </span>
-              )}
-            </div>
-            <div className="mt-3 px-1">
-              <h3
-                className="line-clamp-2 text-balance text-sm font-medium leading-snug tracking-tight md:text-base"
-                style={{ color: theme.textTitre, fontFamily: theme.fontDisplay }}
-              >
-                {p.titre}
-              </h3>
-              {p.prix !== null && (
-                <p
-                  className="mt-1 font-mono text-sm font-semibold tabular-nums"
-                  style={{ color: theme.text, fontFamily: theme.fontDisplay }}
-                >
-                  {formatPrice(p.prix, p.devise || deviseDefault)}
-                </p>
-              )}
-            </div>
-          </button>
-        </motion.li>
-      ))}
-    </ul>
-  );
-}
-
-// ----------------------------------------------------------------------------
-// Mode Carrousel = mode minimaliste élégant : juste typo + prix + séparateurs
-// (pour les vins, fromages, cafés — où l'image n'est pas la valeur ajoutée)
-// ----------------------------------------------------------------------------
-
-function ModeCarrousel({
-  produits,
-  theme,
-  deviseDefault,
-  onOpen,
-}: {
-  produits: Produit[];
-  theme: CarteTheme;
-  deviseDefault: string;
-  onOpen: (p: Produit) => void;
-}) {
-  return (
-    <ul className="px-4 md:px-8">
-      {produits.map((p, i) => (
-        <motion.li
+    <ul className="flex flex-col gap-2.5">
+      {categorie.produits.map((p, i) => (
+        <ProduitItem
           key={p.id}
-          {...STAGGER(i)}
-          className="border-b py-4 last:border-0"
-          style={{ borderColor: theme.border }}
-        >
-          <button
-            type="button"
-            onClick={() => onOpen(p)}
-            className="group flex w-full items-baseline gap-4 text-left"
+          produit={p}
+          index={i}
+          theme={theme}
+          deviseDefault={deviseDefault}
+          onOpen={onOpen}
+        />
+      ))}
+    </ul>
+  );
+}
+
+interface ProduitItemProps {
+  produit: Produit;
+  index: number;
+  theme: CarteTheme;
+  deviseDefault: string;
+  onOpen: (p: Produit) => void;
+}
+
+function ProduitItem({
+  produit,
+  index,
+  theme,
+  deviseDefault,
+  onOpen,
+}: ProduitItemProps) {
+  const visualVignettes = produit.vignettes.filter((v) => hasVignetteVisual(v.code));
+
+  return (
+    <motion.li
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
+      className="list-choice-item overflow-hidden rounded-[10px]"
+      style={{
+        backgroundColor: theme.cardBody,
+        boxShadow: theme.shadow,
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => onOpen(produit)}
+        className="flex w-full items-center justify-between gap-4 p-[15px] text-left"
+        style={{ color: theme.textBody }}
+      >
+        {/* Photo (si présente) — l'ancien template n'en avait pas dans la liste,
+            mais on l'ajoute pour le visuel moderne tout en gardant le layout */}
+        {produit.imageUrl && (
+          <div
+            className="relative size-[70px] shrink-0 overflow-hidden rounded-lg md:size-[80px]"
+            style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
           >
-            <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-2">
-                <h3
-                  className="text-balance text-lg font-medium leading-snug tracking-tight md:text-xl"
-                  style={{
-                    color: theme.textTitre,
-                    fontFamily: theme.fontDisplay,
-                  }}
-                >
-                  {p.titre}
-                </h3>
-                {p.origine && (
-                  <span
-                    className="text-[10px] uppercase tracking-widest"
-                    style={{ color: theme.textMuted }}
-                  >
-                    {p.origine}
-                  </span>
-                )}
-              </div>
-              {p.description && (
-                <p
-                  className="mt-1 text-xs leading-relaxed md:text-sm"
-                  style={{ color: theme.textMuted, fontFamily: theme.fontDisplay }}
-                >
-                  {p.description}
-                </p>
-              )}
-            </div>
-            {/* Ligne de pointillés flexible entre titre et prix — old-school menu vibe */}
-            <span
-              aria-hidden
-              className="hidden flex-1 self-end border-b border-dotted pb-2 md:block"
-              style={{ borderColor: theme.border }}
+            <Image
+              src={produit.imageUrl}
+              alt=""
+              fill
+              sizes="80px"
+              unoptimized
+              className="object-cover"
             />
-            {p.prix !== null && (
+          </div>
+        )}
+
+        <div className="min-w-0 flex-1">
+          {/* Titre + badges + vignettes inline */}
+          <h3
+            className="flex flex-wrap items-center gap-1.5 text-[18px] font-semibold leading-tight md:text-[20px]"
+            style={{
+              fontFamily: "var(--font-display)",
+              color: theme.textBody,
+            }}
+          >
+            <span>{produit.titre}</span>
+            {produit.estNouveau && (
               <span
-                className="shrink-0 font-mono text-base font-semibold tabular-nums md:text-lg"
+                className="inline-block rounded-[5px] px-[7px] py-1 text-[11px] font-bold not-italic"
                 style={{
-                  color: theme.textTitre,
-                  fontFamily: theme.fontDisplay,
+                  backgroundColor: theme.bgTag,
+                  color: theme.textTag,
+                  fontFamily: "var(--font-body)",
+                  verticalAlign: "top",
                 }}
               >
-                {formatPrice(p.prix, p.devise || deviseDefault)}
+                Nouveau
               </span>
             )}
-          </button>
-          {p.descriptionPrix && (
+            {produit.origine && (
+              <span
+                className="inline-flex items-center align-middle text-[10px] uppercase tracking-wider"
+                style={{ color: theme.textBody, opacity: 0.7 }}
+              >
+                🇫🇷
+              </span>
+            )}
+            {visualVignettes.map((v) => (
+              <VignetteIcon key={v.code} code={v.code} size={16} />
+            ))}
+          </h3>
+
+          {/* Description (1 ligne ellipsis) */}
+          {produit.description && (
             <p
-              className="mt-0.5 text-[10px] italic"
-              style={{ color: theme.textMuted }}
+              className="mt-0.5 truncate text-sm font-light leading-snug"
+              style={{
+                color: theme.textBody,
+                opacity: 0.85,
+                fontFamily: "var(--font-body)",
+              }}
             >
-              {p.descriptionPrix}
+              {produit.description}
             </p>
           )}
-        </motion.li>
-      ))}
-    </ul>
-  );
-}
 
-// ----------------------------------------------------------------------------
-// Helpers
-// ----------------------------------------------------------------------------
+          {/* "Voir photo" / "Voir détails" italique */}
+          <span
+            className="mt-1.5 inline-block text-[15px] font-semibold italic"
+            style={{
+              color: theme.textBody,
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            {produit.imageUrl ? "Voir photo" : "Voir détails"}
+          </span>
+        </div>
 
-function NouveauBadge({ accent }: { accent: string }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium tracking-wider uppercase"
-      style={{
-        background: withAlpha(accent, 0.15),
-        color: accent,
-      }}
-    >
-      <Sparkles className="size-2.5" />
-      Nouveau
-    </span>
-  );
-}
-
-function Pill({
-  theme,
-  children,
-}: {
-  theme: CarteTheme;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-      style={{
-        background: withAlpha(theme.text, 0.06),
-        color: theme.textMuted,
-      }}
-    >
-      {children}
-    </span>
+        {/* Prix à droite */}
+        {produit.prix !== null && (
+          <div className="shrink-0 text-right">
+            <p
+              className="text-[18px] font-semibold tabular-nums md:text-[20px]"
+              style={{
+                color: theme.textBody,
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              {formatPrice(produit.prix, produit.devise || deviseDefault)}
+            </p>
+            {produit.descriptionPrix && (
+              <p
+                className="text-[10px] italic"
+                style={{
+                  color: theme.textBody,
+                  opacity: 0.6,
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                {produit.descriptionPrix}
+              </p>
+            )}
+          </div>
+        )}
+      </button>
+    </motion.li>
   );
 }
 
 function formatPrice(prix: number, devise: string): string {
-  const formatted = prix
-    .toFixed(2)
-    .replace(/\.00$/, "")
-    .replace(".", ",");
-  return `${formatted} ${devise}`;
+  const formatted = prix.toFixed(2).replace(".", ",");
+  return `${formatted}${devise}`;
 }

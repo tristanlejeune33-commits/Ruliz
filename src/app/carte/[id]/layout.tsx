@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
-import { Fraunces, DM_Serif_Display } from "next/font/google";
+import { Magra, Roboto } from "next/font/google";
 
-const fraunces = Fraunces({
-  variable: "--font-display-editorial",
+// Magra : font display utilisée pour TOUS les titres (h1, h2, h3, btn-collapsed, tags…).
+// C'est la signature du template Ruliz original.
+const magra = Magra({
+  variable: "--font-display",
   subsets: ["latin"],
+  weight: ["400", "700"],
   display: "swap",
-  axes: ["opsz", "SOFT", "WONK"],
 });
 
-const dmSerif = DM_Serif_Display({
-  variable: "--font-display-elegant",
+// Roboto : font body pour les paragraphes (descriptions, ingrédients…).
+const roboto = Roboto({
+  variable: "--font-body",
   subsets: ["latin"],
-  weight: "400",
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -22,7 +25,7 @@ export const metadata: Metadata = {
 export default function CarteLayout({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className={`${fraunces.variable} ${dmSerif.variable} min-h-screen antialiased`}
+      className={`${magra.variable} ${roboto.variable} min-h-screen antialiased`}
       data-public-menu="true"
     >
       {children}
