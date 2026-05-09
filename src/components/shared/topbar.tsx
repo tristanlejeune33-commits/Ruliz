@@ -11,6 +11,7 @@ import { BreadcrumbNav } from "@/components/shared/breadcrumb-nav";
 import { PreviewLangPicker } from "@/components/shared/preview-lang-picker";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
+import { useSidebarCollapse } from "@/components/shared/sidebar-collapse-context";
 import { cn } from "@/lib/utils";
 
 interface TopbarProps {
@@ -18,63 +19,49 @@ interface TopbarProps {
   onOpenCommand?: () => void;
   /** Slot pour insérer un switcher (ex: restaurant) à gauche */
   leftSlot?: React.ReactNode;
-  /** Etat actuel du collapse de la sidebar */
-  sidebarCollapsed?: boolean;
-  /** Callback toggle sidebar */
-  onToggleSidebar?: () => void;
 }
 
-export function Topbar({
-  user,
-  onOpenCommand,
-  leftSlot,
-  sidebarCollapsed = false,
-  onToggleSidebar,
-}: TopbarProps) {
+export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
+  const { collapsed, toggle } = useSidebarCollapse();
+
   return (
     <header className="sticky top-0 z-30 h-14 border-b border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-2xl">
-      {/* Glow décoratif fin sous la topbar */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-[var(--neon-cyan)]/25 to-transparent"
       />
       <div className="relative flex h-full items-center gap-2 px-3 md:gap-3 md:px-5">
         {/* Toggle sidebar (desktop) */}
-        {onToggleSidebar && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <button
-                type="button"
-                onClick={onToggleSidebar}
-                className="hidden size-9 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)] md:inline-flex"
-                aria-label={
-                  sidebarCollapsed
-                    ? "Déployer la sidebar"
-                    : "Réduire la sidebar"
-                }
-              >
-                {sidebarCollapsed ? (
-                  <PanelLeft className="size-4" strokeWidth={1.75} />
-                ) : (
-                  <PanelLeftClose className="size-4" strokeWidth={1.75} />
-                )}
-              </button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom" sideOffset={8}>
-              <span className="flex items-center gap-2">
-                {sidebarCollapsed ? "Déployer" : "Réduire"}
-                <Kbd>⌘B</Kbd>
-              </span>
-            </TooltipContent>
-          </Tooltip>
-        )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={toggle}
+              className="hidden size-9 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)] md:inline-flex"
+              aria-label={
+                collapsed ? "Déployer la sidebar" : "Réduire la sidebar"
+              }
+            >
+              {collapsed ? (
+                <PanelLeft className="size-4" strokeWidth={1.75} />
+              ) : (
+                <PanelLeftClose className="size-4" strokeWidth={1.75} />
+              )}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={8}>
+            <span className="flex items-center gap-2">
+              {collapsed ? "Déployer" : "Réduire"}
+              <Kbd>⌘B</Kbd>
+            </span>
+          </TooltipContent>
+        </Tooltip>
 
         <div className="flex flex-1 items-center gap-3 overflow-hidden">
           {leftSlot}
           <BreadcrumbNav />
         </div>
 
-        {/* Search ⌘K — bouton custom glass avec hover néon */}
         <button
           type="button"
           onClick={onOpenCommand}
@@ -91,7 +78,6 @@ export function Topbar({
           <Kbd>⌘K</Kbd>
         </button>
 
-        {/* Cloche notifs — placeholder visuel avec dot néon */}
         <Tooltip>
           <TooltipTrigger asChild>
             <button
@@ -100,7 +86,6 @@ export function Topbar({
               aria-label="Notifications (3 non lues)"
             >
               <Bell className="size-4" strokeWidth={1.75} />
-              {/* Dot néon */}
               <span
                 aria-hidden
                 className="absolute right-2 top-2 flex size-2"

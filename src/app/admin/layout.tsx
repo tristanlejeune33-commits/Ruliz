@@ -21,24 +21,18 @@ export default async function AdminLayout({
       user={{ name: session.user.name, email: session.user.email }}
       scope="admin"
       defaultCollapsed={defaultCollapsed}
-      sidebar={({ collapsed }) => (
+      sidebar={
         <>
-          <SidebarBrand
-            href="/admin"
-            pillLabel="Admin"
-            pillTone="violet"
-            collapsed={collapsed}
-          />
+          <SidebarBrand href="/admin" pillLabel="Admin" pillTone="violet" />
           <div className="flex-1 overflow-y-auto px-3 py-4">
-            <SidebarNav scope="admin" collapsed={collapsed} />
+            <SidebarNav scope="admin" />
           </div>
           <SidebarFooter
             user={{ name: session.user.name, email: session.user.email }}
             hint="Console admin"
-            collapsed={collapsed}
           />
         </>
-      )}
+      }
     >
       {children}
     </AppShell>

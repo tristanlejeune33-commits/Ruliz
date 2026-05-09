@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { Logo } from "./logo";
+import { useSidebarCollapse } from "./sidebar-collapse-context";
 import { cn } from "@/lib/utils";
 
 interface SidebarBrandProps {
   href: string;
   pillLabel?: string;
   pillTone?: "cyan" | "violet" | "danger";
-  collapsed?: boolean;
 }
 
 const TONE_CLASSES: Record<
@@ -22,16 +22,13 @@ const TONE_CLASSES: Record<
     "border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] text-[var(--neon-danger)]",
 };
 
-/**
- * Header de la sidebar — logo Ruliz + chip + status dot live qui pulse.
- * Glow accent subtil derrière le mark pour signaler la marque.
- */
 export function SidebarBrand({
   href,
   pillLabel,
   pillTone = "cyan",
-  collapsed = false,
 }: SidebarBrandProps) {
+  const { collapsed } = useSidebarCollapse();
+
   return (
     <div
       className={cn(
@@ -39,7 +36,6 @@ export function SidebarBrand({
         collapsed ? "justify-center px-2" : "justify-between gap-2 px-4",
       )}
     >
-      {/* Glow accent sous le logo */}
       <div
         aria-hidden
         className="pointer-events-none absolute -top-8 left-2 size-20 rounded-full bg-[var(--neon-cyan)]/15 blur-2xl"
@@ -73,7 +69,6 @@ export function SidebarBrand({
           </>
         )}
       </Link>
-      {/* Status dot — pulse animation via .pulse-dot */}
       {!collapsed && (
         <span className="relative flex size-2 shrink-0">
           <span

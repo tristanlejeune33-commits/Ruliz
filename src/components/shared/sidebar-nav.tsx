@@ -28,6 +28,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useSidebarCollapse } from "./sidebar-collapse-context";
 import { cn } from "@/lib/utils";
 
 export interface SidebarNavItem {
@@ -97,18 +98,13 @@ const ADMIN_NAV: SidebarNavSection[] = [
 interface SidebarNavProps {
   scope?: "admin" | "dashboard";
   sections?: SidebarNavSection[];
-  /** Mode compact (72px) : icônes seules + tooltips au hover. */
-  collapsed?: boolean;
 }
 
-export function SidebarNav({
-  scope,
-  sections,
-  collapsed = false,
-}: SidebarNavProps) {
+export function SidebarNav({ scope, sections }: SidebarNavProps) {
   const pathname = usePathname();
   const layoutId = useId();
   const [query, setQuery] = useState("");
+  const { collapsed } = useSidebarCollapse();
 
   const resolved =
     sections ?? (scope === "admin" ? ADMIN_NAV : DASHBOARD_NAV);

@@ -45,7 +45,6 @@ export default async function DashboardLayout({
     : null;
   const activeId = activeIdFromCookie ?? restaurants[0]?.id ?? null;
 
-  // Charge le statut de paiement pour afficher le banner si besoin
   const activeRestaurant = activeId
     ? await prisma.restaurant.findUnique({
         where: { id: BigInt(activeId) },
@@ -57,7 +56,6 @@ export default async function DashboardLayout({
     ? `Plan ${activeRestaurant.plan}`
     : session.user.email;
 
-  // Lit le cookie pour SSR cohérent (pas de flash de layout au refresh)
   const cookieStore = await cookies();
   const collapsedCookie = cookieStore.get(COLLAPSED_COOKIE);
   const defaultCollapsed = collapsedCookie?.value === "1";
@@ -67,19 +65,18 @@ export default async function DashboardLayout({
       user={{ name: session.user.name, email: session.user.email }}
       scope="dashboard"
       defaultCollapsed={defaultCollapsed}
-      sidebar={({ collapsed }) => (
+      sidebar={
         <>
-          <SidebarBrand href="/dashboard" collapsed={collapsed} />
+          <SidebarBrand href="/dashboard" />
           <div className="flex-1 overflow-y-auto px-3 py-4">
-            <SidebarNav scope="dashboard" collapsed={collapsed} />
+            <SidebarNav scope="dashboard" />
           </div>
           <SidebarFooter
             user={{ name: session.user.name, email: session.user.email }}
             hint={userHint}
-            collapsed={collapsed}
           />
         </>
-      )}
+      }
       topbarLeftSlot={
         <RestaurantSwitcher restaurants={restaurants} activeId={activeId} />
       }

@@ -23,6 +23,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { authClient } from "@/lib/auth-client";
+import { useSidebarCollapse } from "./sidebar-collapse-context";
 
 interface SidebarFooterProps {
   user: {
@@ -31,7 +32,6 @@ interface SidebarFooterProps {
   };
   hint?: string;
   signOutRedirect?: string;
-  collapsed?: boolean;
 }
 
 function initials(value: string | null | undefined, fallback: string) {
@@ -55,9 +55,9 @@ export function SidebarFooter({
   user,
   hint,
   signOutRedirect = "/login",
-  collapsed = false,
 }: SidebarFooterProps) {
   const router = useRouter();
+  const { collapsed } = useSidebarCollapse();
 
   async function handleSignOut() {
     await authClient.signOut();
