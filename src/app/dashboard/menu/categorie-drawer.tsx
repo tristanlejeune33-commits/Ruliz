@@ -49,11 +49,14 @@ import {
   deleteCategorie,
   updateCategorie,
 } from "@/server/dashboard/menu-actions";
-import type { SerializedCategorie } from "./types";
+import type { FlatCategorie, SerializedMenu } from "./types";
+
+const NONE = "__none__";
 
 const schema = z.object({
   titre: z.string().min(1, "Requis").max(255),
   icone: z.string().max(50),
+  parentId: z.string(),
   modeAffichage: z.enum(["liste", "grille", "carrousel"]),
   affiche: z.boolean(),
 });
@@ -62,7 +65,9 @@ type Values = z.infer<typeof schema>;
 
 interface CategorieDrawerProps {
   restaurantId: string;
-  categorie: SerializedCategorie | null;
+  categorie: FlatCategorie | null;
+  /** Catégories top-level utilisables comme parent. */
+  parents: SerializedMenu;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -70,6 +75,7 @@ interface CategorieDrawerProps {
 export function CategorieDrawer({
   restaurantId,
   categorie,
+  parents,
   onClose,
   onSaved,
 }: CategorieDrawerProps) {
@@ -81,16 +87,28 @@ export function CategorieDrawer({
     defaultValues: {
       titre: categorie?.titre ?? "",
       icone: categorie?.icone ?? "",
+      parentId: categorie?.parentId ?? NONE,
       modeAffichage: categorie?.modeAffichage ?? "liste",
       affiche: categorie?.affiche ?? true,
     },
   });
 
+  // Une catégorie qui a déjà des enfants ne peut pas devenir sous-catégorie
+  // (on ne supporte qu'un niveau d'imbrication).
+  const editingHasChildren =
+    isEdit &&
+    !!categorie &&
+    parents.some((p) => p.id === categorie.id && p.children.length > 0);
+
+  // Options de parent : top-level, exclut la cat en cours d'édition.
+  const parentOptions = parents.filter((p) => p.id !== categorie?.id);
+
   const onSubmit = (values: Values) => {
+    const parentId = values.parentId === NONE ? "" : values.parentId;
     startTransition(async () => {
       const res = isEdit && categorie
-        ? await updateCategorie({ id: categorie.id, ...values })
-        : await createCategorie({ restaurantId, parentId: "", ...values });
+        ? await updateCategorie({ id: categorie.id, ...values, parentId })
+        : await createCategorie({ restaurantId, ...values, parentId });
 
       if (res.ok) {
         toast.success(isEdit ? "Catégorie mise à jour" : "Catégorie créée");
@@ -153,6 +171,42 @@ export function CategorieDrawer({
                     <Input placeholder="salad, utensils, wine…" {...field} />
                   </FormControl>
                   <FormDescription>Nom d&apos;icône Lucide.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="parentId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Catégorie parente</FormLabel>
+                  <Select
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    disabled={editingHasChildren}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={NONE}>
+                        Aucune (catégorie principale)
+                      </SelectItem>
+                      {parentOptions.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.titre}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    {editingHasChildren
+                      ? "Cette catégorie contient déjà des sous-catégories — elle doit rester principale."
+                      : "Choisis une catégorie parente pour en faire une sous-catégorie."}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

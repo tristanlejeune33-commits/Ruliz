@@ -54,9 +54,8 @@ import {
   updateProduit,
 } from "@/server/dashboard/menu-actions";
 import type {
+  FlatCategorie,
   SerializedAllergenes,
-  SerializedCategorie,
-  SerializedMenu,
   SerializedProduit,
   SerializedVignettes,
 } from "./types";
@@ -82,7 +81,8 @@ type Values = z.infer<typeof schema>;
 interface ProduitDialogProps {
   mode: "edit" | "create";
   categorieId: string;
-  categories: SerializedMenu;
+  /** Liste plate de toutes les catégories (top-level + sous-catégories). */
+  categories: FlatCategorie[];
   restaurantId: string;
   produit: SerializedProduit | null;
   vignettes: SerializedVignettes;
@@ -149,7 +149,7 @@ export function ProduitDialog({
     });
   };
 
-  const findCategorie = (id: string): SerializedCategorie | undefined =>
+  const findCategorie = (id: string): FlatCategorie | undefined =>
     categories.find((c) => c.id === id);
 
   return (
@@ -269,7 +269,7 @@ export function ProduitDialog({
                           <SelectContent>
                             {categories.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
-                                {c.titre}
+                                {c.parentId ? `↳  ${c.titre}` : c.titre}
                               </SelectItem>
                             ))}
                           </SelectContent>
