@@ -95,6 +95,12 @@ const categorieSchema = z.object({
   parentId: z.string().optional().or(z.literal("")),
   modeAffichage: z.enum(["liste", "grille", "carrousel"]),
   affiche: z.boolean(),
+  scheduleType: z
+    .enum(["always", "lunch", "dinner", "happy_hour", "custom"])
+    .optional(),
+  scheduleStart: z.string().max(5).optional().or(z.literal("")),
+  scheduleEnd: z.string().max(5).optional().or(z.literal("")),
+  scheduleDays: z.string().min(1).max(7).optional(),
 });
 
 export async function createCategorie(input: unknown): Promise<ActionResult<{ id: string }>> {
@@ -124,6 +130,10 @@ export async function createCategorie(input: unknown): Promise<ActionResult<{ id
       parentId: bigOrNull(data.parentId),
       modeAffichage: data.modeAffichage,
       affiche: data.affiche,
+      scheduleType: data.scheduleType ?? "always",
+      scheduleStart: data.scheduleStart || null,
+      scheduleEnd: data.scheduleEnd || null,
+      scheduleDays: data.scheduleDays ?? "1234567",
       position,
     },
   });
@@ -157,6 +167,10 @@ export async function updateCategorie(input: unknown): Promise<ActionResult> {
       parentId: bigOrNull(data.parentId),
       modeAffichage: data.modeAffichage,
       affiche: data.affiche,
+      scheduleType: data.scheduleType ?? "always",
+      scheduleStart: data.scheduleStart || null,
+      scheduleEnd: data.scheduleEnd || null,
+      scheduleDays: data.scheduleDays ?? "1234567",
     },
   });
 

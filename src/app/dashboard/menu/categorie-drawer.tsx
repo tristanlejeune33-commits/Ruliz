@@ -49,7 +49,18 @@ import {
   deleteCategorie,
   updateCategorie,
 } from "@/server/dashboard/menu-actions";
+import { SCHEDULE_OPTIONS } from "@/lib/schedule";
 import type { SerializedCategorie } from "./types";
+
+const DAYS_LABELS = [
+  { num: "1", label: "L" },
+  { num: "2", label: "M" },
+  { num: "3", label: "M" },
+  { num: "4", label: "J" },
+  { num: "5", label: "V" },
+  { num: "6", label: "S" },
+  { num: "7", label: "D" },
+];
 
 const schema = z.object({
   titre: z.string().min(1, "Requis").max(255),
@@ -58,6 +69,11 @@ const schema = z.object({
   affiche: z.boolean(),
   /** "" = top-level, sinon ID de la catégorie parente */
   parentId: z.string(),
+  /** Créneau d'affichage */
+  scheduleType: z.enum(["always", "lunch", "dinner", "happy_hour", "custom"]),
+  scheduleStart: z.string().max(5).optional().or(z.literal("")),
+  scheduleEnd: z.string().max(5).optional().or(z.literal("")),
+  scheduleDays: z.string().min(1).max(7),
 });
 
 type Values = z.infer<typeof schema>;
@@ -95,8 +111,31 @@ export function CategorieDrawer({
       modeAffichage: categorie?.modeAffichage ?? "liste",
       affiche: categorie?.affiche ?? true,
       parentId: categorie?.parentId ?? "",
+      scheduleType:
+        (categorie?.scheduleType as
+          | "always"
+          | "lunch"
+          | "dinner"
+          | "happy_hour"
+          | "custom") ?? "always",
+      scheduleStart: categorie?.scheduleStart ?? "",
+      scheduleEnd: categorie?.scheduleEnd ?? "",
+      scheduleDays: categorie?.scheduleDays ?? "1234567",
     },
   });
+
+  const scheduleType = form.watch("scheduleType");
+  const scheduleDays = form.watch("scheduleDays");
+
+  const toggleDay = (day: string) => {
+    const next = scheduleDays.includes(day)
+      ? scheduleDays.split("").filter((d) => d !== day).join("")
+      : (scheduleDays + day)
+          .split("")
+          .sort()
+          .join("");
+    form.setValue("scheduleDays", next || "1234567", { shouldDirty: true });
+  };
 
   const onSubmit = (values: Values) => {
     startTransition(async () => {
@@ -258,6 +297,110 @@ export function CategorieDrawer({
                 </FormItem>
               )}
             />
+
+            {/* CRÉNEAU D'AFFICHAGE — carte midi, soir, happy hour, custom */}
+            <FormField
+              control={form.control}
+              name="scheduleType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Créneau d&apos;affichage</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {SCHEDULE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    {SCHEDULE_OPTIONS.find((o) => o.value === scheduleType)
+                      ?.hint ?? ""}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {scheduleType === "custom" && (
+              <div className="grid gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3">
+                <Label className="text-xs">Horaires personnalisés</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name="scheduleStart"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Début</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="time"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="scheduleEnd"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">Fin</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="time"
+                            {...field}
+                            value={field.value ?? ""}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <FormDescription className="text-[10px]">
+                  Si la fin est avant le début (ex: 22h → 02h), la catégorie
+                  passe minuit (service de nuit).
+                </FormDescription>
+              </div>
+            )}
+
+            {scheduleType !== "always" && (
+              <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3">
+                <Label className="text-xs">Jours d&apos;affichage</Label>
+                <p className="mb-2 text-[10px] text-[var(--text-muted)]">
+                  Clic sur un jour pour l&apos;activer/désactiver.
+                </p>
+                <div className="flex gap-1.5">
+                  {DAYS_LABELS.map((d) => {
+                    const active = scheduleDays.includes(d.num);
+                    return (
+                      <button
+                        key={d.num}
+                        type="button"
+                        onClick={() => toggleDay(d.num)}
+                        className={`flex size-9 items-center justify-center rounded-md text-xs font-bold transition-colors ${
+                          active
+                            ? "bg-[var(--accent)] text-[var(--accent-foreground,#fff)]"
+                            : "border border-[var(--border-subtle)] bg-transparent text-[var(--text-muted)] hover:border-[var(--accent)]"
+                        }`}
+                        aria-pressed={active}
+                        aria-label={`Jour ${d.label}`}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-4">
               {isEdit && categorie ? (
