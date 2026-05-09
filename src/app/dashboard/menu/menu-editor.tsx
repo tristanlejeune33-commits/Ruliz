@@ -44,6 +44,7 @@ import {
   reorderCategories,
   reorderProduits,
 } from "@/server/dashboard/menu-actions";
+import { retranslateMenu } from "@/server/dashboard/translation-actions";
 import { CategoriesSidebar } from "./categories-sidebar";
 import { CategorieDrawer } from "./categorie-drawer";
 import { ProduitsList } from "./produits-list";
@@ -95,10 +96,65 @@ export function MenuEditor({
 
   // Langue de prévisualisation (pilotée par le picker dans la topbar)
   const [previewLang] = usePreviewLang();
-  // Quand l'utilisateur change la langue dans la topbar, on force un reload
-  // de l'iframe pour que la carte s'affiche dans la nouvelle langue.
+  // Mémo des langues déjà déclenchées en re-traduction dans cette session
+  // (évite de spammer l'API Anthropic à chaque clic répété sur la même lang).
+  const [translatedLangs, setTranslatedLangs] = useState<Set<string>>(
+    () => new Set(["fr"]),
+  );
+  // Quand l'utilisateur change la langue dans la topbar :
+  //   1. On force un reload de l'iframe (key bump)
+  //   2. Si la langue choisie n'a pas encore été traduite dans cette session
+  //      ET n'est pas le FR (langue native), on déclenche une re-traduction
+  //      silencieuse (force=false → skip ce qui est déjà traduit).
+  //      Comme ça, la 1re fois qu'un user clique "EN" la traduction se génère,
+  //      et les fois suivantes c'est instantané (cache DB).
   useEffect(() => {
     setPreviewKey((k) => k + 1);
+    if (previewLang === "fr" || translatedLangs.has(previewLang)) return;
+
+    const toastId = toast.loading(
+      `Traduction en cours pour ${previewLang.toUpperCase()}…`,
+    );
+    setTranslatedLangs((prev) => new Set(prev).add(previewLang));
+
+    retranslateMenu(restaurantId, [previewLang], false)
+      .then((res) => {
+        toast.dismiss(toastId);
+        if (res.ok) {
+          if (res.data?.mode === "inngest") {
+            toast.success(
+              `Traduction ${previewLang.toUpperCase()} en cours en arrière-plan`,
+            );
+          } else if (res.data?.produits != null) {
+            const total = (res.data.produits ?? 0) + (res.data.categories ?? 0);
+            if (total > 0) {
+              toast.success(
+                `${res.data.produits} produits, ${res.data.categories} catégories traduits en ${previewLang.toUpperCase()}`,
+              );
+            }
+          }
+          // Bump l'iframe une 2e fois pour afficher le contenu traduit
+          setPreviewKey((k) => k + 1);
+        } else {
+          toast.error(res.error);
+          // Permet de re-tenter sur prochain clic
+          setTranslatedLangs((prev) => {
+            const next = new Set(prev);
+            next.delete(previewLang);
+            return next;
+          });
+        }
+      })
+      .catch((err) => {
+        toast.dismiss(toastId);
+        console.warn("[preview-lang] retranslate failed:", err);
+        setTranslatedLangs((prev) => {
+          const next = new Set(prev);
+          next.delete(previewLang);
+          return next;
+        });
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewLang]);
 
   // Re-sync from server props when revalidatePath fires.
