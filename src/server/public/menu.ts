@@ -148,6 +148,7 @@ export async function getPublicMenu(
       select: {
         id: true,
         nom: true,
+        statut: true,
         description: true,
         logoUrl: true,
         banniereUrl: true,
@@ -218,6 +219,16 @@ export async function getPublicMenu(
     }),
   ]);
   if (!restaurant) return null;
+
+  // Restaurant suspendu (paiements échoués) → on retourne null pour qu'il
+  // soit traité comme inexistant (page 404 / "Service indisponible").
+  // Le restaurateur doit régler son moyen de paiement pour réactiver.
+  if (restaurant.statut === "suspendu") {
+    console.log(
+      `[getPublicMenu] restaurant ${restaurantId} is suspended — blocking carte`,
+    );
+    return null;
+  }
 
   type JeuConfigShape = {
     cta?: string;

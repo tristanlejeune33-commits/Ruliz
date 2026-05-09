@@ -102,16 +102,33 @@ async function handleSubscriptionUpsert(sub: Stripe.Subscription) {
       ? new Date(sub.current_period_end * 1000)
       : null;
 
+  // Statut du restaurant :
+  // - "actif" : sub active, trialing, ou past_due (encore dans la période de grâce)
+  // - "suspendu" : unpaid (Stripe a abandonné après 3+ échecs paiement) ou
+  //   incomplete_expired (premier paiement jamais réussi)
+  // - "actif" par défaut sinon
+  const newRestoStatut: "actif" | "suspendu" =
+    sub.status === "unpaid" || sub.status === "incomplete_expired"
+      ? "suspendu"
+      : "actif";
+
   await prisma.restaurant.updateMany({
     where: { id: BigInt(restaurantId) },
     data: {
       plan,
+      statut: newRestoStatut,
       stripeSubscriptionId: sub.id,
       stripePriceId: priceId,
       stripeSubscriptionStatus: sub.status,
       stripeCurrentPeriodEnd: periodEnd,
     },
   });
+
+  if (newRestoStatut === "suspendu") {
+    console.log(
+      `[stripe.webhook] restaurant ${restaurantId} SUSPENDED (sub status: ${sub.status})`,
+    );
+  }
 }
 
 async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
@@ -120,6 +137,10 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
     (await findRestaurantBySubId(sub.id));
   if (!restaurantId) return;
 
+  // Subscription supprimée par Stripe (fin de cycle après cancellation, ou
+  // après 3 paiements échoués) → on revient en freemium MAIS on garde le resto
+  // en "actif" : il peut continuer à utiliser la version gratuite.
+  // Si l'utilisateur veut suspendre complètement → admin le fait à la main.
   await prisma.restaurant.updateMany({
     where: { id: BigInt(restaurantId) },
     data: {
@@ -128,6 +149,9 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
       stripeCurrentPeriodEnd: null,
     },
   });
+  console.log(
+    `[stripe.webhook] restaurant ${restaurantId} subscription deleted, downgraded to freemium`,
+  );
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {

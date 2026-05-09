@@ -16,6 +16,7 @@ import { PLANS, type Plan, formatPriceEuro, isAtLeastPlan } from "@/lib/plans";
 import { isStripeConfigured } from "@/lib/stripe";
 import { syncRestaurantSubscription } from "@/server/billing/actions";
 import { BillingActions, UpgradeButton } from "./billing-actions";
+import { SubscriptionStatusCard } from "./subscription-status-card";
 
 export const metadata: Metadata = {
   title: "Facturation · Ruliz",
@@ -99,35 +100,22 @@ export default async function BillingPage({ searchParams }: PageProps) {
         </Card>
       )}
 
-      {/* Plan actuel */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <CardDescription>Plan actuel</CardDescription>
-              <CardTitle className="mt-1 flex items-center gap-3 text-2xl">
-                {currentPlan.name}
-                <PlanBadge plan={restaurant.plan as UiPlan} />
-                {statusLabel && (
-                  <span className="text-xs font-normal text-[var(--text-muted)]">
-                    · {statusLabel}
-                  </span>
-                )}
-              </CardTitle>
-              {renewLabel && (
-                <p className="mt-2 text-sm text-[var(--text-secondary)]">
-                  Prochain renouvellement le <strong>{renewLabel}</strong>
-                </p>
-              )}
-            </div>
-            <BillingActions
-              currentPlan={restaurant.plan}
-              hasSubscription={!!restaurant.stripeSubscriptionId}
-              restaurantId={restaurant.id.toString()}
-            />
-          </div>
-        </CardHeader>
-      </Card>
+      {/* Plan actuel — status enriched */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
+        <SubscriptionStatusCard
+          plan={restaurant.plan as Plan}
+          status={restaurant.stripeSubscriptionStatus}
+          currentPeriodEnd={restaurant.stripeCurrentPeriodEnd}
+          hasSubscription={!!restaurant.stripeSubscriptionId}
+        />
+        <div className="flex items-start lg:pt-3">
+          <BillingActions
+            currentPlan={restaurant.plan}
+            hasSubscription={!!restaurant.stripeSubscriptionId}
+            restaurantId={restaurant.id.toString()}
+          />
+        </div>
+      </div>
 
       {/* Plans grid */}
       <section className="grid gap-4 lg:grid-cols-3">

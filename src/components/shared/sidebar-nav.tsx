@@ -73,6 +73,7 @@ const ADMIN_NAV: SidebarNavSection[] = [
     items: [
       { label: "Vue d'ensemble", href: "/admin", icon: ShieldCheck },
       { label: "Activité", href: "/admin/activity", icon: ActivitySquare },
+      { label: "Facturation", href: "/admin/billing", icon: CreditCard },
     ],
   },
   {

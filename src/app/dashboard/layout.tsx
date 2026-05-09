@@ -6,6 +6,7 @@ import {
   type RestaurantOption,
 } from "@/components/shared/restaurant-switcher";
 import { SidebarNav } from "@/components/shared/sidebar-nav";
+import { SubscriptionBanner } from "@/components/shared/subscription-banner";
 import { getActiveRestaurantId } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
 import { requireDashboard } from "@/lib/session";
@@ -43,6 +44,14 @@ export default async function DashboardLayout({
     : null;
   const activeId = activeIdFromCookie ?? restaurants[0]?.id ?? null;
 
+  // Charge le statut de paiement pour afficher le banner si besoin
+  const activeRestaurant = activeId
+    ? await prisma.restaurant.findUnique({
+        where: { id: BigInt(activeId) },
+        select: { stripeSubscriptionStatus: true, statut: true },
+      })
+    : null;
+
   return (
     <AppShell
       user={{ name: session.user.name, email: session.user.email }}
@@ -64,6 +73,14 @@ export default async function DashboardLayout({
         <RestaurantSwitcher restaurants={restaurants} activeId={activeId} />
       }
     >
+      {activeRestaurant && (
+        <div className="mb-4">
+          <SubscriptionBanner
+            status={activeRestaurant.stripeSubscriptionStatus}
+            restaurantStatut={activeRestaurant.statut}
+          />
+        </div>
+      )}
       {children}
     </AppShell>
   );
