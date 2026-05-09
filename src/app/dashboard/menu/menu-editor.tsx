@@ -271,6 +271,7 @@ export function MenuEditor({
         <CategorieDrawer
           restaurantId={restaurantId}
           categorie={editingCategorie === "new" ? null : editingCategorie}
+          allCategories={optimisticCategories}
           onClose={() => setEditingCategorie(null)}
           onSaved={() => router.refresh()}
         />

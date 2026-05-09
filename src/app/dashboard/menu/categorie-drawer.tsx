@@ -56,6 +56,8 @@ const schema = z.object({
   icone: z.string().max(50),
   modeAffichage: z.enum(["liste", "grille", "carrousel"]),
   affiche: z.boolean(),
+  /** "" = top-level, sinon ID de la catégorie parente */
+  parentId: z.string(),
 });
 
 type Values = z.infer<typeof schema>;
@@ -63,6 +65,8 @@ type Values = z.infer<typeof schema>;
 interface CategorieDrawerProps {
   restaurantId: string;
   categorie: SerializedCategorie | null;
+  /** Toutes les catégories du resto (pour le picker parent) */
+  allCategories: SerializedCategorie[];
   onClose: () => void;
   onSaved: () => void;
 }
@@ -70,11 +74,18 @@ interface CategorieDrawerProps {
 export function CategorieDrawer({
   restaurantId,
   categorie,
+  allCategories,
   onClose,
   onSaved,
 }: CategorieDrawerProps) {
   const [pending, startTransition] = useTransition();
   const isEdit = !!categorie;
+
+  // Liste des parents possibles : top-level uniquement, exclut soi-même
+  // (pour éviter une catégorie qui se référence elle-même).
+  const possibleParents = allCategories.filter(
+    (c) => !c.parentId && c.id !== categorie?.id,
+  );
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -83,6 +94,7 @@ export function CategorieDrawer({
       icone: categorie?.icone ?? "",
       modeAffichage: categorie?.modeAffichage ?? "liste",
       affiche: categorie?.affiche ?? true,
+      parentId: categorie?.parentId ?? "",
     },
   });
 
@@ -90,7 +102,7 @@ export function CategorieDrawer({
     startTransition(async () => {
       const res = isEdit && categorie
         ? await updateCategorie({ id: categorie.id, ...values })
-        : await createCategorie({ restaurantId, parentId: "", ...values });
+        : await createCategorie({ restaurantId, ...values });
 
       if (res.ok) {
         toast.success(isEdit ? "Catégorie mise à jour" : "Catégorie créée");
@@ -182,6 +194,47 @@ export function CategorieDrawer({
                 </FormItem>
               )}
             />
+
+            {/* Parent picker : permet de transformer la catégorie en sous-cat */}
+            {possibleParents.length > 0 && (
+              <FormField
+                control={form.control}
+                name="parentId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Catégorie parente (optionnel)</FormLabel>
+                    <Select
+                      value={field.value || "__none__"}
+                      onValueChange={(v) =>
+                        field.onChange(v === "__none__" ? "" : v)
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Catégorie principale (top-level)" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="__none__">
+                          🏠 Catégorie principale (top-level)
+                        </SelectItem>
+                        {possibleParents.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            ↳ Sous-catégorie de {p.titre}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      Sur la carte publique, les sous-catégories apparaissent en
+                      JAUNE à l&apos;intérieur de leur catégorie parente. Idéal
+                      pour structurer (ex: Vins ↳ Rouges / Blancs / Rosés).
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
             <FormField
               control={form.control}
               name="affiche"
