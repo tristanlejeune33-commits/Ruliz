@@ -177,6 +177,15 @@ const DICT: Record<string, LangDict> = {
     pt: "Definições",
     zh: "设置",
   },
+  "nav.boutique": {
+    fr: "Boutique QR",
+    en: "QR shop",
+    es: "Tienda QR",
+    de: "QR-Shop",
+    it: "Negozio QR",
+    pt: "Loja QR",
+    zh: "二维码商店",
+  },
 
   // -----------------------------------------------------------------------
   // Sidebar — items admin

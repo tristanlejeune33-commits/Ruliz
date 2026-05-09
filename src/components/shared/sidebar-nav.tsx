@@ -13,6 +13,7 @@ import {
   type LucideIcon,
   Megaphone,
   MessageSquare,
+  Package,
   QrCode,
   ScrollText,
   Settings,
@@ -61,6 +62,7 @@ const DASHBOARD_NAV: SidebarNavSection[] = [
       { labelKey: "nav.jeu", href: "/dashboard/jeu", icon: Sparkles },
       { labelKey: "nav.popups", href: "/dashboard/popups", icon: Megaphone },
       { labelKey: "nav.sms", href: "/dashboard/sms", icon: MessageSquare },
+      { labelKey: "nav.boutique", href: "/dashboard/boutique", icon: Package },
     ],
   },
   {
@@ -88,6 +90,7 @@ const ADMIN_NAV: SidebarNavSection[] = [
       { labelKey: "nav.admin.clients", href: "/admin/clients", icon: Users },
       { labelKey: "nav.admin.restaurants", href: "/admin/restaurants", icon: Building2 },
       { labelKey: "nav.admin.logs", href: "/admin/logs", icon: ScrollText },
+      { labelKey: "nav.boutique", href: "/admin/boutique", icon: Package },
     ],
   },
   {

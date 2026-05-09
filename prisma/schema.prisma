@@ -148,11 +148,12 @@ model User {
   createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz()
   lastLoginAt      DateTime?  @map("last_login_at") @db.Timestamptz()
 
-  authUser     AuthUser?
-  restaurants  Restaurant[]
-  teamOf       TeamMember[] @relation("OwnerTeam")
-  teamMemberOf TeamMember[] @relation("MemberOf")
-  logs         Log[]
+  authUser           AuthUser?
+  restaurants        Restaurant[]
+  teamOf             TeamMember[]       @relation("OwnerTeam")
+  teamMemberOf       TeamMember[]       @relation("MemberOf")
+  logs               Log[]
+  boutiqueCommandes  BoutiqueCommande[]
 
   @@index([email], map: "idx_users_email")
   @@index([statut], map: "idx_users_statut")
@@ -224,12 +225,13 @@ model Restaurant {
   googleReviewUrl          String?   @map("google_review_url")
   createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz()
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  qrcodes     Qrcode[]
-  categories  Categorie[]
-  jeux        Jeu[]
-  popups      Popup[]
-  baseClients BaseClient[]
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  qrcodes           Qrcode[]
+  categories        Categorie[]
+  jeux              Jeu[]
+  popups            Popup[]
+  baseClients       BaseClient[]
+  boutiqueCommandes BoutiqueCommande[]
 
   @@index([userId], map: "idx_restaurants_user")
   @@map("restaurants")
@@ -529,4 +531,87 @@ model Log {
 
   @@index([userId, createdAt(sort: Desc)], map: "idx_logs_user")
   @@map("logs")
+}
+
+// ============================================================================
+// BOUTIQUE QR — catalogue de produits que les clients restaurateurs peuvent
+// commander depuis leur dashboard (sets de table imprimés, supports vitrine,
+// stickers ronds, présentoirs A6, etc.). Géré 100% par l'admin via /admin/boutique.
+// ============================================================================
+
+enum BoutiqueProduitStatut {
+  brouillon
+  publie
+  archive
+}
+
+model BoutiqueProduit {
+  id            BigInt                @id @default(autoincrement())
+  /** Slug unique pour les URL (ex: "set-de-table-100x") */
+  slug          String                @unique @db.VarChar(120)
+  nom           String                @db.VarChar(255)
+  description   String?               @db.Text
+  prixCentimes  Int                   @map("prix_centimes")
+  devise        String                @default("EUR") @db.VarChar(3)
+  /** URL R2 de la photo principale */
+  imageUrl      String?               @map("image_url") @db.VarChar(500)
+  /** Catégorie texte libre (ex: "Sets de table", "Stickers", "Vitrine") */
+  categorie     String?               @db.VarChar(100)
+  position      Int                   @default(0)
+  statut        BoutiqueProduitStatut @default(brouillon)
+  /** JSON des features bullet (ex: ["100 unités", "Format A4", "Pelliculage mat"]) */
+  featuresJson  Json?                 @map("features_json")
+  createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz()
+
+  commandes BoutiqueCommande[]
+
+  @@index([statut, position], map: "idx_boutique_produits_statut_position")
+  @@map("boutique_produits")
+}
+
+enum BoutiqueCommandeStatut {
+  en_attente
+  en_preparation
+  expediee
+  livree
+  annulee
+}
+
+model BoutiqueCommande {
+  id              BigInt                 @id @default(autoincrement())
+  produitId       BigInt                 @map("produit_id")
+  /** User qui a commandé (depuis son dashboard) */
+  userId          Int                    @map("user_id")
+  /** Restaurant auquel la commande est rattachée (optionnel — pour stats) */
+  restaurantId    BigInt?                @map("restaurant_id")
+  quantite        Int                    @default(1)
+  /** Snapshot du prix unitaire au moment de la commande */
+  prixUnitaire    Int                    @map("prix_unitaire")
+  /** Total en centimes = prixUnitaire × quantite */
+  totalCentimes   Int                    @map("total_centimes")
+  devise          String                 @default("EUR") @db.VarChar(3)
+  /** Adresse de livraison (snapshot) */
+  livraisonNom         String?           @map("livraison_nom") @db.VarChar(255)
+  livraisonAdresse     String?           @map("livraison_adresse") @db.Text
+  livraisonCodePostal  String?           @map("livraison_code_postal") @db.VarChar(10)
+  livraisonVille       String?           @map("livraison_ville") @db.VarChar(100)
+  livraisonPays        String?           @default("France") @map("livraison_pays") @db.VarChar(100)
+  livraisonTelephone   String?           @map("livraison_telephone") @db.VarChar(20)
+  /** Notes libres du client (ex: "merci de mettre mon logo en or") */
+  notesClient     String?                @map("notes_client") @db.Text
+  /** Notes internes admin (ex: "facture envoyée le 12/05") */
+  notesAdmin      String?                @map("notes_admin") @db.Text
+  statut          BoutiqueCommandeStatut @default(en_attente)
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz()
+
+  produit    BoutiqueProduit @relation(fields: [produitId], references: [id], onDelete: Restrict)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant?     @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)], map: "idx_boutique_commandes_user")
+  @@index([statut, createdAt(sort: Desc)], map: "idx_boutique_commandes_statut")
+  @@index([produitId], map: "idx_boutique_commandes_produit")
+  @@map("boutique_commandes")
 }
