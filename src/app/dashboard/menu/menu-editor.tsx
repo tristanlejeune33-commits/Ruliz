@@ -344,7 +344,7 @@ export function MenuEditor({
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[280px_1fr_minmax(0,420px)]">
         {/* Sidebar catégories */}
         <aside className="flex min-h-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40">
-          <div className="sticky top-14 z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
+          <div className="sticky top-[68px] z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
             <div className="flex items-center gap-2">
               <span className="flex size-6 items-center justify-center rounded-md bg-[var(--accent)]/15 text-[var(--accent)]">
                 <Sparkles className="size-3.5" />
@@ -396,7 +396,7 @@ export function MenuEditor({
         {activeCategorie ? (
           <div className="flex h-full flex-col">
             {/* Topbar éditeur — breadcrumb + chips + actions */}
-            <div className="sticky top-14 z-10 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 backdrop-blur-xl">
+            <div className="sticky top-[68px] z-10 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 backdrop-blur-xl">
               <div className="flex items-start justify-between gap-3 px-6 py-3">
                 <div className="min-w-0 flex-1">
                   {/* Breadcrumb */}
@@ -505,7 +505,7 @@ export function MenuEditor({
       {/* Preview live */}
       {showPreview && (
         <aside className="hidden border-l border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 lg:flex lg:flex-col">
-          <div className="sticky top-14 z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
+          <div className="sticky top-[68px] z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
             <div className="flex items-center gap-2">
               <span className="flex size-6 items-center justify-center rounded-md bg-[var(--accent)]/15 text-[var(--accent)]">
                 <Smartphone className="size-3.5" />

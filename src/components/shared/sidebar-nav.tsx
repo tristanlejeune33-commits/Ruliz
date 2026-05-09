@@ -107,17 +107,17 @@ export function SidebarNav({ scope, sections }: SidebarNavProps) {
     sections ?? (scope === "admin" ? ADMIN_NAV : DASHBOARD_NAV);
 
   return (
-    <nav className="flex flex-col gap-6">
+    <nav className="flex flex-col gap-7">
       {resolved.map((section, sectionIdx) => (
-        <div key={sectionIdx} className="flex flex-col gap-1.5">
+        <div key={sectionIdx} className="flex flex-col gap-2">
           {section.title && !collapsed && (
-            <div className="mb-1 flex items-center gap-2 px-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+            <div className="mb-1.5 flex items-center gap-2 px-3">
+              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-[var(--text-secondary)]">
                 {section.title}
               </p>
               <span
                 aria-hidden
-                className="h-px flex-1 bg-gradient-to-r from-[var(--border-glass)] to-transparent"
+                className="h-px flex-1 bg-gradient-to-r from-[var(--border-glass-hover)] to-transparent"
               />
             </div>
           )}
@@ -173,10 +173,10 @@ function NavItem({
       aria-current={active ? "page" : undefined}
       aria-label={collapsed ? item.label : undefined}
       className={cn(
-        "group relative flex items-center rounded-xl text-[14px] font-semibold transition-colors duration-200",
+        "group relative flex items-center rounded-xl text-[15px] font-semibold transition-colors duration-200",
         collapsed
           ? "size-11 justify-center"
-          : "gap-3 px-3 py-2.5",
+          : "gap-3 px-3 py-3",
         active
           ? "text-[var(--text-primary)]"
           : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
@@ -213,13 +213,13 @@ function NavItem({
       {/* Icône — tile plus grande pour plus de présence */}
       <span
         className={cn(
-          "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200",
+          "relative z-10 flex size-9 shrink-0 items-center justify-center rounded-lg transition-all duration-200",
           active
             ? "bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)] ring-1 ring-[var(--neon-cyan)]/30"
             : "text-[var(--text-secondary)] group-hover:bg-[var(--bg-glass-hover)] group-hover:text-[var(--text-primary)] group-hover:scale-105",
         )}
       >
-        <item.icon className="size-4" strokeWidth={1.75} />
+        <item.icon className="size-[18px]" strokeWidth={1.75} />
       </span>
 
       {/* Label + badge — masqué en collapsed */}

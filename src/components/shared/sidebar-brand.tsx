@@ -32,34 +32,34 @@ export function SidebarBrand({
   return (
     <div
       className={cn(
-        "relative flex h-14 items-center border-b border-[var(--border-glass)]",
-        collapsed ? "justify-center px-2" : "justify-between gap-2 px-4",
+        "relative flex h-[68px] items-center border-b border-[var(--border-glass)]",
+        collapsed ? "justify-center px-2" : "justify-between gap-2 px-5",
       )}
     >
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-8 left-2 size-20 rounded-full bg-[var(--neon-cyan)]/15 blur-2xl"
+        className="pointer-events-none absolute -top-10 left-2 size-28 rounded-full bg-[var(--neon-cyan)]/20 blur-3xl"
       />
       <Link
         href={href}
-        className="relative flex items-center gap-2.5 transition-opacity hover:opacity-80"
+        className="relative flex items-center gap-3 transition-opacity hover:opacity-85"
       >
         <span className="relative">
-          <Logo variant="mark" className="size-7" />
+          <Logo variant="mark" className="size-10" />
           <span
             aria-hidden
-            className="absolute inset-0 -z-10 rounded-full bg-[var(--neon-cyan)]/30 blur-md"
+            className="absolute inset-0 -z-10 rounded-full bg-[var(--neon-cyan)]/40 blur-md"
           />
         </span>
         {!collapsed && (
           <>
-            <span className="text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">
+            <span className="text-[19px] font-bold tracking-tight text-[var(--text-primary)]">
               Ruliz
             </span>
             {pillLabel && (
               <span
                 className={cn(
-                  "rounded-md border px-1.5 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider",
+                  "rounded-md border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider",
                   TONE_CLASSES[pillTone],
                 )}
               >
@@ -70,14 +70,14 @@ export function SidebarBrand({
         )}
       </Link>
       {!collapsed && (
-        <span className="relative flex size-2 shrink-0">
+        <span className="relative flex size-2.5 shrink-0">
           <span
             aria-hidden
             className="pulse-dot absolute inset-0 rounded-full bg-[var(--neon-cyan)]"
           />
           <span
             aria-hidden
-            className="relative size-2 rounded-full bg-[var(--neon-cyan)] ring-2 ring-[var(--bg-primary)]"
+            className="relative size-2.5 rounded-full bg-[var(--neon-cyan)] ring-2 ring-[var(--bg-primary)]"
             title="Serveur en ligne"
           />
         </span>
