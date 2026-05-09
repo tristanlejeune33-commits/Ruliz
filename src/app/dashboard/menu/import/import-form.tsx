@@ -22,6 +22,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { ImageUploader } from "@/components/shared/image-uploader";
+import { FlagIcon } from "@/components/shared/flag-icon";
+import { LANG_META, SUPPORTED_LANGS } from "@/lib/langs";
 import { importMenuFromImage } from "@/server/dashboard/menu-import-actions";
 
 type Langue = "fr" | "en" | "es" | "de" | "it" | "pt" | "zh";
@@ -117,13 +119,14 @@ export function ImportMenuForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fr">🇫🇷 Français</SelectItem>
-                  <SelectItem value="en">🇬🇧 English</SelectItem>
-                  <SelectItem value="es">🇪🇸 Español</SelectItem>
-                  <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
-                  <SelectItem value="it">🇮🇹 Italiano</SelectItem>
-                  <SelectItem value="pt">🇵🇹 Português</SelectItem>
-                  <SelectItem value="zh">🇨🇳 中文</SelectItem>
+                  {SUPPORTED_LANGS.map((l) => (
+                    <SelectItem key={l} value={l}>
+                      <span className="flex items-center gap-2">
+                        <FlagIcon lang={l} width={18} rounded />
+                        {LANG_META[l].name}
+                      </span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <p className="mt-1 text-[10px] text-[var(--text-muted)]">

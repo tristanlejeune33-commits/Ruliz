@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Check, Globe2, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { FlagIcon } from "@/components/shared/flag-icon";
 import {
   LANG_META,
   SUPPORTED_LANGS,
@@ -48,7 +49,7 @@ export function LangSwitcher({ current }: LangSwitcherProps) {
         {pending ? (
           <Loader2 className="size-3.5 animate-spin" />
         ) : (
-          <span className="text-base leading-none">{meta.flag}</span>
+          <FlagIcon lang={current} width={18} rounded />
         )}
         <span className="hidden md:inline">{meta.name}</span>
         <Globe2 className="size-3 text-neutral-400 md:hidden" />
@@ -72,7 +73,7 @@ export function LangSwitcher({ current }: LangSwitcherProps) {
                     onClick={() => select(lang)}
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-neutral-50"
                   >
-                    <span className="text-base leading-none">{m.flag}</span>
+                    <FlagIcon lang={lang} width={18} rounded />
                     <span className="flex-1">{m.name}</span>
                     {isActive && <Check className="size-3.5 text-neutral-900" />}
                   </button>

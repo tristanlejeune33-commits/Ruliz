@@ -5,14 +5,24 @@
 export const SUPPORTED_LANGS = ["fr", "en", "es", "de", "it", "pt", "zh"] as const;
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number];
 
-export const LANG_META: Record<SupportedLang, { name: string; flag: string }> = {
-  fr: { name: "Français", flag: "🇫🇷" },
-  en: { name: "English", flag: "🇬🇧" },
-  es: { name: "Español", flag: "🇪🇸" },
-  de: { name: "Deutsch", flag: "🇩🇪" },
-  it: { name: "Italiano", flag: "🇮🇹" },
-  pt: { name: "Português", flag: "🇵🇹" },
-  zh: { name: "中文", flag: "🇨🇳" },
+/**
+ * Métadonnées par langue.
+ * - `name` : nom natif
+ * - `flag` : emoji (gardé pour fallback / strings i18n / contextes texte)
+ * - `country` : ISO 3166-1 alpha-2 — utilisé par <FlagIcon> pour les images
+ *   SVG (en utilise `gb` UK, zh utilise `cn` Chine).
+ */
+export const LANG_META: Record<
+  SupportedLang,
+  { name: string; flag: string; country: string }
+> = {
+  fr: { name: "Français", flag: "🇫🇷", country: "fr" },
+  en: { name: "English", flag: "🇬🇧", country: "gb" },
+  es: { name: "Español", flag: "🇪🇸", country: "es" },
+  de: { name: "Deutsch", flag: "🇩🇪", country: "de" },
+  it: { name: "Italiano", flag: "🇮🇹", country: "it" },
+  pt: { name: "Português", flag: "🇵🇹", country: "pt" },
+  zh: { name: "中文", flag: "🇨🇳", country: "cn" },
 };
 
 export function isSupportedLang(value: string | null | undefined): value is SupportedLang {
@@ -21,4 +31,8 @@ export function isSupportedLang(value: string | null | undefined): value is Supp
 
 export function langLabel(lang: SupportedLang) {
   return LANG_META[lang].name;
+}
+
+export function langCountryCode(lang: SupportedLang) {
+  return LANG_META[lang].country;
 }

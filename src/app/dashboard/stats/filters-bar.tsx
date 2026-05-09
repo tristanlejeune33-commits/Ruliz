@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { FlagIcon } from "@/components/shared/flag-icon";
 import { cn } from "@/lib/utils";
 import { LANG_META, SUPPORTED_LANGS } from "@/lib/langs";
 import type { AnalyticsFilters } from "@/server/dashboard/analytics";
@@ -234,7 +235,15 @@ function FiltersPopover({
           options={[
             { value: "all", label: "Toutes" },
             ...SUPPORTED_LANGS.filter((l) => availableLangs.includes(l)).map(
-              (l) => ({ value: l, label: `${LANG_META[l].flag} ${LANG_META[l].name}` }),
+              (l) => ({
+                value: l,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <FlagIcon lang={l} width={16} rounded />
+                    {LANG_META[l].name}
+                  </span>
+                ),
+              }),
             ),
           ]}
         />
@@ -252,7 +261,7 @@ function FilterSelect({
   label: string;
   value: string;
   onValueChange: (v: string) => void;
-  options: Array<{ value: string; label: string }>;
+  options: Array<{ value: string; label: React.ReactNode }>;
 }) {
   return (
     <div className="space-y-1.5">

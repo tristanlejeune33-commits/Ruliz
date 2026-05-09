@@ -42,6 +42,8 @@ import {
 import { cn } from "@/lib/utils";
 import { ImageUploader } from "@/components/shared/image-uploader";
 import { AutoSaveIndicator } from "@/components/shared/auto-save-indicator";
+import { FlagIcon } from "@/components/shared/flag-icon";
+import { LANG_META, SUPPORTED_LANGS } from "@/lib/langs";
 import { useAutoSave } from "@/lib/use-auto-save";
 import { updateRestaurant } from "@/server/dashboard/actions";
 
@@ -283,13 +285,14 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="fr">🇫🇷 Français</SelectItem>
-                          <SelectItem value="en">🇬🇧 English</SelectItem>
-                          <SelectItem value="es">🇪🇸 Español</SelectItem>
-                          <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
-                          <SelectItem value="it">🇮🇹 Italiano</SelectItem>
-                          <SelectItem value="pt">🇵🇹 Português</SelectItem>
-                          <SelectItem value="zh">🇨🇳 中文</SelectItem>
+                          {SUPPORTED_LANGS.map((l) => (
+                            <SelectItem key={l} value={l}>
+                              <span className="flex items-center gap-2">
+                                <FlagIcon lang={l} width={18} rounded />
+                                {LANG_META[l].name}
+                              </span>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormDescription className="text-[10px]">

@@ -15,6 +15,7 @@ import {
 import { countryMeta } from "@/lib/countries";
 import { BROWSER_LABEL, type Browser, type Device } from "@/lib/user-agent";
 import { LANG_META, isSupportedLang } from "@/lib/langs";
+import { FlagIcon } from "@/components/shared/flag-icon";
 
 export interface LiveScan {
   id: string;
@@ -99,11 +100,12 @@ function ScanRow({ scan }: { scan: LiveScan }) {
         {country.flag}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm">
+        <p className="flex flex-wrap items-center gap-2 text-sm">
           <span className="text-[var(--text-primary)]">{country.name}</span>
-          {langMeta && (
-            <span className="ml-2 text-xs text-[var(--text-muted)]">
-              · langue {langMeta.flag}
+          {langMeta && isSupportedLang(scan.lang) && (
+            <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
+              · langue
+              <FlagIcon lang={scan.lang} width={14} rounded />
             </span>
           )}
         </p>

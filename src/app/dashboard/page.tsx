@@ -13,6 +13,8 @@ import { PlanBadge, type Plan } from "@/components/shared/status-badge";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
 import { getRestaurantStats } from "@/server/dashboard/stats";
+import { FlagIcon } from "@/components/shared/flag-icon";
+import { isSupportedLang } from "@/lib/langs";
 import { ScansChart } from "./stats/scans-chart";
 import { KpiCard } from "./kpi-bento";
 import { WelcomeHero, QuickActions } from "./welcome-hero";
@@ -224,10 +226,10 @@ export default async function DashboardHome() {
                   key={l.lang}
                   className="flex items-center gap-2 rounded-full border border-[var(--border-glass)] bg-[var(--bg-glass)] px-3 py-1.5 text-xs"
                 >
-                  <span className="font-mono font-semibold uppercase tracking-wider text-[var(--neon-cyan)]">
-                    {l.lang}
-                  </span>
-                  <span className="text-[var(--text-secondary)]">
+                  {isSupportedLang(l.lang) && (
+                    <FlagIcon lang={l.lang} width={18} rounded />
+                  )}
+                  <span className="font-medium text-[var(--text-secondary)]">
                     {LANG_LABELS[l.lang] ?? l.lang}
                   </span>
                   <span className="font-mono text-[var(--text-tertiary)]">

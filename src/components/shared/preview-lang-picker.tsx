@@ -8,6 +8,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { FlagIcon } from "@/components/shared/flag-icon";
+import type { SupportedLang } from "@/lib/langs";
 
 /**
  * Picker de langue affiché dans la topbar.
@@ -22,13 +24,13 @@ import { Button } from "@/components/ui/button";
  */
 
 export const SUPPORTED_PREVIEW_LANGS = [
-  { code: "fr", flag: "🇫🇷", name: "Français" },
-  { code: "en", flag: "🇬🇧", name: "English" },
-  { code: "es", flag: "🇪🇸", name: "Español" },
-  { code: "de", flag: "🇩🇪", name: "Deutsch" },
-  { code: "it", flag: "🇮🇹", name: "Italiano" },
-  { code: "pt", flag: "🇵🇹", name: "Português" },
-  { code: "zh", flag: "🇨🇳", name: "中文" },
+  { code: "fr", name: "Français" },
+  { code: "en", name: "English" },
+  { code: "es", name: "Español" },
+  { code: "de", name: "Deutsch" },
+  { code: "it", name: "Italiano" },
+  { code: "pt", name: "Português" },
+  { code: "zh", name: "中文" },
 ] as const;
 
 export type PreviewLang = (typeof SUPPORTED_PREVIEW_LANGS)[number]["code"];
@@ -83,7 +85,11 @@ export function PreviewLangPicker() {
           aria-label="Changer la langue de la prévisualisation"
           title={`Langue de prévisualisation : ${current?.name ?? "Français"}`}
         >
-          <span className="text-lg leading-none">{current?.flag ?? "🇫🇷"}</span>
+          <FlagIcon
+            lang={(current?.code ?? "fr") as SupportedLang}
+            width={20}
+            rounded
+          />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
@@ -93,7 +99,7 @@ export function PreviewLangPicker() {
             onClick={() => setLang(l.code)}
             className={lang === l.code ? "bg-[var(--bg-elevated)]" : ""}
           >
-            <span className="mr-2 text-base">{l.flag}</span>
+            <FlagIcon lang={l.code as SupportedLang} width={18} rounded className="mr-2" />
             {l.name}
             {lang === l.code && (
               <span className="ml-auto text-xs text-[var(--text-muted)]">
