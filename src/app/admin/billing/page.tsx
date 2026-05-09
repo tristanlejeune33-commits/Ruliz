@@ -34,16 +34,35 @@ export const metadata: Metadata = {
   title: "Facturation · Admin Ruliz",
 };
 
+/** Palette DS-strict : success / cyan / violet (warning) / danger / glass. */
 const STATUS_COLORS: Record<
   string,
   { bg: string; text: string }
 > = {
-  active: { bg: "bg-emerald-500/15", text: "text-emerald-700" },
-  trialing: { bg: "bg-blue-500/15", text: "text-blue-700" },
-  past_due: { bg: "bg-amber-500/15", text: "text-amber-700" },
-  unpaid: { bg: "bg-red-500/15", text: "text-red-700" },
-  canceled: { bg: "bg-neutral-500/15", text: "text-neutral-700" },
-  incomplete: { bg: "bg-amber-500/15", text: "text-amber-700" },
+  active: {
+    bg: "bg-[var(--neon-success-soft)]",
+    text: "text-[var(--neon-success)]",
+  },
+  trialing: {
+    bg: "bg-[var(--neon-cyan-soft)]",
+    text: "text-[var(--neon-cyan)]",
+  },
+  past_due: {
+    bg: "bg-[var(--neon-violet-soft)]",
+    text: "text-[var(--neon-violet)]",
+  },
+  unpaid: {
+    bg: "bg-[var(--neon-danger-soft)]",
+    text: "text-[var(--neon-danger)]",
+  },
+  canceled: {
+    bg: "bg-[var(--bg-glass)]",
+    text: "text-[var(--text-tertiary)]",
+  },
+  incomplete: {
+    bg: "bg-[var(--neon-violet-soft)]",
+    text: "text-[var(--neon-violet)]",
+  },
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -125,7 +144,7 @@ export default async function AdminBillingPage() {
         <Card>
           <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 pb-2">
             <CardDescription>MRR</CardDescription>
-            <TrendingUp className="size-4 text-emerald-600" />
+            <TrendingUp className="size-4 text-[var(--neon-success)]" />
           </CardHeader>
           <CardContent>
             <CardTitle className="text-3xl tabular-nums">
@@ -140,7 +159,7 @@ export default async function AdminBillingPage() {
         <Card>
           <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 pb-2">
             <CardDescription>ARR projeté</CardDescription>
-            <Euro className="size-4 text-emerald-600" />
+            <Euro className="size-4 text-[var(--neon-success)]" />
           </CardHeader>
           <CardContent>
             <CardTitle className="text-3xl tabular-nums">
@@ -155,7 +174,7 @@ export default async function AdminBillingPage() {
         <Card>
           <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 pb-2">
             <CardDescription>Subs actives</CardDescription>
-            <CheckCircle2 className="size-4 text-emerald-600" />
+            <CheckCircle2 className="size-4 text-[var(--neon-success)]" />
           </CardHeader>
           <CardContent>
             <CardTitle className="text-3xl tabular-nums">
@@ -174,14 +193,15 @@ export default async function AdminBillingPage() {
         <Card
           className={
             pastDue > 0 || suspended > 0
-              ? "border-amber-500/40 bg-amber-50/50"
+              ? "border-[var(--neon-violet)]/40 bg-[var(--neon-violet-soft)]"
               : undefined
           }
         >
           <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 pb-2">
             <CardDescription>Problèmes paiement</CardDescription>
             <AlertTriangle
-              className={`size-4 ${pastDue > 0 || suspended > 0 ? "text-amber-700" : "text-[var(--text-muted)]"}`}
+              className={`size-4 ${pastDue > 0 || suspended > 0 ? "text-[var(--neon-violet)]" : "text-[var(--text-muted)]"}`}
+              strokeWidth={1.75}
             />
           </CardHeader>
           <CardContent>
@@ -193,8 +213,8 @@ export default async function AdminBillingPage() {
         </Card>
       </div>
 
-      {/* CA généré */}
-      <Card className="bg-gradient-to-br from-emerald-50 via-white to-emerald-50/50 dark:from-emerald-950/30 dark:to-emerald-950/10">
+      {/* CA généré — palette DS stricte (success soft + glow subtil) */}
+      <Card className="relative overflow-hidden border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)]">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
@@ -289,13 +309,13 @@ export default async function AdminBillingPage() {
                     </TableCell>
                     <TableCell>
                       {isSuspended ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-700">
-                          <XCircle className="size-3" />
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--neon-danger)]">
+                          <XCircle className="size-3" strokeWidth={1.75} />
                           Suspendu
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
-                          <CheckCircle2 className="size-3" />
+                        <span className="inline-flex items-center gap-1 text-xs text-[var(--neon-success)]">
+                          <CheckCircle2 className="size-3" strokeWidth={1.75} />
                           Actif
                         </span>
                       )}

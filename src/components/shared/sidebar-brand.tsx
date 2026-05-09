@@ -73,11 +73,11 @@ export function SidebarBrand({
         <span className="relative flex size-2 shrink-0">
           <span
             aria-hidden
-            className="pulse-dot absolute inset-0 rounded-full bg-[var(--neon-success)]"
+            className="pulse-dot absolute inset-0 rounded-full bg-[var(--neon-cyan)]"
           />
           <span
             aria-hidden
-            className="relative size-2 rounded-full bg-[var(--neon-success)] ring-2 ring-[var(--bg-primary)]"
+            className="relative size-2 rounded-full bg-[var(--neon-cyan)] ring-2 ring-[var(--bg-primary)]"
             title="Serveur en ligne"
           />
         </span>

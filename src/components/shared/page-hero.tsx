@@ -50,7 +50,10 @@ export function PageHero({
   return (
     <header
       className={cn(
-        "relative isolate overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-6 py-7 backdrop-blur-2xl sm:px-8",
+        // En dark : glass + backdrop-blur. En light : surface blanche + ombres
+        // (le backdrop-blur est neutralisé par l'utility theme-aware) + ring
+        // intérieur bleu 8% via .card-double-layer (innovation #2 du DS light).
+        "card-double-layer relative isolate overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-6 py-7 backdrop-blur-2xl sm:px-8",
         className,
       )}
     >
