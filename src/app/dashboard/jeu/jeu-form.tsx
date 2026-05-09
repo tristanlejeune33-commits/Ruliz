@@ -100,6 +100,38 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
   const total = lots.reduce((acc, l) => acc + (Number(l.probabilite) || 0), 0);
   const isTotalOk = total >= 95 && total <= 105;
 
+  // Auto-fill : ajuste le DERNIER lot pour que la somme fasse exactement 100
+  const autoFillTo100 = () => {
+    if (lots.length === 0) return;
+    const lastIdx = lots.length - 1;
+    const others = lots.slice(0, -1).reduce(
+      (acc, l) => acc + (Number(l.probabilite) || 0),
+      0,
+    );
+    const remainder = Math.max(0, 100 - others);
+    form.setValue(`lots.${lastIdx}.probabilite`, remainder, {
+      shouldDirty: true,
+    });
+    toast.success(
+      `Dernier lot ajusté à ${remainder}% pour que le total fasse 100%.`,
+    );
+  };
+
+  // Distribue uniformément 100% entre tous les lots
+  const distribuerUniformement = () => {
+    if (lots.length === 0) return;
+    const base = Math.floor(100 / lots.length);
+    const remainder = 100 - base * lots.length;
+    lots.forEach((_, i) => {
+      form.setValue(
+        `lots.${i}.probabilite`,
+        i === lots.length - 1 ? base + remainder : base,
+        { shouldDirty: true },
+      );
+    });
+    toast.success(`Probabilités distribuées uniformément (${base}% chacun).`);
+  };
+
   const onSubmit = (values: Values) => {
     startTransition(async () => {
       const res = await upsertJeu({
@@ -211,22 +243,44 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
 
         <Card>
           <CardHeader>
-            <div className="flex items-start justify-between gap-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <CardTitle>Lots et probabilités</CardTitle>
                 <CardDescription>
-                  La somme des probabilités doit faire ~100. Maximum 12 lots.
+                  La somme des probabilités doit faire <strong>100%</strong>.
+                  Tu peux mettre des emojis dans le label (ex : « 🎁 Café offert »).
+                  Maximum 12 lots.
                 </CardDescription>
               </div>
-              <span
-                className={
-                  isTotalOk
-                    ? "rounded-md bg-[oklch(0.7_0.18_145)]/15 px-2 py-1 font-mono text-xs text-[oklch(0.75_0.18_145)]"
-                    : "rounded-md bg-[var(--color-destructive)]/15 px-2 py-1 font-mono text-xs text-[var(--color-destructive)]"
-                }
-              >
-                Total : {total}
-              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                <span
+                  className={
+                    isTotalOk
+                      ? "rounded-md bg-[oklch(0.7_0.18_145)]/15 px-2.5 py-1 font-mono text-xs font-semibold text-[oklch(0.75_0.18_145)]"
+                      : "rounded-md bg-[var(--color-destructive)]/15 px-2.5 py-1 font-mono text-xs font-semibold text-[var(--color-destructive)]"
+                  }
+                >
+                  Total : {total}%
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={autoFillTo100}
+                  title="Ajuste le dernier lot pour atteindre 100%"
+                >
+                  Compléter à 100%
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={distribuerUniformement}
+                  title="Donne le même % à tous les lots"
+                >
+                  Distribuer
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>

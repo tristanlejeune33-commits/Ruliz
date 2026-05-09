@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Star, X } from "lucide-react";
+import { ArrowLeft, Loader2, Star, X } from "lucide-react";
 import { toast } from "sonner";
+import confetti from "canvas-confetti";
 import type { PublicMenu } from "@/server/public/menu";
 import { submitParticipation } from "@/server/public/jeu-actions";
 
@@ -19,7 +20,19 @@ interface RouletteProps {
   instagramUrl: string | null;
 }
 
-// Brand icons inline (Lucide ne livre plus les marques)
+type Step =
+  | "form" // Étape 1 : formulaire infos
+  | "social" // Étape 2 : "Pour participer" + bouton réseau
+  | "countdown" // Étape 3 : compte à rebours 10s avant la roue
+  | "wheel" // Étape 4 : roue à lancer
+  | "victory" // Étape 5 : "BRAVO ! Tu as remporté X" + confettis
+  | "error";
+
+type ActionSociale = "facebook" | "instagram" | "google_review";
+
+const COUNTDOWN_SECONDS = 10;
+
+// Brand icons inline
 function FacebookIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
@@ -47,20 +60,27 @@ function InstagramIcon({ className }: { className?: string }) {
   );
 }
 
-/**
- * Modal "Tente ta chance" — réplique exacte du modal-spinning de l'ancien template Ruliz.
- *
- * 3 états :
- *  - "form"     : étape 1 (prénom, nom, naissance, tél, email, conditions) puis étape 2 (réseau)
- *  - "result"   : on affiche le lot gagné avec animation
- *  - "error"    : message d'erreur (déjà participé, etc.)
- *
- * Soumet via submitParticipation() qui :
- *  1. Valide les données
- *  2. Vérifie l'anti-spam (24h par email)
- *  3. Tire un lot selon les probabilités du jeu
- *  4. Insère dans `jeu_participations` + `base_clients`
- */
+const ACTION_META: Record<ActionSociale, { label: string; brand: string; color: string; Icon: React.FC<{ className?: string }> }> = {
+  facebook: {
+    label: "SUIS-NOUS SUR FACEBOOK",
+    brand: "Facebook",
+    color: "#1877f2",
+    Icon: FacebookIcon,
+  },
+  instagram: {
+    label: "SUIS-NOUS SUR INSTAGRAM",
+    brand: "Instagram",
+    color: "#E1306C",
+    Icon: InstagramIcon,
+  },
+  google_review: {
+    label: "LAISSE UN AVIS GOOGLE",
+    brand: "Google",
+    color: "#fbbc04",
+    Icon: Star,
+  },
+};
+
 export function Roulette({
   jeu,
   open,
@@ -70,12 +90,13 @@ export function Roulette({
   facebookUrl,
   instagramUrl,
 }: RouletteProps) {
-  const [step, setStep] = useState<"form" | "submitting" | "result" | "error">(
-    "form",
-  );
+  const [step, setStep] = useState<Step>("form");
   const [errorMsg, setErrorMsg] = useState<string>("");
   const [lotGagne, setLotGagne] = useState<string | null>(null);
   const [conditionsOK, setConditionsOK] = useState(false);
+  const [chosenAction, setChosenAction] = useState<ActionSociale | null>(null);
+  const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     prenom: "",
     nom: "",
@@ -84,9 +105,55 @@ export function Roulette({
     email: "",
   });
 
-  const handleSocialSubmit = async (
-    actionSociale: "facebook" | "instagram" | "google_review",
-  ) => {
+  const reset = () => {
+    setStep("form");
+    setErrorMsg("");
+    setLotGagne(null);
+    setConditionsOK(false);
+    setChosenAction(null);
+    setCountdown(COUNTDOWN_SECONDS);
+    setSubmitting(false);
+    setForm({ prenom: "", nom: "", naissance: "", telephone: "", email: "" });
+  };
+
+  // Compte à rebours
+  useEffect(() => {
+    if (step !== "countdown") return;
+    if (countdown <= 0) {
+      setStep("wheel");
+      return;
+    }
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [step, countdown]);
+
+  // Confetti à la victoire
+  useEffect(() => {
+    if (step !== "victory") return;
+    const duration = 3000;
+    const end = Date.now() + duration;
+    const colors = ["#FF9B4A", "#FFD700", "#22c55e", "#3b82f6", "#ef4444", "#a855f7"];
+    const frame = () => {
+      confetti({
+        particleCount: 4,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.6 },
+        colors,
+      });
+      confetti({
+        particleCount: 4,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.6 },
+        colors,
+      });
+      if (Date.now() < end) requestAnimationFrame(frame);
+    };
+    frame();
+  }, [step]);
+
+  const handleSubmitForm = () => {
     if (!form.prenom || !form.nom || !form.telephone || !form.email) {
       toast.error("Merci de remplir tous les champs obligatoires.");
       return;
@@ -95,8 +162,28 @@ export function Roulette({
       toast.error("Tu dois accepter les règles du jeu.");
       return;
     }
+    setStep("social");
+  };
 
-    setStep("submitting");
+  const chooseAction = (action: ActionSociale) => {
+    setChosenAction(action);
+    // Ouvre le réseau social demandé
+    const targetUrl =
+      action === "facebook"
+        ? facebookUrl
+        : action === "instagram"
+          ? instagramUrl
+          : googleReviewUrl;
+    if (targetUrl) {
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
+    }
+    setCountdown(COUNTDOWN_SECONDS);
+    setStep("countdown");
+  };
+
+  const lancerLaRoue = async () => {
+    if (!chosenAction) return;
+    setSubmitting(true);
     const res = await submitParticipation({
       jeuId: jeu.id,
       prenom: form.prenom,
@@ -104,35 +191,17 @@ export function Roulette({
       naissance: form.naissance,
       telephone: form.telephone,
       email: form.email,
-      actionSociale,
+      actionSociale: chosenAction,
     });
+    setSubmitting(false);
 
     if (!res.ok) {
       setErrorMsg(res.error);
       setStep("error");
       return;
     }
-
     setLotGagne(res.lotGagne);
-    setStep("result");
-
-    // Ouvre le réseau social demandé en nouvelle fenêtre
-    const targetUrl =
-      actionSociale === "facebook"
-        ? facebookUrl
-        : actionSociale === "instagram"
-          ? instagramUrl
-          : googleReviewUrl;
-    if (targetUrl) {
-      window.open(targetUrl, "_blank", "noopener,noreferrer");
-    }
-  };
-
-  const reset = () => {
-    setStep("form");
-    setErrorMsg("");
-    setLotGagne(null);
-    setConditionsOK(false);
+    setStep("victory");
   };
 
   return (
@@ -159,11 +228,15 @@ export function Roulette({
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative flex max-h-[92vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-[10px] p-5 text-center text-white"
+            className="relative flex max-h-[95vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-[10px] p-5 text-center"
             style={{
-              // Fond sombre en gradient navy → bleu nuit (réplique du bg.webp)
-              background: `linear-gradient(135deg, ${accentColor} 0%, #0a1450 50%, ${accentColor} 100%)`,
+              background:
+                step === "wheel" || step === "victory"
+                  ? `repeating-conic-gradient(from 0deg at 50% 50%, ${accentColor} 0deg 18deg, #2350c8 18deg 36deg)`
+                  : `linear-gradient(135deg, ${accentColor} 0%, #0a1450 50%, ${accentColor} 100%)`,
+              color: "white",
               fontFamily: "var(--font-display)",
+              minHeight: step === "wheel" ? "560px" : undefined,
             }}
           >
             <button
@@ -172,43 +245,110 @@ export function Roulette({
                 onClose();
                 reset();
               }}
-              className="absolute right-2.5 top-2.5 z-10 rounded-full p-1 text-white/80 hover:text-white"
+              className="absolute right-2.5 top-2.5 z-10 flex size-9 items-center justify-center rounded-full bg-white text-black shadow-md hover:scale-105"
               aria-label="Fermer"
             >
-              <X className="size-6" />
+              <X className="size-5" />
             </button>
 
-            {step === "form" || step === "submitting" ? (
-              <FormStep
-                jeu={jeu}
-                form={form}
-                setForm={setForm}
-                conditionsOK={conditionsOK}
-                setConditionsOK={setConditionsOK}
-                onSocialSubmit={handleSocialSubmit}
-                submitting={step === "submitting"}
-                facebookUrl={facebookUrl}
-                instagramUrl={instagramUrl}
-                googleReviewUrl={googleReviewUrl}
-              />
-            ) : step === "result" ? (
-              <ResultStep
-                lotGagne={lotGagne}
-                onClose={() => {
-                  onClose();
-                  reset();
-                }}
-              />
-            ) : (
-              <ErrorStep
-                errorMsg={errorMsg}
-                onRetry={reset}
-                onClose={() => {
-                  onClose();
-                  reset();
-                }}
-              />
-            )}
+            <AnimatePresence mode="wait">
+              {step === "form" && (
+                <motion.div
+                  key="form"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <FormStep
+                    jeu={jeu}
+                    form={form}
+                    setForm={setForm}
+                    conditionsOK={conditionsOK}
+                    setConditionsOK={setConditionsOK}
+                    onSubmit={handleSubmitForm}
+                    facebookUrl={facebookUrl}
+                    instagramUrl={instagramUrl}
+                    googleReviewUrl={googleReviewUrl}
+                  />
+                </motion.div>
+              )}
+              {step === "social" && (
+                <motion.div
+                  key="social"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <SocialStep
+                    onBack={() => setStep("form")}
+                    onChoose={chooseAction}
+                    facebookUrl={facebookUrl}
+                    instagramUrl={instagramUrl}
+                    googleReviewUrl={googleReviewUrl}
+                  />
+                </motion.div>
+              )}
+              {step === "countdown" && (
+                <motion.div
+                  key="countdown"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <CountdownStep
+                    countdown={countdown}
+                    chosenAction={chosenAction}
+                  />
+                </motion.div>
+              )}
+              {step === "wheel" && (
+                <motion.div
+                  key="wheel"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <WheelStep
+                    lots={jeu.lots}
+                    onSpin={lancerLaRoue}
+                    submitting={submitting}
+                  />
+                </motion.div>
+              )}
+              {step === "victory" && (
+                <motion.div
+                  key="victory"
+                  initial={{ opacity: 0, scale: 0.85 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  <VictoryStep lotGagne={lotGagne} />
+                </motion.div>
+              )}
+              {step === "error" && (
+                <motion.div
+                  key="error"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <ErrorStep
+                    errorMsg={errorMsg}
+                    onRetry={reset}
+                    onClose={() => {
+                      onClose();
+                      reset();
+                    }}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </motion.div>
       )}
@@ -217,7 +357,7 @@ export function Roulette({
 }
 
 // ---------------------------------------------------------------------------
-// Étape formulaire (1 + 2 sur le même écran, comme l'ancien template)
+// ÉTAPE 1 : Formulaire (avec liste des lots)
 // ---------------------------------------------------------------------------
 
 function FormStep({
@@ -226,11 +366,7 @@ function FormStep({
   setForm,
   conditionsOK,
   setConditionsOK,
-  onSocialSubmit,
-  submitting,
-  facebookUrl,
-  instagramUrl,
-  googleReviewUrl,
+  onSubmit,
 }: {
   jeu: Jeu;
   form: {
@@ -243,49 +379,48 @@ function FormStep({
   setForm: React.Dispatch<React.SetStateAction<typeof form>>;
   conditionsOK: boolean;
   setConditionsOK: (v: boolean) => void;
-  onSocialSubmit: (
-    actionSociale: "facebook" | "instagram" | "google_review",
-  ) => void;
-  submitting: boolean;
+  onSubmit: () => void;
   facebookUrl: string | null;
   instagramUrl: string | null;
   googleReviewUrl: string | null;
 }) {
-  const ctaTitle = jeu.cta || "TENTE TA CHANCE !";
+  const ctaTitle = jeu.cta || "Laisse-nous un avis Google et tente de gagner !";
 
   return (
-    <>
-      {/* Titre principal */}
-      <h1 className="whitespace-pre-line text-[35px] font-bold leading-tight">
-        {ctaTitle.replace(/[\s]+/, "\n")}
+    <div className="flex flex-col gap-4">
+      {/* Titre */}
+      <h1 className="text-balance text-[28px] font-bold leading-tight md:text-[32px]">
+        {ctaTitle}
       </h1>
 
-      {/* Liste des lots — emoji + label sur fond blanc rounded */}
+      {/* Liste des lots avec emojis */}
       {jeu.lots.length > 0 && (
         <ul className="flex flex-wrap justify-center gap-2.5">
-          {jeu.lots.slice(0, 3).map((lot, i) => (
-            <li
-              key={`${lot.label}-${i}`}
-              className="flex flex-col items-center justify-center text-black"
-            >
-              <span className="z-10 -mb-1.5 text-[30px]">
-                {extractEmoji(lot.label) ?? "🎁"}
-              </span>
-              <span className="rounded-[15px] bg-white px-2.5 py-1 text-[13px] font-medium">
-                {removeEmoji(lot.label)}
-              </span>
-            </li>
-          ))}
+          {jeu.lots.slice(0, 3).map((lot, i) => {
+            const emoji = extractEmoji(lot.label) ?? "🎁";
+            const text = removeEmoji(lot.label);
+            return (
+              <li
+                key={`${lot.label}-${i}`}
+                className="flex flex-col items-center justify-center text-black"
+              >
+                <span className="z-10 -mb-1.5 text-[30px]">{emoji}</span>
+                <span className="rounded-[15px] bg-white px-2.5 py-1 text-[13px] font-medium">
+                  {text}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       )}
 
       <p className="text-base">Et bien d&apos;autres cadeaux à gagner...</p>
 
-      {/* Étape 1 : badge */}
+      {/* Étape 1 */}
       <div className="flex justify-center">
         <span
-          className="rounded-[15px] px-2.5 py-1 text-base text-white"
-          style={{ backgroundColor: "#FF9B4A", minWidth: "60px" }}
+          className="rounded-[15px] px-3 py-1 text-base font-medium text-white"
+          style={{ backgroundColor: "#FF9B4A" }}
         >
           Étape 1
         </span>
@@ -294,7 +429,10 @@ function FormStep({
       {/* Form */}
       <form
         className="flex flex-col gap-2.5"
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
       >
         <FormInput
           name="prenom"
@@ -329,7 +467,7 @@ function FormStep({
           onChange={(v) => setForm((f) => ({ ...f, email: v }))}
         />
 
-        <label className="mx-2 flex items-start gap-2 text-left">
+        <label className="mx-2 mt-1 flex cursor-pointer items-start gap-2 text-left">
           <input
             type="checkbox"
             checked={conditionsOK}
@@ -337,7 +475,7 @@ function FormStep({
             className="mt-0.5 size-4 cursor-pointer accent-[#FF9B4A]"
             required
           />
-          <span className="text-[10px] leading-tight">
+          <span className="text-[11px] leading-tight text-white/95">
             *Je confirme avoir pris connaissance et accepté les{" "}
             <a
               href="https://ruliz.fr/dp"
@@ -351,66 +489,25 @@ function FormStep({
           </span>
         </label>
 
-        {/* Étape 2 : badge */}
+        {/* Étape 2 (rappel) */}
         <div className="mt-2 flex justify-center">
           <span
-            className="rounded-[15px] px-2.5 py-1 text-base text-white"
-            style={{ backgroundColor: "#FF9B4A", minWidth: "60px" }}
+            className="rounded-[15px] px-3 py-1 text-base font-medium text-white"
+            style={{ backgroundColor: "#FF9B4A" }}
           >
             Étape 2
           </span>
         </div>
 
-        <p className="text-sm uppercase tracking-wide">
-          Suis-nous{" "}
-          <span
-            className="inline-block rounded-full bg-white px-1.5 py-1 text-[#3131ac]"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            ou
-          </span>{" "}
-          laisse un avis
-        </p>
-
-        {/* Boutons sociaux : FB / IG / Google review */}
-        <ul className="flex justify-center gap-2.5">
-          {facebookUrl && (
-            <SocialActionBtn
-              onClick={() => onSocialSubmit("facebook")}
-              disabled={submitting}
-              ariaLabel="Participer via Facebook"
-            >
-              <FacebookIcon className="size-6" />
-            </SocialActionBtn>
-          )}
-          {instagramUrl && (
-            <SocialActionBtn
-              onClick={() => onSocialSubmit("instagram")}
-              disabled={submitting}
-              ariaLabel="Participer via Instagram"
-            >
-              <InstagramIcon className="size-6" />
-            </SocialActionBtn>
-          )}
-          {googleReviewUrl && (
-            <SocialActionBtn
-              onClick={() => onSocialSubmit("google_review")}
-              disabled={submitting}
-              ariaLabel="Participer via avis Google"
-            >
-              <Star className="size-6" />
-            </SocialActionBtn>
-          )}
-        </ul>
-
-        {submitting && (
-          <p className="flex items-center justify-center gap-2 text-sm">
-            <Loader2 className="size-4 animate-spin" />
-            Validation en cours...
-          </p>
-        )}
+        <button
+          type="submit"
+          className="mx-auto mt-2 rounded-full px-8 py-3 text-base font-bold uppercase tracking-wide text-white transition-transform hover:scale-105"
+          style={{ backgroundColor: "#FF9B4A" }}
+        >
+          Continuer
+        </button>
       </form>
-    </>
+    </div>
   );
 }
 
@@ -434,85 +531,337 @@ function FormInput({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="rounded-[15px] border-0 px-2.5 py-2 text-base text-black"
-      style={{ fontFamily: "var(--font-body)" }}
+      className="rounded-[15px] border-0 bg-white px-3 py-2.5 text-base text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#FF9B4A]"
+      style={{ fontFamily: "var(--font-body)", colorScheme: "light" }}
       required
     />
   );
 }
 
-function SocialActionBtn({
-  onClick,
-  disabled,
-  ariaLabel,
-  children,
+// ---------------------------------------------------------------------------
+// ÉTAPE 2 : "Pour participer" (3 instructions + bouton réseau)
+// ---------------------------------------------------------------------------
+
+function SocialStep({
+  onBack,
+  onChoose,
+  facebookUrl,
+  instagramUrl,
+  googleReviewUrl,
 }: {
-  onClick: () => void;
-  disabled: boolean;
-  ariaLabel: string;
-  children: React.ReactNode;
+  onBack: () => void;
+  onChoose: (action: ActionSociale) => void;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  googleReviewUrl: string | null;
 }) {
+  const [hovered, setHovered] = useState<ActionSociale | null>(null);
+
+  // On affiche les actions disponibles dans cet ordre
+  const actions: ActionSociale[] = [];
+  if (instagramUrl) actions.push("instagram");
+  if (facebookUrl) actions.push("facebook");
+  if (googleReviewUrl) actions.push("google_review");
+
+  // Modal blanche pour cette étape (différent du bg sombre)
   return (
-    <li>
+    <div
+      className="-mx-5 -mt-5 mb-[-20px] flex flex-col gap-5 rounded-t-[10px] bg-white px-6 py-8 text-black md:rounded-[10px] md:m-0"
+      style={{ minHeight: "440px" }}
+    >
       <button
         type="button"
-        onClick={onClick}
-        disabled={disabled}
-        aria-label={ariaLabel}
-        className="flex size-12 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-105 disabled:opacity-50"
+        onClick={onBack}
+        className="flex w-fit items-center gap-1 text-sm text-neutral-500 hover:text-black"
       >
-        {children}
+        <ArrowLeft className="size-4" />
+        Retour
       </button>
+
+      <h2
+        className="mt-6 text-center text-2xl font-bold md:text-3xl"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        Pour participer :
+      </h2>
+
+      <ol className="space-y-4 px-2">
+        <Step number={1} text="Suis notre compte" />
+        <Step number={2} text="Tape sur le bouton retour du téléphone" />
+        <Step number={3} text="Reviens sur le jeu" />
+      </ol>
+
+      <div className="flex flex-col gap-2.5 px-2">
+        {actions.map((action) => {
+          const meta = ACTION_META[action];
+          const { Icon } = meta;
+          const isHovered = hovered === action;
+          return (
+            <button
+              key={action}
+              type="button"
+              onMouseEnter={() => setHovered(action)}
+              onMouseLeave={() => setHovered(null)}
+              onClick={() => onChoose(action)}
+              className="flex items-center justify-center gap-3 rounded-md border-2 border-black px-4 py-3.5 text-sm font-bold tracking-wide text-black transition-all hover:bg-black hover:text-white"
+              style={{
+                fontFamily: "var(--font-body)",
+                backgroundColor: isHovered ? "black" : "white",
+              }}
+            >
+              <span style={{ color: isHovered ? "white" : meta.color }}>
+                <Icon className="size-5" />
+              </span>
+              {meta.label}
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mt-auto text-center text-xs italic text-neutral-500">
+        Votre avis ou votre abonnement n&apos;influencera pas vos chances de gagner.
+      </p>
+    </div>
+  );
+}
+
+function Step({ number, text }: { number: number; text: string }) {
+  return (
+    <li className="flex items-center gap-3">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-black text-sm font-bold text-white">
+        {number}
+      </span>
+      <span className="text-sm font-medium md:text-base">{text}</span>
     </li>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Étape résultat
+// ÉTAPE 3 : Compte à rebours
 // ---------------------------------------------------------------------------
 
-function ResultStep({
-  lotGagne,
-  onClose,
+function CountdownStep({
+  countdown,
+  chosenAction,
 }: {
-  lotGagne: string | null;
-  onClose: () => void;
+  countdown: number;
+  chosenAction: ActionSociale | null;
 }) {
   return (
-    <div className="flex flex-col items-center gap-4 py-6">
-      <motion.div
-        initial={{ scale: 0.5, rotate: -90 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-        className="text-7xl"
+    <div
+      className="-mx-5 -mt-5 mb-[-20px] flex flex-col gap-5 rounded-t-[10px] bg-white px-6 py-8 text-black md:m-0 md:rounded-[10px]"
+      style={{ minHeight: "440px" }}
+    >
+      <h2
+        className="mt-6 text-center text-2xl font-bold md:text-3xl"
+        style={{ fontFamily: "var(--font-display)" }}
       >
-        🎉
-      </motion.div>
-      <h2 className="text-3xl font-bold leading-tight">
-        Bravo !
+        Pour participer :
       </h2>
-      <p className="text-base">
-        {lotGagne ? (
-          <>
-            Tu as gagné :<br />
-            <span className="mt-2 inline-block rounded-[15px] bg-white px-4 py-2 text-lg font-semibold text-black">
-              {lotGagne}
-            </span>
-          </>
-        ) : (
-          <>Merci pour ta participation !</>
-        )}
+
+      <ol className="space-y-4 px-2">
+        <Step number={1} text="Suis notre compte" />
+        <Step number={2} text="Tape sur le bouton retour du téléphone" />
+        <Step number={3} text="Reviens sur le jeu" />
+      </ol>
+
+      <div className="mt-4 rounded-md border-2 border-black px-4 py-5 text-center">
+        <p
+          className="text-base font-bold uppercase leading-tight tracking-wide"
+          style={{ fontFamily: "var(--font-body)" }}
+        >
+          Veuillez patienter {countdown} {countdown > 1 ? "secondes" : "seconde"}{" "}
+          pour accéder à la roulette.
+        </p>
+      </div>
+
+      <p className="mt-auto text-center text-xs italic text-neutral-500">
+        {chosenAction === "google_review"
+          ? "Merci pour ton avis ! "
+          : "Merci de t'être abonné ! "}
+        Votre avis ou votre abonnement n&apos;influencera pas vos chances de gagner.
       </p>
-      <p className="text-sm opacity-80">
-        Nous te recontacterons par email/SMS si tu fais partie des gagnants.
-      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ÉTAPE 4 : Roue (carrousel des lots avec arrows + bouton "Lancer")
+// ---------------------------------------------------------------------------
+
+function WheelStep({
+  lots,
+  onSpin,
+  submitting,
+}: {
+  lots: Array<{ label: string; probabilite: number }>;
+  onSpin: () => void;
+  submitting: boolean;
+}) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [spinning, setSpinning] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleSpin = () => {
+    if (spinning || submitting) return;
+    setSpinning(true);
+    // Animation : on défile rapidement les lots avec ralentissement progressif
+    let speed = 80;
+    let elapsed = 0;
+    const totalDuration = 3500;
+    const tick = () => {
+      setActiveIdx((i) => (i + 1) % lots.length);
+      elapsed += speed;
+      if (elapsed < totalDuration) {
+        speed = Math.min(speed + 8, 350);
+        intervalRef.current = setTimeout(tick, speed);
+      } else {
+        setSpinning(false);
+        // On déclenche la submit qui détermine le vrai lot côté serveur
+        onSpin();
+      }
+    };
+    intervalRef.current = setTimeout(tick, speed);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearTimeout(intervalRef.current);
+    };
+  }, []);
+
+  if (lots.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-base">Aucun lot configuré pour ce jeu.</p>
+      </div>
+    );
+  }
+
+  const prevIdx = (activeIdx - 1 + lots.length) % lots.length;
+  const nextIdx = (activeIdx + 1) % lots.length;
+
+  return (
+    <div className="relative flex flex-col items-center gap-6 py-4">
+      <h1 className="whitespace-pre-line text-center text-[35px] font-bold leading-tight">
+        TENTE{`\n`}TA CHANCE !
+      </h1>
+
+      {/* Indicateur haut */}
+      <div className="text-white/90">▼</div>
+
+      {/* Carrousel : lot précédent, actuel, suivant */}
+      <div className="relative flex w-full items-center justify-center gap-2">
+        <SideCard label={lots[prevIdx]?.label ?? ""} side="left" />
+        <CenterCard
+          label={lots[activeIdx]?.label ?? ""}
+          spinning={spinning}
+        />
+        <SideCard label={lots[nextIdx]?.label ?? ""} side="right" />
+      </div>
+
+      {/* Indicateur bas */}
+      <div className="text-white/90">▲</div>
+
       <button
         type="button"
-        onClick={onClose}
-        className="mt-2 rounded-full bg-[#FF9B4A] px-8 py-2.5 text-base font-bold uppercase text-white transition-transform hover:scale-105"
+        onClick={handleSpin}
+        disabled={spinning || submitting}
+        className="rounded-full px-10 py-3 text-lg font-bold uppercase tracking-wide text-white transition-transform hover:scale-105 disabled:opacity-60"
+        style={{ backgroundColor: "#FF9B4A" }}
       >
-        Fermer
+        {submitting ? (
+          <Loader2 className="size-5 animate-spin" />
+        ) : spinning ? (
+          "..."
+        ) : (
+          "Lancer la roue"
+        )}
       </button>
+    </div>
+  );
+}
+
+function CenterCard({ label, spinning }: { label: string; spinning: boolean }) {
+  const emoji = extractEmoji(label) ?? "🎁";
+  const text = removeEmoji(label);
+  return (
+    <motion.div
+      animate={spinning ? { rotateX: [0, 360], scale: [1, 1.05, 1] } : {}}
+      transition={{ duration: 0.15, repeat: spinning ? Infinity : 0 }}
+      className="relative z-10 flex h-44 w-40 flex-col items-center justify-center gap-2 rounded-md border-4 border-[#FF9B4A] bg-neutral-100 px-3 py-4 text-center text-black md:h-52 md:w-48"
+      style={{
+        backgroundImage:
+          "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,155,74,0.1) 4px, rgba(255,155,74,0.1) 6px)",
+      }}
+    >
+      <div
+        className="absolute inset-1.5 border-2 border-dashed border-[#FF9B4A]/40"
+        aria-hidden
+      />
+      <p
+        className="text-balance text-[15px] font-bold leading-tight md:text-base"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        {text}
+      </p>
+      <span className="text-3xl">{emoji}</span>
+    </motion.div>
+  );
+}
+
+function SideCard({ label, side }: { label: string; side: "left" | "right" }) {
+  const emoji = extractEmoji(label) ?? "🎁";
+  const text = removeEmoji(label);
+  return (
+    <div
+      className="flex h-32 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-md bg-white p-2 text-center text-black opacity-70"
+      style={{
+        marginLeft: side === "left" ? "-24px" : 0,
+        marginRight: side === "right" ? "-24px" : 0,
+        transform:
+          side === "left" ? "rotate(-3deg) scale(0.85)" : "rotate(3deg) scale(0.85)",
+      }}
+    >
+      <p className="line-clamp-3 text-[10px] font-bold leading-tight">{text}</p>
+      <span className="text-xl">{emoji}</span>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ÉTAPE 5 : Victoire (BRAVO + lot + confetti + "Retrouve ton gain dans tes mails")
+// ---------------------------------------------------------------------------
+
+function VictoryStep({ lotGagne }: { lotGagne: string | null }) {
+  return (
+    <div className="relative flex min-h-[440px] flex-col items-center justify-center gap-3 py-8">
+      <h1 className="text-[42px] font-bold leading-tight">BRAVO !</h1>
+      <p className="text-base">Tu as remporté</p>
+      <p
+        className="text-balance text-2xl font-bold leading-tight"
+        style={{ fontFamily: "var(--font-display)" }}
+      >
+        {lotGagne ?? "un cadeau mystère"}
+      </p>
+
+      {/* Coupe trophée animée */}
+      <motion.div
+        initial={{ y: -20, rotate: -10 }}
+        animate={{ y: [0, -10, 0], rotate: [0, 5, -5, 0] }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+        className="my-4 text-7xl md:text-8xl"
+      >
+        🏆
+      </motion.div>
+
+      <p className="text-balance text-base font-semibold uppercase tracking-wide">
+        Retrouve ton gain dans tes mails
+      </p>
     </div>
   );
 }
@@ -565,19 +914,17 @@ function ErrorStep({
 }
 
 // ---------------------------------------------------------------------------
-// Helpers : extraire un emoji du début d'un label de lot
+// Helpers
 // ---------------------------------------------------------------------------
 
 function extractEmoji(text: string): string | null {
-  // Regex grossier qui matche les premiers caractères pictographiques.
-  // Couvre les emojis classiques (😍, 🎁, 💸, etc.) et les drapeaux.
-  // eslint-disable-next-line no-misleading-character-class
-  const match = text.match(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}]+/u);
+  const match = text.match(
+    /^[\p{Emoji_Presentation}\p{Extended_Pictographic}]+/u,
+  );
   return match ? match[0] : null;
 }
 
 function removeEmoji(text: string): string {
-  // eslint-disable-next-line no-misleading-character-class
   return text
     .replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, "")
     .trim();

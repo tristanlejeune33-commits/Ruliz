@@ -33,6 +33,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { ImageUploader } from "@/components/shared/image-uploader";
 import { updateRestaurant } from "@/server/dashboard/actions";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -402,70 +403,34 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
               <CardContent className="grid gap-5 md:grid-cols-2">
                 <div className="space-y-3">
                   <p className="text-sm font-medium">
-                    Logo <span className="text-[var(--text-muted)]">(150×150px)</span>
+                    Logo{" "}
+                    <span className="text-[var(--text-muted)]">(150×150px)</span>
                   </p>
-                  <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50">
-                    {logoUrl ? (
-                      <Image
-                        src={logoUrl}
-                        alt="Logo"
-                        width={200}
-                        height={200}
-                        className="size-full object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="text-center text-xs text-[var(--text-muted)]">
-                        <Upload className="mx-auto mb-2 size-6" />
-                        Aucun logo
-                      </div>
-                    )}
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="logoUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input placeholder="https://… (ou upload R2)" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <ImageUploader
+                    value={logoUrl}
+                    onChange={(url) =>
+                      form.setValue("logoUrl", url ?? "", { shouldDirty: true })
+                    }
+                    restaurantId={restaurant.id}
+                    kind="logo"
+                    aspect="1/1"
+                    label="Choisir un logo"
                   />
                 </div>
                 <div className="space-y-3">
                   <p className="text-sm font-medium">
-                    Bannière <span className="text-[var(--text-muted)]">(ratio 16/9)</span>
+                    Bannière{" "}
+                    <span className="text-[var(--text-muted)]">(ratio 16/9)</span>
                   </p>
-                  <div className="flex aspect-[16/9] items-center justify-center overflow-hidden rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50">
-                    {banniereUrl ? (
-                      <Image
-                        src={banniereUrl}
-                        alt="Bannière"
-                        width={400}
-                        height={225}
-                        className="size-full object-cover"
-                        unoptimized
-                      />
-                    ) : (
-                      <div className="text-center text-xs text-[var(--text-muted)]">
-                        <Upload className="mx-auto mb-2 size-6" />
-                        Aucune bannière
-                      </div>
-                    )}
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="banniereUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input placeholder="https://…" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <ImageUploader
+                    value={banniereUrl}
+                    onChange={(url) =>
+                      form.setValue("banniereUrl", url ?? "", { shouldDirty: true })
+                    }
+                    restaurantId={restaurant.id}
+                    kind="banniere"
+                    aspect="16/9"
+                    label="Choisir une bannière"
                   />
                 </div>
               </CardContent>

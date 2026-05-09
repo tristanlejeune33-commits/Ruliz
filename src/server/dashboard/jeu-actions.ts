@@ -45,12 +45,12 @@ export async function upsertJeu(input: unknown): Promise<ActionResult<{ id: stri
   }
   const { restaurantId, jeuId, nom, actif, config } = parsed.data;
 
-  // Sanity : la somme des probabilités doit faire ~100
+  // Sanity : la somme des probabilités doit faire EXACTEMENT 100
   const total = config.lots.reduce((acc, l) => acc + l.probabilite, 0);
-  if (total < 95 || total > 105) {
+  if (total !== 100) {
     return {
       ok: false,
-      error: `La somme des probabilités doit être proche de 100 (actuel : ${total}).`,
+      error: `La somme des probabilités doit faire 100% (actuel : ${total}%). Utilise les boutons "Compléter à 100%" ou "Distribuer" pour ajuster automatiquement.`,
     };
   }
 
