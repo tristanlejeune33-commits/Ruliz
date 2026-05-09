@@ -41,6 +41,8 @@ import {
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ImageUploader } from "@/components/shared/image-uploader";
+import { AutoSaveIndicator } from "@/components/shared/auto-save-indicator";
+import { useAutoSave } from "@/lib/use-auto-save";
 import { updateRestaurant } from "@/server/dashboard/actions";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -96,6 +98,15 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
       } else toast.error(res.error);
     });
   };
+
+  // Auto-save : à chaque modification, sauvegarde silencieusement après 1.5s
+  // sans affichage de toast pour ne pas spam.
+  const { status: autoSaveStatus, errorMessage: autoSaveError } = useAutoSave({
+    form,
+    onSave: async (values) =>
+      updateRestaurant({ id: restaurant.id, ...values }),
+    delayMs: 1500,
+  });
 
   const logoUrl = form.watch("logoUrl");
   const banniereUrl = form.watch("banniereUrl");
@@ -564,14 +575,13 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
         </Tabs>
 
         <div className="sticky bottom-4 z-10 flex items-center justify-end gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)]/85 p-3 backdrop-blur-md">
-          {form.formState.isDirty && (
-            <p className="text-xs text-[var(--text-muted)]">
-              Modifications non enregistrées
-            </p>
-          )}
+          <AutoSaveIndicator
+            status={autoSaveStatus}
+            errorMessage={autoSaveError}
+          />
           <Button type="submit" disabled={!form.formState.isDirty || pending}>
             {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            Enregistrer
+            Enregistrer maintenant
           </Button>
         </div>
       </form>

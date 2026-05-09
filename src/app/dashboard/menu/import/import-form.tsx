@@ -67,7 +67,7 @@ export function ImportMenuForm({
       }
 
       toast.success(
-        `✅ ${res.data.categories} catégories + ${res.data.produits} produits importés`,
+        `✅ ${res.data.categories} cat. + ${res.data.produits} produits + ${res.data.vignettes} tags + ${res.data.allergenes} allergènes`,
       );
       // Redirige vers l'éditeur de menu pour que l'utilisateur édite
       router.push("/dashboard/menu");

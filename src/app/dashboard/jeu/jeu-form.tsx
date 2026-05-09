@@ -28,6 +28,8 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { upsertJeu } from "@/server/dashboard/jeu-actions";
+import { AutoSaveIndicator } from "@/components/shared/auto-save-indicator";
+import { useAutoSave } from "@/lib/use-auto-save";
 
 const schema = z.object({
   nom: z.string().min(1).max(255),
@@ -149,23 +151,37 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
     toast.success(`Probabilités distribuées uniformément (${base}% chacun).`);
   };
 
+  // Helper pour réutiliser dans onSubmit ET useAutoSave
+  const persist = async (values: Values) => {
+    return upsertJeu({
+      restaurantId,
+      jeuId: jeu?.id ?? null,
+      nom: values.nom,
+      actif: values.actif,
+      autoPopup: values.autoPopup,
+      autoPopupDelaySec: values.autoPopupDelaySec,
+      dateDebut: values.dateDebut || null,
+      dateFin: values.dateFin || null,
+      config: {
+        cta: values.cta,
+        lots: values.lots,
+        require_google_review: values.requireGoogleReview,
+      },
+    });
+  };
+
+  // Auto-save uniquement si le jeu existe déjà (sinon on attend le 1er save manuel
+  // qui va le créer avec les valeurs par défaut)
+  const { status: autoSaveStatus, errorMessage: autoSaveError } = useAutoSave({
+    form,
+    onSave: persist,
+    delayMs: 2000,
+    enabled: !!jeu,
+  });
+
   const onSubmit = (values: Values) => {
     startTransition(async () => {
-      const res = await upsertJeu({
-        restaurantId,
-        jeuId: jeu?.id ?? null,
-        nom: values.nom,
-        actif: values.actif,
-        autoPopup: values.autoPopup,
-        autoPopupDelaySec: values.autoPopupDelaySec,
-        dateDebut: values.dateDebut || null,
-        dateFin: values.dateFin || null,
-        config: {
-          cta: values.cta,
-          lots: values.lots,
-          require_google_review: values.requireGoogleReview,
-        },
-      });
+      const res = await persist(values);
       if (res.ok) {
         toast.success(jeu ? "Roulette mise à jour" : "Roulette créée");
         router.refresh();
@@ -487,6 +503,10 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
         </Card>
 
         <div className="flex items-center justify-end gap-3">
+          <AutoSaveIndicator
+            status={autoSaveStatus}
+            errorMessage={autoSaveError}
+          />
           <Button
             type="button"
             variant="outline"
