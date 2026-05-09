@@ -8,6 +8,7 @@ import { FooterPublic } from "./footer-public";
 import { GoogleFeedbackCTA } from "./google-feedback-cta";
 import { HeaderPublic } from "./header-public";
 import { HeroSection } from "./hero-section";
+import { t } from "./i18n";
 import { PopupBanner } from "./popup-banner";
 import { ProduitSheet } from "./produit-sheet";
 import { Roulette } from "./roulette";
@@ -98,7 +99,7 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
             fontFamily: "var(--font-body)",
           }}
         >
-          🇫🇷 Traduction en cours — quelques éléments restent en français.
+          {t("tradPartielle", menu.lang)}
         </div>
       )}
 
@@ -111,17 +112,15 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
         onOpenProduit={(p) => setActiveProduitId(p.id)}
         theme={theme}
         deviseDefault={menu.restaurant.deviseDefault}
+        lang={menu.lang}
       />
 
       {/* Box "Jeu Concours" si un jeu actif est configuré */}
       {!preview && menu.jeu && (
         <GoogleFeedbackCTA
-          title="Jeu Concours 🎉"
-          description={
-            menu.jeu.cta ||
-            "Donnez votre avis sur Google ou abonnez-vous à nos réseaux sociaux pour tenter de gagner des cadeaux !"
-          }
-          buttonLabel="Tourner la roue"
+          title={t("jeuConcoursTitre", menu.lang)}
+          description={menu.jeu.cta || t("jeuConcoursDesc", menu.lang)}
+          buttonLabel={t("tournerLaRoue", menu.lang)}
           onSpinClick={() => setRouletteOpen(true)}
           theme={theme}
         />
@@ -143,6 +142,7 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
         onOpenSuggestion={(id) => setActiveProduitId(id)}
         theme={theme}
         deviseDefault={menu.restaurant.deviseDefault}
+        lang={menu.lang}
       />
 
       {/* Popup événement */}

@@ -258,9 +258,9 @@ export async function getPublicMenu(
           prix: p.prix !== null ? Number(p.prix) : null,
           devise: p.devise ?? "€",
           estNouveau: p.estNouveau,
-          origine: p.origine,
-          titreRemarque: p.titreRemarque,
-          descriptionRemarque: p.descriptionRemarque,
+          origine: trad?.origine ?? p.origine,
+          titreRemarque: trad?.titreRemarque ?? p.titreRemarque,
+          descriptionRemarque: trad?.descriptionRemarque ?? p.descriptionRemarque,
           vignettes: p.vignettes.map((v) => ({
             code: v.vignette.code,
             labelFr: v.vignette.labelFr,

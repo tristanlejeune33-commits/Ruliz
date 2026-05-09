@@ -83,6 +83,9 @@ export async function translateProduitFields(opts: {
   titre: string;
   description: string | null;
   descriptionPrix: string | null;
+  titreRemarque: string | null;
+  descriptionRemarque: string | null;
+  origine: string | null;
   targetLang: SupportedLang;
 }): Promise<
   | {
@@ -90,23 +93,46 @@ export async function translateProduitFields(opts: {
       titre: string;
       description: string | null;
       descriptionPrix: string | null;
+      titreRemarque: string | null;
+      descriptionRemarque: string | null;
+      origine: string | null;
     }
   | { ok: false; error: string }
 > {
-  const { titre, description, descriptionPrix, targetLang } = opts;
+  const {
+    titre,
+    description,
+    descriptionPrix,
+    titreRemarque,
+    descriptionRemarque,
+    origine,
+    targetLang,
+  } = opts;
 
   if (targetLang === "fr") {
-    return { ok: true, titre, description, descriptionPrix };
+    return {
+      ok: true,
+      titre,
+      description,
+      descriptionPrix,
+      titreRemarque,
+      descriptionRemarque,
+      origine,
+    };
   }
 
   const client = getAnthropic();
   if (!client) return { ok: false, error: "ANTHROPIC_API_KEY missing" };
 
-  // Build a structured prompt that returns three blocks delimited by markers.
+  // Build a structured prompt that returns blocks delimited by markers.
   const parts: string[] = [];
   parts.push(`<<<TITRE>>>\n${titre}`);
   if (description) parts.push(`<<<DESCRIPTION>>>\n${description}`);
   if (descriptionPrix) parts.push(`<<<DESC_PRIX>>>\n${descriptionPrix}`);
+  if (titreRemarque) parts.push(`<<<TITRE_REMARQUE>>>\n${titreRemarque}`);
+  if (descriptionRemarque)
+    parts.push(`<<<DESC_REMARQUE>>>\n${descriptionRemarque}`);
+  if (origine) parts.push(`<<<ORIGINE>>>\n${origine}`);
 
   const userMessage = `Translate the following French restaurant menu fields to ${LANG_LABELS[targetLang]}.
 
@@ -117,7 +143,7 @@ ${parts.join("\n\n")}`;
   try {
     const res = await client.messages.create({
       model: MODEL,
-      max_tokens: 800,
+      max_tokens: 1200,
       temperature: 0.2,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userMessage }],
@@ -129,17 +155,26 @@ ${parts.join("\n\n")}`;
     }
 
     const out = block.text;
-    const titreMatch = /<<<TITRE>>>\n([\s\S]*?)(?=\n<<<|$)/.exec(out);
-    const descMatch = /<<<DESCRIPTION>>>\n([\s\S]*?)(?=\n<<<|$)/.exec(out);
-    const dpMatch = /<<<DESC_PRIX>>>\n([\s\S]*?)(?=\n<<<|$)/.exec(out);
+    const extract = (marker: string): string | null => {
+      const re = new RegExp(`<<<${marker}>>>\\n([\\s\\S]*?)(?=\\n<<<|$)`);
+      const m = re.exec(out);
+      return m?.[1]?.trim() ?? null;
+    };
 
     return {
       ok: true,
-      titre: titreMatch?.[1]?.trim() ?? titre,
-      description: description ? (descMatch?.[1]?.trim() ?? description) : null,
+      titre: extract("TITRE") ?? titre,
+      description: description ? (extract("DESCRIPTION") ?? description) : null,
       descriptionPrix: descriptionPrix
-        ? (dpMatch?.[1]?.trim() ?? descriptionPrix)
+        ? (extract("DESC_PRIX") ?? descriptionPrix)
         : null,
+      titreRemarque: titreRemarque
+        ? (extract("TITRE_REMARQUE") ?? titreRemarque)
+        : null,
+      descriptionRemarque: descriptionRemarque
+        ? (extract("DESC_REMARQUE") ?? descriptionRemarque)
+        : null,
+      origine: origine ? (extract("ORIGINE") ?? origine) : null,
     };
   } catch (err) {
     console.error("[anthropic.translateProduit]", err);

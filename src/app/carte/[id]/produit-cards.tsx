@@ -3,7 +3,9 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { PublicMenu } from "@/server/public/menu";
+import type { SupportedLang } from "@/lib/langs";
 import { VignetteIcon, hasVignetteVisual } from "./vignette-icon";
+import { t } from "./i18n";
 import type { CarteTheme } from "./theme";
 
 type Categorie = PublicMenu["categories"][number];
@@ -14,6 +16,7 @@ interface ProduitCardsProps {
   theme: CarteTheme;
   deviseDefault: string;
   onOpen: (produit: Produit) => void;
+  lang: SupportedLang;
 }
 
 /**
@@ -33,6 +36,7 @@ export function ProduitCards({
   theme,
   deviseDefault,
   onOpen,
+  lang,
 }: ProduitCardsProps) {
   if (categorie.produits.length === 0) {
     return (
@@ -44,7 +48,7 @@ export function ProduitCards({
           fontFamily: "var(--font-body)",
         }}
       >
-        Aucun plat dans cette catégorie pour l&apos;instant.
+        {t("aucunPlat", lang)}
       </p>
     );
   }
@@ -59,6 +63,7 @@ export function ProduitCards({
           theme={theme}
           deviseDefault={deviseDefault}
           onOpen={onOpen}
+          lang={lang}
         />
       ))}
     </ul>
@@ -71,6 +76,7 @@ interface ProduitItemProps {
   theme: CarteTheme;
   deviseDefault: string;
   onOpen: (p: Produit) => void;
+  lang: SupportedLang;
 }
 
 function ProduitItem({
@@ -79,6 +85,7 @@ function ProduitItem({
   theme,
   deviseDefault,
   onOpen,
+  lang,
 }: ProduitItemProps) {
   const visualVignettes = produit.vignettes.filter((v) => hasVignetteVisual(v.code));
 
@@ -137,7 +144,7 @@ function ProduitItem({
                   verticalAlign: "top",
                 }}
               >
-                Nouveau
+                {t("nouveau", lang)}
               </span>
             )}
             {produit.origine && (
@@ -175,7 +182,7 @@ function ProduitItem({
               fontFamily: "var(--font-body)",
             }}
           >
-            {produit.imageUrl ? "Voir photo" : "Voir détails"}
+            {produit.imageUrl ? t("voirPhoto", lang) : t("voirDetails", lang)}
           </span>
         </div>
 

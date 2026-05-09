@@ -336,13 +336,16 @@ model ProduitSuggestion {
 }
 
 model ProduitTranslation {
-  produitId       BigInt   @map("produit_id")
-  lang            String   @db.VarChar(2)
-  titre           String?
-  description     String?
-  descriptionPrix String?  @map("description_prix")
-  source          String   @default("anthropic") @db.VarChar(20)
-  translatedAt    DateTime @default(now()) @map("translated_at") @db.Timestamptz()
+  produitId           BigInt   @map("produit_id")
+  lang                String   @db.VarChar(2)
+  titre               String?
+  description         String?
+  descriptionPrix     String?  @map("description_prix")
+  titreRemarque       String?  @map("titre_remarque")
+  descriptionRemarque String?  @map("description_remarque")
+  origine             String?
+  source              String   @default("anthropic") @db.VarChar(20)
+  translatedAt        DateTime @default(now()) @map("translated_at") @db.Timestamptz()
 
   produit Produit @relation(fields: [produitId], references: [id], onDelete: Cascade)
 

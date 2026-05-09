@@ -4,7 +4,9 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import type { PublicMenu } from "@/server/public/menu";
+import type { SupportedLang } from "@/lib/langs";
 import { VignetteIcon, hasVignetteVisual } from "./vignette-icon";
+import { allergeneLabel, t, vignetteLabel } from "./i18n";
 import type { CarteTheme } from "./theme";
 
 type Produit = PublicMenu["categories"][number]["produits"][number];
@@ -17,6 +19,7 @@ interface ProduitSheetProps {
   onOpenSuggestion: (id: string) => void;
   theme: CarteTheme;
   deviseDefault: string;
+  lang: SupportedLang;
 }
 
 /**
@@ -36,6 +39,7 @@ export function ProduitSheet({
   onOpenSuggestion,
   theme,
   deviseDefault,
+  lang,
 }: ProduitSheetProps) {
   const suggestions = produit
     ? produit.suggestionsIds
@@ -87,6 +91,7 @@ export function ProduitSheet({
               produit={produit}
               theme={theme}
               deviseDefault={deviseDefault}
+              lang={lang}
             />
 
             {/* À marier avec : suggestions */}
@@ -96,6 +101,7 @@ export function ProduitSheet({
                 onOpenSuggestion={onOpenSuggestion}
                 theme={theme}
                 deviseDefault={deviseDefault}
+                lang={lang}
               />
             )}
           </motion.div>
@@ -113,10 +119,12 @@ function DishDetail({
   produit,
   theme,
   deviseDefault,
+  lang,
 }: {
   produit: Produit;
   theme: CarteTheme;
   deviseDefault: string;
+  lang: SupportedLang;
 }) {
   return (
     <div className="flex flex-col gap-[7px] pt-1">
@@ -139,7 +147,7 @@ function DishDetail({
                 fontFamily: "var(--font-body)",
               }}
             >
-              Nouveau
+              {t("nouveau", lang)}
             </span>
           )}
         </h2>
@@ -192,7 +200,7 @@ function DishDetail({
               fontFamily: "var(--font-display)",
             }}
           >
-            Allergènes :
+            {t("allergens", lang)}
           </h3>
           <p
             className="text-[14px] font-light"
@@ -201,7 +209,9 @@ function DishDetail({
               fontFamily: "var(--font-body)",
             }}
           >
-            {produit.allergenes.map((a) => a.labelFr).join(", ")}
+            {produit.allergenes
+              .map((a) => allergeneLabel(a.code, a.labelFr, lang))
+              .join(", ")}
           </p>
         </div>
       )}
@@ -223,7 +233,7 @@ function DishDetail({
                 }}
               >
                 {hasVisual && <VignetteIcon code={v.code} size={16} />}
-                <span>{v.labelFr}</span>
+                <span>{vignetteLabel(v.code, v.labelFr, lang)}</span>
               </li>
             );
           })}
@@ -239,7 +249,7 @@ function DishDetail({
             fontFamily: "var(--font-body)",
           }}
         >
-          🇫🇷 Origine : {produit.origine}
+          🇫🇷 {t("origine", lang)} : {produit.origine}
         </p>
       )}
 
@@ -301,11 +311,13 @@ function Suggestions({
   onOpenSuggestion,
   theme,
   deviseDefault,
+  lang,
 }: {
   suggestions: Produit[];
   onOpenSuggestion: (id: string) => void;
   theme: CarteTheme;
   deviseDefault: string;
+  lang: SupportedLang;
 }) {
   return (
     <div className="suggestion mt-4 flex flex-col gap-[7px]">
@@ -316,7 +328,7 @@ function Suggestions({
           fontFamily: "var(--font-display)",
         }}
       >
-        À marier avec :
+        {t("aMarier", lang)}
       </h3>
       <ul className="flex flex-col gap-[7px]">
         {suggestions.map((s) => (
@@ -371,7 +383,7 @@ function Suggestions({
                   fontFamily: "var(--font-body)",
                 }}
               >
-                Voir détails
+                {t("voirDetails", lang)}
               </span>
             </button>
           </li>

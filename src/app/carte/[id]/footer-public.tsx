@@ -6,6 +6,7 @@ import { Globe, Star, Phone, Mail } from "lucide-react";
 import type { PublicMenu } from "@/server/public/menu";
 import type { CarteTheme } from "./theme";
 import { langLabel } from "./lang-switcher";
+import { t } from "./i18n";
 import type { SupportedLang } from "@/lib/langs";
 
 // Brand icons inline (Lucide ne livre plus les marques pour cause de trademark)
@@ -213,7 +214,7 @@ export function FooterPublic({
         {/* Branding Ruliz */}
         {showBranding && (
           <div className="mt-2 flex items-center justify-center gap-2 text-xs opacity-80">
-            <span>Propulsé par</span>
+            <span>{t("propulsePar", lang)}</span>
             <Link
               href="https://ruliz.fr"
               target="_blank"

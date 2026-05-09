@@ -3,8 +3,10 @@
 import { ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { MenuCategory, MenuProduit } from "@/server/public/menu";
+import type { SupportedLang } from "@/lib/langs";
 import { CategoryIcon } from "./category-icon";
 import { ProduitCards } from "./produit-cards";
+import { t } from "./i18n";
 import type { CarteTheme } from "./theme";
 
 interface CategoryAccordionProps {
@@ -14,6 +16,7 @@ interface CategoryAccordionProps {
   onOpenProduit: (p: MenuProduit) => void;
   theme: CarteTheme;
   deviseDefault: string;
+  lang: SupportedLang;
 }
 
 /**
@@ -37,6 +40,7 @@ export function CategoryAccordion({
   onOpenProduit,
   theme,
   deviseDefault,
+  lang,
 }: CategoryAccordionProps) {
   if (categories.length === 0) {
     return (
@@ -44,7 +48,7 @@ export function CategoryAccordion({
         className="mx-auto mt-8 w-[90%] py-12 text-center xl:w-[70%]"
         style={{ color: theme.textBody, opacity: 0.7 }}
       >
-        <p className="italic">La carte sera bientôt disponible.</p>
+        <p className="italic">{t("bientotDispo", lang)}</p>
       </div>
     );
   }
@@ -64,6 +68,7 @@ export function CategoryAccordion({
           onOpenProduit={onOpenProduit}
           theme={theme}
           deviseDefault={deviseDefault}
+          lang={lang}
         />
       ))}
     </ul>
@@ -78,6 +83,7 @@ interface CategoryItemProps {
   onOpenProduit: (p: MenuProduit) => void;
   theme: CarteTheme;
   deviseDefault: string;
+  lang: SupportedLang;
 }
 
 function CategoryItem({
@@ -88,6 +94,7 @@ function CategoryItem({
   onOpenProduit,
   theme,
   deviseDefault,
+  lang,
 }: CategoryItemProps) {
   const isOpen = openIds.has(cat.id);
 
@@ -148,6 +155,7 @@ function CategoryItem({
                   theme={theme}
                   deviseDefault={deviseDefault}
                   onOpen={onOpenProduit}
+                  lang={lang}
                 />
               )}
 
@@ -164,6 +172,7 @@ function CategoryItem({
                       onOpenProduit={onOpenProduit}
                       theme={theme}
                       deviseDefault={deviseDefault}
+                      lang={lang}
                     />
                   ))}
                 </ul>

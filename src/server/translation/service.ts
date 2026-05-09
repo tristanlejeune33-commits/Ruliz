@@ -25,7 +25,14 @@ export async function translateProduitToLang(opts: {
 
   const produit = await prisma.produit.findUnique({
     where: { id: produitId },
-    select: { titre: true, description: true, descriptionPrix: true },
+    select: {
+      titre: true,
+      description: true,
+      descriptionPrix: true,
+      titreRemarque: true,
+      descriptionRemarque: true,
+      origine: true,
+    },
   });
   if (!produit) return { ok: false };
 
@@ -33,6 +40,9 @@ export async function translateProduitToLang(opts: {
     titre: produit.titre,
     description: produit.description,
     descriptionPrix: produit.descriptionPrix,
+    titreRemarque: produit.titreRemarque,
+    descriptionRemarque: produit.descriptionRemarque,
+    origine: produit.origine,
     targetLang,
   });
 
@@ -49,12 +59,18 @@ export async function translateProduitToLang(opts: {
       titre: result.titre,
       description: result.description,
       descriptionPrix: result.descriptionPrix,
+      titreRemarque: result.titreRemarque,
+      descriptionRemarque: result.descriptionRemarque,
+      origine: result.origine,
       source: "anthropic",
     },
     update: {
       titre: result.titre,
       description: result.description,
       descriptionPrix: result.descriptionPrix,
+      titreRemarque: result.titreRemarque,
+      descriptionRemarque: result.descriptionRemarque,
+      origine: result.origine,
       source: "anthropic",
       translatedAt: new Date(),
     },

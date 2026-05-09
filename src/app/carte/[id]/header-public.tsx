@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import type { PublicMenu } from "@/server/public/menu";
 import { LangSwitcher } from "./lang-switcher";
 import { CategoryIcon } from "./category-icon";
+import { t } from "./i18n";
 import type { CarteTheme } from "./theme";
 
 interface HeaderPublicProps {
@@ -88,7 +89,7 @@ export function HeaderPublic({
             className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 font-bold text-white"
             style={{ fontFamily: "var(--font-display)" }}
           >
-            Notre carte
+            {t("notreCarte", lang)}
           </span>
 
           {/* Right side : gift + lang */}
@@ -172,7 +173,7 @@ export function HeaderPublic({
                 style={{ color: theme.textBody }}
               >
                 <p className="flex items-center gap-2 text-sm">
-                  Propulsé par
+                  {t("propulsePar", lang)}
                   <Link href="https://ruliz.fr" target="_blank" className="font-bold">
                     Ruliz
                   </Link>
