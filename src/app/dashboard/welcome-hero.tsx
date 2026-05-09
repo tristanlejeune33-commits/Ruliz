@@ -2,7 +2,34 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, type LucideIcon } from "lucide-react";
+import {
+  Gift,
+  Megaphone,
+  MessageSquare,
+  QrCode,
+  ScanLine,
+  ScanText,
+  Sparkles,
+  UtensilsCrossed,
+  type LucideIcon,
+} from "lucide-react";
+
+/**
+ * Mapping iconKey → LucideIcon. Comme KpiCard : on évite de passer
+ * des forwardRef Lucide depuis les Server Components (RSC).
+ */
+const QUICK_ACTION_ICONS: Record<string, LucideIcon> = {
+  utensils: UtensilsCrossed,
+  scanText: ScanText,
+  qrcode: QrCode,
+  gift: Gift,
+  megaphone: Megaphone,
+  message: MessageSquare,
+  scan: ScanLine,
+  sparkles: Sparkles,
+};
+
+export type QuickActionIconKey = keyof typeof QUICK_ACTION_ICONS;
 
 interface WelcomeHeroProps {
   firstName: string;
@@ -98,7 +125,8 @@ export interface QuickAction {
   label: string;
   description: string;
   href: string;
-  icon: LucideIcon;
+  /** Clé d'icône (mapping vers LucideIcon en interne) */
+  iconKey: QuickActionIconKey;
   /** Couleur d'accent — CSS color */
   accentColor?: string;
 }
@@ -113,37 +141,43 @@ interface QuickActionsProps {
 export function QuickActions({ actions }: QuickActionsProps) {
   return (
     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-      {actions.map((a, i) => (
-        <motion.a
-          key={a.href}
-          href={a.href}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-          whileHover={{ y: -2 }}
-          className="group relative flex items-start gap-3 overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 transition-colors hover:border-[var(--accent)]/40"
-        >
-          <div
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-110"
-            style={{ background: `${a.accentColor ?? "var(--accent)"}15` }}
+      {actions.map((a, i) => {
+        const Icon = QUICK_ACTION_ICONS[a.iconKey] ?? Sparkles;
+        return (
+          <motion.a
+            key={a.href}
+            href={a.href}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.3,
+              delay: i * 0.05,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            whileHover={{ y: -2 }}
+            className="group relative flex items-start gap-3 overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 transition-colors hover:border-[var(--accent)]/40"
           >
-            <a.icon
-              className="size-4"
-              style={{ color: a.accentColor ?? "var(--accent)" }}
-            />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-medium text-[var(--text-primary)]">{a.label}</p>
-            <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-              {a.description}
-            </p>
-          </div>
-          {/* Arrow indicator on hover */}
-          <span className="opacity-0 transition-opacity group-hover:opacity-100 text-[var(--text-muted)]">
-            →
-          </span>
-        </motion.a>
-      ))}
+            <div
+              className="flex size-10 shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-110"
+              style={{ background: `${a.accentColor ?? "var(--accent)"}15` }}
+            >
+              <Icon
+                className="size-4"
+                style={{ color: a.accentColor ?? "var(--accent)" }}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-[var(--text-primary)]">{a.label}</p>
+              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                {a.description}
+              </p>
+            </div>
+            <span className="opacity-0 transition-opacity group-hover:opacity-100 text-[var(--text-muted)]">
+              →
+            </span>
+          </motion.a>
+        );
+      })}
     </div>
   );
 }

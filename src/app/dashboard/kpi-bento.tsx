@@ -4,31 +4,51 @@ import { motion } from "framer-motion";
 import {
   ArrowDownRight,
   ArrowUpRight,
+  Gift,
+  Globe2,
+  Megaphone,
+  MessageSquare,
   Minus,
+  QrCode,
+  ScanLine,
+  ScanText,
+  Sparkles,
+  UtensilsCrossed,
   type LucideIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 /**
- * KPI Card avec animation d'entrée stagger + trend indicator + sparkline.
- * Utilisé sur le dashboard home pour donner un visuel "tech" pro.
+ * Mapping iconKey → Lucide component.
+ *
+ * On utilise des STRINGS au lieu de passer des refs Lucide depuis les
+ * Server Components, parce que les forwardRef Lucide ne sont pas
+ * serializable across la frontière RSC.
  */
+const ICON_MAP: Record<string, LucideIcon> = {
+  scan: ScanLine,
+  sparkles: Sparkles,
+  utensils: UtensilsCrossed,
+  gift: Gift,
+  globe: Globe2,
+  qrcode: QrCode,
+  scanText: ScanText,
+  megaphone: Megaphone,
+  message: MessageSquare,
+};
+
+export type KpiIconKey = keyof typeof ICON_MAP;
+
 interface KpiCardProps {
   label: string;
   value: string | number;
-  /** Sous-texte (ex: "vs 30 derniers jours") */
   hint?: string;
-  /** Tendance en % (positif = vert, négatif = rouge, 0 = neutre) */
   trendPct?: number | null;
-  icon: LucideIcon;
-  /** Sparkline data (tableau de nombres normalisés 0-1) */
+  iconKey: KpiIconKey;
   sparkline?: number[];
-  /** Couleur d'accent (CSS color) */
   accentColor?: string;
-  /** Animation delay pour stagger */
   delay?: number;
-  /** Format custom de la valeur */
   formatter?: (v: string | number) => string;
 }
 
@@ -37,12 +57,13 @@ export function KpiCard({
   value,
   hint,
   trendPct,
-  icon: Icon,
+  iconKey,
   sparkline,
   accentColor = "var(--accent)",
   delay = 0,
   formatter,
 }: KpiCardProps) {
+  const Icon = ICON_MAP[iconKey] ?? ScanLine;
   const formattedValue = formatter
     ? formatter(value)
     : typeof value === "number"
@@ -55,8 +76,7 @@ export function KpiCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] }}
     >
-      <Card className="group relative overflow-hidden p-5 transition-all hover:border-[var(--border-subtle-hover,var(--text-muted))]">
-        {/* Background glow that follows accent — subtle */}
+      <Card className="group relative overflow-hidden p-5 transition-all hover:border-[var(--text-muted)]">
         <div
           className="absolute -right-10 -top-10 size-32 rounded-full opacity-0 transition-opacity duration-300 group-hover:opacity-20"
           style={{
@@ -82,7 +102,6 @@ export function KpiCard({
           </div>
         </div>
 
-        {/* Trend indicator + hint */}
         {(trendPct !== undefined || hint) && (
           <div className="relative mt-3 flex items-center gap-2 text-xs">
             {trendPct !== undefined && trendPct !== null && (
@@ -106,13 +125,10 @@ export function KpiCard({
                 {Math.abs(trendPct)}%
               </span>
             )}
-            {hint && (
-              <span className="text-[var(--text-muted)]">{hint}</span>
-            )}
+            {hint && <span className="text-[var(--text-muted)]">{hint}</span>}
           </div>
         )}
 
-        {/* Sparkline mini-chart */}
         {sparkline && sparkline.length > 1 && (
           <Sparkline data={sparkline} accentColor={accentColor} />
         )}
@@ -128,7 +144,6 @@ function Sparkline({
   data: number[];
   accentColor: string;
 }) {
-  // Normalise sur [0, 1] via min-max
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
@@ -141,9 +156,8 @@ function Sparkline({
       return `${x},${y}`;
     })
     .join(" ");
-
-  // Construit le path d'aire (sous la courbe) pour effet rempli
   const areaPoints = `0,${h} ${points} ${w},${h}`;
+  const gradId = `spark-${accentColor.replace(/[^a-z0-9]/gi, "")}`;
 
   return (
     <svg
@@ -153,15 +167,12 @@ function Sparkline({
       aria-hidden
     >
       <defs>
-        <linearGradient id={`spark-${accentColor.replace(/[^a-z0-9]/gi, "")}`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={accentColor} stopOpacity="0.4" />
           <stop offset="100%" stopColor={accentColor} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <polygon
-        points={areaPoints}
-        fill={`url(#spark-${accentColor.replace(/[^a-z0-9]/gi, "")})`}
-      />
+      <polygon points={areaPoints} fill={`url(#${gradId})`} />
       <polyline
         points={points}
         fill="none"

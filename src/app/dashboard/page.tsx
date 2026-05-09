@@ -1,19 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  ChartLine,
-  ExternalLink,
-  Gift,
-  Globe2,
-  Megaphone,
-  MessageSquare,
-  QrCode,
-  ScanLine,
-  ScanText,
-  Sparkles,
-  UtensilsCrossed,
-} from "lucide-react";
+import { ArrowUpRight, ChartLine, ExternalLink, Globe2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -61,47 +48,49 @@ export default async function DashboardHome() {
   // Sparklines : on transforme perDay en array de counts pour le mini-chart
   const scansSparkline = stats.perDay.map((d) => d.scans);
 
+  // QuickActions reçoivent des "iconKey" strings → mapping côté Client
+  // (RSC ne sait pas serializer les forwardRef Lucide).
   const quickActions = [
     {
       label: "Éditer ma carte",
       description: "Drag & drop catégories + produits",
       href: "/dashboard/menu",
-      icon: UtensilsCrossed,
+      iconKey: "utensils" as const,
       accentColor: "oklch(0.65 0.22 25)",
     },
     {
       label: "Importer un menu",
       description: "Photo → carte digitale en 30s",
       href: "/dashboard/menu/import",
-      icon: ScanText,
+      iconKey: "scanText" as const,
       accentColor: "oklch(0.7 0.18 145)",
     },
     {
       label: "Mes QR codes",
       description: "Génère et imprime tes codes",
       href: "/dashboard/qrcodes",
-      icon: QrCode,
+      iconKey: "qrcode" as const,
       accentColor: "oklch(0.6 0.25 280)",
     },
     {
       label: "Roulette d'avis",
       description: "Capte les coordonnées clients",
       href: "/dashboard/jeu",
-      icon: Gift,
+      iconKey: "gift" as const,
       accentColor: "#FF9B4A",
     },
     {
       label: "Pop-ups événement",
       description: "Annonce une promo en 1 clic",
       href: "/dashboard/popups",
-      icon: Megaphone,
+      iconKey: "megaphone" as const,
       accentColor: "oklch(0.65 0.2 320)",
     },
     {
       label: "SMS marketing",
       description: "Relance ta base clients",
       href: "/dashboard/sms",
-      icon: MessageSquare,
+      iconKey: "message" as const,
       accentColor: "oklch(0.7 0.18 200)",
     },
   ];
@@ -121,7 +110,7 @@ export default async function DashboardHome() {
           value={stats.scansThis}
           hint="vs 30 jours précédents"
           trendPct={stats.evolutionPct}
-          icon={ScanLine}
+          iconKey="scan"
           sparkline={scansSparkline}
           accentColor="oklch(0.7 0.18 145)"
           delay={0}
@@ -130,7 +119,7 @@ export default async function DashboardHome() {
           label="Clics produits"
           value={Number(totalClicks._sum.clicCount ?? 0)}
           hint="depuis le lancement"
-          icon={Sparkles}
+          iconKey="sparkles"
           accentColor="oklch(0.65 0.22 25)"
           delay={0.05}
         />
@@ -138,7 +127,7 @@ export default async function DashboardHome() {
           label="Catégories · Produits"
           value={`${categoriesCount} · ${produitsCount}`}
           hint="dans ta carte"
-          icon={UtensilsCrossed}
+          iconKey="utensils"
           accentColor="oklch(0.6 0.25 280)"
           delay={0.1}
         />
@@ -146,7 +135,7 @@ export default async function DashboardHome() {
           label="Participations jeu"
           value={jeuParticipations}
           hint="leads captés"
-          icon={Gift}
+          iconKey="gift"
           accentColor="#FF9B4A"
           delay={0.15}
         />
