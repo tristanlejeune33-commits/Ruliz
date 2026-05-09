@@ -25,7 +25,7 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
   const { collapsed, toggle } = useSidebarCollapse();
 
   return (
-    <header className="sticky top-0 z-30 h-[68px] border-b border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-2xl">
+    <header className="sticky top-0 z-30 h-14 border-b border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-2xl">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-[var(--neon-cyan)]/25 to-transparent"

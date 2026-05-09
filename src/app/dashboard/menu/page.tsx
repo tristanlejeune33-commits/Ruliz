@@ -35,7 +35,7 @@ export default async function MenuEditorPage() {
   }, 0);
 
   return (
-    <div className="-mx-6 -my-8 flex min-h-[calc(100vh-68px)] flex-col">
+    <div className="-mx-6 -my-8 flex min-h-[calc(100vh-3.5rem)] flex-col">
       <header className="relative isolate overflow-hidden border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 backdrop-blur">
         <div
           aria-hidden

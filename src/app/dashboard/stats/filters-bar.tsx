@@ -64,7 +64,7 @@ export function FiltersBar({
     (currentFilters.lang && currentFilters.lang !== "all" ? 1 : 0);
 
   return (
-    <div className="sticky top-[68px] z-20 -mx-6 border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 px-6 py-3 backdrop-blur-xl">
+    <div className="sticky top-14 z-20 -mx-6 border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 px-6 py-3 backdrop-blur-xl">
       <div className="flex flex-wrap items-center gap-2">
         {/* Period switcher */}
         <div className="inline-flex h-9 items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-1">
