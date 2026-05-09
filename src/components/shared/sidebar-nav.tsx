@@ -103,55 +103,77 @@ export function SidebarNav({
     sections ?? (scope === "admin" ? ADMIN_NAV : DASHBOARD_NAV);
 
   return (
-    <nav className="flex flex-col gap-5">
-      {resolved.map((section, index) => (
-        <div key={index} className="flex flex-col gap-0.5">
+    <nav className="flex flex-col gap-6">
+      {resolved.map((section, sectionIdx) => (
+        <div key={sectionIdx} className="flex flex-col gap-1">
           {section.title && (
-            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
-              {section.title}
-            </p>
+            <div className="mb-1 flex items-center gap-2 px-3">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                {section.title}
+              </p>
+              <span
+                aria-hidden
+                className="h-px flex-1 bg-gradient-to-r from-[var(--border-subtle)] to-transparent"
+              />
+            </div>
           )}
-          {section.items.map((item) => {
-            const active =
-              pathname === item.href ||
-              (item.href !== "/dashboard" &&
-                item.href !== "/admin" &&
-                pathname.startsWith(`${item.href}/`));
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-200",
-                  active
-                    ? "bg-[var(--bg-elevated)] font-medium text-[var(--text-primary)]"
-                    : "text-[var(--text-secondary)] hover:translate-x-0.5 hover:bg-[var(--bg-elevated)]/60 hover:text-[var(--text-primary)]",
-                )}
-              >
-                {/* Indicateur visuel d'item actif (barre verticale gauche) */}
-                {active && (
-                  <span
-                    className="absolute left-0 top-1/2 h-5 w-0.5 -translate-x-1.5 -translate-y-1/2 rounded-r-full bg-[var(--accent)]"
-                    aria-hidden
-                  />
-                )}
-                <item.icon
+          <div className="flex flex-col gap-0.5">
+            {section.items.map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href !== "/dashboard" &&
+                  item.href !== "/admin" &&
+                  pathname.startsWith(`${item.href}/`));
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
                   className={cn(
-                    "size-4 shrink-0 transition-colors",
+                    // Base — wrapping container avec hover + transition douce
+                    "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-all duration-200",
                     active
-                      ? "text-[var(--accent)]"
-                      : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
+                      ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]/50 hover:text-[var(--text-primary)]",
                   )}
-                />
-                <span className="flex-1 truncate">{item.label}</span>
-                {item.badge && (
-                  <span className="rounded bg-[var(--bg-card)] px-1.5 py-0.5 font-mono text-[10px] uppercase text-[var(--text-muted)]">
-                    {item.badge}
+                >
+                  {/* Indicateur d'item actif — barre verticale gauche avec glow */}
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--accent)] shadow-[0_0_12px_var(--accent)]"
+                    />
+                  )}
+
+                  {/* Icone — tile colorée si actif, plate sinon */}
+                  <span
+                    className={cn(
+                      "relative flex size-7 shrink-0 items-center justify-center rounded-md transition-all duration-200",
+                      active
+                        ? "bg-[var(--accent)]/15 text-[var(--accent)] ring-1 ring-[var(--accent)]/25"
+                        : "text-[var(--text-muted)] group-hover:bg-[var(--bg-card)]/60 group-hover:text-[var(--text-primary)]",
+                    )}
+                  >
+                    <item.icon className="size-3.5" />
                   </span>
-                )}
-              </Link>
-            );
-          })}
+
+                  <span className="flex-1 truncate">{item.label}</span>
+
+                  {item.badge && (
+                    <span
+                      className={cn(
+                        "rounded-md border px-1.5 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider transition-colors",
+                        active
+                          ? "border-[var(--accent)]/30 bg-[var(--accent)]/15 text-[var(--accent)]"
+                          : "border-[var(--border-subtle)] bg-[var(--bg-card)]/60 text-[var(--text-muted)]",
+                      )}
+                    >
+                      {item.badge}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </div>
         </div>
       ))}
     </nav>

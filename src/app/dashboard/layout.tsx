@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { AppShell } from "@/components/shared/app-shell";
-import { Logo } from "@/components/shared/logo";
 import {
   RestaurantSwitcher,
   type RestaurantOption,
 } from "@/components/shared/restaurant-switcher";
+import { SidebarBrand } from "@/components/shared/sidebar-brand";
+import { SidebarFooter } from "@/components/shared/sidebar-footer";
 import { SidebarNav } from "@/components/shared/sidebar-nav";
 import { SubscriptionBanner } from "@/components/shared/subscription-banner";
 import { getActiveRestaurantId } from "@/lib/active-restaurant";
@@ -48,9 +48,14 @@ export default async function DashboardLayout({
   const activeRestaurant = activeId
     ? await prisma.restaurant.findUnique({
         where: { id: BigInt(activeId) },
-        select: { stripeSubscriptionStatus: true, statut: true },
+        select: { stripeSubscriptionStatus: true, statut: true, plan: true },
       })
     : null;
+
+  // Hint affiché dans la carte user en bas de sidebar
+  const userHint = activeRestaurant?.plan
+    ? `Plan ${activeRestaurant.plan}`
+    : session.user.email;
 
   return (
     <AppShell
@@ -58,15 +63,14 @@ export default async function DashboardLayout({
       scope="dashboard"
       sidebar={
         <>
-          <div className="flex h-14 items-center border-b border-[var(--border-subtle)] px-5">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <Logo variant="mark" className="size-7" />
-              <span className="text-sm font-semibold tracking-tight">Ruliz</span>
-            </Link>
-          </div>
+          <SidebarBrand href="/dashboard" />
           <div className="flex-1 overflow-y-auto px-3 py-4">
             <SidebarNav scope="dashboard" />
           </div>
+          <SidebarFooter
+            user={{ name: session.user.name, email: session.user.email }}
+            hint={userHint}
+          />
         </>
       }
       topbarLeftSlot={
