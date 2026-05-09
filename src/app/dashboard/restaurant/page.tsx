@@ -60,6 +60,12 @@ export default async function RestaurantPage() {
               | "it"
               | "pt"
               | "zh") ?? "fr",
+          lunchStart: data.lunchStart ?? "11:30",
+          lunchEnd: data.lunchEnd ?? "15:00",
+          dinnerStart: data.dinnerStart ?? "18:30",
+          dinnerEnd: data.dinnerEnd ?? "23:00",
+          happyHourStart: data.happyHourStart ?? "18:00",
+          happyHourEnd: data.happyHourEnd ?? "19:00",
           theme: (data.theme as "light" | "dark") ?? "light",
           fontStyle: (data.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",
           couleurPrimaire: data.couleurPrimaire ?? "#4870e0",

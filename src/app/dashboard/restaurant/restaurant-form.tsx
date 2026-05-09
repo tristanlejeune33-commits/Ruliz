@@ -59,6 +59,13 @@ const schema = z.object({
   pays: z.string().max(100),
   deviseDefault: z.string().max(5),
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]),
+  // Horaires de service (presets pour les créneaux de catégories)
+  lunchStart: z.string().max(5),
+  lunchEnd: z.string().max(5),
+  dinnerStart: z.string().max(5),
+  dinnerEnd: z.string().max(5),
+  happyHourStart: z.string().max(5),
+  happyHourEnd: z.string().max(5),
   theme: z.enum(["light", "dark"]),
   fontStyle: z.enum(["modern", "editorial", "elegant"]),
   couleurPrimaire: optHex,
@@ -293,6 +300,115 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                     </FormItem>
                   )}
                 />
+              </CardContent>
+            </Card>
+
+            {/* HORAIRES DE SERVICE — utilisés pour les créneaux carte midi/soir/HH */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Horaires de service</CardTitle>
+                <CardDescription>
+                  Définit les horaires utilisés pour les créneaux d&apos;affichage
+                  des catégories (carte midi, carte soir, happy hour). Tu peux
+                  ensuite cocher l&apos;un de ces créneaux dans l&apos;éditeur
+                  de menu pour qu&apos;une catégorie n&apos;apparaisse que
+                  pendant ces horaires.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="mb-2 text-sm font-medium">☀️ Service du midi</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="lunchStart"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Début</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="lunchEnd"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Fin</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium">🌙 Service du soir</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="dinnerStart"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Début</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="dinnerEnd"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Fin</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-2 text-sm font-medium">🍹 Happy Hour</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="happyHourStart"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Début</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="happyHourEnd"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Fin</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

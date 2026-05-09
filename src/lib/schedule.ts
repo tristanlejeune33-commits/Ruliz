@@ -13,26 +13,73 @@ export type ScheduleType =
   | "happy_hour" // 18:00 → 19:00
   | "custom"; // Horaires perso via scheduleStart/End
 
+/**
+ * Horaires par défaut si le resto ne les a pas customisés.
+ * Le resto peut override ces valeurs via Restaurant.lunchStart/End, etc.
+ */
+export const DEFAULT_PRESET_HOURS: Record<
+  Exclude<ScheduleType, "always" | "custom">,
+  { start: string; end: string }
+> = {
+  lunch: { start: "11:30", end: "15:00" },
+  dinner: { start: "18:30", end: "23:00" },
+  happy_hour: { start: "18:00", end: "19:00" },
+};
+
+/**
+ * Horaires des presets pour CE restaurant (mix défauts + overrides).
+ * Si le resto a configuré ses propres horaires (ex: dîner 19h-23h30 au lieu
+ * du défaut 18h30-23h), on les utilise.
+ */
+export interface RestaurantPresetHours {
+  lunchStart?: string | null;
+  lunchEnd?: string | null;
+  dinnerStart?: string | null;
+  dinnerEnd?: string | null;
+  happyHourStart?: string | null;
+  happyHourEnd?: string | null;
+}
+
+export function resolvePresetHours(
+  preset: Exclude<ScheduleType, "always" | "custom">,
+  resto?: RestaurantPresetHours,
+): { start: string; end: string } {
+  const defaults = DEFAULT_PRESET_HOURS[preset];
+  if (!resto) return defaults;
+
+  switch (preset) {
+    case "lunch":
+      return {
+        start: resto.lunchStart || defaults.start,
+        end: resto.lunchEnd || defaults.end,
+      };
+    case "dinner":
+      return {
+        start: resto.dinnerStart || defaults.start,
+        end: resto.dinnerEnd || defaults.end,
+      };
+    case "happy_hour":
+      return {
+        start: resto.happyHourStart || defaults.start,
+        end: resto.happyHourEnd || defaults.end,
+      };
+  }
+}
+
 export const SCHEDULE_PRESETS: Record<
   Exclude<ScheduleType, "always" | "custom">,
-  { start: string; end: string; label: string; emoji: string }
+  { label: string; emoji: string }
 > = {
   lunch: {
-    start: "11:30",
-    end: "15:00",
-    label: "Carte du midi (11h30 - 15h00)",
+    label: "Carte du midi",
     emoji: "☀️",
   },
   dinner: {
-    start: "18:30",
-    end: "23:00",
-    label: "Carte du soir (18h30 - 23h00)",
+    label: "Carte du soir",
     emoji: "🌙",
   },
   happy_hour: {
-    start: "18:00",
-    end: "19:00",
-    label: "Happy Hour (18h00 - 19h00)",
+    label: "Happy Hour",
     emoji: "🍹",
   },
 };
@@ -53,11 +100,14 @@ interface CategorieSchedule {
  *    1. Le jour courant est dans scheduleDays (ISO weekday "1"-"7", Mon=1)
  *    2. L'heure courante est entre start et end (de la preset OU custom)
  *
+ * @param categorie - Le créneau de la catégorie/produit
  * @param now (optionnel) — Date à utiliser comme "maintenant", utile pour les tests
+ * @param restoHours (optionnel) — Horaires customisés du restaurant pour les presets
  */
 export function isCategorieVisibleNow(
   categorie: CategorieSchedule,
   now: Date = new Date(),
+  restoHours?: RestaurantPresetHours,
 ): boolean {
   if (categorie.scheduleType === "always") return true;
 
@@ -74,15 +124,15 @@ export function isCategorieVisibleNow(
   if (categorie.scheduleType === "custom") {
     start = categorie.scheduleStart ?? undefined;
     end = categorie.scheduleEnd ?? undefined;
-  } else {
-    const preset =
-      SCHEDULE_PRESETS[
-        categorie.scheduleType as keyof typeof SCHEDULE_PRESETS
-      ];
-    if (preset) {
-      start = preset.start;
-      end = preset.end;
-    }
+  } else if (
+    categorie.scheduleType === "lunch" ||
+    categorie.scheduleType === "dinner" ||
+    categorie.scheduleType === "happy_hour"
+  ) {
+    // Utilise les horaires du resto si dispo, sinon les défauts
+    const hours = resolvePresetHours(categorie.scheduleType, restoHours);
+    start = hours.start;
+    end = hours.end;
   }
 
   if (!start || !end) return true; // si schedule mal configuré, on affiche par défaut
@@ -102,7 +152,8 @@ function pad(n: number): string {
 }
 
 /**
- * Liste des labels pour affichage UI.
+ * Liste des labels pour affichage UI. Les hints dynamiques (avec horaires du
+ * resto) doivent être construits côté composant via `resolvePresetHours`.
  */
 export const SCHEDULE_OPTIONS: Array<{
   value: ScheduleType;
@@ -117,17 +168,17 @@ export const SCHEDULE_OPTIONS: Array<{
   {
     value: "lunch",
     label: "☀️ Carte du midi",
-    hint: "Visible uniquement entre 11h30 et 15h.",
+    hint: "Visible pendant le service du midi (configurable dans Mon resto).",
   },
   {
     value: "dinner",
     label: "🌙 Carte du soir",
-    hint: "Visible uniquement entre 18h30 et 23h.",
+    hint: "Visible pendant le service du soir (configurable dans Mon resto).",
   },
   {
     value: "happy_hour",
     label: "🍹 Happy Hour",
-    hint: "Visible uniquement entre 18h et 19h.",
+    hint: "Visible pendant l'happy hour (configurable dans Mon resto).",
   },
   {
     value: "custom",

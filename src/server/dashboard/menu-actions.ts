@@ -5,7 +5,9 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
 import { inngest } from "@/server/inngest/client";
+import { SUPPORTED_LANGS } from "@/lib/langs";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -42,18 +44,33 @@ async function assertProduitOwner(produitId: bigint) {
   return owned ? produit : null;
 }
 
-function bumpRestaurantCaches(restaurantId: bigint) {
+async function bumpRestaurantCaches(restaurantId: bigint) {
   revalidatePath("/dashboard/menu");
   revalidatePath(`/carte/${restaurantId.toString()}`);
-  // Best-effort : déclenche l'invalidation Redis via Inngest. Si Inngest est
-  // absent (dev local), on log et on continue.
+
+  // Purge Redis directement (sync, ne dépend pas d'Inngest qui peut être
+  // absent en dev). C'était le bug qui faisait que les sous-cats / les
+  // changements de catégorie ne s'affichaient pas pendant 30 min.
+  if (redis) {
+    try {
+      const keys = SUPPORTED_LANGS.map(
+        (l) => `carte:${restaurantId.toString()}:${l}`,
+      );
+      await redis.del(...keys);
+    } catch (err) {
+      console.warn("[bumpRestaurantCaches] redis del failed:", err);
+    }
+  }
+
+  // Inngest reste pour les workers qui veulent réagir (ex: re-translation
+  // background, analytics). Best-effort, ne bloque pas la réponse.
   void inngest
     .send({
       name: "carte/cache.invalidate",
       data: { restaurantId: restaurantId.toString() },
     })
-    .catch((e) => {
-      console.warn("[inngest] cache.invalidate failed:", e);
+    .catch(() => {
+      // silent — c'est OK si Inngest n'est pas configuré
     });
 }
 
@@ -139,7 +156,7 @@ export async function createCategorie(input: unknown): Promise<ActionResult<{ id
   });
 
   await triggerCategorieTranslation(created.id, restoId);
-  bumpRestaurantCaches(restoId);
+  await bumpRestaurantCaches(restoId);
   return { ok: true, data: { id: created.id.toString() } };
 }
 
@@ -178,7 +195,7 @@ export async function updateCategorie(input: unknown): Promise<ActionResult> {
   await prisma.categorieTranslation.deleteMany({ where: { categorieId: id } });
 
   await triggerCategorieTranslation(id, cat.restaurantId);
-  bumpRestaurantCaches(cat.restaurantId);
+  await bumpRestaurantCaches(cat.restaurantId);
   return { ok: true };
 }
 
@@ -190,7 +207,7 @@ export async function deleteCategorie(id: string): Promise<ActionResult> {
   if (!cat) return { ok: false, error: "Accès refusé" };
 
   await prisma.categorie.delete({ where: { id: big } });
-  bumpRestaurantCaches(cat.restaurantId);
+  await bumpRestaurantCaches(cat.restaurantId);
   return { ok: true };
 }
 
@@ -217,7 +234,7 @@ export async function reorderCategories(input: unknown): Promise<ActionResult> {
     ),
   );
 
-  bumpRestaurantCaches(restoId);
+  await bumpRestaurantCaches(restoId);
   return { ok: true };
 }
 
@@ -298,7 +315,7 @@ export async function createProduit(input: unknown): Promise<ActionResult<{ id: 
   });
 
   await triggerProduitTranslation(created.id, cat.restaurantId);
-  bumpRestaurantCaches(cat.restaurantId);
+  await bumpRestaurantCaches(cat.restaurantId);
   return { ok: true, data: { id: created.id.toString() } };
 }
 
@@ -350,7 +367,7 @@ export async function updateProduit(input: unknown): Promise<ActionResult> {
   await invalidateProduitTranslations(id);
   await triggerProduitTranslation(id, produit.categorie.restaurantId);
 
-  bumpRestaurantCaches(produit.categorie.restaurantId);
+  await bumpRestaurantCaches(produit.categorie.restaurantId);
   return { ok: true };
 }
 
@@ -362,7 +379,7 @@ export async function deleteProduit(id: string): Promise<ActionResult> {
   if (!produit) return { ok: false, error: "Accès refusé" };
 
   await prisma.produit.delete({ where: { id: big } });
-  bumpRestaurantCaches(produit.categorie.restaurantId);
+  await bumpRestaurantCaches(produit.categorie.restaurantId);
   return { ok: true };
 }
 
@@ -389,7 +406,7 @@ export async function reorderProduits(input: unknown): Promise<ActionResult> {
     ),
   );
 
-  bumpRestaurantCaches(cat.restaurantId);
+  await bumpRestaurantCaches(cat.restaurantId);
   return { ok: true };
 }
 
@@ -422,6 +439,6 @@ export async function moveProduit(input: unknown): Promise<ActionResult> {
     data: { categorieId: targetCatId, position },
   });
 
-  bumpRestaurantCaches(cat.restaurantId);
+  await bumpRestaurantCaches(cat.restaurantId);
   return { ok: true };
 }

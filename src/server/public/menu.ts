@@ -163,6 +163,12 @@ export async function getPublicMenu(
         siteWeb: true,
         googleReviewUrl: true,
         plan: true,
+        lunchStart: true,
+        lunchEnd: true,
+        dinnerStart: true,
+        dinnerEnd: true,
+        happyHourStart: true,
+        happyHourEnd: true,
       },
     }),
     prisma.jeu.findFirst({
@@ -262,13 +268,27 @@ export async function getPublicMenu(
 
   // Filtre par créneau d'affichage (carte midi/soir/happy hour/custom)
   // Une catégorie sans schedule_type est "always" → toujours visible.
+  // On passe les horaires customisés du resto pour que "lunch"/"dinner"/
+  // "happy_hour" résolvent les heures depuis sa config.
+  const restoHours = {
+    lunchStart: restaurant.lunchStart,
+    lunchEnd: restaurant.lunchEnd,
+    dinnerStart: restaurant.dinnerStart,
+    dinnerEnd: restaurant.dinnerEnd,
+    happyHourStart: restaurant.happyHourStart,
+    happyHourEnd: restaurant.happyHourEnd,
+  };
   const categoriesRaw = allCategoriesRaw.filter((cat) =>
-    isCategorieVisibleNow({
-      scheduleType: cat.scheduleType ?? "always",
-      scheduleStart: cat.scheduleStart ?? null,
-      scheduleEnd: cat.scheduleEnd ?? null,
-      scheduleDays: cat.scheduleDays ?? "1234567",
-    }),
+    isCategorieVisibleNow(
+      {
+        scheduleType: cat.scheduleType ?? "always",
+        scheduleStart: cat.scheduleStart ?? null,
+        scheduleEnd: cat.scheduleEnd ?? null,
+        scheduleDays: cat.scheduleDays ?? "1234567",
+      },
+      undefined,
+      restoHours,
+    ),
   );
 
   let partiallyTranslated = false;
@@ -292,12 +312,16 @@ export async function getPublicMenu(
       // Filtre les produits par leur propre créneau (peut override la catégorie)
       produits: cat.produits
         .filter((p) =>
-          isCategorieVisibleNow({
-            scheduleType: p.scheduleType ?? "always",
-            scheduleStart: p.scheduleStart ?? null,
-            scheduleEnd: p.scheduleEnd ?? null,
-            scheduleDays: p.scheduleDays ?? "1234567",
-          }),
+          isCategorieVisibleNow(
+            {
+              scheduleType: p.scheduleType ?? "always",
+              scheduleStart: p.scheduleStart ?? null,
+              scheduleEnd: p.scheduleEnd ?? null,
+              scheduleDays: p.scheduleDays ?? "1234567",
+            },
+            undefined,
+            restoHours,
+          ),
         )
         .map((p) => {
         const trad = !isSourceLang ? p.translations?.[0] : undefined;

@@ -198,6 +198,16 @@ model Restaurant {
    * Default "fr" pour rétrocompat avec l'existant. ISO 639-1.
    */
   langueNative             String    @default("fr") @map("langue_native") @db.VarChar(2)
+  // ----- Horaires de service personnalisables (par resto) -----
+  // Permet de customiser les créneaux "lunch" / "dinner" / "happy_hour"
+  // utilisés par le filtrage des catégories sur la carte publique.
+  // Format HH:MM (ex: "11:30"). Défauts standards si NULL.
+  lunchStart               String?   @default("11:30") @map("lunch_start") @db.VarChar(5)
+  lunchEnd                 String?   @default("15:00") @map("lunch_end") @db.VarChar(5)
+  dinnerStart              String?   @default("18:30") @map("dinner_start") @db.VarChar(5)
+  dinnerEnd                String?   @default("23:00") @map("dinner_end") @db.VarChar(5)
+  happyHourStart           String?   @default("18:00") @map("happy_hour_start") @db.VarChar(5)
+  happyHourEnd             String?   @default("19:00") @map("happy_hour_end") @db.VarChar(5)
   // ----- Personnalisation visuelle de la carte publique -----
   theme                    String?   @default("light") @db.VarChar(10) // light | dark
   fontStyle                String?   @default("editorial") @map("font_style") @db.VarChar(20) // modern | editorial | elegant
