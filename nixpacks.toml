@@ -12,4 +12,7 @@ cmds = ["pnpm install --frozen-lockfile"]
 cmds = ["pnpm db:generate", "pnpm build"]
 
 [start]
-cmd = "pnpm db:deploy && pnpm start"
+# En prod, Railway injecte DATABASE_URL directement dans le process env,
+# donc on appelle prisma directement (sans dotenv-cli qui chercherait
+# .env.local et n'existe pas en prod).
+cmd = "pnpm db:deploy:prod && pnpm start"
