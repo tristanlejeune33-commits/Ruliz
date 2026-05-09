@@ -237,6 +237,12 @@ const produitSchema = z.object({
   descriptionRemarque: z.string().max(2000).optional().or(z.literal("")),
   vignettes: z.array(z.number().int()).default([]),
   allergenes: z.array(z.number().int()).default([]),
+  scheduleType: z
+    .enum(["always", "lunch", "dinner", "happy_hour", "custom"])
+    .optional(),
+  scheduleStart: z.string().max(5).optional().or(z.literal("")),
+  scheduleEnd: z.string().max(5).optional().or(z.literal("")),
+  scheduleDays: z.string().min(1).max(7).optional(),
 });
 
 const updateProduitSchema = produitSchema.extend({ id: z.string() });
@@ -281,6 +287,10 @@ export async function createProduit(input: unknown): Promise<ActionResult<{ id: 
       origine: emptyToNull(data.origine),
       titreRemarque: emptyToNull(data.titreRemarque),
       descriptionRemarque: emptyToNull(data.descriptionRemarque),
+      scheduleType: data.scheduleType ?? "always",
+      scheduleStart: emptyToNull(data.scheduleStart),
+      scheduleEnd: emptyToNull(data.scheduleEnd),
+      scheduleDays: data.scheduleDays ?? "1234567",
       position,
       vignettes: { create: data.vignettes.map((id) => ({ vignetteId: id })) },
       allergenes: { create: data.allergenes.map((id) => ({ allergeneId: id })) },
@@ -319,6 +329,10 @@ export async function updateProduit(input: unknown): Promise<ActionResult> {
         origine: emptyToNull(data.origine),
         titreRemarque: emptyToNull(data.titreRemarque),
         descriptionRemarque: emptyToNull(data.descriptionRemarque),
+        scheduleType: data.scheduleType ?? "always",
+        scheduleStart: emptyToNull(data.scheduleStart),
+        scheduleEnd: emptyToNull(data.scheduleEnd),
+        scheduleDays: data.scheduleDays ?? "1234567",
       },
     }),
     prisma.produitVignette.deleteMany({ where: { produitId: id } }),

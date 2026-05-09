@@ -289,7 +289,17 @@ export async function getPublicMenu(
       icone: cat.icone,
       modeAffichage: cat.modeAffichage,
       subCategories: [], // rempli ensuite
-      produits: cat.produits.map((p) => {
+      // Filtre les produits par leur propre créneau (peut override la catégorie)
+      produits: cat.produits
+        .filter((p) =>
+          isCategorieVisibleNow({
+            scheduleType: p.scheduleType ?? "always",
+            scheduleStart: p.scheduleStart ?? null,
+            scheduleEnd: p.scheduleEnd ?? null,
+            scheduleDays: p.scheduleDays ?? "1234567",
+          }),
+        )
+        .map((p) => {
         const trad = !isSourceLang ? p.translations?.[0] : undefined;
         if (!isSourceLang && !trad) partiallyTranslated = true;
 

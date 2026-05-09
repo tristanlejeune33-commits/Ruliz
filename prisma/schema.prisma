@@ -288,6 +288,16 @@ model Produit {
   origine             String?  @db.VarChar(2)
   titreRemarque       String?  @map("titre_remarque") @db.VarChar(255)
   descriptionRemarque String?  @map("description_remarque")
+  /**
+   * Créneau d'affichage du PRODUIT lui-même (override de la catégorie).
+   * "always" (défaut) = visible quand la catégorie est visible.
+   * Sinon : "lunch", "dinner", "happy_hour", "custom" — les mêmes presets
+   * que les catégories (cf. src/lib/schedule.ts).
+   */
+  scheduleType        String   @default("always") @map("schedule_type") @db.VarChar(20)
+  scheduleStart       String?  @map("schedule_start") @db.VarChar(5)
+  scheduleEnd         String?  @map("schedule_end") @db.VarChar(5)
+  scheduleDays        String   @default("1234567") @map("schedule_days") @db.VarChar(7)
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
 

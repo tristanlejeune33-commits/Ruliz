@@ -125,7 +125,7 @@ export function CategorieDrawer({
   });
 
   const scheduleType = form.watch("scheduleType");
-  const scheduleDays = form.watch("scheduleDays");
+  const scheduleDays = form.watch("scheduleDays") || "1234567";
 
   const toggleDay = (day: string) => {
     const next = scheduleDays.includes(day)
@@ -135,6 +135,24 @@ export function CategorieDrawer({
           .sort()
           .join("");
     form.setValue("scheduleDays", next || "1234567", { shouldDirty: true });
+  };
+
+  // Quand l'utilisateur passe en "custom", on pré-remplit avec des horaires
+  // raisonnables (11:30-15:00) plutôt que de laisser vide. Évite le crash où
+  // l'utilisateur sauvegarde "custom" sans start/end → catégorie invisible
+  // mais sans message clair.
+  const handleScheduleTypeChange = (value: string) => {
+    form.setValue(
+      "scheduleType",
+      value as "always" | "lunch" | "dinner" | "happy_hour" | "custom",
+      { shouldDirty: true },
+    );
+    if (value === "custom") {
+      const currentStart = form.getValues("scheduleStart");
+      const currentEnd = form.getValues("scheduleEnd");
+      if (!currentStart) form.setValue("scheduleStart", "11:30");
+      if (!currentEnd) form.setValue("scheduleEnd", "15:00");
+    }
   };
 
   const onSubmit = (values: Values) => {
@@ -305,7 +323,10 @@ export function CategorieDrawer({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Créneau d&apos;affichage</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select
+                    value={field.value}
+                    onValueChange={handleScheduleTypeChange}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue />

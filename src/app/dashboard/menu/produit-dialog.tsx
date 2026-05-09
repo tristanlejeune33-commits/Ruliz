@@ -75,6 +75,10 @@ const schema = z.object({
   descriptionRemarque: z.string().max(2000),
   vignettes: z.array(z.number().int()),
   allergenes: z.array(z.number().int()),
+  scheduleType: z.enum(["always", "lunch", "dinner", "happy_hour", "custom"]),
+  scheduleStart: z.string().max(5),
+  scheduleEnd: z.string().max(5),
+  scheduleDays: z.string().min(1).max(7),
 });
 
 type Values = z.infer<typeof schema>;
@@ -121,6 +125,20 @@ export function ProduitDialog({
       descriptionRemarque: produit?.descriptionRemarque ?? "",
       vignettes: produit?.vignettes.map((v) => v.vignetteId) ?? [],
       allergenes: produit?.allergenes.map((a) => a.allergeneId) ?? [],
+      scheduleType:
+        ((produit as unknown as { scheduleType?: string })?.scheduleType as
+          | "always"
+          | "lunch"
+          | "dinner"
+          | "happy_hour"
+          | "custom") ?? "always",
+      scheduleStart:
+        (produit as unknown as { scheduleStart?: string })?.scheduleStart ?? "",
+      scheduleEnd:
+        (produit as unknown as { scheduleEnd?: string })?.scheduleEnd ?? "",
+      scheduleDays:
+        (produit as unknown as { scheduleDays?: string })?.scheduleDays ??
+        "1234567",
     },
   });
 
@@ -312,6 +330,88 @@ export function ProduitDialog({
                       </FormItem>
                     )}
                   />
+
+                  {/* CRÉNEAU D'AFFICHAGE du produit (override de la catégorie) */}
+                  <FormField
+                    control={form.control}
+                    name="scheduleType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs">
+                          Créneau d&apos;affichage du produit
+                        </FormLabel>
+                        <Select
+                          value={field.value}
+                          onValueChange={(v) => {
+                            field.onChange(v);
+                            if (v === "custom") {
+                              if (!form.getValues("scheduleStart"))
+                                form.setValue("scheduleStart", "11:30");
+                              if (!form.getValues("scheduleEnd"))
+                                form.setValue("scheduleEnd", "15:00");
+                            }
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="always">
+                              Toujours (suit la catégorie)
+                            </SelectItem>
+                            <SelectItem value="lunch">
+                              ☀️ Carte du midi (11h30-15h)
+                            </SelectItem>
+                            <SelectItem value="dinner">
+                              🌙 Carte du soir (18h30-23h)
+                            </SelectItem>
+                            <SelectItem value="happy_hour">
+                              🍹 Happy Hour (18h-19h)
+                            </SelectItem>
+                            <SelectItem value="custom">
+                              🎯 Personnalisé
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-[10px]">
+                          Override la catégorie. Utile pour un cocktail visible
+                          uniquement en happy hour dans une carte normalement
+                          24/7.
+                        </FormDescription>
+                      </FormItem>
+                    )}
+                  />
+
+                  {form.watch("scheduleType") === "custom" && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <FormField
+                        control={form.control}
+                        name="scheduleStart"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Début</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="scheduleEnd"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs">Fin</FormLabel>
+                            <FormControl>
+                              <Input type="time" {...field} />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                   <FormField
                     control={form.control}
                     name="origine"
