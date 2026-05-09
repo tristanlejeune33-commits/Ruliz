@@ -93,10 +93,13 @@ export async function POST(req: Request) {
     });
   } catch (err) {
     console.error("[upload-direct] R2 putObject failed:", err);
+    const detail =
+      err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     return NextResponse.json(
       {
-        error:
-          "L'upload R2 a échoué. Vérifie que les credentials R2 sont valides.",
+        error: `Upload R2 échoué — ${detail}`,
+        hint:
+          "Causes courantes : R2_ACCOUNT_ID erroné, clé/secret avec mauvaises permissions (besoin Object Read+Write sur le bucket), ou R2_BUCKET_NAME inexistant.",
       },
       { status: 502 },
     );
