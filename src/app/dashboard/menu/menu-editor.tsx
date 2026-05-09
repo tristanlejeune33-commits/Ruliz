@@ -36,6 +36,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
+  moveProduit,
   reorderCategories,
   reorderProduits,
 } from "@/server/dashboard/menu-actions";
@@ -140,28 +141,82 @@ export function MenuEditor({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  // ----------------------------------------------------------------------
+  // Helpers state — opérations sur l'arbre (top-level + sub-cats)
+  // ----------------------------------------------------------------------
+
+  /** Met à jour les produits d'une catégorie (top-level OU sub-cat). */
+  const updateProduitsInCat = (
+    catId: string,
+    updater: (produits: SerializedProduit[]) => SerializedProduit[],
+  ) => {
+    setOptimisticCategories((prev) =>
+      prev.map((c) => {
+        if (c.id === catId) return { ...c, produits: updater(c.produits) };
+        const children =
+          ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+        if (children.some((ch) => ch.id === catId)) {
+          return {
+            ...c,
+            children: children.map((ch) =>
+              ch.id === catId ? { ...ch, produits: updater(ch.produits) } : ch,
+            ),
+          } as SerializedCategorie;
+        }
+        return c;
+      }),
+    );
+  };
+
+  /** Trouve une cat par id (top-level OU sub-cat). */
+  const findCatById = (catId: string): SerializedCategorie | null => {
+    for (const c of optimisticCategories) {
+      if (c.id === catId) return c;
+      const children =
+        ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+      const found = children.find((ch) => ch.id === catId);
+      if (found) return found;
+    }
+    return null;
+  };
+
+  // ----------------------------------------------------------------------
+  // Handler unifié drag&drop — dispatch par type via active.data.current.type
+  // ----------------------------------------------------------------------
+
   /**
-   * Handler unifié pour le drag&drop dans la sidebar.
-   * Supporte 2 cas :
-   *  1. Top-level : les 2 ids sont des catégories principales → reorder top-level
-   *  2. Sous-cat : active.id appartient aux children d'un parent → reorder
-   *     les siblings de ce parent (un sub-cat ne peut pas migrer vers un autre
-   *     parent en MVP, on reste dans le même groupe)
+   * Cas gérés :
+   * 1. cat → cat (top-level)         → reorder top-level
+   * 2. sub-cat → sub-cat (siblings)  → reorder children dans le même parent
+   * 3. product → product même cat    → reorder produits
+   * 4. product → product autre cat   → moveProduit + position au drop
+   * 5. product → cat ou sub-cat      → moveProduit en append
    */
-  const handleCategoriesDragEnd = (e: DragEndEvent) => {
+  const handleDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
+
     const activeId = String(active.id);
     const overId = String(over.id);
+    const activeType = active.data.current?.type as
+      | "category"
+      | "subcategory"
+      | "product"
+      | undefined;
+    const overType = over.data.current?.type as
+      | "category"
+      | "subcategory"
+      | "product"
+      | undefined;
 
-    // Cas 1 — top-level : les deux ids sont des cats principales
-    const oldIndex = optimisticCategories.findIndex((c) => c.id === activeId);
-    const newIndex = optimisticCategories.findIndex((c) => c.id === overId);
+    // === CAT → CAT (top-level) ===
+    if (activeType === "category" && overType === "category") {
+      const oldIndex = optimisticCategories.findIndex((c) => c.id === activeId);
+      const newIndex = optimisticCategories.findIndex((c) => c.id === overId);
+      if (oldIndex < 0 || newIndex < 0) return;
 
-    if (oldIndex >= 0 && newIndex >= 0) {
       const newOrder = arrayMove(optimisticCategories, oldIndex, newIndex);
       setOptimisticCategories(newOrder);
-
       startTransition(async () => {
         const res = await reorderCategories({
           restaurantId,
@@ -175,129 +230,154 @@ export function MenuEditor({
       return;
     }
 
-    // Cas 2 — sous-catégorie : trouve le parent qui contient active.id
-    const parentIndex = optimisticCategories.findIndex((c) => {
+    // === SUB-CAT → SUB-CAT (siblings du même parent uniquement) ===
+    if (activeType === "subcategory" && overType === "subcategory") {
+      const activeParentId = active.data.current?.parentId as string | undefined;
+      const overParentId = over.data.current?.parentId as string | undefined;
+      if (!activeParentId || activeParentId !== overParentId) return;
+
+      const parentIndex = optimisticCategories.findIndex((c) => c.id === activeParentId);
+      if (parentIndex < 0) return;
+      const parent = optimisticCategories[parentIndex];
+      if (!parent) return;
       const children =
-        ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
-      return children.some((ch) => ch.id === activeId);
-    });
-    if (parentIndex < 0) return;
+        ((parent as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+      const oldIdx = children.findIndex((ch) => ch.id === activeId);
+      const newIdx = children.findIndex((ch) => ch.id === overId);
+      if (oldIdx < 0 || newIdx < 0) return;
 
-    const parent = optimisticCategories[parentIndex];
-    if (!parent) return;
-    const children =
-      ((parent as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
-
-    const childOldIdx = children.findIndex((ch) => ch.id === activeId);
-    const childNewIdx = children.findIndex((ch) => ch.id === overId);
-
-    // overId doit être un sibling (même parent). Sinon on annule.
-    if (childOldIdx < 0 || childNewIdx < 0) return;
-
-    const newChildren = arrayMove(children, childOldIdx, childNewIdx);
-    setOptimisticCategories((prev) =>
-      prev.map((c, idx) =>
-        idx === parentIndex
-          ? ({ ...c, children: newChildren } as SerializedCategorie)
-          : c,
-      ),
-    );
-
-    startTransition(async () => {
-      const res = await reorderCategories({
-        restaurantId,
-        ids: newChildren.map((ch) => ch.id),
-      });
-      if (!res.ok) {
-        toast.error(res.error);
-        setOptimisticCategories(tree);
-      }
-    });
-  };
-
-  const handleProduitsDragEnd = (e: DragEndEvent) => {
-    const { active, over } = e;
-    if (!over || active.id === over.id || !activeCategorie) return;
-
-    const oldIndex = activeCategorie.produits.findIndex((p) => p.id === active.id);
-    const newIndex = activeCategorie.produits.findIndex((p) => p.id === over.id);
-    if (oldIndex < 0 || newIndex < 0) return;
-
-    const newProduits = arrayMove(activeCategorie.produits, oldIndex, newIndex);
-    const targetId = activeCategorie.id;
-    setOptimisticCategories((prev) =>
-      prev.map((c) => {
-        if (c.id === targetId) return { ...c, produits: newProduits };
-        // Cas sous-catégorie : on cherche dans children
-        const children =
-          ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
-        if (children.some((ch) => ch.id === targetId)) {
-          return {
-            ...c,
-            children: children.map((ch) =>
-              ch.id === targetId ? { ...ch, produits: newProduits } : ch,
-            ),
-          } as SerializedCategorie;
+      const newChildren = arrayMove(children, oldIdx, newIdx);
+      setOptimisticCategories((prev) =>
+        prev.map((c, idx) =>
+          idx === parentIndex
+            ? ({ ...c, children: newChildren } as SerializedCategorie)
+            : c,
+        ),
+      );
+      startTransition(async () => {
+        const res = await reorderCategories({
+          restaurantId,
+          ids: newChildren.map((ch) => ch.id),
+        });
+        if (!res.ok) {
+          toast.error(res.error);
+          setOptimisticCategories(tree);
         }
-        return c;
-      }),
-    );
-
-    startTransition(async () => {
-      const res = await reorderProduits({
-        categorieId: activeCategorie.id,
-        ids: newProduits.map((p) => p.id),
       });
-      if (!res.ok) {
-        toast.error(res.error);
-        setOptimisticCategories(tree);
+      return;
+    }
+
+    // === PRODUCT → ... ===
+    if (activeType === "product") {
+      const fromCatId = active.data.current?.categorieId as string | undefined;
+      if (!fromCatId) return;
+
+      // Détermine la catégorie de destination
+      let toCatId: string;
+      if (overType === "product") {
+        toCatId = (over.data.current?.categorieId as string | undefined) ?? fromCatId;
+      } else if (overType === "category" || overType === "subcategory") {
+        toCatId = overId;
+      } else {
+        return;
       }
-    });
+
+      // Cas A : reorder dans la même catégorie
+      if (fromCatId === toCatId && overType === "product") {
+        const cat = findCatById(fromCatId);
+        if (!cat) return;
+        const oldIdx = cat.produits.findIndex((p) => p.id === activeId);
+        const newIdx = cat.produits.findIndex((p) => p.id === overId);
+        if (oldIdx < 0 || newIdx < 0) return;
+
+        const newProduits = arrayMove(cat.produits, oldIdx, newIdx);
+        updateProduitsInCat(fromCatId, () => newProduits);
+        startTransition(async () => {
+          const res = await reorderProduits({
+            categorieId: fromCatId,
+            ids: newProduits.map((p) => p.id),
+          });
+          if (!res.ok) {
+            toast.error(res.error);
+            setOptimisticCategories(tree);
+          }
+        });
+        return;
+      }
+
+      // Cas B : déplacement vers une autre catégorie
+      const fromCat = findCatById(fromCatId);
+      const toCat = findCatById(toCatId);
+      if (!fromCat || !toCat) return;
+      const movedProduit = fromCat.produits.find((p) => p.id === activeId);
+      if (!movedProduit) return;
+
+      // Optimistic UI : on retire de l'ancienne cat et on append à la nouvelle
+      updateProduitsInCat(fromCatId, (produits) =>
+        produits.filter((p) => p.id !== activeId),
+      );
+      updateProduitsInCat(toCatId, (produits) => [...produits, movedProduit]);
+
+      const targetCatTitre = toCat.titre;
+      startTransition(async () => {
+        const res = await moveProduit({
+          produitId: activeId,
+          toCategorieId: toCatId,
+        });
+        if (res.ok) {
+          toast.success(`Produit déplacé vers « ${targetCatTitre} »`);
+        } else {
+          toast.error(res.error);
+          setOptimisticCategories(tree);
+        }
+      });
+      return;
+    }
   };
 
   return (
-    <div className="grid flex-1 grid-cols-1 lg:grid-cols-[280px_1fr_minmax(0,420px)]">
-      {/* Sidebar catégories */}
-      <aside className="flex min-h-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40">
-        <div className="sticky top-14 z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
-          <div className="flex items-center gap-2">
-            <span className="flex size-6 items-center justify-center rounded-md bg-[var(--accent)]/15 text-[var(--accent)]">
-              <Sparkles className="size-3.5" />
-            </span>
-            <span className="text-sm font-semibold tracking-tight">
-              Catégories
-            </span>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[280px_1fr_minmax(0,420px)]">
+        {/* Sidebar catégories */}
+        <aside className="flex min-h-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40">
+          <div className="sticky top-14 z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
+            <div className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-md bg-[var(--accent)]/15 text-[var(--accent)]">
+                <Sparkles className="size-3.5" />
+              </span>
+              <span className="text-sm font-semibold tracking-tight">
+                Catégories
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                asChild
+                aria-label="Importer depuis une photo"
+                title="Importer ta carte depuis une photo"
+                className="h-7 px-2"
+              >
+                <a href="/dashboard/menu/import">
+                  <ScanText className="size-3.5" />
+                </a>
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditingCategorie("new")}
+                aria-label="Nouvelle catégorie"
+                className="h-7 px-2"
+              >
+                <Plus className="size-3.5" />
+                <span className="hidden sm:inline">Ajouter</span>
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              asChild
-              aria-label="Importer depuis une photo"
-              title="Importer ta carte depuis une photo"
-              className="h-7 px-2"
-            >
-              <a href="/dashboard/menu/import">
-                <ScanText className="size-3.5" />
-              </a>
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setEditingCategorie("new")}
-              aria-label="Nouvelle catégorie"
-              className="h-7 px-2"
-            >
-              <Plus className="size-3.5" />
-              <span className="hidden sm:inline">Ajouter</span>
-            </Button>
-          </div>
-        </div>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleCategoriesDragEnd}
-        >
           <SortableContext
             items={optimisticCategories.map((c) => c.id)}
             strategy={verticalListSortingStrategy}
@@ -309,8 +389,7 @@ export function MenuEditor({
               onEdit={(c) => setEditingCategorie(c)}
             />
           </SortableContext>
-        </DndContext>
-      </aside>
+        </aside>
 
       {/* Liste produits */}
       <section className="min-w-0">
@@ -400,27 +479,22 @@ export function MenuEditor({
               </div>
             </div>
             <div className="flex-1 px-6 py-6">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleProduitsDragEnd}
+              <SortableContext
+                items={activeCategorie.produits.map((p) => p.id)}
+                strategy={verticalListSortingStrategy}
               >
-                <SortableContext
-                  items={activeCategorie.produits.map((p) => p.id)}
-                  strategy={verticalListSortingStrategy}
-                >
-                  <ProduitsList
-                    produits={activeCategorie.produits}
-                    onEdit={(p) =>
-                      setEditingProduit({
-                        mode: "edit",
-                        produit: p,
-                        categorieId: activeCategorie.id,
-                      })
-                    }
-                  />
-                </SortableContext>
-              </DndContext>
+                <ProduitsList
+                  produits={activeCategorie.produits}
+                  categorieId={activeCategorie.id}
+                  onEdit={(p) =>
+                    setEditingProduit({
+                      mode: "edit",
+                      produit: p,
+                      categorieId: activeCategorie.id,
+                    })
+                  }
+                />
+              </SortableContext>
             </div>
           </div>
         ) : (
@@ -509,7 +583,8 @@ export function MenuEditor({
           onSaved={refreshAll}
         />
       )}
-    </div>
+      </div>
+    </DndContext>
   );
 }
 

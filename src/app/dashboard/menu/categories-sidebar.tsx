@@ -186,8 +186,11 @@ function CategorieItem({
   onSelect: (id: string) => void;
   onEdit: (c: SerializedCategorie) => void;
 }) {
-  const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
-    useSortable({ id: categorie.id });
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging, isOver } =
+    useSortable({
+      id: categorie.id,
+      data: { type: "category" },
+    });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -206,15 +209,17 @@ function CategorieItem({
 
   return (
     <li ref={setNodeRef} style={style} className="touch-none">
-      {/* CATÉGORIE PARENTE */}
+      {/* CATÉGORIE PARENTE — devient drop target néon quand un produit est draggé dessus */}
       <div
         className={cn(
-          "group flex items-center gap-1 rounded-md border-l-[3px] transition-colors duration-150",
-          isActive
-            ? "border-[var(--accent)] bg-[var(--bg-card)] text-[var(--text-primary)]"
-            : childActive
-              ? "border-transparent bg-[var(--bg-elevated)]/60 text-[var(--text-primary)]"
-              : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
+          "group flex items-center gap-1 rounded-md border-l-[3px] transition-all duration-150",
+          isOver
+            ? "border-[var(--neon-cyan)] bg-[var(--neon-cyan-soft)] text-[var(--text-primary)] ring-1 ring-[var(--neon-cyan)]/40 shadow-[0_0_18px_var(--neon-cyan-glow)]"
+            : isActive
+              ? "border-[var(--accent)] bg-[var(--bg-card)] text-[var(--text-primary)]"
+              : childActive
+                ? "border-transparent bg-[var(--bg-elevated)]/60 text-[var(--text-primary)]"
+                : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
         )}
       >
         <button
@@ -310,8 +315,11 @@ function SubCategorieItem({
   onSelect: (id: string) => void;
   onEdit: (c: SerializedCategorie) => void;
 }) {
-  const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
-    useSortable({ id: sub.id });
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging, isOver } =
+    useSortable({
+      id: sub.id,
+      data: { type: "subcategory", parentId: sub.parentId },
+    });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -323,10 +331,12 @@ function SubCategorieItem({
     <li ref={setNodeRef} style={style} className="touch-none">
       <div
         className={cn(
-          "group flex items-center gap-1 rounded-md transition-colors duration-150",
-          isActive
-            ? "bg-[#ead04d]/15 text-[var(--text-primary)] ring-1 ring-[#ead04d]/30"
-            : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
+          "group flex items-center gap-1 rounded-md transition-all duration-150",
+          isOver
+            ? "bg-[var(--neon-cyan-soft)] text-[var(--text-primary)] ring-1 ring-[var(--neon-cyan)]/40 shadow-[0_0_14px_var(--neon-cyan-glow)]"
+            : isActive
+              ? "bg-[#ead04d]/15 text-[var(--text-primary)] ring-1 ring-[#ead04d]/30"
+              : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
         )}
       >
         {/* Drag handle (apparait au hover) — remplace le simple chevron statique */}

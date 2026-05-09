@@ -10,10 +10,12 @@ import type { SerializedProduit } from "./types";
 
 interface ProduitsListProps {
   produits: SerializedProduit[];
+  /** Catégorie parente — encodé dans data dnd pour le drop cross-catégorie. */
+  categorieId: string;
   onEdit: (p: SerializedProduit) => void;
 }
 
-export function ProduitsList({ produits, onEdit }: ProduitsListProps) {
+export function ProduitsList({ produits, categorieId, onEdit }: ProduitsListProps) {
   if (produits.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 py-16 text-center">
@@ -30,7 +32,12 @@ export function ProduitsList({ produits, onEdit }: ProduitsListProps) {
   return (
     <ul className="space-y-2">
       {produits.map((p) => (
-        <ProduitItem key={p.id} produit={p} onEdit={onEdit} />
+        <ProduitItem
+          key={p.id}
+          produit={p}
+          categorieId={categorieId}
+          onEdit={onEdit}
+        />
       ))}
     </ul>
   );
@@ -38,13 +45,18 @@ export function ProduitsList({ produits, onEdit }: ProduitsListProps) {
 
 function ProduitItem({
   produit,
+  categorieId,
   onEdit,
 }: {
   produit: SerializedProduit;
+  categorieId: string;
   onEdit: (p: SerializedProduit) => void;
 }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
-    useSortable({ id: produit.id });
+    useSortable({
+      id: produit.id,
+      data: { type: "product", categorieId },
+    });
 
   const style = {
     transform: CSS.Transform.toString(transform),
