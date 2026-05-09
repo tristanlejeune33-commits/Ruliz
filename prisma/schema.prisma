@@ -386,6 +386,14 @@ model Jeu {
   restaurantId BigInt   @map("restaurant_id")
   nom          String?  @db.VarChar(255)
   actif        Boolean  @default(true)
+  /** Si true, le modal s'ouvre automatiquement à l'ouverture de la carte. */
+  autoPopup    Boolean  @default(false) @map("auto_popup")
+  /** Délai en secondes avant l'auto-popup (ex: 3 = 3s après le load). */
+  autoPopupDelaySec Int  @default(3) @map("auto_popup_delay_sec")
+  /** Date/heure de début (null = actif dès maintenant) */
+  dateDebut    DateTime? @map("date_debut") @db.Timestamptz()
+  /** Date/heure de fin (null = pas de fin programmée) */
+  dateFin      DateTime? @map("date_fin") @db.Timestamptz()
   configJson   Json?    @map("config_json")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
 

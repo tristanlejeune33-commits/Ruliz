@@ -43,6 +43,7 @@ const DASHBOARD_NAV: SidebarNavSection[] = [
     title: "Mon restaurant",
     items: [
       { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
+      { label: "Mon resto", href: "/dashboard/restaurant", icon: Building2 },
       { label: "Éditeur de carte", href: "/dashboard/menu", icon: UtensilsCrossed },
       { label: "QR codes", href: "/dashboard/qrcodes", icon: QrCode },
       { label: "Analyse", href: "/dashboard/stats", icon: Gauge },

@@ -42,12 +42,16 @@ export type PublicMenu = {
     googleReviewUrl: string | null;
     plan: "freemium" | "pro" | "premium";
   };
-  /** Jeu roulette actif si configuré. */
+  /** Jeu roulette actif si configuré (et dans la fenêtre date_debut/fin). */
   jeu: {
     id: string;
     cta: string;
     lots: Array<{ label: string; probabilite: number }>;
     requireGoogleReview: boolean;
+    /** Si true, le modal s'ouvre automatiquement à l'ouverture de la carte */
+    autoPopup: boolean;
+    /** Délai en secondes avant l'auto-popup */
+    autoPopupDelaySec: number;
   } | null;
   /** Pop-up actif à la date courante. */
   popup: {
@@ -158,7 +162,26 @@ export async function getPublicMenu(
       },
     }),
     prisma.jeu.findFirst({
-      where: { restaurantId, actif: true },
+      where: {
+        restaurantId,
+        actif: true,
+        // Filtre par fenêtre de planification : actif si pas de borne ou
+        // si on est dans la fenêtre [dateDebut, dateFin].
+        AND: [
+          {
+            OR: [
+              { dateDebut: null },
+              { dateDebut: { lte: new Date() } },
+            ],
+          },
+          {
+            OR: [
+              { dateFin: null },
+              { dateFin: { gte: new Date() } },
+            ],
+          },
+        ],
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.popup.findFirst({
@@ -190,6 +213,8 @@ export async function getPublicMenu(
           cta: jeuConfig.cta ?? "",
           lots: jeuConfig.lots,
           requireGoogleReview: jeuConfig.require_google_review ?? false,
+          autoPopup: jeuRow.autoPopup ?? false,
+          autoPopupDelaySec: jeuRow.autoPopupDelaySec ?? 3,
         }
       : null;
 

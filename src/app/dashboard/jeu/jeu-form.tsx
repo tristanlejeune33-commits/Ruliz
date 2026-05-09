@@ -34,6 +34,11 @@ const schema = z.object({
   actif: z.boolean(),
   cta: z.string().min(1).max(255),
   requireGoogleReview: z.boolean(),
+  autoPopup: z.boolean(),
+  autoPopupDelaySec: z.number().int().min(0).max(60),
+  /** ISO 8601 ou chaîne vide */
+  dateDebut: z.string(),
+  dateFin: z.string(),
   lots: z
     .array(
       z.object({
@@ -56,6 +61,10 @@ interface JeuFormProps {
     cta: string;
     lots: Array<{ label: string; probabilite: number }>;
     requireGoogleReview: boolean;
+    autoPopup: boolean;
+    autoPopupDelaySec: number;
+    dateDebut: string;
+    dateFin: string;
   } | null;
 }
 
@@ -80,6 +89,10 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
           actif: jeu.actif,
           cta: jeu.cta || "Laisse-nous un avis Google et tente de gagner !",
           requireGoogleReview: jeu.requireGoogleReview,
+          autoPopup: jeu.autoPopup ?? false,
+          autoPopupDelaySec: jeu.autoPopupDelaySec ?? 3,
+          dateDebut: jeu.dateDebut ?? "",
+          dateFin: jeu.dateFin ?? "",
           lots: jeu.lots.length > 0 ? jeu.lots : DEFAULT_LOTS,
         }
       : {
@@ -87,6 +100,10 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
           actif: true,
           cta: "Laisse-nous un avis Google et tente de gagner !",
           requireGoogleReview: true,
+          autoPopup: false,
+          autoPopupDelaySec: 3,
+          dateDebut: "",
+          dateFin: "",
           lots: DEFAULT_LOTS,
         },
   });
@@ -139,6 +156,10 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
         jeuId: jeu?.id ?? null,
         nom: values.nom,
         actif: values.actif,
+        autoPopup: values.autoPopup,
+        autoPopupDelaySec: values.autoPopupDelaySec,
+        dateDebut: values.dateDebut || null,
+        dateFin: values.dateFin || null,
         config: {
           cta: values.cta,
           lots: values.lots,
@@ -238,6 +259,124 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                 </FormItem>
               )}
             />
+
+            {/* AUTO-POPUP : ouverture automatique du modal à l'ouverture de la carte */}
+            <FormField
+              control={form.control}
+              name="autoPopup"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3">
+                  <FormControl>
+                    <Switch
+                      id="autoPopup"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div className="flex-1">
+                    <Label htmlFor="autoPopup" className="cursor-pointer">
+                      Pop-up automatique à l&apos;ouverture
+                    </Label>
+                    <FormDescription>
+                      Le modal s&apos;affiche tout seul quand un client scanne le
+                      QR code. 1 fois par session navigateur.
+                    </FormDescription>
+                  </div>
+                </FormItem>
+              )}
+            />
+
+            {form.watch("autoPopup") && (
+              <FormField
+                control={form.control}
+                name="autoPopupDelaySec"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Délai avant l&apos;auto-popup (secondes)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={60}
+                        value={field.value}
+                        onChange={(e) =>
+                          field.onChange(Number(e.target.value) || 0)
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Conseillé : 3 à 10s. Trop court = intrusif, trop long = le
+                      client est déjà parti scroller la carte.
+                    </FormDescription>
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* PROGRAMMATION : dates de début/fin */}
+            <div className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-3">
+              <Label className="mb-2 block">Programmation (optionnel)</Label>
+              <p className="mb-3 text-xs text-[var(--text-muted)]">
+                Le jeu s&apos;active uniquement entre ces deux dates. Laisse vide
+                pour qu&apos;il tourne en permanence tant qu&apos;il est activé.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="dateDebut"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Date de début</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="datetime-local"
+                          value={
+                            field.value
+                              ? new Date(field.value).toISOString().slice(0, 16)
+                              : ""
+                          }
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value
+                                ? new Date(e.target.value).toISOString()
+                                : "",
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="dateFin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Date de fin</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="datetime-local"
+                          value={
+                            field.value
+                              ? new Date(field.value).toISOString().slice(0, 16)
+                              : ""
+                          }
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value
+                                ? new Date(e.target.value).toISOString()
+                                : "",
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 

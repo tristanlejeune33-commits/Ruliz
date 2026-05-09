@@ -79,6 +79,10 @@ export default async function JeuPage() {
                       cta: config?.cta ?? "",
                       lots: config?.lots ?? [],
                       requireGoogleReview: config?.require_google_review ?? true,
+                      autoPopup: jeu.autoPopup ?? false,
+                      autoPopupDelaySec: jeu.autoPopupDelaySec ?? 3,
+                      dateDebut: jeu.dateDebut?.toISOString() ?? "",
+                      dateFin: jeu.dateFin?.toISOString() ?? "",
                     }
                   : null
               }

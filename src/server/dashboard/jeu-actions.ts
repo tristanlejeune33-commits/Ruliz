@@ -26,6 +26,11 @@ const upsertJeuSchema = z.object({
   jeuId: z.string().nullable().optional(),
   nom: z.string().min(1).max(255),
   actif: z.boolean(),
+  autoPopup: z.boolean().optional(),
+  autoPopupDelaySec: z.number().int().min(0).max(60).optional(),
+  /** ISO 8601 string OR null/empty = pas de borne */
+  dateDebut: z.string().nullable().optional(),
+  dateFin: z.string().nullable().optional(),
   config: configSchema,
 });
 
@@ -43,7 +48,27 @@ export async function upsertJeu(input: unknown): Promise<ActionResult<{ id: stri
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides" };
   }
-  const { restaurantId, jeuId, nom, actif, config } = parsed.data;
+  const {
+    restaurantId,
+    jeuId,
+    nom,
+    actif,
+    config,
+    autoPopup,
+    autoPopupDelaySec,
+    dateDebut,
+    dateFin,
+  } = parsed.data;
+
+  // Parse les dates ISO en Date (ou null si vide)
+  const parsedDateDebut = dateDebut ? new Date(dateDebut) : null;
+  const parsedDateFin = dateFin ? new Date(dateFin) : null;
+  if (parsedDateDebut && parsedDateFin && parsedDateDebut > parsedDateFin) {
+    return {
+      ok: false,
+      error: "La date de début doit être avant la date de fin.",
+    };
+  }
 
   // Sanity : la somme des probabilités doit faire EXACTEMENT 100
   const total = config.lots.reduce((acc, l) => acc + l.probabilite, 0);
@@ -74,6 +99,10 @@ export async function upsertJeu(input: unknown): Promise<ActionResult<{ id: stri
       data: {
         nom,
         actif,
+        autoPopup: autoPopup ?? false,
+        autoPopupDelaySec: autoPopupDelaySec ?? 3,
+        dateDebut: parsedDateDebut,
+        dateFin: parsedDateFin,
         configJson: config as Prisma.InputJsonValue,
       },
     });
@@ -87,6 +116,10 @@ export async function upsertJeu(input: unknown): Promise<ActionResult<{ id: stri
       restaurantId: restoBigId,
       nom,
       actif,
+      autoPopup: autoPopup ?? false,
+      autoPopupDelaySec: autoPopupDelaySec ?? 3,
+      dateDebut: parsedDateDebut,
+      dateFin: parsedDateFin,
       configJson: config as Prisma.InputJsonValue,
     },
   });

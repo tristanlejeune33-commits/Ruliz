@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { PublicMenu } from "@/server/public/menu";
 import { CategoryAccordion } from "./category-accordion";
@@ -43,6 +43,26 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
 
   const [activeProduitId, setActiveProduitId] = useState<string | null>(null);
   const [rouletteOpen, setRouletteOpen] = useState(false);
+
+  // Auto-popup du jeu concours après X secondes si configuré.
+  // On garde un flag en sessionStorage pour ne PAS spammer l'utilisateur
+  // qui ferme la modal et reload (1 fois par session navigateur).
+  useEffect(() => {
+    if (preview) return;
+    if (!menu.jeu?.autoPopup) return;
+    if (typeof window === "undefined") return;
+
+    const SEEN_KEY = `ruliz:jeu-autopopup-seen:${menu.restaurant.id}`;
+    if (window.sessionStorage.getItem(SEEN_KEY) === "1") return;
+
+    const delay = (menu.jeu.autoPopupDelaySec || 3) * 1000;
+    const timer = setTimeout(() => {
+      setRouletteOpen(true);
+      window.sessionStorage.setItem(SEEN_KEY, "1");
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [preview, menu.jeu, menu.restaurant.id]);
 
   const allProduits = useMemo(
     () => menu.categories.flatMap((c) => c.produits),
