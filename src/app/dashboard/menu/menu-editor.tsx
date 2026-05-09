@@ -140,21 +140,73 @@ export function MenuEditor({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  /**
+   * Handler unifié pour le drag&drop dans la sidebar.
+   * Supporte 2 cas :
+   *  1. Top-level : les 2 ids sont des catégories principales → reorder top-level
+   *  2. Sous-cat : active.id appartient aux children d'un parent → reorder
+   *     les siblings de ce parent (un sub-cat ne peut pas migrer vers un autre
+   *     parent en MVP, on reste dans le même groupe)
+   */
   const handleCategoriesDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
+    const activeId = String(active.id);
+    const overId = String(over.id);
 
-    const oldIndex = optimisticCategories.findIndex((c) => c.id === active.id);
-    const newIndex = optimisticCategories.findIndex((c) => c.id === over.id);
-    if (oldIndex < 0 || newIndex < 0) return;
+    // Cas 1 — top-level : les deux ids sont des cats principales
+    const oldIndex = optimisticCategories.findIndex((c) => c.id === activeId);
+    const newIndex = optimisticCategories.findIndex((c) => c.id === overId);
 
-    const newOrder = arrayMove(optimisticCategories, oldIndex, newIndex);
-    setOptimisticCategories(newOrder);
+    if (oldIndex >= 0 && newIndex >= 0) {
+      const newOrder = arrayMove(optimisticCategories, oldIndex, newIndex);
+      setOptimisticCategories(newOrder);
+
+      startTransition(async () => {
+        const res = await reorderCategories({
+          restaurantId,
+          ids: newOrder.map((c) => c.id),
+        });
+        if (!res.ok) {
+          toast.error(res.error);
+          setOptimisticCategories(tree);
+        }
+      });
+      return;
+    }
+
+    // Cas 2 — sous-catégorie : trouve le parent qui contient active.id
+    const parentIndex = optimisticCategories.findIndex((c) => {
+      const children =
+        ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+      return children.some((ch) => ch.id === activeId);
+    });
+    if (parentIndex < 0) return;
+
+    const parent = optimisticCategories[parentIndex];
+    if (!parent) return;
+    const children =
+      ((parent as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+
+    const childOldIdx = children.findIndex((ch) => ch.id === activeId);
+    const childNewIdx = children.findIndex((ch) => ch.id === overId);
+
+    // overId doit être un sibling (même parent). Sinon on annule.
+    if (childOldIdx < 0 || childNewIdx < 0) return;
+
+    const newChildren = arrayMove(children, childOldIdx, childNewIdx);
+    setOptimisticCategories((prev) =>
+      prev.map((c, idx) =>
+        idx === parentIndex
+          ? ({ ...c, children: newChildren } as SerializedCategorie)
+          : c,
+      ),
+    );
 
     startTransition(async () => {
       const res = await reorderCategories({
         restaurantId,
-        ids: newOrder.map((c) => c.id),
+        ids: newChildren.map((ch) => ch.id),
       });
       if (!res.ok) {
         toast.error(res.error);

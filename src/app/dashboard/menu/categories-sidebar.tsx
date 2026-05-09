@@ -1,7 +1,11 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useSortable } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   CornerDownRight,
@@ -269,19 +273,27 @@ function CategorieItem({
         </button>
       </div>
 
-      {/* SOUS-CATÉGORIES — indentées, accent jaune (#ead04d) à gauche */}
+      {/* SOUS-CATÉGORIES — indentées, accent jaune (#ead04d) à gauche
+          Chaque liste enfants a son propre SortableContext pour permettre
+          le drag&drop entre siblings UNIQUEMENT (un sub-cat ne peut pas
+          être drop dans un autre parent — gardé simple en MVP). */}
       {children.length > 0 && (
-        <ul className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-[#ead04d]/40 pl-2">
-          {children.map((sub) => (
-            <SubCategorieItem
-              key={sub.id}
-              sub={sub}
-              isActive={activeId === sub.id}
-              onSelect={onSelect}
-              onEdit={onEdit}
-            />
-          ))}
-        </ul>
+        <SortableContext
+          items={children.map((c) => c.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <ul className="ml-4 mt-0.5 flex flex-col gap-0.5 border-l border-[#ead04d]/40 pl-2">
+            {children.map((sub) => (
+              <SubCategorieItem
+                key={sub.id}
+                sub={sub}
+                isActive={activeId === sub.id}
+                onSelect={onSelect}
+                onEdit={onEdit}
+              />
+            ))}
+          </ul>
+        </SortableContext>
       )}
     </li>
   );
@@ -298,8 +310,17 @@ function SubCategorieItem({
   onSelect: (id: string) => void;
   onEdit: (c: SerializedCategorie) => void;
 }) {
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } =
+    useSortable({ id: sub.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
   return (
-    <li>
+    <li ref={setNodeRef} style={style} className="touch-none">
       <div
         className={cn(
           "group flex items-center gap-1 rounded-md transition-colors duration-150",
@@ -308,9 +329,17 @@ function SubCategorieItem({
             : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
         )}
       >
-        <span className="flex size-6 shrink-0 items-center justify-center text-[#ead04d]">
-          <CornerDownRight className="size-3" />
-        </span>
+        {/* Drag handle (apparait au hover) — remplace le simple chevron statique */}
+        <button
+          {...attributes}
+          {...listeners}
+          aria-label="Réordonner la sous-catégorie"
+          className="flex size-6 shrink-0 cursor-grab items-center justify-center rounded text-[#ead04d] opacity-100 transition-opacity duration-150 group-hover:opacity-100 active:cursor-grabbing"
+        >
+          {/* CornerDownRight reste visible par défaut, GripVertical au hover */}
+          <CornerDownRight className="size-3 group-hover:hidden" />
+          <GripVertical className="hidden size-3 group-hover:inline" />
+        </button>
         <button
           type="button"
           onClick={() => onSelect(sub.id)}
