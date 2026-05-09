@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { usePanelLang } from "@/components/shared/panel-lang-context";
 import {
   ArrowUpRight,
   Gift,
@@ -51,6 +52,7 @@ export function WelcomeHero({
   planBadge,
 }: WelcomeHeroProps) {
   const [now, setNow] = useState<Date | null>(null);
+  const { t, lang } = usePanelLang();
 
   useEffect(() => {
     setNow(new Date());
@@ -58,16 +60,28 @@ export function WelcomeHero({
     return () => clearInterval(id);
   }, []);
 
+  // Locale pour le format de date — mappe la lang panel sur un BCP-47
+  const localeMap: Record<string, string> = {
+    fr: "fr-FR",
+    en: "en-GB",
+    es: "es-ES",
+    de: "de-DE",
+    it: "it-IT",
+    pt: "pt-PT",
+    zh: "zh-CN",
+  };
+  const locale = localeMap[lang] ?? "fr-FR";
+
   // Hint discret avec date + heure si on a chargé côté client
   const dateStr = now
-    ? now.toLocaleDateString("fr-FR", {
+    ? now.toLocaleDateString(locale, {
         weekday: "long",
         day: "numeric",
         month: "long",
       })
     : "";
   const timeStr = now
-    ? now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
+    ? now.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })
     : "";
 
   return (
@@ -107,7 +121,7 @@ export function WelcomeHero({
             {restaurantName}
           </h1>
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--text-secondary)]">
-            <span>Vue d&apos;ensemble</span>
+            <span>{t("home.overview")}</span>
             {firstName && (
               <>
                 <span aria-hidden className="text-[var(--text-tertiary)]">·</span>
@@ -134,6 +148,7 @@ export function WelcomeHero({
 
 /** Status pill "Carte en ligne" avec dot vert pulsant. */
 function StatusPill() {
+  const { t } = usePanelLang();
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--neon-success)]">
       <span className="relative flex size-1.5">
@@ -143,7 +158,7 @@ function StatusPill() {
         />
         <span className="relative size-1.5 rounded-full bg-[var(--neon-success)]" />
       </span>
-      Carte en ligne
+      {t("home.status.online")}
     </span>
   );
 }

@@ -2,6 +2,10 @@ import { cookies } from "next/headers";
 import { AppShell, COLLAPSED_COOKIE } from "@/components/shared/app-shell";
 import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
 import {
+  PanelLangProvider,
+  PANEL_LANG_COOKIE,
+} from "@/components/shared/panel-lang-context";
+import {
   RestaurantSwitcher,
   type RestaurantOption,
 } from "@/components/shared/restaurant-switcher";
@@ -12,6 +16,7 @@ import { SubscriptionBanner } from "@/components/shared/subscription-banner";
 import { getActiveRestaurantId } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
 import { getActingUserId } from "@/lib/impersonation";
+import { isSupportedLang, type SupportedLang } from "@/lib/langs";
 import { requireDashboard } from "@/lib/session";
 
 export default async function DashboardLayout({
@@ -61,6 +66,12 @@ export default async function DashboardLayout({
   const collapsedCookie = cookieStore.get(COLLAPSED_COOKIE);
   const defaultCollapsed = collapsedCookie?.value === "1";
 
+  // Lang du panel — lue depuis le cookie ruliz_panel_lang. Défaut FR.
+  const langCookie = cookieStore.get(PANEL_LANG_COOKIE)?.value;
+  const panelLang: SupportedLang = isSupportedLang(langCookie)
+    ? langCookie
+    : "fr";
+
   // Affiché en mode SAV — nom + email du user impersonné
   const impersonatedTargetName =
     acting?.isImpersonating && acting.impersonatedUser
@@ -80,7 +91,7 @@ export default async function DashboardLayout({
       : { name: session.user.name, email: session.user.email };
 
   return (
-    <>
+    <PanelLangProvider initialLang={panelLang}>
       {acting?.isImpersonating && acting.impersonatedUser && (
         <ImpersonationBanner
           targetName={impersonatedTargetName ?? acting.impersonatedUser.email}
@@ -114,6 +125,6 @@ export default async function DashboardLayout({
         )}
         {children}
       </AppShell>
-    </>
+    </PanelLangProvider>
   );
 }

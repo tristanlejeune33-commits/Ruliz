@@ -12,6 +12,7 @@ import { PreviewLangPicker } from "@/components/shared/preview-lang-picker";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
 import { useSidebarCollapse } from "@/components/shared/sidebar-collapse-context";
+import { usePanelLang } from "@/components/shared/panel-lang-context";
 import { cn } from "@/lib/utils";
 
 interface TopbarProps {
@@ -23,6 +24,7 @@ interface TopbarProps {
 
 export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
   const { collapsed, toggle } = useSidebarCollapse();
+  const { t } = usePanelLang();
 
   return (
     <header className="sticky top-0 z-30 h-14 border-b border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-2xl">
@@ -39,7 +41,7 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
               onClick={toggle}
               className="hidden size-9 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)] md:inline-flex"
               aria-label={
-                collapsed ? "Déployer la sidebar" : "Réduire la sidebar"
+                collapsed ? t("topbar.sidebar.expand") : t("topbar.sidebar.collapse")
               }
             >
               {collapsed ? (
@@ -51,7 +53,7 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
           </TooltipTrigger>
           <TooltipContent side="bottom" sideOffset={8}>
             <span className="flex items-center gap-2">
-              {collapsed ? "Déployer" : "Réduire"}
+              {collapsed ? t("topbar.sidebar.expand") : t("topbar.sidebar.collapse")}
               <Kbd>⌘B</Kbd>
             </span>
           </TooltipContent>
@@ -68,13 +70,13 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
           className={cn(
             "group relative ml-auto hidden h-9 min-w-[200px] items-center gap-2 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-3 text-xs text-[var(--text-tertiary)] transition-all duration-200 hover:border-[var(--neon-cyan)]/30 hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)] md:inline-flex lg:min-w-[260px]",
           )}
-          aria-label="Rechercher (Cmd+K)"
+          aria-label={t("topbar.search.aria")}
         >
           <Search
             className="size-3.5 transition-colors group-hover:text-[var(--neon-cyan)]"
             strokeWidth={1.75}
           />
-          <span className="flex-1 text-left">Recherche rapide…</span>
+          <span className="flex-1 text-left">{t("topbar.search.placeholder")}</span>
           <Kbd>⌘K</Kbd>
         </button>
 
@@ -83,7 +85,7 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
             <button
               type="button"
               className="relative inline-flex size-9 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)]"
-              aria-label="Notifications (3 non lues)"
+              aria-label={t("topbar.notifications")}
             >
               <Bell className="size-4" strokeWidth={1.75} />
               <span
@@ -96,7 +98,7 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" sideOffset={8}>
-            Notifications
+            {t("topbar.notifications")}
           </TooltipContent>
         </Tooltip>
 

@@ -27,69 +27,72 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useSidebarCollapse } from "./sidebar-collapse-context";
+import { usePanelLang } from "./panel-lang-context";
 import { cn } from "@/lib/utils";
 
 export interface SidebarNavItem {
-  label: string;
+  /** Clé i18n de panel-i18n.ts (ex: "nav.dashboard"). */
+  labelKey: string;
   href: string;
   icon: LucideIcon;
   badge?: string;
 }
 
 export interface SidebarNavSection {
-  title?: string;
+  /** Clé i18n du titre de section (ex: "nav.section.principal"). */
+  titleKey?: string;
   items: SidebarNavItem[];
 }
 
 const DASHBOARD_NAV: SidebarNavSection[] = [
   {
-    title: "Principal",
+    titleKey: "nav.section.principal",
     items: [
-      { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
-      { label: "Mon resto", href: "/dashboard/restaurant", icon: Building2 },
-      { label: "Éditeur de carte", href: "/dashboard/menu", icon: UtensilsCrossed },
-      { label: "QR codes", href: "/dashboard/qrcodes", icon: QrCode },
+      { labelKey: "nav.dashboard", href: "/dashboard", icon: LayoutDashboard },
+      { labelKey: "nav.restaurant", href: "/dashboard/restaurant", icon: Building2 },
+      { labelKey: "nav.menu", href: "/dashboard/menu", icon: UtensilsCrossed },
+      { labelKey: "nav.qrcodes", href: "/dashboard/qrcodes", icon: QrCode },
     ],
   },
   {
-    title: "Acquisition",
+    titleKey: "nav.section.acquisition",
     items: [
-      { label: "Statistiques", href: "/dashboard/stats", icon: Gauge },
-      { label: "Roulette d'avis", href: "/dashboard/jeu", icon: Sparkles },
-      { label: "Pop-ups", href: "/dashboard/popups", icon: Megaphone },
-      { label: "SMS marketing", href: "/dashboard/sms", icon: MessageSquare },
+      { labelKey: "nav.stats", href: "/dashboard/stats", icon: Gauge },
+      { labelKey: "nav.jeu", href: "/dashboard/jeu", icon: Sparkles },
+      { labelKey: "nav.popups", href: "/dashboard/popups", icon: Megaphone },
+      { labelKey: "nav.sms", href: "/dashboard/sms", icon: MessageSquare },
     ],
   },
   {
-    title: "Gestion",
+    titleKey: "nav.section.gestion",
     items: [
-      { label: "Équipe", href: "/dashboard/team", icon: Users },
-      { label: "Facturation", href: "/dashboard/billing", icon: CreditCard },
-      { label: "Paramètres", href: "/dashboard/settings", icon: Settings },
+      { labelKey: "nav.team", href: "/dashboard/team", icon: Users },
+      { labelKey: "nav.billing", href: "/dashboard/billing", icon: CreditCard },
+      { labelKey: "nav.settings", href: "/dashboard/settings", icon: Settings },
     ],
   },
 ];
 
 const ADMIN_NAV: SidebarNavSection[] = [
   {
-    title: "Pilotage",
+    titleKey: "nav.section.pilotage",
     items: [
-      { label: "Vue d'ensemble", href: "/admin", icon: ShieldCheck },
-      { label: "Activité", href: "/admin/activity", icon: ActivitySquare },
-      { label: "Facturation", href: "/admin/billing", icon: CreditCard },
+      { labelKey: "nav.admin.overview", href: "/admin", icon: ShieldCheck },
+      { labelKey: "nav.admin.activity", href: "/admin/activity", icon: ActivitySquare },
+      { labelKey: "nav.billing", href: "/admin/billing", icon: CreditCard },
     ],
   },
   {
-    title: "Données",
+    titleKey: "nav.section.donnees",
     items: [
-      { label: "Clients", href: "/admin/clients", icon: Users },
-      { label: "Restaurants", href: "/admin/restaurants", icon: Building2 },
-      { label: "Logs", href: "/admin/logs", icon: ScrollText },
+      { labelKey: "nav.admin.clients", href: "/admin/clients", icon: Users },
+      { labelKey: "nav.admin.restaurants", href: "/admin/restaurants", icon: Building2 },
+      { labelKey: "nav.admin.logs", href: "/admin/logs", icon: ScrollText },
     ],
   },
   {
-    title: "Système",
-    items: [{ label: "Paramètres", href: "/admin/settings", icon: Settings }],
+    titleKey: "nav.section.systeme",
+    items: [{ labelKey: "nav.settings", href: "/admin/settings", icon: Settings }],
   },
 ];
 
@@ -102,6 +105,7 @@ export function SidebarNav({ scope, sections }: SidebarNavProps) {
   const pathname = usePathname();
   const layoutId = useId();
   const { collapsed } = useSidebarCollapse();
+  const { t } = usePanelLang();
 
   const resolved =
     sections ?? (scope === "admin" ? ADMIN_NAV : DASHBOARD_NAV);
@@ -110,10 +114,10 @@ export function SidebarNav({ scope, sections }: SidebarNavProps) {
     <nav className="flex flex-col gap-6">
       {resolved.map((section, sectionIdx) => (
         <div key={sectionIdx} className="flex flex-col gap-1.5">
-          {section.title && !collapsed && (
+          {section.titleKey && !collapsed && (
             <div className="mb-1 flex items-center gap-2 px-3">
               <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-                {section.title}
+                {t(section.titleKey)}
               </p>
               <span
                 aria-hidden
@@ -121,7 +125,7 @@ export function SidebarNav({ scope, sections }: SidebarNavProps) {
               />
             </div>
           )}
-          {section.title && collapsed && (
+          {section.titleKey && collapsed && (
             <div
               aria-hidden
               className="mx-3 my-1 h-px bg-[var(--border-glass)]"
@@ -167,11 +171,13 @@ function NavItem({
   collapsed: boolean;
   layoutId: string;
 }) {
+  const { t } = usePanelLang();
+  const label = t(item.labelKey);
   const link = (
     <Link
       href={item.href}
       aria-current={active ? "page" : undefined}
-      aria-label={collapsed ? item.label : undefined}
+      aria-label={collapsed ? label : undefined}
       className={cn(
         "group relative flex items-center rounded-xl text-[14px] font-semibold transition-colors duration-200",
         collapsed
@@ -226,7 +232,7 @@ function NavItem({
       {!collapsed && (
         <>
           <span className="relative z-10 flex-1 truncate tracking-tight">
-            {item.label}
+            {label}
           </span>
           {item.badge && (
             <span
@@ -251,7 +257,7 @@ function NavItem({
       <Tooltip>
         <TooltipTrigger asChild>{link}</TooltipTrigger>
         <TooltipContent side="right" sideOffset={12}>
-          {item.label}
+          {label}
         </TooltipContent>
       </Tooltip>
     );

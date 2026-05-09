@@ -1,26 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { FlagIcon } from "@/components/shared/flag-icon";
-import type { SupportedLang } from "@/lib/langs";
+import { usePanelLang } from "@/components/shared/panel-lang-context";
+import { LANG_META, type SupportedLang } from "@/lib/langs";
 
 /**
- * Picker de langue affiché dans la topbar.
+ * Picker de langue dans la topbar — change la **langue du panel** (sidebar,
+ * boutons, hero, etc.) ainsi que la **langue de prévisualisation de la carte**
+ * (le iframe dans l'éditeur). Une seule source de vérité = cookie
+ * `ruliz_panel_lang` lu côté serveur.
  *
- * Sa valeur est stockée dans localStorage sous "ruliz:preview-lang" et est
- * consommée par le menu editor pour rafraîchir l'iframe de preview avec
- * la bonne langue.
+ * Précédente version : changeait UNIQUEMENT la lang de l'iframe → confusion
+ * utilisateur (ils s'attendaient à ce que tout le panel passe en EN/ES/etc.).
  *
- * Pour réagir aux changements depuis d'autres composants, on émet un
- * `CustomEvent("ruliz:preview-lang-changed")` sur window quand la valeur
- * change. Le menu editor écoute cet event.
+ * Le hook usePanelLang() est l'unique source : il expose `lang` (FR par défaut)
+ * et `setLang(lang)` qui set le cookie + déclenche un router.refresh().
+ *
+ * On expose aussi un alias `usePreviewLang` pour rétrocompat avec le menu
+ * editor qui utilise la lang pour son iframe.
  */
 
 export const SUPPORTED_PREVIEW_LANGS = [
@@ -35,46 +40,21 @@ export const SUPPORTED_PREVIEW_LANGS = [
 
 export type PreviewLang = (typeof SUPPORTED_PREVIEW_LANGS)[number]["code"];
 
-const STORAGE_KEY = "ruliz:preview-lang";
-const EVENT_NAME = "ruliz:preview-lang-changed";
-
-/** Hook réutilisable : retourne la langue de preview courante + un setter. */
+/**
+ * Hook backward-compatible : retourne la lang courante depuis le panel
+ * Context. Le setter pousse vers `setLang` du Provider qui :
+ *   1. Set le cookie ruliz_panel_lang
+ *   2. router.refresh() → tous les Server Components re-render
+ *      (sidebar, hero, breadcrumb, etc.)
+ */
 export function usePreviewLang(): [PreviewLang, (lang: PreviewLang) => void] {
-  const [lang, setLangState] = useState<PreviewLang>("fr");
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const stored = window.localStorage.getItem(STORAGE_KEY) as PreviewLang | null;
-    if (
-      stored &&
-      SUPPORTED_PREVIEW_LANGS.some((l) => l.code === stored)
-    ) {
-      setLangState(stored);
-    }
-
-    // Écoute les changements depuis d'autres tabs / composants
-    const handleChange = (e: Event) => {
-      const detail = (e as CustomEvent<PreviewLang>).detail;
-      if (detail) setLangState(detail);
-    };
-    window.addEventListener(EVENT_NAME, handleChange);
-    return () => window.removeEventListener(EVENT_NAME, handleChange);
-  }, []);
-
-  const setLang = (newLang: PreviewLang) => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STORAGE_KEY, newLang);
-    setLangState(newLang);
-    // Notifie tous les autres consumers (menu editor iframe etc)
-    window.dispatchEvent(new CustomEvent(EVENT_NAME, { detail: newLang }));
-  };
-
-  return [lang, setLang];
+  const { lang, setLang } = usePanelLang();
+  return [lang as PreviewLang, (l) => setLang(l)];
 }
 
 export function PreviewLangPicker() {
-  const [lang, setLang] = usePreviewLang();
-  const current = SUPPORTED_PREVIEW_LANGS.find((l) => l.code === lang);
+  const { lang, setLang, t } = usePanelLang();
+  const current = LANG_META[lang as SupportedLang];
 
   return (
     <DropdownMenu>
@@ -82,24 +62,28 @@ export function PreviewLangPicker() {
         <Button
           variant="ghost"
           size="icon"
-          aria-label="Changer la langue de la prévisualisation"
-          title={`Langue de prévisualisation : ${current?.name ?? "Français"}`}
+          aria-label={t("langPicker.aria")}
+          title={`${t("langPicker.title")} : ${current.name}`}
         >
-          <FlagIcon
-            lang={(current?.code ?? "fr") as SupportedLang}
-            width={20}
-            rounded
-          />
+          <FlagIcon lang={lang as SupportedLang} width={20} rounded />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-44">
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuLabel className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-tertiary)]">
+          {t("langPicker.title")}
+        </DropdownMenuLabel>
         {SUPPORTED_PREVIEW_LANGS.map((l) => (
           <DropdownMenuItem
             key={l.code}
             onClick={() => setLang(l.code)}
             className={lang === l.code ? "bg-[var(--bg-elevated)]" : ""}
           >
-            <FlagIcon lang={l.code as SupportedLang} width={18} rounded className="mr-2" />
+            <FlagIcon
+              lang={l.code as SupportedLang}
+              width={18}
+              rounded
+              className="mr-2"
+            />
             {l.name}
             {lang === l.code && (
               <span className="ml-auto text-xs text-[var(--text-muted)]">

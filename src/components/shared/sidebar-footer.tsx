@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/tooltip";
 import { authClient } from "@/lib/auth-client";
 import { useSidebarCollapse } from "./sidebar-collapse-context";
+import { usePanelLang } from "./panel-lang-context";
 
 interface SidebarFooterProps {
   user: {
@@ -58,6 +59,7 @@ export function SidebarFooter({
 }: SidebarFooterProps) {
   const router = useRouter();
   const { collapsed } = useSidebarCollapse();
+  const { t } = usePanelLang();
 
   async function handleSignOut() {
     await authClient.signOut();
@@ -72,7 +74,7 @@ export function SidebarFooter({
     <button
       type="button"
       className="group relative flex w-full items-center gap-2.5 overflow-hidden rounded-xl border border-transparent bg-transparent p-1.5 text-left transition-all duration-200 hover:border-[var(--border-glass)] hover:bg-[var(--bg-glass-hover)]"
-      aria-label="Menu utilisateur"
+      aria-label={t("userMenu.aria")}
     >
       <span
         aria-hidden
@@ -87,7 +89,7 @@ export function SidebarFooter({
         <span
           aria-hidden
           className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full bg-[var(--neon-success)] ring-2 ring-[var(--bg-primary)]"
-          title="En ligne"
+          title={t("userMenu.online")}
         />
       </span>
       {!collapsed && (
@@ -135,26 +137,26 @@ export function SidebarFooter({
         onClick={() => router.push("/dashboard/settings")}
         className="rounded-md gap-2"
       >
-        <UserIcon strokeWidth={1.75} /> Profil
+        <UserIcon strokeWidth={1.75} /> {t("userMenu.profile")}
       </DropdownMenuItem>
       <DropdownMenuItem
         onClick={() => router.push("/dashboard/settings")}
         className="rounded-md gap-2"
       >
-        <Settings strokeWidth={1.75} /> Paramètres
+        <Settings strokeWidth={1.75} /> {t("userMenu.settings")}
       </DropdownMenuItem>
       <DropdownMenuItem
         onClick={() => router.push("/dashboard/billing")}
         className="rounded-md gap-2"
       >
-        <HelpCircle strokeWidth={1.75} /> Aide & support
+        <HelpCircle strokeWidth={1.75} /> {t("userMenu.help")}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem
         onClick={handleSignOut}
         className="rounded-md gap-2 text-[var(--neon-danger)] data-[highlighted]:text-[var(--neon-danger)]"
       >
-        <LogOut strokeWidth={1.75} /> Se déconnecter
+        <LogOut strokeWidth={1.75} /> {t("userMenu.signOut")}
       </DropdownMenuItem>
     </DropdownMenuContent>
   );

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Logo } from "./logo";
 import { useSidebarCollapse } from "./sidebar-collapse-context";
+import { usePanelLang } from "./panel-lang-context";
 import { cn } from "@/lib/utils";
 
 interface SidebarBrandProps {
@@ -28,6 +29,7 @@ export function SidebarBrand({
   pillTone = "cyan",
 }: SidebarBrandProps) {
   const { collapsed } = useSidebarCollapse();
+  const { t } = usePanelLang();
 
   return (
     <div
@@ -78,7 +80,7 @@ export function SidebarBrand({
           <span
             aria-hidden
             className="relative size-2 rounded-full bg-[var(--neon-cyan)] ring-2 ring-[var(--bg-primary)]"
-            title="Serveur en ligne"
+            title={t("brand.status.online")}
           />
         </span>
       )}

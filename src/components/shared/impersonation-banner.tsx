@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { ShieldUser, X } from "lucide-react";
 import { toast } from "sonner";
 import { stopImpersonation } from "@/server/admin/impersonation-actions";
+import { usePanelLang } from "./panel-lang-context";
 
 interface ImpersonationBannerProps {
   /** Nom complet (prénom + nom) du user impersonné. */
@@ -25,6 +26,7 @@ export function ImpersonationBanner({
   targetEmail,
 }: ImpersonationBannerProps) {
   const [pending, startTransition] = useTransition();
+  const { t } = usePanelLang();
 
   const handleStop = () => {
     startTransition(async () => {
@@ -55,9 +57,9 @@ export function ImpersonationBanner({
         </span>
         <span>
           <span className="font-bold uppercase tracking-wider text-[11px] mr-2">
-            Mode SAV
+            {t("impersonation.mode")}
           </span>
-          <span>Tu agis en tant que </span>
+          <span>{t("impersonation.actingAs")} </span>
           <strong className="font-bold">{targetName}</strong>
           <span className="ml-1.5 hidden font-mono text-[11px] opacity-80 sm:inline">
             {targetEmail}
@@ -71,7 +73,7 @@ export function ImpersonationBanner({
         className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-white/15 px-3 text-xs font-semibold backdrop-blur transition-colors hover:bg-white/25 disabled:opacity-60"
       >
         <X className="size-3.5" strokeWidth={2} />
-        Quitter le mode SAV
+        {t("impersonation.exit")}
       </button>
     </div>
   );
