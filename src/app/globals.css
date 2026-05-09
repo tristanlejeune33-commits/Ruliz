@@ -633,3 +633,54 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ============================================================================
+ * @media print — quand l'utilisateur imprime un bon de commande / facture,
+ * on masque tout le shell (sidebar, topbar, ambient bg) et on rend le
+ * contenu en noir sur blanc lisible.
+ * ========================================================================= */
+
+@media print {
+  /* Force fond blanc + texte noir, vire les blobs */
+  html,
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  body {
+    background-image: none !important;
+  }
+  .ambient-bg,
+  .ambient-bg::before,
+  .ambient-bg::after,
+  .ambient-bg > .blob {
+    display: none !important;
+  }
+
+  /* Cache le shell (sidebar + topbar + banners + boutons) */
+  aside,
+  header[class*="sticky"],
+  [role="alert"],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force layout simple : pas de grid 2 colonnes, occupe toute la largeur */
+  body main,
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+  }
+  div[class*="grid-cols-"] {
+    display: block !important;
+  }
+
+  /* Évite les page-breaks au milieu d'une carte */
+  table,
+  tr,
+  td,
+  th {
+    page-break-inside: avoid;
+  }
+}
