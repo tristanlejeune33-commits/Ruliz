@@ -1,6 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ExternalLink, FolderTree, UtensilsCrossed } from "lucide-react";
+import {
+  Camera,
+  ExternalLink,
+  FolderTree,
+  Sparkles,
+  UtensilsCrossed,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { getMenuRefData, getMenuTree } from "@/server/dashboard/menu-queries";
@@ -33,6 +39,9 @@ export default async function MenuEditorPage() {
     ).reduce((s, ch) => s + ch.produits.length, 0);
     return sum + c.produits.length + childrenProduits;
   }, 0);
+
+  // Banner cold-start : affiché si la carte est quasi-vide (≤ 3 produits)
+  const showImportBanner = totalProduits <= 3;
 
   return (
     <div className="-mx-6 -my-8 flex min-h-[calc(100vh-3.5rem)] flex-col">
@@ -68,6 +77,20 @@ export default async function MenuEditorPage() {
               </span>
               <span className="text-[var(--text-muted)]">produits</span>
             </div>
+
+            {/* GROS CTA "Importer ma carte par photo" — toujours visible */}
+            <Button
+              asChild
+              size="sm"
+              variant="primary"
+              className="h-9 gap-2 px-3.5 font-semibold"
+            >
+              <Link href="/dashboard/menu/import">
+                <Camera className="size-4" strokeWidth={1.75} />
+                Importer ma carte
+              </Link>
+            </Button>
+
             <RetranslateButton restaurantId={restaurant.id.toString()} />
             <Button asChild variant="outline" size="sm">
               <Link
@@ -75,7 +98,7 @@ export default async function MenuEditorPage() {
                 target="_blank"
                 rel="noreferrer"
               >
-                <ExternalLink className="size-3.5" />
+                <ExternalLink className="size-3.5" strokeWidth={1.75} />
                 Voir la carte publique
               </Link>
             </Button>
@@ -83,12 +106,66 @@ export default async function MenuEditorPage() {
         </div>
       </header>
 
+      {/* BANNER COLD-START : encore plus voyant si la carte est quasi vide */}
+      {showImportBanner && <ImportColdStartBanner />}
+
       <MenuEditor
         restaurantId={restaurant.id.toString()}
         tree={serialize(tree)}
         vignettes={serialize(refData.vignettes)}
         allergenes={serialize(refData.allergenes)}
       />
+    </div>
+  );
+}
+
+/**
+ * Banner cold-start : affiché en haut de l'éditeur quand la carte a 0–3
+ * produits. Disparaît automatiquement dès que la carte est garnie.
+ * Gradient cyan + icône camera + sous-texte sur la promesse "30s pour
+ * digitaliser ta carte papier".
+ */
+function ImportColdStartBanner() {
+  return (
+    <div className="relative isolate overflow-hidden border-b border-[var(--neon-cyan)]/30 bg-gradient-to-r from-[var(--neon-cyan-soft)] via-[var(--neon-cyan)]/10 to-transparent">
+      {/* Glow décoratif gauche */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -left-20 -top-12 size-48 rounded-full bg-[var(--neon-cyan)]/20 blur-3xl"
+      />
+      <div className="relative flex flex-wrap items-center justify-between gap-4 px-6 py-5">
+        <div className="flex items-center gap-4">
+          {/* Icône camera tile */}
+          <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--neon-cyan)] text-[var(--bg-primary)] shadow-[0_0_24px_var(--neon-cyan-glow)]">
+            <Camera className="size-6" strokeWidth={2} />
+          </span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-base font-bold tracking-tight text-[var(--text-primary)]">
+                Importe ta carte par photo
+              </h2>
+              <span className="inline-flex items-center gap-1 rounded-md border border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--neon-cyan)]">
+                <Sparkles className="size-3" strokeWidth={2} />
+                IA
+              </span>
+            </div>
+            <p className="mt-0.5 text-sm text-[var(--text-secondary)]">
+              Prends ta carte papier en photo · l&apos;IA détecte catégories,
+              plats, prix et allergènes en{" "}
+              <strong className="font-semibold text-[var(--text-primary)]">
+                30 secondes
+              </strong>
+              .
+            </p>
+          </div>
+        </div>
+        <Button asChild size="lg" variant="primary" className="shrink-0">
+          <Link href="/dashboard/menu/import">
+            <Camera className="size-4" strokeWidth={1.75} />
+            Importer ma carte ici
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }
