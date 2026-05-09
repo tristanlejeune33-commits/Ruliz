@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
+import { PreviewLangPicker } from "@/components/shared/preview-lang-picker";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
 
@@ -30,6 +31,7 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
         </Button>
       </div>
       <div className="flex items-center gap-1">
+        <PreviewLangPicker />
         <ThemeToggle />
         <UserMenu user={user} />
       </div>

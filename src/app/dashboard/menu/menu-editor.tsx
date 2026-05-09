@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { usePreviewLang } from "@/components/shared/preview-lang-picker";
 import {
   DndContext,
   KeyboardSensor,
@@ -63,6 +64,23 @@ export function MenuEditor({
   const [optimisticCategories, setOptimisticCategories] = useState(tree);
   const [lastSeenTree, setLastSeenTree] = useState(tree);
   const [, startTransition] = useTransition();
+
+  // Compteur qui bump à chaque save → utilisé comme key de l'iframe pour
+  // forcer un reload. Sans ça, router.refresh() ne reload PAS l'iframe (qui
+  // a son propre lifecycle, indépendant des Server Components).
+  const [previewKey, setPreviewKey] = useState(0);
+  const refreshAll = () => {
+    setPreviewKey((k) => k + 1);
+    router.refresh();
+  };
+
+  // Langue de prévisualisation (pilotée par le picker dans la topbar)
+  const [previewLang] = usePreviewLang();
+  // Quand l'utilisateur change la langue dans la topbar, on force un reload
+  // de l'iframe pour que la carte s'affiche dans la nouvelle langue.
+  useEffect(() => {
+    setPreviewKey((k) => k + 1);
+  }, [previewLang]);
 
   // Re-sync from server props when revalidatePath fires.
   // Official "storing information from previous renders" pattern.
@@ -261,7 +279,7 @@ export function MenuEditor({
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => router.refresh()}
+              onClick={refreshAll}
               aria-label="Rafraîchir"
             >
               <RefreshCcw className="size-3.5" />
@@ -270,7 +288,8 @@ export function MenuEditor({
           <div className="flex flex-1 items-start justify-center overflow-hidden p-4">
             <div className="aspect-[9/19] w-full max-w-[320px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-white shadow-xl">
               <iframe
-                src={`/carte/${restaurantId}?preview=1`}
+                key={`${previewKey}-${previewLang}`}
+                src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
                 title="Preview carte publique"
                 className="h-full w-full"
               />
@@ -286,7 +305,7 @@ export function MenuEditor({
           categorie={editingCategorie === "new" ? null : editingCategorie}
           allCategories={optimisticCategories}
           onClose={() => setEditingCategorie(null)}
-          onSaved={() => router.refresh()}
+          onSaved={refreshAll}
         />
       )}
 
@@ -300,7 +319,7 @@ export function MenuEditor({
           vignettes={vignettes}
           allergenes={allergenes}
           onClose={() => setEditingProduit(null)}
-          onSaved={() => router.refresh()}
+          onSaved={refreshAll}
         />
       )}
     </div>
