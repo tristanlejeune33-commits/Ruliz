@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { countryName, languageFromCountry } from "@/lib/country-language";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -13,6 +14,8 @@ const signupSchema = z.object({
   password: z.string().min(8, "8 caractères minimum"),
   prenom: z.string().min(1, "Requis").max(100),
   nom: z.string().min(1, "Requis").max(100),
+  /** Code pays ISO 2 (FR, IT, etc.) — sert à inférer la langue native */
+  country: z.string().length(2).default("FR"),
 });
 
 /**
@@ -36,6 +39,9 @@ export async function signupClient(input: unknown): Promise<ActionResult> {
     return { ok: false, error: "Un compte existe déjà avec cet email." };
   }
 
+  const paysFullName = countryName(data.country) || "France";
+  const langueNative = languageFromCountry(data.country);
+
   const user = await prisma.user.create({
     data: {
       email: data.email,
@@ -43,7 +49,9 @@ export async function signupClient(input: unknown): Promise<ActionResult> {
       nom: data.nom,
       role: "client",
       statut: "actif",
-      pays: "France",
+      pays: paysFullName,
+      countryCode: data.country.toUpperCase(),
+      langueNative,
     },
   });
 

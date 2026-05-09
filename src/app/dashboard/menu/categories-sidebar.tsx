@@ -31,6 +31,7 @@ export function CategoriesSidebar({
           key={categorie.id}
           categorie={categorie}
           isActive={activeId === categorie.id}
+          activeId={activeId}
           onSelect={onSelect}
           onEdit={onEdit}
         />
@@ -42,11 +43,13 @@ export function CategoriesSidebar({
 function CategorieItem({
   categorie,
   isActive,
+  activeId,
   onSelect,
   onEdit,
 }: {
   categorie: SerializedCategorie;
   isActive: boolean;
+  activeId: string | null;
   onSelect: (id: string) => void;
   onEdit: (c: SerializedCategorie) => void;
 }) {
@@ -60,7 +63,9 @@ function CategorieItem({
   };
 
   // Sous-catégories imbriquées (children) — render après le parent, indentées
-  const children = "children" in categorie ? categorie.children ?? [] : [];
+  // On utilise un cast sécurisé : Prisma fetch les children côté server, mais
+  // le type sérialisé peut ne pas les exposer s'ils sont undefined.
+  const children = ((categorie as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
 
   return (
     <li ref={setNodeRef} style={style} className="touch-none">

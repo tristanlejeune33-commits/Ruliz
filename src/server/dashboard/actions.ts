@@ -149,7 +149,10 @@ export async function createFirstRestaurant(
   const session = await requireDashboard();
   const authUser = await prisma.authUser.findUnique({
     where: { id: session.user.id },
-    select: { userId: true },
+    select: {
+      userId: true,
+      user: { select: { pays: true, langueNative: true } },
+    },
   });
   if (!authUser?.userId) {
     return { ok: false, error: "Compte introuvable." };
@@ -165,6 +168,8 @@ export async function createFirstRestaurant(
 
   const empty = (v: string | undefined) => (v && v.trim().length > 0 ? v : null);
 
+  // Pré-remplit le pays et la langue native depuis le profil utilisateur
+  // (renseignés au signup via le picker de pays)
   const restaurant = await prisma.restaurant.create({
     data: {
       userId: authUser.userId,
@@ -172,7 +177,8 @@ export async function createFirstRestaurant(
       ville: empty(parsed.data.ville),
       email: empty(parsed.data.email),
       telephone: empty(parsed.data.telephone),
-      pays: "France",
+      pays: authUser.user?.pays ?? "France",
+      langueNative: authUser.user?.langueNative ?? "fr",
       plan: "freemium",
       statut: "actif",
     },

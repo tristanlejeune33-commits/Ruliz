@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { prisma } from "@/lib/db";
+import { AdminRetranslateButton } from "./admin-retranslate-button";
 
 export const metadata: Metadata = {
   title: "Restaurants · Admin Ruliz",
@@ -106,11 +107,25 @@ export default async function AdminRestaurantsPage() {
                   {format(r.createdAt, "d MMM yyyy", { locale: fr })}
                 </TableCell>
                 <TableCell>
-                  <Button asChild variant="ghost" size="icon" aria-label="Voir la carte publique">
-                    <Link href={`/carte/${r.id.toString()}`} target="_blank">
-                      <ExternalLink className="size-4" />
-                    </Link>
-                  </Button>
+                  <div className="flex justify-end gap-1">
+                    <AdminRetranslateButton
+                      restaurantId={r.id.toString()}
+                      restaurantNom={r.nom}
+                    />
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Voir la carte publique"
+                    >
+                      <Link
+                        href={`/carte/${r.id.toString()}`}
+                        target="_blank"
+                      >
+                        <ExternalLink className="size-4" />
+                      </Link>
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             );

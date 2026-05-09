@@ -11,19 +11,32 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { signupClient } from "@/server/auth/actions";
+import {
+  SIGNUP_COUNTRIES,
+  languageFromCountry,
+} from "@/lib/country-language";
 
 const schema = z.object({
   prenom: z.string().min(1, "Requis").max(100),
   nom: z.string().min(1, "Requis").max(100),
   email: z.email("Email invalide"),
   password: z.string().min(8, "8 caractères minimum"),
+  country: z.string().length(2),
 });
 
 type Values = z.infer<typeof schema>;
@@ -34,8 +47,17 @@ export function SignupForm() {
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { prenom: "", nom: "", email: "", password: "" },
+    defaultValues: {
+      prenom: "",
+      nom: "",
+      email: "",
+      password: "",
+      country: "FR",
+    },
   });
+
+  const country = form.watch("country");
+  const detectedLang = languageFromCountry(country);
 
   async function onSubmit(values: Values) {
     setIsPending(true);
@@ -117,6 +139,36 @@ export function SignupForm() {
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="country"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Pays de ton restaurant</FormLabel>
+              <Select value={field.value} onValueChange={field.onChange}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionne ton pays" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {SIGNUP_COUNTRIES.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      <span className="mr-2">{c.flag}</span>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormDescription>
+                Détecte automatiquement la langue de ta carte (
+                {detectedLang.toUpperCase()}). Tu pourras la modifier
+                plus tard dans les paramètres.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

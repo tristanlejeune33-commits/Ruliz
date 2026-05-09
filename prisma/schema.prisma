@@ -132,6 +132,15 @@ model User {
   codePostal       String?    @map("code_postal") @db.VarChar(10)
   ville            String?    @db.VarChar(100)
   pays             String?    @default("France") @db.VarChar(100)
+  /**
+   * Code ISO du pays (FR, IT, etc.) — sert à pré-remplir la langue native
+   * du futur restaurant à sa création.
+   */
+  countryCode      String?    @default("FR") @map("country_code") @db.VarChar(2)
+  /**
+   * Langue native déduite du pays au signup. Pré-remplit Restaurant.langueNative.
+   */
+  langueNative     String?    @default("fr") @map("langue_native") @db.VarChar(2)
   role             UserRole   @default(client)
   statut           UserStatut @default(actif)
   demoActive       Boolean    @default(false) @map("demo_active")
