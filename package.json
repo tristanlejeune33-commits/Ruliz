@@ -18,6 +18,8 @@
     "db:reset": "dotenv -e .env.local -e .env -- prisma migrate reset",
     "db:deploy:prod": "prisma migrate deploy",
     "seed": "dotenv -e .env.local -e .env -- tsx prisma/seed.ts",
+    "test:anthropic": "dotenv -e .env.local -e .env -- tsx scripts/anthropic-test.ts",
+    "test:r2": "dotenv -e .env.local -e .env -- tsx scripts/r2-test.ts",
     "auth:generate": "npx @better-auth/cli generate"
   },
   "packageManager": "pnpm@11.0.8",
