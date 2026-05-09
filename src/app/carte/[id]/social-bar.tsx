@@ -72,9 +72,9 @@ export function SocialBar({ restaurant, theme }: SocialBarProps) {
   if (!hasSocial) return null;
 
   return (
-    <section className="mx-auto mt-[30px] w-[90%] xl:w-[70%]">
+    <section className="mx-auto mt-[30px] w-[92%] lg:mt-10 lg:max-w-[1100px]">
       <ul
-        className="mx-auto flex w-fit gap-5 rounded-full border px-[15px] py-0"
+        className="mx-auto flex w-fit gap-4 rounded-full border px-4 py-0 md:gap-5 md:px-6 lg:gap-7 lg:px-8"
         style={{ borderColor: theme.primary }}
       >
         {restaurant.facebookUrl && (
@@ -83,7 +83,7 @@ export function SocialBar({ restaurant, theme }: SocialBarProps) {
             label="Facebook"
             theme={theme}
           >
-            <FacebookIcon className="size-[34px]" />
+            <FacebookIcon className="size-7 md:size-8 lg:size-9" />
           </SocialItem>
         )}
         {restaurant.instagramUrl && (
@@ -92,7 +92,7 @@ export function SocialBar({ restaurant, theme }: SocialBarProps) {
             label="Instagram"
             theme={theme}
           >
-            <InstagramIcon className="size-[34px]" />
+            <InstagramIcon className="size-7 md:size-8 lg:size-9" />
           </SocialItem>
         )}
         {restaurant.tiktokUrl && (
@@ -101,12 +101,12 @@ export function SocialBar({ restaurant, theme }: SocialBarProps) {
             label="TikTok"
             theme={theme}
           >
-            <TikTokIcon className="size-[34px]" />
+            <TikTokIcon className="size-7 md:size-8 lg:size-9" />
           </SocialItem>
         )}
         {restaurant.siteWeb && (
           <SocialItem href={restaurant.siteWeb} label="Site web" theme={theme}>
-            <Globe className="size-[34px]" />
+            <Globe className="size-7 md:size-8 lg:size-9" />
           </SocialItem>
         )}
         {restaurant.googleReviewUrl && (
@@ -115,7 +115,7 @@ export function SocialBar({ restaurant, theme }: SocialBarProps) {
             label="Avis Google"
             theme={theme}
           >
-            <Star className="size-[34px]" />
+            <Star className="size-7 md:size-8 lg:size-9" />
           </SocialItem>
         )}
       </ul>

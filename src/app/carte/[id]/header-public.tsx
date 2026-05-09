@@ -73,7 +73,7 @@ export function HeaderPublic({
             : undefined,
         }}
       >
-        <div className="relative mx-auto flex w-[90%] items-center justify-between xl:w-[70%]">
+        <div className="relative mx-auto flex w-[92%] items-center justify-between xl:w-full xl:max-w-[1100px]">
           {/* Burger */}
           <button
             type="button"

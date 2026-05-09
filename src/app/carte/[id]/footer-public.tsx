@@ -97,14 +97,15 @@ export function FooterPublic({
       {/* Footer body navy */}
       <div
         id="footer"
-        className="flex flex-col gap-4 px-2.5 py-6 text-center"
+        className="px-2.5 py-6 text-center md:py-10 lg:py-16"
         style={{ backgroundColor: theme.primary, color: theme.textOnPrimary }}
       >
+       <div className="mx-auto flex flex-col gap-4 md:gap-5 lg:max-w-[900px] lg:gap-7">
         {/* Logo circulaire blanc */}
         {restaurant.logoUrl && (
           <div className="mx-auto">
             <div
-              className="relative size-16 overflow-hidden rounded-full bg-white p-1"
+              className="relative size-16 overflow-hidden rounded-full bg-white p-1 md:size-20"
               style={{
                 border: "4px solid white",
                 boxShadow: "0px 10px 15px -3px rgba(0, 0, 0, 0.1)",
@@ -114,7 +115,7 @@ export function FooterPublic({
                 src={restaurant.logoUrl}
                 alt={restaurant.nom}
                 fill
-                sizes="64px"
+                sizes="(min-width: 768px) 80px, 64px"
                 unoptimized
                 className="rounded-full object-cover"
               />
@@ -179,25 +180,25 @@ export function FooterPublic({
           restaurant.tiktokUrl ||
           restaurant.siteWeb ||
           restaurant.googleReviewUrl) && (
-          <ul className="flex justify-center gap-[15px]">
+          <ul className="flex justify-center gap-[15px] md:gap-5">
             {restaurant.facebookUrl && (
               <FooterSocialLink href={restaurant.facebookUrl} label="Facebook">
-                <FacebookIcon className="size-[25px]" />
+                <FacebookIcon className="size-[25px] md:size-7 lg:size-8" />
               </FooterSocialLink>
             )}
             {restaurant.instagramUrl && (
               <FooterSocialLink href={restaurant.instagramUrl} label="Instagram">
-                <InstagramIcon className="size-[25px]" />
+                <InstagramIcon className="size-[25px] md:size-7 lg:size-8" />
               </FooterSocialLink>
             )}
             {restaurant.tiktokUrl && (
               <FooterSocialLink href={restaurant.tiktokUrl} label="TikTok">
-                <TikTokIcon className="size-[25px]" />
+                <TikTokIcon className="size-[25px] md:size-7 lg:size-8" />
               </FooterSocialLink>
             )}
             {restaurant.siteWeb && (
               <FooterSocialLink href={restaurant.siteWeb} label="Site web">
-                <Globe className="size-[25px]" />
+                <Globe className="size-[25px] md:size-7 lg:size-8" />
               </FooterSocialLink>
             )}
             {restaurant.googleReviewUrl && (
@@ -205,7 +206,7 @@ export function FooterPublic({
                 href={restaurant.googleReviewUrl}
                 label="Avis Google"
               >
-                <Star className="size-[25px]" />
+                <Star className="size-[25px] md:size-7 lg:size-8" />
               </FooterSocialLink>
             )}
           </ul>
@@ -227,6 +228,7 @@ export function FooterPublic({
             <span className="opacity-70">· {langLabel(lang)}</span>
           </div>
         )}
+       </div>
       </div>
     </footer>
   );

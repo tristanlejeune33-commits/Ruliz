@@ -45,7 +45,7 @@ export function CategoryAccordion({
   if (categories.length === 0) {
     return (
       <div
-        className="mx-auto mt-8 w-[90%] py-12 text-center xl:w-[70%]"
+        className="mx-auto mt-8 w-[92%] py-12 text-center lg:max-w-[1100px]"
         style={{ color: theme.textBody, opacity: 0.7 }}
       >
         <p className="italic">{t("bientotDispo", lang)}</p>
@@ -56,7 +56,7 @@ export function CategoryAccordion({
   return (
     <ul
       id="list-menu"
-      className="mx-auto mt-[30px] flex w-[90%] flex-col gap-2.5 xl:w-[70%]"
+      className="mx-auto mt-[30px] flex w-[92%] flex-col gap-2.5 md:gap-3 lg:mt-12 lg:max-w-[1100px]"
     >
       {categories.map((cat) => (
         <CategoryItem
@@ -120,7 +120,7 @@ function CategoryItem({
       <button
         type="button"
         onClick={() => onToggle(cat.id)}
-        className={`relative flex w-full items-center justify-between gap-3 rounded-[10px] px-4 py-[15px] font-semibold transition-opacity hover:opacity-90 ${
+        className={`relative flex w-full items-center justify-between gap-3 rounded-[10px] px-4 py-[15px] font-semibold transition-opacity hover:opacity-90 md:py-4 lg:py-[18px] ${
           isHappyHourActive ? "animate-happy-glow" : ""
         }`}
         style={{
@@ -131,9 +131,9 @@ function CategoryItem({
         aria-expanded={isOpen}
       >
         <span className="shrink-0">
-          <CategoryIcon code={cat.icone} className="size-[22px]" />
+          <CategoryIcon code={cat.icone} className="size-[22px] md:size-6" />
         </span>
-        <span className="flex-1 truncate text-center text-base">
+        <span className="flex-1 truncate text-center text-base md:text-[17px] lg:text-[18px]">
           {cat.titre}
           {isHappyHourActive && (
             <motion.span
@@ -169,7 +169,7 @@ function CategoryItem({
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
           >
-            <div className="mt-2.5 flex flex-col gap-2.5">
+            <div className="mt-2.5 flex flex-col gap-2.5 md:gap-3 lg:mt-3 lg:gap-4">
               {/* Produits directs de la catégorie */}
               {cat.produits.length > 0 && (
                 <ProduitCards
@@ -183,7 +183,7 @@ function CategoryItem({
 
               {/* Sous-catégories (récursivement, en jaune) */}
               {cat.subCategories.length > 0 && (
-                <ul className="flex flex-col gap-2.5">
+                <ul className="flex flex-col gap-2.5 md:gap-3">
                   {cat.subCategories.map((sub) => (
                     <CategoryItem
                       key={sub.id}

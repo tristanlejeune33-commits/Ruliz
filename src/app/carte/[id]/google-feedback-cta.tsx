@@ -30,15 +30,15 @@ export function GoogleFeedbackCTA({
   return (
     <section
       id="google-feedback"
-      className="mx-auto mt-[30px] w-[90%] overflow-hidden rounded-[10px] xl:w-[70%]"
+      className="mx-auto mt-[30px] w-[92%] overflow-hidden rounded-[10px] md:max-w-[640px] lg:mt-16 lg:max-w-[720px]"
       style={{
         backgroundColor: theme.cardBody,
         boxShadow: theme.shadow,
       }}
     >
-      <div className="p-[15px]">
+      <div className="p-[15px] md:p-5 lg:p-6">
         <h3
-          className="text-[20px] font-semibold"
+          className="text-[20px] font-semibold lg:text-[22px]"
           style={{
             color: theme.textBody,
             fontFamily: "var(--font-display)",
@@ -47,7 +47,7 @@ export function GoogleFeedbackCTA({
           {title}
         </h3>
         <p
-          className="mt-0.5 text-sm font-light"
+          className="mt-0.5 text-sm font-light lg:text-[15px]"
           style={{
             color: theme.textBody,
             fontFamily: "var(--font-body)",
@@ -59,7 +59,7 @@ export function GoogleFeedbackCTA({
         <button
           type="button"
           onClick={onSpinClick}
-          className="mt-2.5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] p-2.5 text-center font-semibold transition-opacity hover:opacity-90"
+          className="mt-3 flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] px-4 text-center text-base font-semibold transition-opacity hover:opacity-90 lg:mt-4 lg:h-12 lg:text-[17px]"
           style={{
             backgroundColor: theme.primary,
             color: theme.textOnPrimary,

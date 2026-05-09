@@ -54,7 +54,7 @@ export function ProduitCards({
   }
 
   return (
-    <ul className="flex flex-col gap-2.5">
+    <ul className="grid grid-cols-1 items-stretch gap-2.5 lg:grid-cols-2 lg:gap-4">
       {categorie.produits.map((p, i) => (
         <ProduitItem
           key={p.id}
@@ -94,7 +94,7 @@ function ProduitItem({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.04, ease: [0.16, 1, 0.3, 1] }}
-      className="list-choice-item overflow-hidden rounded-[10px]"
+      className="list-choice-item h-full overflow-hidden rounded-[10px] transition-transform duration-200 ease-out hover:-translate-y-0.5 md:rounded-[12px]"
       style={{
         backgroundColor: theme.cardBody,
         boxShadow: theme.shadow,
@@ -103,7 +103,7 @@ function ProduitItem({
       <button
         type="button"
         onClick={() => onOpen(produit)}
-        className="flex w-full items-center justify-between gap-4 p-[15px] text-left"
+        className="flex h-full w-full items-center justify-between gap-4 p-[15px] text-left md:p-4 lg:p-5"
         style={{ color: theme.textBody }}
       >
         {/* Photo (si présente) — l'ancien template n'en avait pas dans la liste,
@@ -127,7 +127,7 @@ function ProduitItem({
         <div className="min-w-0 flex-1">
           {/* Titre + badges + vignettes inline */}
           <h3
-            className="flex flex-wrap items-center gap-1.5 text-[18px] font-semibold leading-tight md:text-[20px]"
+            className="flex flex-wrap items-center gap-1.5 text-[18px] font-semibold leading-snug md:text-[19px] lg:text-[20px]"
             style={{
               fontFamily: "var(--font-display)",
               color: theme.textBody,
@@ -160,10 +160,10 @@ function ProduitItem({
             ))}
           </h3>
 
-          {/* Description (1 ligne ellipsis) */}
+          {/* Description (2 lignes ellipsis) */}
           {produit.description && (
             <p
-              className="mt-0.5 truncate text-sm font-light leading-snug"
+              className="mt-0.5 line-clamp-2 text-sm font-light leading-relaxed md:text-[14px] lg:text-[15px]"
               style={{
                 color: theme.textBody,
                 opacity: 0.85,
@@ -176,7 +176,7 @@ function ProduitItem({
 
           {/* "Voir photo" / "Voir détails" italique */}
           <span
-            className="mt-1.5 inline-block text-[15px] font-semibold italic"
+            className="mt-1.5 inline-block text-[14px] font-semibold italic lg:text-[15px]"
             style={{
               color: theme.textBody,
               fontFamily: "var(--font-body)",
@@ -190,7 +190,7 @@ function ProduitItem({
         {produit.prix !== null && (
           <div className="shrink-0 text-right">
             <p
-              className="text-[18px] font-semibold tabular-nums md:text-[20px]"
+              className="whitespace-nowrap text-[18px] font-semibold tabular-nums md:text-[19px] lg:text-[20px]"
               style={{
                 color: theme.textBody,
                 fontFamily: "var(--font-display)",

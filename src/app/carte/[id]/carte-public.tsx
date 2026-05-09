@@ -112,7 +112,7 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
       {/* Bandeau "traduction partielle" si certains champs n'ont pas de trad */}
       {menu.partiallyTranslated && menu.lang !== menu.restaurant.langueNative && (
         <div
-          className="mx-auto mt-4 w-[90%] rounded-lg border px-3 py-2.5 text-center text-xs xl:w-[70%]"
+          className="mx-auto mt-4 w-[92%] rounded-lg border px-3 py-2.5 text-center text-xs lg:max-w-[1100px]"
           style={{
             borderColor: "rgba(245, 158, 11, 0.3)",
             background: "rgba(245, 158, 11, 0.08)",

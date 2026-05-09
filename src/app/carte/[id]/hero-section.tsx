@@ -39,7 +39,7 @@ function Banner({ restaurant, theme }: HeroSectionProps) {
   return (
     <section className="relative" id="banner">
       <div
-        className="relative h-[200px] w-full bg-cover bg-no-repeat md:h-[245px] lg:h-[300px] xl:h-[400px]"
+        className="relative h-[200px] w-full bg-cover bg-no-repeat md:h-[245px] lg:h-[360px] xl:h-[440px]"
         style={{
           backgroundImage,
           backgroundColor: !restaurant.banniereUrl ? theme.primary : undefined,
@@ -61,19 +61,15 @@ function Banner({ restaurant, theme }: HeroSectionProps) {
           />
         </svg>
 
-        {/* Logo circulaire — overlay sur la wave */}
+        {/* Logo circulaire — overlay sur la wave (taille fluide responsive) */}
         {restaurant.logoUrl && (
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute z-[2] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full"
+            className="absolute left-1/2 top-[84%] z-[2] size-[120px] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-full border-[6px] border-solid md:top-[78%] lg:size-[130px] lg:top-[74%] xl:size-[150px] xl:top-[70%] xl:border-[7px]"
             style={{
-              top: "84%",
-              left: "50%",
-              width: "120px",
-              height: "120px",
-              border: "7px solid white",
+              borderColor: "white",
               boxShadow: "0px 10px 15px -3px rgba(0, 0, 0, 0.1)",
               background: "white",
             }}
@@ -82,29 +78,13 @@ function Banner({ restaurant, theme }: HeroSectionProps) {
               src={restaurant.logoUrl}
               alt={restaurant.nom}
               fill
-              sizes="120px"
+              sizes="(min-width: 1200px) 150px, (min-width: 1024px) 130px, 120px"
               unoptimized
               className="object-cover"
               priority
             />
           </motion.div>
         )}
-
-        {/* Variant desktop : logo plus gros */}
-        <style jsx>{`
-          @media (min-width: 768px) {
-            section :global(.banner-logo) {
-              top: 75% !important;
-            }
-          }
-          @media (min-width: 1200px) {
-            section :global(.banner-logo) {
-              width: 150px !important;
-              height: 150px !important;
-              top: 70% !important;
-            }
-          }
-        `}</style>
       </div>
     </section>
   );
@@ -114,7 +94,7 @@ function Welcome({ restaurant, theme }: HeroSectionProps) {
   return (
     <section
       id="welcome"
-      className="mx-auto mt-[50px] w-[90%] text-center md:mt-[20px] xl:mt-0 xl:w-[70%]"
+      className="mx-auto mt-[50px] w-[92%] text-center md:mt-[20px] xl:mt-0 lg:max-w-[1100px]"
     >
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -123,7 +103,7 @@ function Welcome({ restaurant, theme }: HeroSectionProps) {
       >
         <h1
           id="anchor"
-          className="mb-[10px] text-[43px] font-bold leading-tight"
+          className="mb-[10px] mt-[60px] text-[36px] font-bold leading-tight tracking-tight md:mt-[40px] md:text-[44px] lg:mt-[30px] lg:text-[52px] xl:mt-[20px] xl:text-[58px]"
           style={{
             color: theme.title,
             fontFamily: "var(--font-display)",
@@ -133,7 +113,7 @@ function Welcome({ restaurant, theme }: HeroSectionProps) {
         </h1>
         {restaurant.description && (
           <p
-            className="text-base font-light leading-relaxed"
+            className="mx-auto max-w-[640px] text-base font-light leading-relaxed lg:text-[17px]"
             style={{
               color: theme.textBody,
               fontFamily: "var(--font-body)",
