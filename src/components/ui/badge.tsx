@@ -2,21 +2,26 @@ import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+/**
+ * Badge — DS Ruliz palette stricte (cyan / violet / success / danger / glass).
+ */
 const badgeVariants = cva(
-  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:ring-offset-2",
+  "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--neon-cyan)] focus:ring-offset-2",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-[var(--accent)]/15 text-[var(--accent)] [&]:border-[var(--accent)]/30",
+          "border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]",
         secondary:
-          "border-transparent bg-[var(--bg-elevated)] text-[var(--text-secondary)]",
+          "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-secondary)]",
         destructive:
-          "border-transparent bg-[var(--color-destructive)]/15 text-[var(--color-destructive)]",
+          "border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] text-[var(--neon-danger)]",
         outline:
-          "border-[var(--border-subtle)] bg-transparent text-[var(--text-secondary)]",
+          "border-[var(--border-glass-hover)] bg-transparent text-[var(--text-secondary)]",
         success:
-          "border-transparent bg-[oklch(0.7_0.18_145)]/15 text-[oklch(0.75_0.18_145)]",
+          "border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] text-[var(--neon-success)]",
+        violet:
+          "border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] text-[var(--neon-violet)]",
       },
     },
     defaultVariants: {

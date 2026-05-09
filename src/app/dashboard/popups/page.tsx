@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Megaphone } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
@@ -21,17 +21,16 @@ export default async function PopupsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <Badge variant="secondary">
-          <Megaphone className="size-3" /> Communication
-        </Badge>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Pop-ups événements
-        </h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Annonce un événement, une promotion ou un lancement directement sur la carte.
-        </p>
-      </header>
+      <PageHero
+        accent="cyan"
+        eyebrow={
+          <HeroEyebrow icon={<Megaphone className="size-3" strokeWidth={1.75} />}>
+            Pop-ups
+          </HeroEyebrow>
+        }
+        title="Annonces in-carte"
+        description="Affiche un message ponctuel sur la carte : nouvelle offre, événement, soirée DJ. Une pop-up bien placée, ça vend."
+      />
 
       <PlanLock
         currentPlan={restaurant.plan}

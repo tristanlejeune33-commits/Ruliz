@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanBadge, type Plan as UiPlan } from "@/components/shared/status-badge";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { PLANS, type Plan, formatPriceEuro, isAtLeastPlan } from "@/lib/plans";
@@ -58,21 +59,33 @@ export default async function BillingPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-8">
-      <header>
-        <Badge variant="secondary">
-          <CreditCard className="size-3" /> Facturation
-        </Badge>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Plan & paiement</h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Plan associé à <strong>{restaurant.nom}</strong>. Géré via Stripe.
-        </p>
-      </header>
+      <PageHero
+        accent="cyan"
+        eyebrow={
+          <>
+            <HeroEyebrow icon={<CreditCard className="size-3" strokeWidth={1.75} />}>
+              Facturation
+            </HeroEyebrow>
+            <PlanBadge plan={restaurant.plan as UiPlan} />
+          </>
+        }
+        title="Plan & paiement"
+        description={
+          <>
+            Plan associé à{" "}
+            <strong className="text-[var(--text-primary)]">{restaurant.nom}</strong>.
+            Géré via Stripe — résiliation et changement à tout moment.
+          </>
+        }
+      />
 
       {!isStripeConfigured() && (
-        <Card className="border-amber-200 bg-amber-50/50">
+        <Card className="border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)]">
           <CardHeader>
-            <CardTitle className="text-amber-900">Stripe non configuré</CardTitle>
-            <CardDescription className="text-amber-900/80">
+            <CardTitle className="text-[var(--neon-violet)]">
+              Stripe non configuré
+            </CardTitle>
+            <CardDescription>
               Renseigne <code className="font-mono">STRIPE_SECRET_KEY</code>,{" "}
               <code className="font-mono">STRIPE_WEBHOOK_SECRET</code>, et les{" "}
               <code className="font-mono">STRIPE_*_PRICE_ID</code> dans l&apos;env pour
@@ -83,10 +96,13 @@ export default async function BillingPage({ searchParams }: PageProps) {
       )}
 
       {params.upgrade && (
-        <Card className="border-[var(--accent)]/40">
+        <Card className="border-[var(--neon-cyan)]/40 bg-[var(--neon-cyan-soft)]">
           <CardHeader>
             <div className="flex items-start gap-3">
-              <Sparkles className="size-5 shrink-0 text-[var(--accent)]" />
+              <Sparkles
+                className="size-5 shrink-0 text-[var(--neon-cyan)]"
+                strokeWidth={1.75}
+              />
               <div>
                 <CardTitle>
                   Cette fonctionnalité demande {PLANS[params.upgrade as Plan]?.name ?? "un plan supérieur"}
@@ -164,22 +180,35 @@ function PlanCard({ plan, isCurrent, isUpgrade, restaurantId }: PlanCardProps) {
     <Card
       className={
         isCurrent
-          ? "border-[var(--accent)]/50 bg-[var(--accent)]/5"
+          ? "relative overflow-hidden border-[var(--neon-cyan)]/40 bg-[var(--neon-cyan-soft)] shadow-[0_0_36px_rgba(0,229,255,0.15)]"
           : plan.highlighted
-            ? "border-[var(--accent)]/30"
-            : ""
+            ? "relative overflow-hidden border-[var(--neon-violet)]/30 lift-hover"
+            : "relative overflow-hidden lift-hover"
       }
     >
-      <CardHeader>
+      {/* Glow décoratif sur le plan actuel ou highlighted */}
+      {(isCurrent || plan.highlighted) && (
+        <div
+          aria-hidden
+          className={`pointer-events-none absolute -right-20 -top-20 size-56 rounded-full blur-3xl ${
+            isCurrent
+              ? "bg-[var(--neon-cyan)]/15"
+              : "bg-[var(--neon-violet)]/12"
+          }`}
+        />
+      )}
+      <CardHeader className="relative">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-2xl">{plan.name}</CardTitle>
           {isCurrent && (
-            <Badge>
-              <Check className="size-3" /> Actuel
-            </Badge>
+            <span className="inline-flex items-center gap-1 rounded-md border border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] px-2 py-0.5 text-xs font-semibold text-[var(--neon-cyan)]">
+              <Check className="size-3" strokeWidth={2} /> Actuel
+            </span>
           )}
           {!isCurrent && plan.highlighted && (
-            <Badge variant="secondary">Recommandé</Badge>
+            <span className="inline-flex items-center rounded-md border border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-[var(--neon-violet)]">
+              Recommandé
+            </span>
           )}
         </div>
         <CardDescription className="mt-3 flex items-baseline gap-1.5">
@@ -187,19 +216,17 @@ function PlanCard({ plan, isCurrent, isUpgrade, restaurantId }: PlanCardProps) {
             {formatPriceEuro(plan.monthlyPriceHT)}
           </span>
           {plan.monthlyPriceHT > 0 && (
-            <span className="text-xs text-[var(--text-muted)]">HT / mois</span>
+            <span className="text-xs text-[var(--text-tertiary)]">HT / mois</span>
           )}
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative">
         <ul className="space-y-2 text-sm">
           {featureRows.map((row) => {
             const value = plan.features[row.key];
             const display =
               typeof value === "boolean"
-                ? value
-                  ? "✓"
-                  : "✗"
+                ? null
                 : value === null
                   ? "Illimité"
                   : value;
@@ -210,20 +237,26 @@ function PlanCard({ plan, isCurrent, isUpgrade, restaurantId }: PlanCardProps) {
                 className={
                   enabled
                     ? "flex items-center gap-2 text-[var(--text-primary)]"
-                    : "flex items-center gap-2 text-[var(--text-muted)]"
+                    : "flex items-center gap-2 text-[var(--text-tertiary)]"
                 }
               >
                 {enabled ? (
-                  <Check className="size-3.5 shrink-0 text-[var(--accent)]" />
+                  <Check
+                    className="size-3.5 shrink-0 text-[var(--neon-success)]"
+                    strokeWidth={2}
+                  />
                 ) : (
-                  <X className="size-3.5 shrink-0 text-[var(--text-muted)]" />
+                  <X
+                    className="size-3.5 shrink-0 text-[var(--text-tertiary)]"
+                    strokeWidth={1.75}
+                  />
                 )}
                 <span className="flex-1">{row.label}</span>
-                {typeof display !== "string" || (display !== "✓" && display !== "✗") ? (
+                {display !== null && (
                   <span className="font-mono text-xs text-[var(--text-secondary)]">
                     {display}
                   </span>
-                ) : null}
+                )}
               </li>
             );
           })}
@@ -237,7 +270,7 @@ function PlanCard({ plan, isCurrent, isUpgrade, restaurantId }: PlanCardProps) {
           />
         )}
         {!isUpgrade && !isCurrent && (
-          <p className="mt-6 text-center text-xs text-[var(--text-muted)]">
+          <p className="mt-6 text-center text-xs text-[var(--text-tertiary)]">
             Pour redescendre vers {plan.name}, utilise le portail Stripe ci-dessus.
           </p>
         )}

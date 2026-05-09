@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Gauge } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import {
   getAnalytics,
@@ -61,19 +61,16 @@ export default async function StatsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Badge variant="secondary">
-            <Gauge className="size-3" /> Analyse
-          </Badge>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-            {restaurant.nom}
-          </h1>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            Comportement de tes clients sur les {analytics.range.days} derniers jours.
-          </p>
-        </div>
-      </header>
+      <PageHero
+        accent="cyan"
+        eyebrow={
+          <HeroEyebrow icon={<Gauge className="size-3" strokeWidth={1.75} />}>
+            Analyse
+          </HeroEyebrow>
+        }
+        title={restaurant.nom}
+        description={`Comportement de tes clients sur les ${analytics.range.days} derniers jours.`}
+      />
 
       <FiltersBar
         currentFilters={filters}

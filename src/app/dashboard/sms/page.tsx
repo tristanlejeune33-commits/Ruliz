@@ -10,6 +10,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { HeroEyebrow, HeroKpi, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
 import { isBrevoConfigured } from "@/lib/brevo";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
@@ -38,18 +39,22 @@ export default async function SmsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <Badge variant="secondary">
-          <MessageSquare className="size-3" /> SMS marketing
-        </Badge>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Envoyer un SMS à mes clients
-        </h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Annonce un événement, une fermeture exceptionnelle, une promo. Conforme RGPD :
-          tes clients ont accepté en jouant à la roulette.
-        </p>
-      </header>
+      <PageHero
+        accent="cyan"
+        eyebrow={
+          <HeroEyebrow icon={<MessageSquare className="size-3" strokeWidth={1.75} />}>
+            SMS marketing
+          </HeroEyebrow>
+        }
+        title="Relance ta base client"
+        description="Annonce un événement, une fermeture, une promo. Conforme RGPD : la base est constituée d'opt-ins via la roulette d'avis."
+        kpis={
+          <HeroKpi
+            label="Contacts SMS"
+            value={<span className="tabular-nums">{totalWithPhone}</span>}
+          />
+        }
+      />
 
       <PlanLock
         currentPlan={restaurant.plan}

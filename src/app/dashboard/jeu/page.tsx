@@ -3,7 +3,6 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { ArrowRight, Sparkles, Star, Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
@@ -47,18 +47,19 @@ export default async function JeuPage() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <Badge variant="secondary">
-          <Sparkles className="size-3" /> Roulette d&apos;avis
-        </Badge>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Jeu roulette Google Reviews
-        </h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Tes clients laissent un avis Google et tentent de gagner un lot.
-          Ça booste ton ranking local et capte leurs coordonnées.
-        </p>
-      </header>
+      <PageHero
+        accent="violet"
+        eyebrow={
+          <HeroEyebrow
+            tone="violet"
+            icon={<Sparkles className="size-3" strokeWidth={1.75} />}
+          >
+            Roulette d&apos;avis
+          </HeroEyebrow>
+        }
+        title="Capte des avis Google · gagne des étoiles"
+        description="Tes clients laissent un avis 5 étoiles et tentent de gagner un lot. Boost direct du ranking local + lead capture en simultané."
+      />
 
       <PlanLock
         currentPlan={restaurant.plan}
@@ -125,7 +126,7 @@ export default async function JeuPage() {
                         "Anonyme";
                       return (
                         <li key={p.id} className="flex items-center gap-2 py-2">
-                          <Star className="size-3 text-[var(--accent)]" />
+                          <Star className="size-3 text-[var(--neon-violet)]" strokeWidth={1.75} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-medium">
                               {fullName}

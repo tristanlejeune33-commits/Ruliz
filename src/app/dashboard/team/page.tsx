@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Users } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -8,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { HeroEyebrow, HeroKpi, PageHero } from "@/components/shared/page-hero";
 import { prisma } from "@/lib/db";
 import { canAddTeamMember } from "@/lib/restaurant-limits";
 import { requireDashboard } from "@/lib/session";
@@ -65,17 +65,24 @@ export default async function TeamPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <Badge variant="secondary">
-          <Users className="size-3" /> Équipe
-        </Badge>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
-          Membres de l&apos;équipe
-        </h1>
-        <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Invite tes collaborateurs à éditer la carte. Plan {limit.plan} : {limitLabel}.
-        </p>
-      </header>
+      <PageHero
+        accent="cyan"
+        eyebrow={
+          <HeroEyebrow icon={<Users className="size-3" strokeWidth={1.75} />}>
+            Équipe
+          </HeroEyebrow>
+        }
+        title="Tes collaborateurs"
+        description={`Invite tes équipiers à éditer la carte et gérer le service. Plan ${limit.plan}.`}
+        kpis={
+          <HeroKpi
+            label="Membres"
+            value={
+              <span className="tabular-nums">{limitLabel}</span>
+            }
+          />
+        }
+      />
 
       <Card>
         <CardHeader>
