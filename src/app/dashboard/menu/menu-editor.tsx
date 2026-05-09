@@ -18,7 +18,21 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Eye, EyeOff, Plus, RefreshCcw, ScanText } from "lucide-react";
+import {
+  ChevronRight,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  GalleryHorizontal,
+  LayoutGrid,
+  LayoutList,
+  Pencil,
+  Plus,
+  RefreshCcw,
+  ScanText,
+  Smartphone,
+  Sparkles,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -92,10 +106,34 @@ export function MenuEditor({
     }
   }
 
+  /**
+   * Liste plate de toutes les catégories (top-level + sous-catégories).
+   * Utilisée pour `find()` (sinon les sous-cats ne sont jamais trouvées →
+   * on tombait sur l'EmptyState quand on cliquait une sous-cat dans la sidebar)
+   * et pour le select catégorie du dialog produit (pour pouvoir assigner un
+   * produit directement à une sous-catégorie).
+   */
+  const flatCategories = useMemo(() => {
+    const out: SerializedCategorie[] = [];
+    for (const cat of optimisticCategories) {
+      out.push(cat);
+      const children =
+        ((cat as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+      for (const child of children) out.push(child);
+    }
+    return out;
+  }, [optimisticCategories]);
+
   const activeCategorie = useMemo(
-    () => optimisticCategories.find((c) => c.id === activeCategorieId) ?? null,
-    [activeCategorieId, optimisticCategories],
+    () => flatCategories.find((c) => c.id === activeCategorieId) ?? null,
+    [activeCategorieId, flatCategories],
   );
+
+  /** Catégorie parente de la cat active (si c'est une sous-cat). Sert au breadcrumb du topbar. */
+  const activeParent = useMemo(() => {
+    if (!activeCategorie?.parentId) return null;
+    return optimisticCategories.find((c) => c.id === activeCategorie.parentId) ?? null;
+  }, [activeCategorie, optimisticCategories]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -134,10 +172,23 @@ export function MenuEditor({
     if (oldIndex < 0 || newIndex < 0) return;
 
     const newProduits = arrayMove(activeCategorie.produits, oldIndex, newIndex);
+    const targetId = activeCategorie.id;
     setOptimisticCategories((prev) =>
-      prev.map((c) =>
-        c.id === activeCategorie.id ? { ...c, produits: newProduits } : c,
-      ),
+      prev.map((c) => {
+        if (c.id === targetId) return { ...c, produits: newProduits };
+        // Cas sous-catégorie : on cherche dans children
+        const children =
+          ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+        if (children.some((ch) => ch.id === targetId)) {
+          return {
+            ...c,
+            children: children.map((ch) =>
+              ch.id === targetId ? { ...ch, produits: newProduits } : ch,
+            ),
+          } as SerializedCategorie;
+        }
+        return c;
+      }),
     );
 
     startTransition(async () => {
@@ -155,11 +206,16 @@ export function MenuEditor({
   return (
     <div className="grid flex-1 grid-cols-1 lg:grid-cols-[280px_1fr_minmax(0,420px)]">
       {/* Sidebar catégories */}
-      <aside className="border-r border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30">
-        <div className="sticky top-14 flex h-12 items-center justify-between border-b border-[var(--border-subtle)] px-4">
-          <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
-            Catégories
-          </span>
+      <aside className="flex min-h-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40">
+        <div className="sticky top-14 z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
+          <div className="flex items-center gap-2">
+            <span className="flex size-6 items-center justify-center rounded-md bg-[var(--accent)]/15 text-[var(--accent)]">
+              <Sparkles className="size-3.5" />
+            </span>
+            <span className="text-sm font-semibold tracking-tight">
+              Catégories
+            </span>
+          </div>
           <div className="flex items-center gap-1">
             <Button
               size="sm"
@@ -167,6 +223,7 @@ export function MenuEditor({
               asChild
               aria-label="Importer depuis une photo"
               title="Importer ta carte depuis une photo"
+              className="h-7 px-2"
             >
               <a href="/dashboard/menu/import">
                 <ScanText className="size-3.5" />
@@ -177,9 +234,10 @@ export function MenuEditor({
               variant="ghost"
               onClick={() => setEditingCategorie("new")}
               aria-label="Nouvelle catégorie"
+              className="h-7 px-2"
             >
               <Plus className="size-3.5" />
-              Ajouter
+              <span className="hidden sm:inline">Ajouter</span>
             </Button>
           </div>
         </div>
@@ -206,38 +264,87 @@ export function MenuEditor({
       <section className="min-w-0">
         {activeCategorie ? (
           <div className="flex h-full flex-col">
-            <div className="sticky top-14 flex h-12 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/80 px-6 backdrop-blur">
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold">{activeCategorie.titre}</h2>
-                <span className="text-xs text-[var(--text-muted)]">
-                  {activeCategorie.produits.length} produit
-                  {activeCategorie.produits.length > 1 ? "s" : ""}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowPreview((s) => !s)}
-                  className="hidden lg:inline-flex"
-                  aria-label="Toggle preview"
-                >
-                  {showPreview ? (
-                    <EyeOff className="size-3.5" />
-                  ) : (
-                    <Eye className="size-3.5" />
-                  )}
-                  {showPreview ? "Masquer la preview" : "Afficher la preview"}
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    setEditingProduit({ mode: "create", categorieId: activeCategorie.id })
-                  }
-                >
-                  <Plus className="size-3.5" />
-                  Nouveau produit
-                </Button>
+            {/* Topbar éditeur — breadcrumb + chips + actions */}
+            <div className="sticky top-14 z-10 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 backdrop-blur-xl">
+              <div className="flex items-start justify-between gap-3 px-6 py-3">
+                <div className="min-w-0 flex-1">
+                  {/* Breadcrumb */}
+                  <nav
+                    aria-label="Fil d'ariane"
+                    className="mb-1 flex items-center gap-1 text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]"
+                  >
+                    {activeParent ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActiveCategorieId(activeParent.id)}
+                          className="truncate transition-colors hover:text-[var(--text-primary)]"
+                        >
+                          {activeParent.titre}
+                        </button>
+                        <ChevronRight className="size-3 shrink-0 text-[var(--text-muted)]/60" />
+                        <span className="text-[#ead04d]">Sous-catégorie</span>
+                      </>
+                    ) : (
+                      <span>Catégorie principale</span>
+                    )}
+                  </nav>
+                  {/* Titre + chips */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="truncate text-lg font-semibold tracking-tight text-[var(--text-primary)]">
+                      {activeCategorie.titre}
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => setEditingCategorie(activeCategorie)}
+                      className="rounded p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
+                      aria-label="Éditer la catégorie"
+                      title="Éditer la catégorie"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    <CountChip count={activeCategorie.produits.length} />
+                    <ModeChip mode={activeCategorie.modeAffichage} />
+                    {!activeCategorie.affiche && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-md border border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/10 px-2 py-0.5 text-[11px] font-medium text-[var(--color-destructive)]"
+                        title="Masquée sur la carte publique"
+                      >
+                        <EyeOff className="size-3" />
+                        Masquée
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {/* Actions */}
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowPreview((s) => !s)}
+                    className="hidden lg:inline-flex"
+                    aria-label="Toggle preview"
+                    title={showPreview ? "Masquer la preview" : "Afficher la preview"}
+                  >
+                    {showPreview ? (
+                      <EyeOff className="size-3.5" />
+                    ) : (
+                      <Eye className="size-3.5" />
+                    )}
+                    <span className="hidden xl:inline">
+                      {showPreview ? "Masquer" : "Preview"}
+                    </span>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      setEditingProduit({ mode: "create", categorieId: activeCategorie.id })
+                    }
+                  >
+                    <Plus className="size-3.5" />
+                    Nouveau produit
+                  </Button>
+                </div>
               </div>
             </div>
             <div className="flex-1 px-6 py-6">
@@ -271,19 +378,47 @@ export function MenuEditor({
 
       {/* Preview live */}
       {showPreview && (
-        <aside className="hidden border-l border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 lg:flex lg:flex-col">
-          <div className="sticky top-14 flex h-12 items-center justify-between border-b border-[var(--border-subtle)] px-4">
-            <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
-              Preview
-            </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={refreshAll}
-              aria-label="Rafraîchir"
-            >
-              <RefreshCcw className="size-3.5" />
-            </Button>
+        <aside className="hidden border-l border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 lg:flex lg:flex-col">
+          <div className="sticky top-14 z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
+            <div className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-md bg-[var(--accent)]/15 text-[var(--accent)]">
+                <Smartphone className="size-3.5" />
+              </span>
+              <span className="text-sm font-semibold tracking-tight">
+                Aperçu mobile
+              </span>
+              <span className="rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)] px-1.5 py-0 text-[9px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                Live
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={refreshAll}
+                aria-label="Rafraîchir"
+                title="Rafraîchir l'aperçu"
+                className="h-7 px-2"
+              >
+                <RefreshCcw className="size-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                asChild
+                aria-label="Ouvrir dans un nouvel onglet"
+                title="Ouvrir dans un nouvel onglet"
+                className="h-7 px-2"
+              >
+                <a
+                  href={`/carte/${restaurantId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </Button>
+            </div>
           </div>
           <div className="flex flex-1 items-start justify-center overflow-hidden p-4">
             <div className="aspect-[9/19] w-full max-w-[320px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-white shadow-xl">
@@ -328,14 +463,65 @@ export function MenuEditor({
 
 function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 px-6 py-24 text-center">
-      <p className="text-sm text-[var(--text-muted)]">
-        Aucune catégorie. Crée la première pour commencer ta carte.
-      </p>
-      <Button onClick={onCreate}>
+    <div className="relative flex h-full flex-col items-center justify-center gap-5 overflow-hidden px-6 py-24 text-center">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }}
+      />
+      <div className="relative flex size-14 items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-sm">
+        <Sparkles className="size-6 text-[var(--accent)]" />
+      </div>
+      <div className="relative max-w-sm space-y-1">
+        <h2 className="text-lg font-semibold tracking-tight">
+          Construis ta carte
+        </h2>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Crée ta première catégorie (Entrées, Plats, Boissons…) pour commencer
+          à ajouter tes produits.
+        </p>
+      </div>
+      <Button onClick={onCreate} className="relative">
         <Plus className="size-4" />
         Créer une catégorie
       </Button>
     </div>
+  );
+}
+
+const FALLBACK_MODE = { label: "Liste", icon: LayoutList };
+
+const MODE_LABELS: Record<string, { label: string; icon: typeof LayoutList }> = {
+  liste: { label: "Liste", icon: LayoutList },
+  grille: { label: "Grille", icon: LayoutGrid },
+  carrousel: { label: "Carrousel", icon: GalleryHorizontal },
+};
+
+function ModeChip({ mode }: { mode: string }) {
+  const config = MODE_LABELS[mode] ?? FALLBACK_MODE;
+  const Icon = config.icon;
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]"
+      title={`Mode d'affichage : ${config.label}`}
+    >
+      <Icon className="size-3" />
+      {config.label}
+    </span>
+  );
+}
+
+function CountChip({ count }: { count: number }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/60 px-2 py-0.5 text-[11px] font-medium text-[var(--text-secondary)]">
+      <span className="font-mono tabular-nums text-[var(--text-primary)]">
+        {count}
+      </span>
+      produit{count > 1 ? "s" : ""}
+    </span>
   );
 }

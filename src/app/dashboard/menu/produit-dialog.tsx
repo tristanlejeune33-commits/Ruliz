@@ -167,8 +167,23 @@ export function ProduitDialog({
     });
   };
 
+  /**
+   * Liste plate (top-level + sous-catégories) — permet d'assigner un produit
+   * directement à une sous-catégorie depuis le dialog.
+   */
+  const flatCategories: SerializedCategorie[] = (() => {
+    const out: SerializedCategorie[] = [];
+    for (const cat of categories) {
+      out.push(cat);
+      const children =
+        ((cat as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+      for (const child of children) out.push(child);
+    }
+    return out;
+  })();
+
   const findCategorie = (id: string): SerializedCategorie | undefined =>
-    categories.find((c) => c.id === id);
+    flatCategories.find((c) => c.id === id);
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -285,9 +300,9 @@ export function ProduitDialog({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {categories.map((c) => (
+                            {flatCategories.map((c) => (
                               <SelectItem key={c.id} value={c.id}>
-                                {c.titre}
+                                {c.parentId ? `↳  ${c.titre}` : c.titre}
                               </SelectItem>
                             ))}
                           </SelectContent>
