@@ -3,6 +3,7 @@
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Kbd } from "@/components/ui/kbd";
+import { BreadcrumbNav } from "@/components/shared/breadcrumb-nav";
 import { PreviewLangPicker } from "@/components/shared/preview-lang-picker";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
@@ -16,14 +17,15 @@ interface TopbarProps {
 
 export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/80 px-6 backdrop-blur-xl">
-      <div className="flex flex-1 items-center gap-3">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/80 px-4 backdrop-blur-xl md:px-6">
+      <div className="flex flex-1 items-center gap-3 overflow-hidden">
         {leftSlot}
+        <BreadcrumbNav />
         <Button
           variant="outline"
           size="sm"
           onClick={onOpenCommand}
-          className="hidden h-9 min-w-[240px] justify-start gap-2 px-3 text-[var(--text-muted)] md:inline-flex"
+          className="ml-auto hidden h-9 min-w-[200px] justify-start gap-2 px-3 text-[var(--text-muted)] md:inline-flex lg:min-w-[260px]"
         >
           <Search className="size-4" />
           <span className="flex-1 text-left">Recherche rapide…</span>

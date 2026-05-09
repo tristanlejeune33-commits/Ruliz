@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { CommandPalette } from "./command-palette";
+import { PageTransition } from "./page-transition";
 import { Topbar } from "./topbar";
 
 interface AppShellProps {
@@ -33,7 +34,9 @@ export function AppShell({
           onOpenCommand={() => setCommandOpen(true)}
           leftSlot={topbarLeftSlot}
         />
-        <main className="flex-1 px-6 py-8">{children}</main>
+        <main className="flex-1 px-4 py-6 md:px-6 md:py-8">
+          <PageTransition>{children}</PageTransition>
+        </main>
       </div>
       <CommandPalette scope={scope} open={commandOpen} onOpenChange={setCommandOpen} />
     </div>

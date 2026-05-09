@@ -102,11 +102,11 @@ export function SidebarNav({
     sections ?? (scope === "admin" ? ADMIN_NAV : DASHBOARD_NAV);
 
   return (
-    <nav className="flex flex-col gap-6">
+    <nav className="flex flex-col gap-5">
       {resolved.map((section, index) => (
-        <div key={index} className="flex flex-col gap-1">
+        <div key={index} className="flex flex-col gap-0.5">
           {section.title && (
-            <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
               {section.title}
             </p>
           )}
@@ -121,19 +121,28 @@ export function SidebarNav({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "group flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150",
+                  "group relative flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-200",
                   active
-                    ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
+                    ? "bg-[var(--bg-elevated)] font-medium text-[var(--text-primary)]"
+                    : "text-[var(--text-secondary)] hover:translate-x-0.5 hover:bg-[var(--bg-elevated)]/60 hover:text-[var(--text-primary)]",
                 )}
               >
+                {/* Indicateur visuel d'item actif (barre verticale gauche) */}
+                {active && (
+                  <span
+                    className="absolute left-0 top-1/2 h-5 w-0.5 -translate-x-1.5 -translate-y-1/2 rounded-r-full bg-[var(--accent)]"
+                    aria-hidden
+                  />
+                )}
                 <item.icon
                   className={cn(
-                    "size-4 shrink-0",
-                    active && "text-[var(--accent)]",
+                    "size-4 shrink-0 transition-colors",
+                    active
+                      ? "text-[var(--accent)]"
+                      : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)]",
                   )}
                 />
-                <span className="flex-1">{item.label}</span>
+                <span className="flex-1 truncate">{item.label}</span>
                 {item.badge && (
                   <span className="rounded bg-[var(--bg-card)] px-1.5 py-0.5 font-mono text-[10px] uppercase text-[var(--text-muted)]">
                     {item.badge}
