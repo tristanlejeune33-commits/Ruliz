@@ -17,7 +17,7 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { Eye, EyeOff, Plus, RefreshCcw } from "lucide-react";
+import { Eye, EyeOff, Plus, RefreshCcw, ScanText } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -142,15 +142,28 @@ export function MenuEditor({
           <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
             Catégories
           </span>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => setEditingCategorie("new")}
-            aria-label="Nouvelle catégorie"
-          >
-            <Plus className="size-3.5" />
-            Ajouter
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="sm"
+              variant="ghost"
+              asChild
+              aria-label="Importer depuis une photo"
+              title="Importer ta carte depuis une photo"
+            >
+              <a href="/dashboard/menu/import">
+                <ScanText className="size-3.5" />
+              </a>
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setEditingCategorie("new")}
+              aria-label="Nouvelle catégorie"
+            >
+              <Plus className="size-3.5" />
+              Ajouter
+            </Button>
+          </div>
         </div>
         <DndContext
           sensors={sensors}
