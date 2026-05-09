@@ -14,14 +14,18 @@ import {
 export async function translateProduitToLang(opts: {
   produitId: bigint;
   targetLang: SupportedLang;
+  /** Si true, ignore le cache DB et force une nouvelle traduction. */
+  force?: boolean;
 }): Promise<{ ok: boolean }> {
-  const { produitId, targetLang } = opts;
+  const { produitId, targetLang, force } = opts;
 
-  // Skip if already cached
-  const existing = await prisma.produitTranslation.findUnique({
-    where: { produitId_lang: { produitId, lang: targetLang } },
-  });
-  if (existing) return { ok: true };
+  // Skip if already cached (sauf si force)
+  if (!force) {
+    const existing = await prisma.produitTranslation.findUnique({
+      where: { produitId_lang: { produitId, lang: targetLang } },
+    });
+    if (existing) return { ok: true };
+  }
 
   const produit = await prisma.produit.findUnique({
     where: { id: produitId },
@@ -82,13 +86,17 @@ export async function translateProduitToLang(opts: {
 export async function translateCategorieToLang(opts: {
   categorieId: bigint;
   targetLang: SupportedLang;
+  /** Si true, ignore le cache DB et force une nouvelle traduction. */
+  force?: boolean;
 }): Promise<{ ok: boolean }> {
-  const { categorieId, targetLang } = opts;
+  const { categorieId, targetLang, force } = opts;
 
-  const existing = await prisma.categorieTranslation.findUnique({
-    where: { categorieId_lang: { categorieId, lang: targetLang } },
-  });
-  if (existing) return { ok: true };
+  if (!force) {
+    const existing = await prisma.categorieTranslation.findUnique({
+      where: { categorieId_lang: { categorieId, lang: targetLang } },
+    });
+    if (existing) return { ok: true };
+  }
 
   const cat = await prisma.categorie.findUnique({
     where: { id: categorieId },
@@ -128,6 +136,8 @@ export async function translateCategorieToLang(opts: {
 export async function translateRestaurantMenu(opts: {
   restaurantId: bigint;
   langs?: SupportedLang[];
+  /** Si true, ignore le cache DB et force la re-traduction de tout. */
+  force?: boolean;
 }): Promise<{ produits: number; categories: number }> {
   const langs = (opts.langs ?? SUPPORTED_LANGS).filter((l) => l !== "fr");
 
@@ -148,11 +158,19 @@ export async function translateRestaurantMenu(opts: {
   // Run sequentially per (item, lang) to keep API rate-limit safe.
   for (const lang of langs) {
     for (const c of categories) {
-      const r = await translateCategorieToLang({ categorieId: c.id, targetLang: lang });
+      const r = await translateCategorieToLang({
+        categorieId: c.id,
+        targetLang: lang,
+        force: opts.force,
+      });
       if (r.ok) categoriesCount += 1;
     }
     for (const p of produits) {
-      const r = await translateProduitToLang({ produitId: p.id, targetLang: lang });
+      const r = await translateProduitToLang({
+        produitId: p.id,
+        targetLang: lang,
+        force: opts.force,
+      });
       if (r.ok) produitsCount += 1;
     }
   }

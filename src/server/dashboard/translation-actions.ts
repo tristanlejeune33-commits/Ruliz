@@ -43,6 +43,7 @@ type RetranslateData = {
 export async function retranslateMenu(
   restaurantId: string,
   langs?: SupportedLang[],
+  force?: boolean,
 ): Promise<ActionResult<RetranslateData>> {
   let bigId: bigint;
   try {
@@ -89,6 +90,7 @@ export async function retranslateMenu(
     const stats = await translateRestaurantMenu({
       restaurantId: bigId,
       langs,
+      force,
     });
 
     // Purge Redis pour toutes les langues
