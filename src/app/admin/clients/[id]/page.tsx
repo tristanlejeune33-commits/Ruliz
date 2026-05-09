@@ -32,6 +32,7 @@ import { getClientById } from "@/server/admin/queries";
 import { serialize } from "@/lib/serialize";
 import { ClientForm } from "./client-form";
 import { ClientActions } from "./client-actions";
+import { ImpersonateButton } from "./impersonate-button";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -81,12 +82,20 @@ export default async function ClientDetailPage({ params }: PageProps) {
             {formatDistanceToNow(new Date(data.createdAt), { addSuffix: true, locale: fr })}
           </p>
         </div>
-        <ClientActions
-          id={data.id}
-          email={data.email}
-          statut={data.statut as Statut}
-          demoActive={data.demoActive}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <ImpersonateButton
+            targetUserId={String(data.id)}
+            targetName={
+              [data.prenom, data.nom].filter(Boolean).join(" ") || data.email
+            }
+          />
+          <ClientActions
+            id={data.id}
+            email={data.email}
+            statut={data.statut as Statut}
+            demoActive={data.demoActive}
+          />
+        </div>
       </header>
 
       <Tabs defaultValue="compte" className="w-full">

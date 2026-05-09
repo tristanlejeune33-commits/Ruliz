@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "./auth";
 import { prisma } from "./db";
+import { getImpersonatedUserId } from "./impersonation";
 
 export type UserRole = "admin" | "client" | "team";
 
@@ -35,10 +36,23 @@ export async function requireAdmin() {
   return session;
 }
 
+/**
+ * Le dashboard est accessible aux rôles `client` + `team`.
+ *
+ * Cas spécial : un admin EN MODE IMPERSONATION (cookie ruliz_impersonate_user_id
+ * actif) peut accéder au dashboard pour aider un client (SAV). Sans le cookie,
+ * un admin est redirigé vers /admin.
+ */
 export async function requireDashboard() {
-  // Dashboard est accessible aux rôles client + team. Les admin sont redirigés vers /admin.
   const session = await requireSession();
   const role = await getRole(session.user.id);
-  if (role === "admin") redirect("/admin");
+
+  if (role === "admin") {
+    // Si l'admin impersone un client, on l'autorise sur /dashboard
+    const impersonatedId = await getImpersonatedUserId();
+    if (impersonatedId) return session;
+    redirect("/admin");
+  }
+
   return session;
 }

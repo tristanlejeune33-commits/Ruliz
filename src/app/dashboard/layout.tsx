@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { AppShell, COLLAPSED_COOKIE } from "@/components/shared/app-shell";
+import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
 import {
   RestaurantSwitcher,
   type RestaurantOption,
@@ -10,6 +11,7 @@ import { SidebarNav } from "@/components/shared/sidebar-nav";
 import { SubscriptionBanner } from "@/components/shared/subscription-banner";
 import { getActiveRestaurantId } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { getActingUserId } from "@/lib/impersonation";
 import { requireDashboard } from "@/lib/session";
 
 export default async function DashboardLayout({
@@ -19,15 +21,14 @@ export default async function DashboardLayout({
 }) {
   const session = await requireDashboard();
 
-  const authUser = await prisma.authUser.findUnique({
-    where: { id: session.user.id },
-    select: { userId: true },
-  });
+  // Récupère l'user agissant (impersonné si admin SAV, sinon réel)
+  const acting = await getActingUserId();
+  const userId = acting?.actingUserId ?? null;
 
-  const restaurants: RestaurantOption[] = authUser?.userId
+  const restaurants: RestaurantOption[] = userId
     ? (
         await prisma.restaurant.findMany({
-          where: { userId: authUser.userId },
+          where: { userId },
           select: { id: true, nom: true, ville: true, plan: true },
           orderBy: { createdAt: "asc" },
         })
@@ -60,36 +61,59 @@ export default async function DashboardLayout({
   const collapsedCookie = cookieStore.get(COLLAPSED_COOKIE);
   const defaultCollapsed = collapsedCookie?.value === "1";
 
+  // Affiché en mode SAV — nom + email du user impersonné
+  const impersonatedTargetName =
+    acting?.isImpersonating && acting.impersonatedUser
+      ? [acting.impersonatedUser.prenom, acting.impersonatedUser.nom]
+          .filter(Boolean)
+          .join(" ") || acting.impersonatedUser.email
+      : null;
+
+  // Affichage user dans la sidebar : si impersonation → on affiche le client
+  // (pas l'admin) pour que toute la UI reflète "tu agis en tant que X"
+  const sidebarUser =
+    acting?.isImpersonating && acting.impersonatedUser
+      ? {
+          name: impersonatedTargetName,
+          email: acting.impersonatedUser.email,
+        }
+      : { name: session.user.name, email: session.user.email };
+
   return (
-    <AppShell
-      user={{ name: session.user.name, email: session.user.email }}
-      scope="dashboard"
-      defaultCollapsed={defaultCollapsed}
-      sidebar={
-        <>
-          <SidebarBrand href="/dashboard" />
-          <div className="flex-1 overflow-y-auto px-3 py-4">
-            <SidebarNav scope="dashboard" />
-          </div>
-          <SidebarFooter
-            user={{ name: session.user.name, email: session.user.email }}
-            hint={userHint}
-          />
-        </>
-      }
-      topbarLeftSlot={
-        <RestaurantSwitcher restaurants={restaurants} activeId={activeId} />
-      }
-    >
-      {activeRestaurant && (
-        <div className="mb-4">
-          <SubscriptionBanner
-            status={activeRestaurant.stripeSubscriptionStatus}
-            restaurantStatut={activeRestaurant.statut}
-          />
-        </div>
+    <>
+      {acting?.isImpersonating && acting.impersonatedUser && (
+        <ImpersonationBanner
+          targetName={impersonatedTargetName ?? acting.impersonatedUser.email}
+          targetEmail={acting.impersonatedUser.email}
+        />
       )}
-      {children}
-    </AppShell>
+      <AppShell
+        user={sidebarUser}
+        scope="dashboard"
+        defaultCollapsed={defaultCollapsed}
+        sidebar={
+          <>
+            <SidebarBrand href="/dashboard" />
+            <div className="flex-1 overflow-y-auto px-3 py-4">
+              <SidebarNav scope="dashboard" />
+            </div>
+            <SidebarFooter user={sidebarUser} hint={userHint} />
+          </>
+        }
+        topbarLeftSlot={
+          <RestaurantSwitcher restaurants={restaurants} activeId={activeId} />
+        }
+      >
+        {activeRestaurant && (
+          <div className="mb-4">
+            <SubscriptionBanner
+              status={activeRestaurant.stripeSubscriptionStatus}
+              restaurantStatut={activeRestaurant.statut}
+            />
+          </div>
+        )}
+        {children}
+      </AppShell>
+    </>
   );
 }
