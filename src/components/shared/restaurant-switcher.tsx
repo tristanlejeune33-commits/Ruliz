@@ -36,10 +36,10 @@ interface RestaurantSwitcherProps {
 
 const PLAN_TONES: Record<RestaurantOption["plan"], string> = {
   freemium:
-    "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-muted)]",
-  pro: "border-[var(--accent)]/30 bg-[var(--accent)]/15 text-[var(--accent)]",
+    "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
+  pro: "border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]",
   premium:
-    "border-[oklch(0.65_0.22_310)]/30 bg-[oklch(0.65_0.22_310)]/15 text-[oklch(0.7_0.22_310)]",
+    "border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] text-[var(--neon-violet)]",
 };
 
 export function RestaurantSwitcher({
@@ -54,9 +54,9 @@ export function RestaurantSwitcher({
     return (
       <button
         type="button"
-        className="inline-flex h-9 items-center gap-2 rounded-lg border border-dashed border-[var(--border-subtle)] bg-transparent px-3 text-xs text-[var(--text-muted)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--text-primary)]"
+        className="inline-flex h-9 items-center gap-2 rounded-xl border border-dashed border-[var(--border-glass-hover)] bg-transparent px-3 text-xs text-[var(--text-tertiary)] transition-colors hover:border-[var(--neon-cyan)]/40 hover:text-[var(--text-primary)]"
       >
-        <Plus className="size-4" /> Ajouter un restaurant
+        <Plus className="size-4" strokeWidth={1.75} /> Ajouter un restaurant
       </button>
     );
   }
@@ -79,19 +79,19 @@ export function RestaurantSwitcher({
         <button
           type="button"
           disabled={pending}
-          className="group inline-flex h-9 max-w-[280px] items-center gap-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 px-2.5 text-left transition-all duration-200 hover:border-[var(--accent)]/30 hover:bg-[var(--bg-elevated)]/70 disabled:opacity-60"
+          className="group inline-flex h-9 max-w-[280px] items-center gap-2.5 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-2.5 text-left transition-all duration-200 hover:border-[var(--neon-cyan)]/30 hover:bg-[var(--bg-glass-hover)] disabled:opacity-60"
           aria-label="Changer de restaurant"
         >
           <span
             className={cn(
-              "flex size-6 shrink-0 items-center justify-center rounded-md transition-all duration-200",
-              "bg-[var(--accent)]/15 text-[var(--accent)] ring-1 ring-[var(--accent)]/25 group-hover:ring-[var(--accent)]/50",
+              "flex size-6 shrink-0 items-center justify-center rounded-lg transition-all duration-200",
+              "bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)] ring-1 ring-[var(--neon-cyan)]/30 group-hover:ring-[var(--neon-cyan)]/50",
             )}
           >
             {pending ? (
-              <Loader2 className="size-3.5 animate-spin" />
+              <Loader2 className="size-3.5 animate-spin" strokeWidth={1.75} />
             ) : (
-              <UtensilsCrossed className="size-3.5" />
+              <UtensilsCrossed className="size-3.5" strokeWidth={1.75} />
             )}
           </span>
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
@@ -99,16 +99,19 @@ export function RestaurantSwitcher({
               {active.name}
             </span>
             {active.ville && (
-              <span className="hidden truncate text-[10px] text-[var(--text-muted)] sm:block">
+              <span className="hidden truncate text-[10px] text-[var(--text-tertiary)] sm:block">
                 {active.ville}
               </span>
             )}
           </span>
-          <ChevronsUpDown className="size-3.5 shrink-0 text-[var(--text-muted)] transition-colors group-hover:text-[var(--text-primary)]" />
+          <ChevronsUpDown
+            className="size-3.5 shrink-0 text-[var(--text-tertiary)] transition-colors group-hover:text-[var(--text-primary)]"
+            strokeWidth={1.75}
+          />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[300px] p-1">
-        <DropdownMenuLabel className="flex items-center justify-between px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-muted)]">
+        <DropdownMenuLabel className="flex items-center justify-between px-2 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-[var(--text-tertiary)]">
           Mes restaurants
           <span className="font-mono text-[10px] normal-case tracking-normal text-[var(--text-secondary)]">
             {restaurants.length}
@@ -123,26 +126,26 @@ export function RestaurantSwitcher({
               onSelect={() => handleSelect(r.id)}
               className={cn(
                 "gap-3 rounded-md py-2",
-                isActive && "bg-[var(--bg-elevated)]/50",
+                isActive && "bg-[var(--bg-glass-hover)]",
               )}
             >
               <span
                 className={cn(
-                  "flex size-7 shrink-0 items-center justify-center rounded-md ring-1 transition-colors",
+                  "flex size-7 shrink-0 items-center justify-center rounded-lg ring-1 transition-colors",
                   isActive
-                    ? "bg-[var(--accent)]/15 text-[var(--accent)] ring-[var(--accent)]/30"
-                    : "bg-[var(--bg-elevated)] text-[var(--text-muted)] ring-[var(--border-subtle)]",
+                    ? "bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)] ring-[var(--neon-cyan)]/30"
+                    : "bg-[var(--bg-glass)] text-[var(--text-tertiary)] ring-[var(--border-glass)]",
                 )}
               >
-                <UtensilsCrossed className="size-3.5" />
+                <UtensilsCrossed className="size-3.5" strokeWidth={1.75} />
               </span>
               <div className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm font-medium text-[var(--text-primary)]">
                   {r.name}
                 </span>
                 {r.ville && (
-                  <span className="flex items-center gap-1 text-[11px] text-[var(--text-muted)]">
-                    <MapPin className="size-2.5" />
+                  <span className="flex items-center gap-1 text-[11px] text-[var(--text-tertiary)]">
+                    <MapPin className="size-2.5" strokeWidth={1.75} />
                     {r.ville}
                   </span>
                 )}
@@ -156,15 +159,18 @@ export function RestaurantSwitcher({
                 {r.plan}
               </span>
               {isActive && (
-                <Check className="size-3.5 shrink-0 text-[var(--accent)]" />
+                <Check
+                  className="size-3.5 shrink-0 text-[var(--neon-cyan)]"
+                  strokeWidth={2}
+                />
               )}
             </DropdownMenuItem>
           );
         })}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="gap-2 rounded-md text-[var(--accent)] data-[highlighted]:text-[var(--accent)]">
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--accent)]/10 ring-1 ring-[var(--accent)]/25">
-            <Plus className="size-3.5" />
+        <DropdownMenuItem className="gap-2 rounded-md text-[var(--neon-cyan)] data-[highlighted]:text-[var(--neon-cyan)]">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--neon-cyan-soft)] ring-1 ring-[var(--neon-cyan)]/30">
+            <Plus className="size-3.5" strokeWidth={1.75} />
           </span>
           <span className="text-sm font-medium">Ajouter un restaurant</span>
         </DropdownMenuItem>

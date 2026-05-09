@@ -6,26 +6,43 @@ import { cn } from "@/lib/utils";
 
 interface SidebarBrandProps {
   href: string;
-  /** Petit chip à droite du nom (ex: "Admin" ou "v2") */
   pillLabel?: string;
-  pillTone?: "accent" | "danger";
+  pillTone?: "cyan" | "violet" | "danger";
+  collapsed?: boolean;
 }
 
+const TONE_CLASSES: Record<
+  NonNullable<SidebarBrandProps["pillTone"]>,
+  string
+> = {
+  cyan: "border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]",
+  violet:
+    "border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] text-[var(--neon-violet)]",
+  danger:
+    "border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] text-[var(--neon-danger)]",
+};
+
 /**
- * Header de la sidebar — logo + nom Ruliz + chip optionnel.
- * Glow accent subtil derrière le logo pour donner du caractère sans surcharger.
+ * Header de la sidebar — logo Ruliz + chip + status dot live qui pulse.
+ * Glow accent subtil derrière le mark pour signaler la marque.
  */
 export function SidebarBrand({
   href,
   pillLabel,
-  pillTone = "accent",
+  pillTone = "cyan",
+  collapsed = false,
 }: SidebarBrandProps) {
   return (
-    <div className="relative flex h-14 items-center justify-between gap-2 border-b border-[var(--border-subtle)] px-4">
-      {/* Glow accent subtil derrière le logo */}
+    <div
+      className={cn(
+        "relative flex h-14 items-center border-b border-[var(--border-glass)]",
+        collapsed ? "justify-center px-2" : "justify-between gap-2 px-4",
+      )}
+    >
+      {/* Glow accent sous le logo */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-8 left-2 size-20 rounded-full bg-[var(--accent)]/12 blur-2xl"
+        className="pointer-events-none absolute -top-8 left-2 size-20 rounded-full bg-[var(--neon-cyan)]/15 blur-2xl"
       />
       <Link
         href={href}
@@ -35,37 +52,41 @@ export function SidebarBrand({
           <Logo variant="mark" className="size-7" />
           <span
             aria-hidden
-            className="absolute inset-0 -z-10 rounded-full bg-[var(--accent)]/20 blur-md"
+            className="absolute inset-0 -z-10 rounded-full bg-[var(--neon-cyan)]/30 blur-md"
           />
         </span>
-        <span className="text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">
-          Ruliz
-        </span>
-        {pillLabel && (
-          <span
-            className={cn(
-              "rounded-md border px-1.5 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider",
-              pillTone === "accent"
-                ? "border-[var(--accent)]/25 bg-[var(--accent)]/15 text-[var(--accent)]"
-                : "border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/15 text-[var(--color-destructive)]",
+        {!collapsed && (
+          <>
+            <span className="text-[15px] font-semibold tracking-tight text-[var(--text-primary)]">
+              Ruliz
+            </span>
+            {pillLabel && (
+              <span
+                className={cn(
+                  "rounded-md border px-1.5 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider",
+                  TONE_CLASSES[pillTone],
+                )}
+              >
+                {pillLabel}
+              </span>
             )}
-          >
-            {pillLabel}
-          </span>
+          </>
         )}
       </Link>
-      {/* Status dot — petit indicateur "live" qui pulse */}
-      <span className="relative flex size-2 shrink-0">
-        <span
-          aria-hidden
-          className="absolute inset-0 animate-ping rounded-full bg-[oklch(0.7_0.18_145)]/60"
-        />
-        <span
-          aria-hidden
-          className="relative size-2 rounded-full bg-[oklch(0.7_0.18_145)] ring-2 ring-[var(--bg-primary)]"
-          title="Serveur en ligne"
-        />
-      </span>
+      {/* Status dot — pulse animation via .pulse-dot */}
+      {!collapsed && (
+        <span className="relative flex size-2 shrink-0">
+          <span
+            aria-hidden
+            className="pulse-dot absolute inset-0 rounded-full bg-[var(--neon-success)]"
+          />
+          <span
+            aria-hidden
+            className="relative size-2 rounded-full bg-[var(--neon-success)] ring-2 ring-[var(--bg-primary)]"
+            title="Serveur en ligne"
+          />
+        </span>
+      )}
     </div>
   );
 }

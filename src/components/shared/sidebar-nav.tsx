@@ -23,6 +23,11 @@ import {
   Users,
   X,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 export interface SidebarNavItem {
@@ -37,14 +42,9 @@ export interface SidebarNavSection {
   items: SidebarNavItem[];
 }
 
-// ----------------------------------------------------------------------------
-// Configs nav par scope (gardées côté Client pour ne PAS croiser la frontière
-// RSC avec des références de composants forwardRef — ce qui plante en runtime).
-// ----------------------------------------------------------------------------
-
 const DASHBOARD_NAV: SidebarNavSection[] = [
   {
-    title: "Mon restaurant",
+    title: "Principal",
     items: [
       { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
       { label: "Mon resto", href: "/dashboard/restaurant", icon: Building2 },
@@ -96,30 +96,26 @@ const ADMIN_NAV: SidebarNavSection[] = [
 
 interface SidebarNavProps {
   scope?: "admin" | "dashboard";
-  /** Override optional pour cas custom — sinon on utilise la config selon `scope` */
   sections?: SidebarNavSection[];
-  /** Désactiver l'input de filtre (utile pour les mini-sidebars) */
-  hideFilter?: boolean;
+  /** Mode compact (72px) : icônes seules + tooltips au hover. */
+  collapsed?: boolean;
 }
 
 export function SidebarNav({
   scope,
   sections,
-  hideFilter = false,
+  collapsed = false,
 }: SidebarNavProps) {
   const pathname = usePathname();
-  // ID unique pour le layoutId Framer — évite les collisions si la nav est
-  // rendue plusieurs fois sur la même page (cas rare mais possible).
   const layoutId = useId();
   const [query, setQuery] = useState("");
 
   const resolved =
     sections ?? (scope === "admin" ? ADMIN_NAV : DASHBOARD_NAV);
 
-  // Filtre live — masque les sections vides après filtre
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return resolved;
+    if (!q || collapsed) return resolved;
     return resolved
       .map((section) => ({
         ...section,
@@ -128,27 +124,27 @@ export function SidebarNav({
         ),
       }))
       .filter((section) => section.items.length > 0);
-  }, [resolved, query]);
+  }, [resolved, query, collapsed]);
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Filtre live — input compact qui matche les items en temps réel */}
-      {!hideFilter && (
+      {/* Filtre live — masqué en mode compact */}
+      {!collapsed && (
         <div className="relative px-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-tertiary)]" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Filtrer la nav…"
-            className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 py-1.5 pl-9 pr-7 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-muted)] transition-all duration-150 focus:border-[var(--accent)]/40 focus:bg-[var(--bg-elevated)]/70 focus:outline-none focus:ring-1 focus:ring-[var(--accent)]/30"
+            className="w-full rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] py-1.5 pl-9 pr-7 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] transition-all duration-150 focus:border-[var(--neon-cyan)]/50 focus:bg-[var(--bg-glass-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--neon-cyan)]/30"
             aria-label="Filtrer les items du menu"
           />
           {query && (
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text-primary)]"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-[var(--text-tertiary)] hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)]"
               aria-label="Effacer le filtre"
             >
               <X className="size-3" />
@@ -158,25 +154,36 @@ export function SidebarNav({
       )}
 
       <nav className="flex flex-col gap-5">
-        {filtered.length === 0 && (
-          <div className="px-3 py-4 text-center text-[11px] text-[var(--text-muted)]">
+        {filtered.length === 0 && !collapsed && (
+          <div className="px-3 py-4 text-center text-[11px] text-[var(--text-tertiary)]">
             Rien ne matche « {query} ».
           </div>
         )}
         {filtered.map((section, sectionIdx) => (
           <div key={sectionIdx} className="flex flex-col gap-1">
-            {section.title && (
+            {section.title && !collapsed && (
               <div className="mb-1 flex items-center gap-2 px-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
                   {section.title}
                 </p>
                 <span
                   aria-hidden
-                  className="h-px flex-1 bg-gradient-to-r from-[var(--border-subtle)] to-transparent"
+                  className="h-px flex-1 bg-gradient-to-r from-[var(--border-glass)] to-transparent"
                 />
               </div>
             )}
-            <div className="flex flex-col gap-0.5">
+            {section.title && collapsed && (
+              <div
+                aria-hidden
+                className="mx-3 my-1 h-px bg-[var(--border-glass)]"
+              />
+            )}
+            <div
+              className={cn(
+                "flex flex-col gap-0.5",
+                collapsed && "items-center",
+              )}
+            >
               {section.items.map((item) => {
                 const active =
                   pathname === item.href ||
@@ -188,6 +195,7 @@ export function SidebarNav({
                     key={item.href}
                     item={item}
                     active={active}
+                    collapsed={collapsed}
                     layoutId={layoutId}
                     query={query}
                   />
@@ -201,95 +209,112 @@ export function SidebarNav({
   );
 }
 
-// ---------------------------------------------------------------------------
-
 function NavItem({
   item,
   active,
+  collapsed,
   layoutId,
   query,
 }: {
   item: SidebarNavItem;
   active: boolean;
+  collapsed: boolean;
   layoutId: string;
   query: string;
 }) {
-  return (
+  const link = (
     <Link
       href={item.href}
+      aria-current={active ? "page" : undefined}
+      aria-label={collapsed ? item.label : undefined}
       className={cn(
-        "group relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-medium transition-colors duration-200",
+        "group relative flex items-center rounded-xl text-[13px] font-medium transition-colors duration-200",
+        collapsed
+          ? "size-10 justify-center"
+          : "gap-3 px-2.5 py-2",
         active
           ? "text-[var(--text-primary)]"
           : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
       )}
     >
-      {/* Pill animé — bg de l'item actif qui glisse entre items via layoutId Framer Motion */}
+      {/* Pill animé via layoutId Framer Motion — glisse entre items actifs */}
       {active && (
         <motion.span
           layoutId={layoutId}
-          className="absolute inset-0 rounded-lg bg-[var(--bg-elevated)] shadow-sm ring-1 ring-[var(--border-subtle)]/60"
+          className="absolute inset-0 rounded-xl bg-[var(--bg-glass-strong)] ring-1 ring-[var(--border-glass-hover)] backdrop-blur-md"
           aria-hidden
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
         />
       )}
 
-      {/* Hover overlay subtil pour les items inactifs */}
+      {/* Hover overlay subtil */}
       {!active && (
         <span
           aria-hidden
-          className="absolute inset-0 rounded-lg bg-[var(--bg-elevated)]/0 transition-colors duration-200 group-hover:bg-[var(--bg-elevated)]/50"
+          className="absolute inset-0 rounded-xl bg-[var(--bg-glass)]/0 transition-colors duration-200 group-hover:bg-[var(--bg-glass)]"
         />
       )}
 
-      {/* Indicateur d'item actif — barre verticale gauche avec glow */}
-      {active && (
+      {/* Barre verticale gauche néon avec glow — non rendue en collapsed */}
+      {active && !collapsed && (
         <motion.span
           layoutId={`${layoutId}-bar`}
           aria-hidden
-          className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--accent)] shadow-[0_0_12px_var(--accent)]"
+          className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--neon-cyan)] shadow-[0_0_12px_var(--neon-cyan-glow)]"
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
         />
       )}
 
-      {/* Icône — tile colorée si actif, plate sinon, scale subtil au hover */}
+      {/* Icône */}
       <span
         className={cn(
-          "relative z-10 flex size-7 shrink-0 items-center justify-center rounded-md transition-all duration-200",
+          "relative z-10 flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200",
           active
-            ? "bg-[var(--accent)]/15 text-[var(--accent)] ring-1 ring-[var(--accent)]/25"
-            : "text-[var(--text-muted)] group-hover:bg-[var(--bg-card)]/60 group-hover:text-[var(--text-primary)] group-hover:scale-105",
+            ? "bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)] ring-1 ring-[var(--neon-cyan)]/30"
+            : "text-[var(--text-tertiary)] group-hover:bg-[var(--bg-glass-hover)] group-hover:text-[var(--text-primary)] group-hover:scale-105",
         )}
       >
-        <item.icon className="size-3.5" />
+        <item.icon className="size-3.5" strokeWidth={1.75} />
       </span>
 
-      <span className="relative z-10 flex-1 truncate">
-        {query ? <Highlight text={item.label} match={query} /> : item.label}
-      </span>
-
-      {item.badge && (
-        <span
-          className={cn(
-            "relative z-10 rounded-md border px-1.5 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider transition-colors",
-            active
-              ? "border-[var(--accent)]/30 bg-[var(--accent)]/15 text-[var(--accent)]"
-              : "border-[var(--border-subtle)] bg-[var(--bg-card)]/60 text-[var(--text-muted)]",
+      {/* Label + badge — masqué en collapsed */}
+      {!collapsed && (
+        <>
+          <span className="relative z-10 flex-1 truncate">
+            {query ? <Highlight text={item.label} match={query} /> : item.label}
+          </span>
+          {item.badge && (
+            <span
+              className={cn(
+                "relative z-10 rounded-md border px-1.5 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider transition-colors",
+                active
+                  ? "border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]"
+                  : "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
+              )}
+            >
+              {item.badge}
+            </span>
           )}
-        >
-          {item.badge}
-        </span>
+        </>
       )}
     </Link>
   );
+
+  // En mode collapsed, on enrobe d'un Tooltip pour montrer le label au hover
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent side="right" sideOffset={12}>
+          {item.label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return link;
 }
 
-// ---------------------------------------------------------------------------
-
-/**
- * Surligne la sous-chaîne `match` (case-insensitive) dans `text` avec un
- * background accent. Utilisé quand le filtre nav est actif.
- */
 function Highlight({ text, match }: { text: string; match: string }) {
   const m = match.trim();
   if (!m) return <>{text}</>;
@@ -298,7 +323,7 @@ function Highlight({ text, match }: { text: string; match: string }) {
   return (
     <>
       {text.slice(0, idx)}
-      <span className="rounded bg-[var(--accent)]/20 px-0.5 text-[var(--text-primary)]">
+      <span className="rounded bg-[var(--neon-cyan-soft)] px-0.5 text-[var(--text-primary)]">
         {text.slice(idx, idx + m.length)}
       </span>
       {text.slice(idx + m.length)}

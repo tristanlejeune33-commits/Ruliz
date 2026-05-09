@@ -3,7 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================================
+ * RULIZ DESIGN SYSTEM v1 — glassmorphism + néon
+ * Voir docs/design-system.md
+ * ========================================================================= */
+
 @theme inline {
+  /* Bridge tokens — les composants existants pointent ici, on remappe vers le DS néon */
   --color-background: var(--bg-primary);
   --color-foreground: var(--text-primary);
   --color-card: var(--bg-card);
@@ -18,7 +24,7 @@
   --color-muted-foreground: var(--text-muted);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: oklch(0.62 0.22 25);
+  --color-destructive: var(--neon-danger);
   --color-border: var(--border-subtle);
   --color-input: var(--border-subtle);
   --color-ring: var(--accent);
@@ -30,49 +36,240 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-:root {
-  --bg-primary: oklch(1 0 0);
-  --bg-elevated: oklch(0.985 0 0);
-  --bg-card: oklch(1 0 0);
-  --border-subtle: oklch(0.92 0 0);
-  --text-primary: oklch(0.145 0 0);
-  --text-secondary: oklch(0.45 0 0);
-  --text-muted: oklch(0.55 0 0);
-  --accent: oklch(0.6 0.19 265);
-  --accent-foreground: oklch(0.985 0 0);
-  --radius: 0.625rem;
-}
-
+:root,
 .dark {
-  --bg-primary: oklch(0.145 0 0);
-  --bg-elevated: oklch(0.18 0 0);
-  --bg-card: oklch(0.205 0 0);
-  --border-subtle: oklch(0.27 0 0);
-  --text-primary: oklch(0.985 0 0);
-  --text-secondary: oklch(0.708 0 0);
-  --text-muted: oklch(0.5 0 0);
-  --accent: oklch(0.6 0.19 265);
-  --accent-foreground: oklch(0.985 0 0);
+  /* === Surfaces === */
+  --bg-primary: #070b14;
+  --bg-glass: rgba(255, 255, 255, 0.04);
+  --bg-glass-strong: rgba(255, 255, 255, 0.06);
+  --bg-glass-hover: rgba(255, 255, 255, 0.07);
+
+  /* Bridge legacy → glass */
+  --bg-elevated: var(--bg-glass);
+  --bg-card: var(--bg-glass-strong);
+
+  /* === Borders === */
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --border-glass-hover: rgba(255, 255, 255, 0.12);
+  --border-subtle: var(--border-glass);
+
+  /* === Texte === */
+  --text-primary: #f4f7fb;
+  --text-secondary: rgba(244, 247, 251, 0.64);
+  --text-tertiary: rgba(244, 247, 251, 0.4);
+  --text-muted: var(--text-tertiary);
+
+  /* === Accents néon === */
+  --neon-cyan: #00e5ff;
+  --neon-cyan-soft: rgba(0, 229, 255, 0.15);
+  --neon-cyan-glow: rgba(0, 229, 255, 0.4);
+
+  --neon-violet: #b16cff;
+  --neon-violet-soft: rgba(177, 108, 255, 0.15);
+  --neon-violet-glow: rgba(177, 108, 255, 0.4);
+
+  --neon-success: #00ffa3;
+  --neon-success-soft: rgba(0, 255, 163, 0.15);
+
+  --neon-danger: #ff3d71;
+  --neon-danger-soft: rgba(255, 61, 113, 0.15);
+
+  /* Bridge legacy accent → néon cyan */
+  --accent: var(--neon-cyan);
+  --accent-foreground: #070b14;
+  --color-destructive: var(--neon-danger);
+
+  /* === Radii === */
+  --radius: 0.75rem; /* 12px = inputs/boutons */
+
+  /* === Motion === */
+  --ease-default: cubic-bezier(0.22, 1, 0.36, 1);
+  --dur-fast: 120ms;
+  --dur-default: 240ms;
+  --dur-page: 320ms;
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
   }
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-feature-settings: "rlig" 1, "calt" 1;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
   html {
     scroll-behavior: smooth;
   }
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Body gradient subtil pour donner un fond moins plat */
+    background-image:
+      radial-gradient(at 0% 0%, rgba(0, 229, 255, 0.06) 0%, transparent 35%),
+      radial-gradient(at 100% 100%, rgba(177, 108, 255, 0.05) 0%, transparent 35%);
+    background-attachment: fixed;
+  }
+
+  /* Headings tendus */
+  h1, h2, h3 {
+    letter-spacing: -0.02em;
+  }
 }
 
-/* ======= Effet Happy Hour : glow pulsant orange ======= */
-/* Utilisé sur les boutons accordéon de catégories happy_hour actives */
+/* ============================================================================
+ * UTILITAIRES — Glass + Glow
+ * ========================================================================= */
+
+@layer utilities {
+  /* Surface glass — recipe principale du DS */
+  .glass {
+    background: var(--bg-glass);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid var(--border-glass);
+  }
+
+  .glass-strong {
+    background: var(--bg-glass-strong);
+    backdrop-filter: blur(28px) saturate(180%);
+    -webkit-backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid var(--border-glass);
+  }
+
+  .glass-hover {
+    transition:
+      background var(--dur-default) var(--ease-default),
+      border-color var(--dur-default) var(--ease-default);
+  }
+  .glass-hover:hover {
+    background: var(--bg-glass-hover);
+    border-color: var(--border-glass-hover);
+  }
+
+  /* Glows néon — utiliser sur boutons primary, focus marquants */
+  .glow-cyan {
+    box-shadow:
+      0 0 24px var(--neon-cyan-glow),
+      inset 0 0 0 1px rgba(0, 229, 255, 0.6);
+  }
+  .glow-cyan-sm {
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.25);
+  }
+  .glow-violet {
+    box-shadow:
+      0 0 24px var(--neon-violet-glow),
+      inset 0 0 0 1px rgba(177, 108, 255, 0.6);
+  }
+  .glow-success {
+    box-shadow: 0 0 18px rgba(0, 255, 163, 0.35);
+  }
+  .glow-danger {
+    box-shadow:
+      0 0 20px rgba(255, 61, 113, 0.35),
+      inset 0 0 0 1px rgba(255, 61, 113, 0.55);
+  }
+
+  /* Lift hover pour cartes */
+  .lift-hover {
+    transition:
+      transform var(--dur-default) var(--ease-default),
+      box-shadow var(--dur-default) var(--ease-default),
+      border-color var(--dur-default) var(--ease-default);
+  }
+  .lift-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 24px rgba(0, 229, 255, 0.12);
+    border-color: var(--border-glass-hover);
+  }
+
+  /* Skeleton shimmer */
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      var(--bg-glass) 0%,
+      var(--bg-glass-hover) 50%,
+      var(--bg-glass) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s linear infinite;
+  }
+  @keyframes skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* Status dot pulsant — pour indicateurs "live" */
+  .pulse-dot {
+    position: relative;
+  }
+  .pulse-dot::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: inherit;
+    animation: pulse-ring 1.8s var(--ease-default) infinite;
+  }
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.6; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+}
+
+/* ============================================================================
+ * AMBIENT BACKGROUND — 3 blobs néon flous fixed derrière l'app
+ * ========================================================================= */
+
+.ambient-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -10;
+  overflow: hidden;
+}
+
+.ambient-bg::before,
+.ambient-bg::after,
+.ambient-bg > .blob {
+  content: "";
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(140px);
+  pointer-events: none;
+}
+
+.ambient-bg::before {
+  /* Cyan — top-left */
+  top: -10%;
+  left: -10%;
+  width: 40rem;
+  height: 40rem;
+  background: rgba(0, 229, 255, 0.15);
+}
+
+.ambient-bg::after {
+  /* Violet — bottom-right */
+  bottom: -10%;
+  right: -10%;
+  width: 36rem;
+  height: 36rem;
+  background: rgba(177, 108, 255, 0.12);
+}
+
+.ambient-bg > .blob {
+  /* Vert — center, plus subtil */
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30rem;
+  height: 30rem;
+  background: rgba(0, 255, 163, 0.06);
+  filter: blur(160px);
+}
+
+/* ============================================================================
+ * Effet Happy Hour (carte publique) — préservé du legacy
+ * ========================================================================= */
+
 @keyframes happy-glow {
   0%, 100% {
     box-shadow:
@@ -91,7 +288,6 @@
   position: relative;
 }
 
-/* Particules flottantes en arrière-plan (cocktails / glaçons / soleil) */
 .animate-happy-glow::before {
   content: "🍸  🧊  🍹  🍊";
   position: absolute;
@@ -114,9 +310,11 @@
   100% { transform: translateX(30%); }
 }
 
-/* ======= Polish UX global ======= */
+/* ============================================================================
+ * Polish global
+ * ========================================================================= */
 
-/* Scrollbar custom : minimaliste tech */
+/* Scrollbar custom — fine et discrète */
 @media (pointer: fine) {
   ::-webkit-scrollbar {
     width: 10px;
@@ -126,32 +324,32 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: var(--border-subtle);
+    background: var(--border-glass);
     border-radius: 6px;
     border: 2px solid transparent;
     background-clip: padding-box;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: var(--text-muted);
+    background: var(--border-glass-hover);
     background-clip: padding-box;
     border: 2px solid transparent;
   }
 }
 
-/* Focus ring moderne : accent color, smooth */
+/* Focus ring néon cyan partout — avec offset */
 *:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--neon-cyan);
   outline-offset: 2px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
-/* Selection : accent color */
+/* Selection néon */
 ::selection {
-  background-color: var(--accent);
-  color: var(--accent-foreground, #fff);
+  background-color: var(--neon-cyan);
+  color: var(--bg-primary);
 }
 
-/* Animation reveal pour cards qui apparaissent au scroll (rare) */
+/* Animation fade-up pour reveal (carté qui apparaissent) */
 @keyframes fade-up {
   from {
     opacity: 0;
@@ -164,30 +362,20 @@
 }
 
 .animate-fade-up {
-  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: fade-up 0.4s var(--ease-default) backwards;
 }
 
-/* Stagger helper — applique des délais aux enfants */
 .stagger-children > * {
-  animation: fade-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: fade-up 0.4s var(--ease-default) backwards;
 }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 40ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 160ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 200ms; }
 
-/* Card hover subtil : lift + shadow */
-.card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px -8px oklch(0 0 0 / 0.15);
-}
-
-/* Loading dots utility (à utiliser dans les boutons) */
+/* Loading dots utility */
 @keyframes loading-dot {
   0%, 80%, 100% { opacity: 0.3; }
   40% { opacity: 1; }
@@ -198,11 +386,14 @@
 .loading-dots > *:nth-child(2) { animation-delay: 0.16s; }
 .loading-dots > *:nth-child(3) { animation-delay: 0.32s; }
 
-/* Smooth gradient bg pour les hero cards */
-.gradient-mesh {
-  background:
-    radial-gradient(at 20% 0%, var(--accent) 0%, transparent 40%),
-    radial-gradient(at 80% 100%, oklch(0.6 0.2 280) 0%, transparent 40%),
-    var(--bg-card);
-  background-blend-mode: overlay;
+/* Reduced motion — désactive tous les transforms / animations longues */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

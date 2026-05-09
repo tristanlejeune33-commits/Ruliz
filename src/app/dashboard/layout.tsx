@@ -1,4 +1,5 @@
-import { AppShell } from "@/components/shared/app-shell";
+import { cookies } from "next/headers";
+import { AppShell, COLLAPSED_COOKIE } from "@/components/shared/app-shell";
 import {
   RestaurantSwitcher,
   type RestaurantOption,
@@ -52,27 +53,33 @@ export default async function DashboardLayout({
       })
     : null;
 
-  // Hint affiché dans la carte user en bas de sidebar
   const userHint = activeRestaurant?.plan
     ? `Plan ${activeRestaurant.plan}`
     : session.user.email;
+
+  // Lit le cookie pour SSR cohérent (pas de flash de layout au refresh)
+  const cookieStore = await cookies();
+  const collapsedCookie = cookieStore.get(COLLAPSED_COOKIE);
+  const defaultCollapsed = collapsedCookie?.value === "1";
 
   return (
     <AppShell
       user={{ name: session.user.name, email: session.user.email }}
       scope="dashboard"
-      sidebar={
+      defaultCollapsed={defaultCollapsed}
+      sidebar={({ collapsed }) => (
         <>
-          <SidebarBrand href="/dashboard" />
+          <SidebarBrand href="/dashboard" collapsed={collapsed} />
           <div className="flex-1 overflow-y-auto px-3 py-4">
-            <SidebarNav scope="dashboard" />
+            <SidebarNav scope="dashboard" collapsed={collapsed} />
           </div>
           <SidebarFooter
             user={{ name: session.user.name, email: session.user.email }}
             hint={userHint}
+            collapsed={collapsed}
           />
         </>
-      }
+      )}
       topbarLeftSlot={
         <RestaurantSwitcher restaurants={restaurants} activeId={activeId} />
       }

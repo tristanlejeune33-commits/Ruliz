@@ -1,13 +1,26 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+/**
+ * Card — surface glass DS Ruliz.
+ * Default = `glass` (rgba(255,255,255,0.04) + backdrop-blur + border glass).
+ * `lift` = ajoute hover translateY(-2px) + glow cyan léger.
+ */
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "glass" | "solid";
+  lift?: boolean;
+}
+
+const Card = React.forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant = "glass", lift = false, ...props }, ref) => (
     <div
       ref={ref}
       className={cn(
-        "rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)] shadow-[0_1px_0_0_oklch(1_0_0/0.04)_inset]",
-        "transition-colors duration-200",
+        "relative rounded-2xl text-[var(--text-primary)]",
+        variant === "glass"
+          ? "border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-2xl"
+          : "border border-[var(--border-glass)] bg-[var(--bg-primary)]",
+        lift && "lift-hover",
         className,
       )}
       {...props}
@@ -27,7 +40,10 @@ const CardTitle = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivE
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("text-base font-semibold leading-none tracking-tight", className)}
+      className={cn(
+        "text-base font-semibold leading-none tracking-tight",
+        className,
+      )}
       {...props}
     />
   ),
