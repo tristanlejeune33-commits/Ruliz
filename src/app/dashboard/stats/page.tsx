@@ -15,6 +15,7 @@ import { HourlyHeatmap } from "./hourly-heatmap";
 import { DonutCard } from "./donut-card";
 import { CountriesCard } from "./countries-card";
 import { TopQrcodesCard } from "./top-qrcodes-card";
+import { TopProduitsCard } from "./top-produits-card";
 import { LiveFeed } from "./live-feed";
 import { InsightsCards } from "./insights-cards";
 
@@ -113,6 +114,10 @@ export default async function StatsPage({ searchParams }: PageProps) {
       <div className="grid gap-4 lg:grid-cols-2">
         <TopQrcodesCard items={analytics.topQrcodes} />
         <LiveFeed initialItems={analytics.liveFeed} />
+      </div>
+
+      <div className="grid gap-4">
+        <TopProduitsCard restaurantId={restaurant.id} limit={10} />
       </div>
     </div>
   );

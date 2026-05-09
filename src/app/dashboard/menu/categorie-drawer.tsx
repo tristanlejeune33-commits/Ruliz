@@ -62,6 +62,8 @@ const DAYS_LABELS = [
   { num: "7", label: "D" },
 ];
 
+const HEX = /^#[0-9a-fA-F]{6}$/;
+
 const schema = z.object({
   titre: z.string().min(1, "Requis").max(255),
   icone: z.string().max(50),
@@ -74,6 +76,8 @@ const schema = z.object({
   scheduleStart: z.string().max(5).optional().or(z.literal("")),
   scheduleEnd: z.string().max(5).optional().or(z.literal("")),
   scheduleDays: z.string().min(1).max(7),
+  /** Couleur custom hex (vide = utilise le thème global du resto) */
+  couleur: z.string().regex(HEX, "Format #RRGGBB").or(z.literal("")),
 });
 
 type Values = z.infer<typeof schema>;
@@ -121,6 +125,7 @@ export function CategorieDrawer({
       scheduleStart: categorie?.scheduleStart ?? "",
       scheduleEnd: categorie?.scheduleEnd ?? "",
       scheduleDays: categorie?.scheduleDays ?? "1234567",
+      couleur: (categorie as unknown as { couleur?: string })?.couleur ?? "",
     },
   });
 
@@ -312,6 +317,49 @@ export function CategorieDrawer({
                       Décoche pour masquer (brouillon).
                     </FormDescription>
                   </div>
+                </FormItem>
+              )}
+            />
+
+            {/* COULEUR CUSTOM (override theme resto) */}
+            <FormField
+              control={form.control}
+              name="couleur"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Couleur de la catégorie (optionnel)</FormLabel>
+                  <div className="flex items-center gap-2">
+                    <FormControl>
+                      <input
+                        type="color"
+                        value={field.value || "#011255"}
+                        onChange={(e) => field.onChange(e.target.value)}
+                        className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)] bg-transparent"
+                      />
+                    </FormControl>
+                    <Input
+                      placeholder="#011255 (vide = couleur du resto)"
+                      value={field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
+                      className="flex-1 font-mono text-sm"
+                    />
+                    {field.value && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => field.onChange("")}
+                        title="Réinitialiser"
+                      >
+                        Reset
+                      </Button>
+                    )}
+                  </div>
+                  <FormDescription>
+                    Override la couleur du thème global. Utile pour distinguer
+                    visuellement une catégorie (ex: rouge pour les épicés).
+                  </FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />

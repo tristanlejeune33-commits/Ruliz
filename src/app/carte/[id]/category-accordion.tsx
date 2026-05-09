@@ -98,9 +98,16 @@ function CategoryItem({
 }: CategoryItemProps) {
   const isOpen = openIds.has(cat.id);
 
-  // Couleurs : navy pour top-level, jaune pour sous-catégorie
-  const bgColor = isSubcat ? theme.bgSubcat : theme.primary;
+  // Couleurs : couleur custom de la catégorie en priorité, sinon navy/jaune
+  const bgColor =
+    cat.couleur || (isSubcat ? theme.bgSubcat : theme.primary);
   const textColor = isSubcat ? theme.textOnSubcat : theme.textOnPrimary;
+
+  // Happy Hour active = scheduleType "happy_hour" (la cat n'apparaît
+  // que si le filter serveur l'a laissée passer = on est dans le créneau).
+  // On ajoute donc un effet pulsant + badge "🍹 ACTIVE" pour signaler
+  // l'opportunité au client.
+  const isHappyHourActive = cat.scheduleType === "happy_hour";
 
   return (
     <li
@@ -113,7 +120,9 @@ function CategoryItem({
       <button
         type="button"
         onClick={() => onToggle(cat.id)}
-        className="flex w-full items-center justify-between gap-3 rounded-[10px] px-4 py-[15px] font-semibold transition-opacity hover:opacity-90"
+        className={`relative flex w-full items-center justify-between gap-3 rounded-[10px] px-4 py-[15px] font-semibold transition-opacity hover:opacity-90 ${
+          isHappyHourActive ? "animate-happy-glow" : ""
+        }`}
         style={{
           backgroundColor: bgColor,
           color: textColor,
@@ -126,6 +135,19 @@ function CategoryItem({
         </span>
         <span className="flex-1 truncate text-center text-base">
           {cat.titre}
+          {isHappyHourActive && (
+            <motion.span
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="ml-2 inline-block rounded-full bg-orange-500 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wider text-white shadow-lg"
+              style={{
+                boxShadow:
+                  "0 0 12px rgba(255, 155, 74, 0.6), 0 2px 4px rgba(0,0,0,0.2)",
+              }}
+            >
+              🍹 EN COURS
+            </motion.span>
+          )}
         </span>
         <motion.span
           animate={{ rotate: isOpen ? 180 : 0 }}

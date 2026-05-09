@@ -118,6 +118,7 @@ const categorieSchema = z.object({
   scheduleStart: z.string().max(5).optional().or(z.literal("")),
   scheduleEnd: z.string().max(5).optional().or(z.literal("")),
   scheduleDays: z.string().min(1).max(7).optional(),
+  couleur: z.string().max(7).optional().or(z.literal("")),
 });
 
 export async function createCategorie(input: unknown): Promise<ActionResult<{ id: string }>> {
@@ -151,6 +152,7 @@ export async function createCategorie(input: unknown): Promise<ActionResult<{ id
       scheduleStart: data.scheduleStart || null,
       scheduleEnd: data.scheduleEnd || null,
       scheduleDays: data.scheduleDays ?? "1234567",
+      couleur: data.couleur || null,
       position,
     },
   });
@@ -188,6 +190,7 @@ export async function updateCategorie(input: unknown): Promise<ActionResult> {
       scheduleStart: data.scheduleStart || null,
       scheduleEnd: data.scheduleEnd || null,
       scheduleDays: data.scheduleDays ?? "1234567",
+      couleur: data.couleur || null,
     },
   });
 

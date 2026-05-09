@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import type { PublicMenu } from "@/server/public/menu";
+import { trackProduitClick } from "@/server/public/track-click";
 import { CategoryAccordion } from "./category-accordion";
 import { FooterPublic } from "./footer-public";
 import { GoogleFeedbackCTA } from "./google-feedback-cta";
@@ -129,7 +130,13 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
         categories={menu.categories}
         openIds={openIds}
         onToggle={toggleCategory}
-        onOpenProduit={(p) => setActiveProduitId(p.id)}
+        onOpenProduit={(p) => {
+          setActiveProduitId(p.id);
+          // Fire-and-forget tracking de clic (anti-bloquant)
+          if (!preview) {
+            void trackProduitClick(p.id).catch(() => {});
+          }
+        }}
         theme={theme}
         deviseDefault={menu.restaurant.deviseDefault}
         lang={menu.lang}

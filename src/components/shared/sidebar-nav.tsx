@@ -46,12 +46,12 @@ const DASHBOARD_NAV: SidebarNavSection[] = [
       { label: "Mon resto", href: "/dashboard/restaurant", icon: Building2 },
       { label: "Éditeur de carte", href: "/dashboard/menu", icon: UtensilsCrossed },
       { label: "QR codes", href: "/dashboard/qrcodes", icon: QrCode },
-      { label: "Analyse", href: "/dashboard/stats", icon: Gauge },
     ],
   },
   {
     title: "Acquisition",
     items: [
+      { label: "Statistiques", href: "/dashboard/stats", icon: Gauge },
       { label: "Roulette d'avis", href: "/dashboard/jeu", icon: Sparkles },
       { label: "Pop-ups", href: "/dashboard/popups", icon: Megaphone },
       { label: "SMS marketing", href: "/dashboard/sms", icon: MessageSquare },

@@ -279,6 +279,11 @@ model Categorie {
    * "12345" = Lun-Ven uniquement. "67" = week-end.
    */
   scheduleDays  String        @default("1234567") @map("schedule_days") @db.VarChar(7)
+  /**
+   * Couleur custom du bouton accordéon (override le theme global du resto).
+   * Format hex #RRGGBB. NULL = utilise theme.primary.
+   */
+  couleur       String?       @db.VarChar(7)
   createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz()
 
   restaurant   Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -304,6 +309,8 @@ model Produit {
   position            Int      @default(0)
   statut              String   @default("affiche") @db.VarChar(20)
   estNouveau          Boolean  @default(false) @map("est_nouveau")
+  /** Compteur cumulé de clics (ouvertures du modal détail) */
+  clicCount           Int      @default(0) @map("clic_count")
   origine             String?  @db.VarChar(2)
   titreRemarque       String?  @map("titre_remarque") @db.VarChar(255)
   descriptionRemarque String?  @map("description_remarque")

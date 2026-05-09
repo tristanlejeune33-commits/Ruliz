@@ -70,3 +70,46 @@
     scroll-behavior: smooth;
   }
 }
+
+/* ======= Effet Happy Hour : glow pulsant orange ======= */
+/* Utilisé sur les boutons accordéon de catégories happy_hour actives */
+@keyframes happy-glow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(255, 155, 74, 0.5),
+      0 0 18px rgba(255, 155, 74, 0.3);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(255, 155, 74, 0),
+      0 0 28px rgba(255, 155, 74, 0.6);
+  }
+}
+
+.animate-happy-glow {
+  animation: happy-glow 2s ease-in-out infinite;
+  position: relative;
+}
+
+/* Particules flottantes en arrière-plan (cocktails / glaçons / soleil) */
+.animate-happy-glow::before {
+  content: "🍸  🧊  🍹  🍊";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  font-size: 1.2em;
+  opacity: 0.18;
+  pointer-events: none;
+  letter-spacing: 0.5em;
+  animation: happy-particles 4s linear infinite;
+  white-space: nowrap;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+@keyframes happy-particles {
+  0% { transform: translateX(-30%); }
+  100% { transform: translateX(30%); }
+}

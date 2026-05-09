@@ -81,6 +81,10 @@ export interface MenuCategory {
   titre: string;
   icone: string | null;
   modeAffichage: "liste" | "grille" | "carrousel";
+  /** Couleur custom (override theme). NULL = utilise theme.primary */
+  couleur: string | null;
+  /** Type de créneau ("always", "happy_hour", etc.) — exposé pour effet visuel */
+  scheduleType: string;
   produits: Array<MenuProduit>;
   subCategories: Array<MenuCategory>;
 }
@@ -308,6 +312,8 @@ export async function getPublicMenu(
       titre: catTitre,
       icone: cat.icone,
       modeAffichage: cat.modeAffichage,
+      couleur: cat.couleur ?? null,
+      scheduleType: cat.scheduleType ?? "always",
       subCategories: [], // rempli ensuite
       // Filtre les produits par leur propre créneau (peut override la catégorie)
       produits: cat.produits
