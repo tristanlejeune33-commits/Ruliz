@@ -2,16 +2,10 @@
 
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  AlertTriangle,
-  ChevronRight,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { X } from "lucide-react";
 import type { PublicMenu } from "@/server/public/menu";
-import { DishPlaceholder } from "./dish-placeholder";
+import { VignetteIcon, hasVignetteVisual } from "./vignette-icon";
 import type { CarteTheme } from "./theme";
-import { withAlpha } from "./theme";
 
 type Produit = PublicMenu["categories"][number]["produits"][number];
 
@@ -25,6 +19,15 @@ interface ProduitSheetProps {
   deviseDefault: string;
 }
 
+/**
+ * Modal de détail produit — réplique de l'ancien `.modal-content` :
+ *   - bg blanc card-body, padding 15, radius 10, shadow soft
+ *   - max-h 80vh, max-w 80% mobile / 60% desktop
+ *   - dish-detail : titre Magra 25px, prix 20px, ingredients 300, image 300px
+ *   - tags-list : pills rounded 50px avec icones colorées + libellé Magra
+ *   - allegeance : box allergènes
+ *   - suggestion : "À marier avec" + cards stackées
+ */
 export function ProduitSheet({
   produit,
   open,
@@ -43,270 +46,342 @@ export function ProduitSheet({
   return (
     <AnimatePresence>
       {open && produit && (
-        <>
+        <motion.div
+          key="modal-bg"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={onClose}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(5px)",
+          }}
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-md"
-          />
-          <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 280 }}
-            drag="y"
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={0.2}
-            onDragEnd={(_, info) => {
-              if (info.offset.y > 120 || info.velocity.y > 600) onClose();
+            key="modal-content"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative flex max-h-[85vh] w-full max-w-md flex-col overflow-y-auto rounded-[10px] p-[15px] md:max-w-2xl"
+            style={{
+              backgroundColor: theme.cardBody,
+              boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
+              color: theme.textBody,
             }}
-            className="fixed inset-x-0 bottom-0 z-50 max-h-[94vh] overflow-hidden rounded-t-3xl shadow-2xl md:inset-x-auto md:left-1/2 md:bottom-auto md:top-1/2 md:max-h-[88vh] md:max-w-2xl md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl"
-            style={{ background: theme.bgElevated, color: theme.text }}
           >
-            {/* Drag handle (mobile) */}
-            <div className="flex justify-center pt-2.5 md:hidden">
-              <span
-                className="h-1 w-10 rounded-full"
-                style={{ background: withAlpha(theme.text, 0.2) }}
-              />
-            </div>
-
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-4 top-4 z-10 flex size-9 items-center justify-center rounded-full shadow-md backdrop-blur"
-              style={{
-                background: withAlpha(theme.bgElevated, 0.85),
-                color: theme.text,
-              }}
+              className="absolute right-2.5 top-2.5 z-10 rounded-full p-1.5 transition-colors hover:bg-black/10"
+              style={{ color: theme.textBody }}
               aria-label="Fermer"
             >
-              <X className="size-4" />
+              <X className="size-6" />
             </button>
 
-            <div className="max-h-[94vh] overflow-y-auto pb-12 md:max-h-[88vh]">
-              <div className="relative mt-4 h-72 w-full overflow-hidden md:mt-0 md:h-80">
-                {produit.imageUrl ? (
-                  <Image
-                    src={produit.imageUrl}
-                    alt={produit.titre}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 768px"
-                    unoptimized
-                    className="object-cover"
-                  />
-                ) : (
-                  <DishPlaceholder
-                    accent={theme.accent}
-                    className="size-full"
-                  />
-                )}
-              </div>
+            <DishDetail
+              produit={produit}
+              theme={theme}
+              deviseDefault={deviseDefault}
+            />
 
-              <div className="px-6 pt-6 md:px-8">
-                <div className="flex items-start justify-between gap-3">
-                  <h2
-                    className="text-balance text-2xl font-medium leading-tight tracking-tight md:text-3xl"
-                    style={{
-                      color: theme.textTitre,
-                      fontFamily: theme.fontDisplay,
-                    }}
-                  >
-                    {produit.titre}
-                  </h2>
-                  {produit.estNouveau && (
-                    <span
-                      className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider"
-                      style={{
-                        background: withAlpha(theme.accent, 0.15),
-                        color: theme.accent,
-                      }}
-                    >
-                      <Sparkles className="size-3" />
-                      Nouveau
-                    </span>
-                  )}
-                </div>
-
-                {produit.prix !== null && (
-                  <div className="mt-3 flex items-baseline gap-2">
-                    <span
-                      className="font-mono text-2xl font-semibold tabular-nums md:text-3xl"
-                      style={{
-                        color: theme.textTitre,
-                        fontFamily: theme.fontDisplay,
-                      }}
-                    >
-                      {formatPrice(produit.prix, produit.devise || deviseDefault)}
-                    </span>
-                    {produit.descriptionPrix && (
-                      <span
-                        className="text-xs italic"
-                        style={{ color: theme.textMuted }}
-                      >
-                        {produit.descriptionPrix}
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {produit.description && (
-                  <p
-                    className="mt-5 text-base leading-relaxed"
-                    style={{ color: theme.text }}
-                  >
-                    {produit.description}
-                  </p>
-                )}
-
-                {produit.vignettes.length > 0 && (
-                  <div className="mt-6 flex flex-wrap gap-1.5">
-                    {produit.vignettes.map((v) => (
-                      <span
-                        key={v.code}
-                        className="rounded-full px-3 py-1 text-xs font-medium"
-                        style={{
-                          background: withAlpha(theme.text, 0.06),
-                          color: theme.text,
-                        }}
-                      >
-                        {v.labelFr}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {produit.allergenes.length > 0 && (
-                  <div
-                    className="mt-6 rounded-xl border p-4"
-                    style={{
-                      background: withAlpha("#f59e0b", 0.05),
-                      borderColor: withAlpha("#f59e0b", 0.25),
-                    }}
-                  >
-                    <p
-                      className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
-                      style={{ color: "#92400e" }}
-                    >
-                      <AlertTriangle className="size-3" />
-                      Allergènes
-                    </p>
-                    <p className="text-xs" style={{ color: "#92400e" }}>
-                      {produit.allergenes.map((a) => a.labelFr).join(" · ")}
-                    </p>
-                  </div>
-                )}
-
-                {produit.titreRemarque && (
-                  <div
-                    className="mt-6 rounded-xl border-l-4 p-4"
-                    style={{
-                      borderLeftColor: theme.accent,
-                      background: withAlpha(theme.accent, 0.04),
-                    }}
-                  >
-                    <p
-                      className="text-xs font-semibold uppercase tracking-wider"
-                      style={{ color: theme.accent }}
-                    >
-                      {produit.titreRemarque}
-                    </p>
-                    {produit.descriptionRemarque && (
-                      <p
-                        className="mt-1.5 text-sm leading-relaxed italic"
-                        style={{
-                          color: theme.text,
-                          fontFamily: theme.fontDisplay,
-                        }}
-                      >
-                        {produit.descriptionRemarque}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {suggestions.length > 0 && (
-                  <div className="mt-10">
-                    <h3
-                      className="mb-4 text-xs font-semibold uppercase tracking-[0.2em]"
-                      style={{ color: theme.textMuted }}
-                    >
-                      Avec ce plat, on suggère
-                    </h3>
-                    <ul className="space-y-2">
-                      {suggestions.map((s) => (
-                        <li key={s.id}>
-                          <button
-                            type="button"
-                            onClick={() => onOpenSuggestion(s.id)}
-                            className="flex w-full items-center gap-3 rounded-2xl border p-2.5 text-left transition-colors duration-200 hover:border-[var(--accent)]"
-                            style={{ borderColor: theme.border }}
-                          >
-                            <div
-                              className="relative size-14 shrink-0 overflow-hidden rounded-xl"
-                              style={{ background: withAlpha(theme.accent, 0.05) }}
-                            >
-                              {s.imageUrl ? (
-                                <Image
-                                  src={s.imageUrl}
-                                  alt=""
-                                  fill
-                                  sizes="56px"
-                                  unoptimized
-                                  className="object-cover"
-                                />
-                              ) : (
-                                <DishPlaceholder
-                                  accent={theme.accent}
-                                  className="size-full"
-                                />
-                              )}
-                            </div>
-                            <div className="min-w-0 flex-1">
-                              <p
-                                className="truncate text-sm font-medium"
-                                style={{
-                                  color: theme.textTitre,
-                                  fontFamily: theme.fontDisplay,
-                                }}
-                              >
-                                {s.titre}
-                              </p>
-                              {s.prix !== null && (
-                                <p
-                                  className="font-mono text-xs"
-                                  style={{ color: theme.textMuted }}
-                                >
-                                  {formatPrice(s.prix, s.devise || deviseDefault)}
-                                </p>
-                              )}
-                            </div>
-                            <ChevronRight
-                              className="size-4"
-                              style={{ color: theme.textMuted }}
-                            />
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </div>
+            {/* À marier avec : suggestions */}
+            {suggestions.length > 0 && (
+              <Suggestions
+                suggestions={suggestions}
+                onOpenSuggestion={onOpenSuggestion}
+                theme={theme}
+                deviseDefault={deviseDefault}
+              />
+            )}
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
 }
 
+// ---------------------------------------------------------------------------
+// DishDetail : titre + prix + ingredients + allergènes + tags + photo
+// ---------------------------------------------------------------------------
+
+function DishDetail({
+  produit,
+  theme,
+  deviseDefault,
+}: {
+  produit: Produit;
+  theme: CarteTheme;
+  deviseDefault: string;
+}) {
+  return (
+    <div className="flex flex-col gap-[7px] pt-1">
+      <div>
+        <h2
+          className="text-[24px] font-semibold leading-tight"
+          style={{
+            color: theme.textBody,
+            fontFamily: "var(--font-display)",
+            width: "90%",
+          }}
+        >
+          {produit.titre}
+          {produit.estNouveau && (
+            <span
+              className="ml-2 inline-block rounded-[5px] px-[7px] py-1 align-middle text-[11px] font-bold"
+              style={{
+                backgroundColor: theme.bgTag,
+                color: theme.textTag,
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              Nouveau
+            </span>
+          )}
+        </h2>
+        {produit.description && (
+          <p
+            className="mt-1 text-[15px] font-light leading-relaxed"
+            style={{
+              color: theme.textBody,
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            {produit.description}
+          </p>
+        )}
+      </div>
+
+      {/* Prix */}
+      {produit.prix !== null && (
+        <div>
+          <p
+            className="text-[20px] font-semibold tabular-nums"
+            style={{
+              color: theme.textBody,
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {formatPrice(produit.prix, produit.devise || deviseDefault)}
+          </p>
+          {produit.descriptionPrix && (
+            <p
+              className="text-xs italic opacity-70"
+              style={{
+                color: theme.textBody,
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {produit.descriptionPrix}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Allergènes */}
+      {produit.allergenes.length > 0 && (
+        <div className="allegeance">
+          <h3
+            className="text-[18px] font-semibold"
+            style={{
+              color: theme.textBody,
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            Allergènes :
+          </h3>
+          <p
+            className="text-[14px] font-light"
+            style={{
+              color: theme.textBody,
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            {produit.allergenes.map((a) => a.labelFr).join(", ")}
+          </p>
+        </div>
+      )}
+
+      {/* Tags / vignettes pills */}
+      {produit.vignettes.length > 0 && (
+        <ul className="mt-1 flex flex-wrap items-center gap-2.5">
+          {produit.vignettes.map((v) => {
+            const hasVisual = hasVignetteVisual(v.code);
+            return (
+              <li
+                key={v.code}
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[14px] font-semibold"
+                style={{
+                  backgroundColor: theme.cardBody,
+                  color: theme.textBody,
+                  boxShadow: theme.shadow,
+                  fontFamily: "var(--font-display)",
+                }}
+              >
+                {hasVisual && <VignetteIcon code={v.code} size={16} />}
+                <span>{v.labelFr}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* Origine */}
+      {produit.origine && (
+        <p
+          className="text-[12px] italic opacity-70"
+          style={{
+            color: theme.textBody,
+            fontFamily: "var(--font-body)",
+          }}
+        >
+          🇫🇷 Origine : {produit.origine}
+        </p>
+      )}
+
+      {/* Photo */}
+      {produit.imageUrl && (
+        <div className="mt-2 overflow-hidden rounded-[10px] md:max-w-[300px]">
+          <Image
+            src={produit.imageUrl}
+            alt={produit.titre}
+            width={600}
+            height={450}
+            unoptimized
+            className="size-full object-cover"
+          />
+        </div>
+      )}
+
+      {/* Remarque (Le mot du chef…) */}
+      {produit.titreRemarque && (
+        <div
+          className="mt-2 rounded-[8px] border-l-4 p-3"
+          style={{
+            borderLeftColor: theme.primary,
+            backgroundColor: "rgba(0,0,0,0.03)",
+          }}
+        >
+          <p
+            className="text-[14px] font-semibold uppercase tracking-wider"
+            style={{
+              color: theme.primary,
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {produit.titreRemarque}
+          </p>
+          {produit.descriptionRemarque && (
+            <p
+              className="mt-1 text-[14px] italic"
+              style={{
+                color: theme.textBody,
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {produit.descriptionRemarque}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Suggestions : "À marier avec…"
+// ---------------------------------------------------------------------------
+
+function Suggestions({
+  suggestions,
+  onOpenSuggestion,
+  theme,
+  deviseDefault,
+}: {
+  suggestions: Produit[];
+  onOpenSuggestion: (id: string) => void;
+  theme: CarteTheme;
+  deviseDefault: string;
+}) {
+  return (
+    <div className="suggestion mt-4 flex flex-col gap-[7px]">
+      <h3
+        className="text-[18px] font-semibold"
+        style={{
+          color: theme.textBody,
+          fontFamily: "var(--font-display)",
+        }}
+      >
+        À marier avec :
+      </h3>
+      <ul className="flex flex-col gap-[7px]">
+        {suggestions.map((s) => (
+          <li key={s.id}>
+            <button
+              type="button"
+              onClick={() => onOpenSuggestion(s.id)}
+              className="flex w-full flex-col gap-1.5 rounded-[10px] p-2.5 text-left transition-opacity hover:opacity-80"
+              style={{
+                backgroundColor: theme.cardBody,
+                boxShadow: theme.shadow,
+              }}
+            >
+              <div className="flex items-baseline justify-between gap-2">
+                <h4
+                  className="text-[18px] font-semibold leading-tight"
+                  style={{
+                    color: theme.textBody,
+                    fontFamily: "var(--font-display)",
+                  }}
+                >
+                  {s.titre}
+                </h4>
+                {s.prix !== null && (
+                  <span
+                    className="shrink-0 text-[18px] font-semibold tabular-nums"
+                    style={{
+                      color: theme.textBody,
+                      fontFamily: "var(--font-display)",
+                    }}
+                  >
+                    {formatPrice(s.prix, s.devise || deviseDefault)}
+                  </span>
+                )}
+              </div>
+              {s.description && (
+                <p
+                  className="text-[13px] font-light"
+                  style={{
+                    color: theme.textBody,
+                    opacity: 0.85,
+                    fontFamily: "var(--font-body)",
+                  }}
+                >
+                  {s.description}
+                </p>
+              )}
+              <span
+                className="text-[14px] font-semibold italic"
+                style={{
+                  color: theme.textBody,
+                  fontFamily: "var(--font-body)",
+                }}
+              >
+                Voir détails
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function formatPrice(prix: number, devise: string): string {
-  const formatted = prix
-    .toFixed(2)
-    .replace(/\.00$/, "")
-    .replace(".", ",");
-  return `${formatted} ${devise}`;
+  const formatted = prix.toFixed(2).replace(".", ",");
+  return `${formatted}${devise}`;
 }

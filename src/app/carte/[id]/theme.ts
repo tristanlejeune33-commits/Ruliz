@@ -1,73 +1,92 @@
 import type { PublicMenu } from "@/server/public/menu";
 
 /**
- * Résout les couleurs et la typo d'une carte publique en partant des champs
- * configurés par le restaurateur, avec des défauts élégants si null.
+ * Theme de la carte publique — réplique exacte de l'ancien template Ruliz.
+ *
+ * Palette par défaut (light mode) :
+ *   --primary       : #011255  (navy bleu marine, accordéons fermés + titres)
+ *   --bg-subcat     : #ead04d  (jaune doré, sous-catégories)
+ *   --bg-tag        : #000     (badges "Nouveau", "Origine FR")
+ *   --text-tag      : #fff
+ *   --bg-body       : #fff
+ *   --card-body     : #fff
+ *   --text-body     : #000
+ *   --navbar        : #000     (header en mode sombre quand scroll)
+ *
+ * Le restaurateur peut surcharger primary/title/fond via le dashboard.
  */
 export interface CarteTheme {
   isDark: boolean;
-  accent: string;
-  bg: string;
-  bgElevated: string;
-  text: string;
-  textMuted: string;
-  textTitre: string;
-  textCategorie: string;
-  border: string;
-  fontDisplay: string;
+  /** Bleu marine — accordéons catégories, h1 du restaurant */
+  primary: string;
+  textOnPrimary: string;
+  /** Jaune — accordéons sous-catégories */
+  bgSubcat: string;
+  textOnSubcat: string;
+  /** Tag "Nouveau" — fond noir / texte blanc */
+  bgTag: string;
+  textTag: string;
+  /** Page background */
+  bgBody: string;
+  /** Cards (modal, items, suggestions) */
+  cardBody: string;
+  /** Text body principal */
+  textBody: string;
+  /** Couleur des h1/h2 (souvent = primary) */
+  title: string;
+  /** Header en mode dark sticky */
+  navbar: string;
+  /** Border-radius commun */
+  radius: string;
+  /** Shadow soft commune */
+  shadow: string;
 }
 
-const DEFAULTS_LIGHT = {
-  bg: "oklch(0.99 0.005 80)", // creme tres pale
-  bgElevated: "#ffffff",
-  text: "oklch(0.18 0.02 50)",
-  textMuted: "oklch(0.5 0.01 50)",
-  textTitre: "oklch(0.15 0.03 30)",
-  textCategorie: "oklch(0.25 0.02 30)",
-  border: "oklch(0.92 0.01 60)",
+const DEFAULTS_LIGHT: CarteTheme = {
+  isDark: false,
+  primary: "#011255",
+  textOnPrimary: "#ffffff",
+  bgSubcat: "#ead04d",
+  textOnSubcat: "#000000",
+  bgTag: "#000000",
+  textTag: "#ffffff",
+  bgBody: "#ffffff",
+  cardBody: "#ffffff",
+  textBody: "#000000",
+  title: "#011255",
+  navbar: "#000000",
+  radius: "10px",
+  shadow: "rgba(100, 100, 111, 0.2) 0px 7px 29px 0px",
 };
 
-const DEFAULTS_DARK = {
-  bg: "oklch(0.16 0.02 30)",
-  bgElevated: "oklch(0.21 0.02 30)",
-  text: "oklch(0.95 0.005 60)",
-  textMuted: "oklch(0.65 0.01 60)",
-  textTitre: "oklch(0.97 0.02 70)",
-  textCategorie: "oklch(0.85 0.02 60)",
-  border: "oklch(0.28 0.02 30)",
-};
-
-const FONT_BY_STYLE: Record<"modern" | "editorial" | "elegant", string> = {
-  modern:
-    "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-  editorial: "var(--font-display-editorial), ui-serif, Georgia, serif",
-  elegant: "var(--font-display-elegant), ui-serif, Georgia, serif",
+const DEFAULTS_DARK: CarteTheme = {
+  ...DEFAULTS_LIGHT,
+  isDark: true,
+  primary: "#1a3a8a",
+  bgBody: "#0f0f14",
+  cardBody: "#1a1a23",
+  textBody: "#f5f5f5",
+  title: "#ffffff",
 };
 
 export function resolveTheme(restaurant: PublicMenu["restaurant"]): CarteTheme {
   const isDark = restaurant.theme === "dark";
   const fallback = isDark ? DEFAULTS_DARK : DEFAULTS_LIGHT;
-  const accent = restaurant.couleurPrimaire?.trim() || "#4870e0";
 
   return {
-    isDark,
-    accent,
-    bg: restaurant.couleurFond?.trim() || fallback.bg,
-    bgElevated: fallback.bgElevated,
-    text: fallback.text,
-    textMuted: fallback.textMuted,
-    textTitre: restaurant.couleurTexteTitre?.trim() || fallback.textTitre,
-    textCategorie: restaurant.couleurCategorie?.trim() || fallback.textCategorie,
-    border: fallback.border,
-    fontDisplay: FONT_BY_STYLE[restaurant.fontStyle],
+    ...fallback,
+    primary: restaurant.couleurPrimaire?.trim() || fallback.primary,
+    title: restaurant.couleurTexteTitre?.trim() || fallback.title,
+    bgSubcat: restaurant.couleurCategorie?.trim() || fallback.bgSubcat,
+    bgBody: restaurant.couleurFond?.trim() || fallback.bgBody,
+    cardBody: restaurant.couleurSecondaire?.trim() || fallback.cardBody,
   };
 }
 
 /**
  * Applique de l'alpha à n'importe quelle couleur CSS (hex, oklch, rgb, hsl, named).
- * - Hex `#RRGGBB` → `#RRGGBBAA` (rapide, parfaitement compatible)
- * - Tout le reste (`oklch(...)`, `rgb(...)`, etc.) → `color-mix(in oklab, COLOR PCT%, transparent)`
- *   (supporté Chrome 111+/Safari 16.2+/Firefox 113+, qui couvre 95%+ des smartphones 2024)
+ * - Hex `#RRGGBB` → `#RRGGBBAA`
+ * - Tout le reste → `color-mix(in oklab, COLOR PCT%, transparent)`
  */
 export function withAlpha(color: string, alpha: number): string {
   const c = color.trim();
