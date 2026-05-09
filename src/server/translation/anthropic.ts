@@ -39,10 +39,11 @@ export async function translateText(opts: {
   sourceLang?: SupportedLang;
 }): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
   const { text, targetLang } = opts;
+  const sourceLang = opts.sourceLang ?? "fr";
 
   // No-op si même langue ou texte vide
   if (!text.trim()) return { ok: true, text };
-  if (targetLang === (opts.sourceLang ?? "fr")) return { ok: true, text };
+  if (targetLang === sourceLang) return { ok: true, text };
 
   const client = getAnthropic();
   if (!client) {
@@ -58,7 +59,7 @@ export async function translateText(opts: {
       messages: [
         {
           role: "user",
-          content: `Translate the following French text to ${LANG_LABELS[targetLang]}.\n\nText:\n${text}`,
+          content: `Translate the following ${LANG_LABELS[sourceLang]} text to ${LANG_LABELS[targetLang]}.\n\nText:\n${text}`,
         },
       ],
     });
@@ -87,6 +88,8 @@ export async function translateProduitFields(opts: {
   descriptionRemarque: string | null;
   origine: string | null;
   targetLang: SupportedLang;
+  /** Langue source (par défaut "fr" pour rétrocompat) */
+  sourceLang?: SupportedLang;
 }): Promise<
   | {
       ok: true;
@@ -108,8 +111,9 @@ export async function translateProduitFields(opts: {
     origine,
     targetLang,
   } = opts;
+  const sourceLang = opts.sourceLang ?? "fr";
 
-  if (targetLang === "fr") {
+  if (targetLang === sourceLang) {
     return {
       ok: true,
       titre,
@@ -134,7 +138,7 @@ export async function translateProduitFields(opts: {
     parts.push(`<<<DESC_REMARQUE>>>\n${descriptionRemarque}`);
   if (origine) parts.push(`<<<ORIGINE>>>\n${origine}`);
 
-  const userMessage = `Translate the following French restaurant menu fields to ${LANG_LABELS[targetLang]}.
+  const userMessage = `Translate the following ${LANG_LABELS[sourceLang]} restaurant menu fields to ${LANG_LABELS[targetLang]}.
 
 Each field is delimited by markers like <<<NAME>>>. Output the translation using the EXACT same markers, in the EXACT same order, with no other text.
 

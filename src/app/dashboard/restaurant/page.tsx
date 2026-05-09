@@ -51,6 +51,15 @@ export default async function RestaurantPage() {
           ville: data.ville ?? "",
           pays: data.pays ?? "France",
           deviseDefault: data.deviseDefault ?? "€",
+          langueNative:
+            (data.langueNative as
+              | "fr"
+              | "en"
+              | "es"
+              | "de"
+              | "it"
+              | "pt"
+              | "zh") ?? "fr",
           theme: (data.theme as "light" | "dark") ?? "light",
           fontStyle: (data.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",
           couleurPrimaire: data.couleurPrimaire ?? "#4870e0",

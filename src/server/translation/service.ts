@@ -16,8 +16,10 @@ export async function translateProduitToLang(opts: {
   targetLang: SupportedLang;
   /** Si true, ignore le cache DB et force une nouvelle traduction. */
   force?: boolean;
+  /** Langue source (langueNative du resto). Default fr pour rétrocompat. */
+  sourceLang?: SupportedLang;
 }): Promise<{ ok: boolean }> {
-  const { produitId, targetLang, force } = opts;
+  const { produitId, targetLang, force, sourceLang } = opts;
 
   // Skip if already cached (sauf si force)
   if (!force) {
@@ -48,6 +50,7 @@ export async function translateProduitToLang(opts: {
     descriptionRemarque: produit.descriptionRemarque,
     origine: produit.origine,
     targetLang,
+    sourceLang,
   });
 
   if (!result.ok) {
@@ -88,8 +91,10 @@ export async function translateCategorieToLang(opts: {
   targetLang: SupportedLang;
   /** Si true, ignore le cache DB et force une nouvelle traduction. */
   force?: boolean;
+  /** Langue source (langueNative du resto). */
+  sourceLang?: SupportedLang;
 }): Promise<{ ok: boolean }> {
-  const { categorieId, targetLang, force } = opts;
+  const { categorieId, targetLang, force, sourceLang } = opts;
 
   if (!force) {
     const existing = await prisma.categorieTranslation.findUnique({
@@ -107,7 +112,7 @@ export async function translateCategorieToLang(opts: {
   const result = await translateText({
     text: cat.titre,
     targetLang,
-    sourceLang: "fr",
+    sourceLang: sourceLang ?? "fr",
   });
 
   if (!result.ok) {
@@ -139,7 +144,14 @@ export async function translateRestaurantMenu(opts: {
   /** Si true, ignore le cache DB et force la re-traduction de tout. */
   force?: boolean;
 }): Promise<{ produits: number; categories: number }> {
-  const langs = (opts.langs ?? SUPPORTED_LANGS).filter((l) => l !== "fr");
+  // Récupère la langue native du resto pour partir de là (au lieu de FR forcé)
+  const restaurant = await prisma.restaurant.findUnique({
+    where: { id: opts.restaurantId },
+    select: { langueNative: true },
+  });
+  const sourceLang = (restaurant?.langueNative ?? "fr") as SupportedLang;
+
+  const langs = (opts.langs ?? SUPPORTED_LANGS).filter((l) => l !== sourceLang);
 
   const [categories, produits] = await Promise.all([
     prisma.categorie.findMany({
@@ -162,6 +174,7 @@ export async function translateRestaurantMenu(opts: {
         categorieId: c.id,
         targetLang: lang,
         force: opts.force,
+        sourceLang,
       });
       if (r.ok) categoriesCount += 1;
     }
@@ -170,6 +183,7 @@ export async function translateRestaurantMenu(opts: {
         produitId: p.id,
         targetLang: lang,
         force: opts.force,
+        sourceLang,
       });
       if (r.ok) produitsCount += 1;
     }

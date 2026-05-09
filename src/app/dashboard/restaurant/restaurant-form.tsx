@@ -27,6 +27,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -49,6 +56,7 @@ const schema = z.object({
   ville: z.string().max(100),
   pays: z.string().max(100),
   deviseDefault: z.string().max(5),
+  langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]),
   theme: z.enum(["light", "dark"]),
   fontStyle: z.enum(["modern", "editorial", "elegant"]),
   couleurPrimaire: optHex,
@@ -236,6 +244,39 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                       </FormControl>
                       <FormDescription className="text-[10px]">
                         Affichée si un produit n&apos;a pas la sienne.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="langueNative"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Langue de saisie de la carte</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                          <SelectItem value="en">🇬🇧 English</SelectItem>
+                          <SelectItem value="es">🇪🇸 Español</SelectItem>
+                          <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
+                          <SelectItem value="it">🇮🇹 Italiano</SelectItem>
+                          <SelectItem value="pt">🇵🇹 Português</SelectItem>
+                          <SelectItem value="zh">🇨🇳 中文</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-[10px]">
+                        La langue dans laquelle tu écris ta carte. Anthropic
+                        traduit automatiquement vers les autres langues.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

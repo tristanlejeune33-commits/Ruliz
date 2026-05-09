@@ -52,6 +52,7 @@ const restaurantSchema = z.object({
   ville: z.string().max(100).optional().or(z.literal("")),
   pays: z.string().max(100).optional().or(z.literal("")),
   deviseDefault: z.string().max(5).optional().or(z.literal("")),
+  langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]).optional(),
   // Theme
   theme: z.enum(["light", "dark"]).optional(),
   fontStyle: z.enum(["modern", "editorial", "elegant"]).optional(),
@@ -101,6 +102,7 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
       ville: empty(data.ville),
       pays: empty(data.pays),
       deviseDefault: empty(data.deviseDefault) ?? "€",
+      langueNative: data.langueNative ?? "fr",
       theme: data.theme ?? "light",
       fontStyle: data.fontStyle ?? "editorial",
       couleurPrimaire: empty(data.couleurPrimaire),

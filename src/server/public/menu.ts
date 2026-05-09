@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import type { SupportedLang } from "@/lib/langs";
+import { isCategorieVisibleNow } from "@/lib/schedule";
 
 export { isSupportedLang } from "@/lib/langs";
 
@@ -16,6 +17,8 @@ export type PublicMenu = {
     banniereUrl: string | null;
     /** Devise par défaut affichée si un produit n'a pas la sienne. */
     deviseDefault: string;
+    /** Langue native dans laquelle le restaurateur a saisi la carte */
+    langueNative: SupportedLang;
     /** light | dark */
     theme: "light" | "dark";
     /** modern | editorial | elegant — pilote le choix de typo display. */
@@ -140,6 +143,7 @@ export async function getPublicMenu(
         logoUrl: true,
         banniereUrl: true,
         deviseDefault: true,
+        langueNative: true,
         theme: true,
         fontStyle: true,
         couleurPrimaire: true,
@@ -229,9 +233,13 @@ export async function getPublicMenu(
       }
     : null;
 
+  // Langue native du resto : on tape la version originale si lang === sourceLang
+  const sourceLang = (restaurant.langueNative ?? "fr") as SupportedLang;
+  const isSourceLang = lang === sourceLang;
+
   // Récupère TOUTES les catégories du restaurant (top-level + sous-catégories)
   // en une seule query, puis on les imbrique côté code.
-  const categoriesRaw = await prisma.categorie.findMany({
+  const allCategoriesRaw = await prisma.categorie.findMany({
     where: {
       restaurantId,
       affiche: true,
@@ -245,22 +253,33 @@ export async function getPublicMenu(
           vignettes: { include: { vignette: true } },
           allergenes: { include: { allergene: true } },
           suggestionsIn: { orderBy: { position: "asc" } },
-          translations: lang === "fr" ? false : { where: { lang } },
+          translations: isSourceLang ? false : { where: { lang } },
         },
       },
-      translations: lang === "fr" ? false : { where: { lang } },
+      translations: isSourceLang ? false : { where: { lang } },
     },
   });
+
+  // Filtre par créneau d'affichage (carte midi/soir/happy hour/custom)
+  // Une catégorie sans schedule_type est "always" → toujours visible.
+  const categoriesRaw = allCategoriesRaw.filter((cat) =>
+    isCategorieVisibleNow({
+      scheduleType: cat.scheduleType ?? "always",
+      scheduleStart: cat.scheduleStart ?? null,
+      scheduleEnd: cat.scheduleEnd ?? null,
+      scheduleDays: cat.scheduleDays ?? "1234567",
+    }),
+  );
 
   let partiallyTranslated = false;
 
   /** Mappe une catégorie Prisma → MenuCategory (récursivement vide pour subCategories). */
   const mapCategorie = (cat: (typeof categoriesRaw)[number]): MenuCategory => {
     const catTitre =
-      lang !== "fr" && cat.translations && cat.translations[0]?.titre
+      !isSourceLang && cat.translations && cat.translations[0]?.titre
         ? cat.translations[0].titre
         : cat.titre;
-    if (lang !== "fr" && (!cat.translations || cat.translations.length === 0)) {
+    if (!isSourceLang && (!cat.translations || cat.translations.length === 0)) {
       partiallyTranslated = true;
     }
 
@@ -271,8 +290,8 @@ export async function getPublicMenu(
       modeAffichage: cat.modeAffichage,
       subCategories: [], // rempli ensuite
       produits: cat.produits.map((p) => {
-        const trad = lang !== "fr" ? p.translations?.[0] : undefined;
-        if (lang !== "fr" && !trad) partiallyTranslated = true;
+        const trad = !isSourceLang ? p.translations?.[0] : undefined;
+        if (!isSourceLang && !trad) partiallyTranslated = true;
 
         return {
           id: p.id.toString(),
@@ -332,6 +351,7 @@ export async function getPublicMenu(
       logoUrl: restaurant.logoUrl,
       banniereUrl: restaurant.banniereUrl,
       deviseDefault: restaurant.deviseDefault ?? "€",
+      langueNative: (restaurant.langueNative ?? "fr") as SupportedLang,
       theme: (restaurant.theme as "light" | "dark") ?? "light",
       fontStyle:
         (restaurant.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",

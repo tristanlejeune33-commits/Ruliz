@@ -183,6 +183,12 @@ model Restaurant {
   banniereUrl              String?   @map("banniere_url")
   description              String?
   deviseDefault            String?   @default("€") @map("devise_default") @db.VarChar(5)
+  /**
+   * Langue native du restaurant (la langue dans laquelle le restaurateur saisit sa carte).
+   * Tout le système de traduction part de cette langue vers les autres.
+   * Default "fr" pour rétrocompat avec l'existant. ISO 639-1.
+   */
+  langueNative             String    @default("fr") @map("langue_native") @db.VarChar(2)
   // ----- Personnalisation visuelle de la carte publique -----
   theme                    String?   @default("light") @db.VarChar(10) // light | dark
   fontStyle                String?   @default("editorial") @map("font_style") @db.VarChar(20) // modern | editorial | elegant
@@ -237,6 +243,23 @@ model Categorie {
   position      Int           @default(0)
   affiche       Boolean       @default(true)
   modeAffichage CategorieMode @default(liste) @map("mode_affichage")
+  /**
+   * Créneau d'affichage : "always" = visible 24/7 (défaut), "lunch" = 11h30-15h,
+   * "dinner" = 18h30-23h, "happy_hour" = 18h-19h, "custom" = utilise les champs
+   * scheduleStart/scheduleEnd pour des horaires perso. Toutes les catégories
+   * existantes sont en "always" par défaut.
+   */
+  scheduleType  String        @default("always") @map("schedule_type") @db.VarChar(20)
+  /** Heure de début si scheduleType = "custom" — format HH:MM (ex: "11:30") */
+  scheduleStart String?       @map("schedule_start") @db.VarChar(5)
+  /** Heure de fin si scheduleType = "custom" — format HH:MM */
+  scheduleEnd   String?       @map("schedule_end") @db.VarChar(5)
+  /**
+   * Jours de la semaine où la catégorie est visible.
+   * "1234567" = tous les jours (Mon-Sun, ISO weekday).
+   * "12345" = Lun-Ven uniquement. "67" = week-end.
+   */
+  scheduleDays  String        @default("1234567") @map("schedule_days") @db.VarChar(7)
   createdAt     DateTime      @default(now()) @map("created_at") @db.Timestamptz()
 
   restaurant   Restaurant             @relation(fields: [restaurantId], references: [id], onDelete: Cascade)

@@ -109,7 +109,7 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
       <HeroSection restaurant={menu.restaurant} theme={theme} />
 
       {/* Bandeau "traduction partielle" si certains champs n'ont pas de trad */}
-      {menu.partiallyTranslated && menu.lang !== "fr" && (
+      {menu.partiallyTranslated && menu.lang !== menu.restaurant.langueNative && (
         <div
           className="mx-auto mt-4 w-[90%] rounded-lg border px-3 py-2.5 text-center text-xs xl:w-[70%]"
           style={{
