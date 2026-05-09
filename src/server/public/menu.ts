@@ -61,29 +61,39 @@ export type PublicMenu = {
   lang: SupportedLang;
   /** True if at least one fallback (FR) was used because translation is missing. */
   partiallyTranslated: boolean;
-  categories: Array<{
-    id: string;
-    titre: string;
-    icone: string | null;
-    modeAffichage: "liste" | "grille" | "carrousel";
-    produits: Array<{
-      id: string;
-      titre: string;
-      description: string | null;
-      descriptionPrix: string | null;
-      imageUrl: string | null;
-      prix: number | null;
-      devise: string;
-      estNouveau: boolean;
-      origine: string | null;
-      titreRemarque: string | null;
-      descriptionRemarque: string | null;
-      vignettes: Array<{ code: string; labelFr: string; icone: string | null }>;
-      allergenes: Array<{ code: string; labelFr: string }>;
-      suggestionsIds: string[];
-    }>;
-  }>;
+  categories: Array<MenuCategory>;
 };
+
+/**
+ * Une catégorie ou sous-catégorie. Les sous-catégories sont identifiées par
+ * leur titre/icone et listées dans `subCategories`. Une sous-catégorie peut
+ * elle-même avoir des produits directement dans `produits`.
+ */
+export interface MenuCategory {
+  id: string;
+  titre: string;
+  icone: string | null;
+  modeAffichage: "liste" | "grille" | "carrousel";
+  produits: Array<MenuProduit>;
+  subCategories: Array<MenuCategory>;
+}
+
+export interface MenuProduit {
+  id: string;
+  titre: string;
+  description: string | null;
+  descriptionPrix: string | null;
+  imageUrl: string | null;
+  prix: number | null;
+  devise: string;
+  estNouveau: boolean;
+  origine: string | null;
+  titreRemarque: string | null;
+  descriptionRemarque: string | null;
+  vignettes: Array<{ code: string; labelFr: string; icone: string | null }>;
+  allergenes: Array<{ code: string; labelFr: string }>;
+  suggestionsIds: string[];
+}
 
 function cacheKey(restaurantId: bigint | string, lang: SupportedLang) {
   return `carte:${restaurantId.toString()}:${lang}`;
@@ -194,11 +204,12 @@ export async function getPublicMenu(
       }
     : null;
 
+  // Récupère TOUTES les catégories du restaurant (top-level + sous-catégories)
+  // en une seule query, puis on les imbrique côté code.
   const categoriesRaw = await prisma.categorie.findMany({
     where: {
       restaurantId,
       affiche: true,
-      parentId: null,
     },
     orderBy: { position: "asc" },
     include: {
@@ -218,7 +229,8 @@ export async function getPublicMenu(
 
   let partiallyTranslated = false;
 
-  const categories: PublicMenu["categories"] = categoriesRaw.map((cat) => {
+  /** Mappe une catégorie Prisma → MenuCategory (récursivement vide pour subCategories). */
+  const mapCategorie = (cat: (typeof categoriesRaw)[number]): MenuCategory => {
     const catTitre =
       lang !== "fr" && cat.translations && cat.translations[0]?.titre
         ? cat.translations[0].titre
@@ -232,6 +244,7 @@ export async function getPublicMenu(
       titre: catTitre,
       icone: cat.icone,
       modeAffichage: cat.modeAffichage,
+      subCategories: [], // rempli ensuite
       produits: cat.produits.map((p) => {
         const trad = lang !== "fr" ? p.translations?.[0] : undefined;
         if (lang !== "fr" && !trad) partiallyTranslated = true;
@@ -261,7 +274,30 @@ export async function getPublicMenu(
         };
       }),
     };
-  });
+  };
+
+  // Map id → MenuCategory pour reconstruire la hiérarchie
+  const byId = new Map<string, MenuCategory>();
+  for (const cat of categoriesRaw) {
+    byId.set(cat.id.toString(), mapCategorie(cat));
+  }
+
+  // Imbrique : pour chaque catégorie avec parentId, push dans subCategories du parent
+  const categories: MenuCategory[] = [];
+  for (const cat of categoriesRaw) {
+    const mapped = byId.get(cat.id.toString())!;
+    if (cat.parentId) {
+      const parent = byId.get(cat.parentId.toString());
+      if (parent) {
+        parent.subCategories.push(mapped);
+      } else {
+        // Parent absent (peut-être désactivé) → on l'affiche en top-level
+        categories.push(mapped);
+      }
+    } else {
+      categories.push(mapped);
+    }
+  }
 
   const menu: PublicMenu = {
     restaurant: {

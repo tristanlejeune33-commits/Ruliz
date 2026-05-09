@@ -59,18 +59,15 @@ export function GoogleFeedbackCTA({
         <button
           type="button"
           onClick={onSpinClick}
-          className="relative mt-2.5 block w-full cursor-pointer rounded-[10px] p-2.5 text-center font-semibold transition-opacity hover:opacity-90"
+          className="mt-2.5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-[10px] p-2.5 text-center font-semibold transition-opacity hover:opacity-90"
           style={{
             backgroundColor: theme.primary,
             color: theme.textOnPrimary,
             fontFamily: "var(--font-body)",
           }}
         >
-          <Gift
-            className="absolute left-[20px] top-1/2 size-5 -translate-y-1/2"
-            aria-hidden
-          />
-          {buttonLabel}
+          <Gift className="size-5" aria-hidden />
+          <span>{buttonLabel}</span>
         </button>
       </div>
     </section>

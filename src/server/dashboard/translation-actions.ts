@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { redis } from "@/lib/redis";
 import { inngest } from "@/server/inngest/client";
-import { getAnthropic, SUPPORTED_LANGS } from "@/server/translation/anthropic";
+import {
+  getAnthropic,
+  SUPPORTED_LANGS,
+  type SupportedLang,
+} from "@/server/translation/anthropic";
 import { translateRestaurantMenu } from "@/server/translation/service";
 
 export type ActionResult<T = unknown> =
@@ -13,23 +16,33 @@ export type ActionResult<T = unknown> =
   | { ok: false; error: string };
 
 type RetranslateData = {
-  mode: "inngest" | "background" | "sync";
+  mode: "inngest" | "sync";
   produits?: number;
   categories?: number;
 };
 
 /**
- * Trigger a full menu re-translation.
+ * Lance une re-traduction du menu.
  *
- * Strategy (3-level fallback):
- *   1. Pre-check: ANTHROPIC_API_KEY must be present.
- *   2. If INNGEST_EVENT_KEY is set → fire-and-forget via Inngest (best for prod).
- *   3. Else → run in background via `after()` (Next.js 15) so the user gets
- *      an immediate response while translation runs server-side after the
- *      response is sent. This makes the feature work even without Inngest.
+ * 3 niveaux de fallback :
+ *   1. Pre-check : ANTHROPIC_API_KEY doit être présente.
+ *   2. Si INNGEST_EVENT_KEY est défini → délègue à Inngest (clean prod path,
+ *      réponse immédiate, traduction async, robuste).
+ *   3. Sinon → exécute SYNCHRONEMENT et awaite la fin (peut prendre 30s-2min
+ *      selon la taille du menu × le nombre de langues). C'est plus prévisible
+ *      qu'`after()` qui pouvait être killé en dev.
+ *
+ * Quand Inngest n'est pas dispo (dev local par exemple), la fonction reste en
+ * attente jusqu'à ce que toutes les langues soient traduites — l'utilisateur
+ * voit le résultat exact dans le toast.
+ *
+ * @param restaurantId - ID du restaurant
+ * @param langs - Si défini, traduit uniquement ces langues (pour limiter le temps).
+ *                Sinon traduit toutes les langues supportées (sauf 'fr').
  */
 export async function retranslateMenu(
   restaurantId: string,
+  langs?: SupportedLang[],
 ): Promise<ActionResult<RetranslateData>> {
   let bigId: bigint;
   try {
@@ -41,16 +54,16 @@ export async function retranslateMenu(
   const owned = await assertRestaurantOwner(bigId);
   if (!owned) return { ok: false, error: "Accès refusé" };
 
-  // 1. Pre-flight check : pas de clé Anthropic = pas de traduction possible.
+  // 1. Pre-flight check
   if (!getAnthropic()) {
     return {
       ok: false,
       error:
-        "ANTHROPIC_API_KEY manquante côté serveur. Ajoute-la dans Railway → Variables, redéploie, puis réessaie.",
+        "ANTHROPIC_API_KEY manquante côté serveur. Ajoute-la dans .env.local (dev) ou Railway → Variables (prod), redémarre, puis réessaie.",
     };
   }
 
-  // 2. Si Inngest est configuré, on délègue (clean prod path).
+  // 2. Inngest path (prod only — quand Railway a INNGEST_EVENT_KEY)
   if (process.env.INNGEST_EVENT_KEY) {
     try {
       await inngest.send({
@@ -62,43 +75,54 @@ export async function retranslateMenu(
       return { ok: true, data: { mode: "inngest" } };
     } catch (e) {
       console.warn(
-        "[retranslateMenu] inngest send failed, falling back to background:",
+        "[retranslateMenu] inngest send failed, falling back to sync:",
         e,
       );
-      // tombe dans le fallback ci-dessous
     }
   }
 
-  // 3. Fallback : exécution en background via Next.js `after()`.
-  // La réponse part immédiatement, la traduction tourne après envoi.
-  after(async () => {
-    try {
-      console.log(
-        `[retranslateMenu] background start for restaurant ${bigId}`,
-      );
-      const stats = await translateRestaurantMenu({ restaurantId: bigId });
-      console.log(
-        `[retranslateMenu] background done: ${stats.produits} produits, ${stats.categories} categories`,
-      );
+  // 3. Sync path : on AWAIT la traduction et on retourne les stats réelles.
+  console.log(
+    `[retranslateMenu] sync start for restaurant ${bigId}, langs=${langs?.join(",") ?? "all"}`,
+  );
+  try {
+    const stats = await translateRestaurantMenu({
+      restaurantId: bigId,
+      langs,
+    });
 
-      // Purge Redis cache pour toutes les langues
-      if (redis) {
-        try {
-          const keys = SUPPORTED_LANGS.map(
-            (l) => `carte:${bigId.toString()}:${l}`,
-          );
-          await redis.del(...keys);
-        } catch (err) {
-          console.warn("[retranslateMenu] redis purge failed:", err);
-        }
+    // Purge Redis pour toutes les langues
+    if (redis) {
+      try {
+        const keys = SUPPORTED_LANGS.map(
+          (l) => `carte:${bigId.toString()}:${l}`,
+        );
+        await redis.del(...keys);
+      } catch (err) {
+        console.warn("[retranslateMenu] redis purge failed:", err);
       }
-      // Re-revalidate after work is done so users see fresh content.
-      revalidatePath(`/carte/${bigId.toString()}`);
-    } catch (err) {
-      console.error("[retranslateMenu] background translation failed:", err);
     }
-  });
 
-  revalidatePath("/dashboard/menu");
-  return { ok: true, data: { mode: "background" } };
+    revalidatePath("/dashboard/menu");
+    revalidatePath(`/carte/${bigId.toString()}`);
+
+    console.log(
+      `[retranslateMenu] sync done: ${stats.produits} produits, ${stats.categories} categories`,
+    );
+
+    return {
+      ok: true,
+      data: {
+        mode: "sync",
+        produits: stats.produits,
+        categories: stats.categories,
+      },
+    };
+  } catch (err) {
+    console.error("[retranslateMenu] sync failed:", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Erreur de traduction",
+    };
+  }
 }
