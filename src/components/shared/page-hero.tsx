@@ -12,25 +12,31 @@ interface PageHeroProps {
   actions?: React.ReactNode;
   /** Slot KPI / chips à droite, sous les actions. */
   kpis?: React.ReactNode;
-  /** Variante d'accent pour le glow décoratif. */
-  accent?: "default" | "menu" | "resto" | "qrcodes";
+  /** Variante d'accent — strictement DS Ruliz (cyan/violet/success/danger). */
+  accent?: "cyan" | "violet" | "success" | "danger";
   className?: string;
 }
 
 const ACCENT_GLOWS: Record<NonNullable<PageHeroProps["accent"]>, string> = {
-  default:
-    "from-[var(--accent)]/12 via-[var(--accent)]/5 to-transparent",
-  menu: "from-[oklch(0.7_0.18_145)]/15 via-[var(--accent)]/8 to-transparent",
-  resto: "from-[oklch(0.65_0.22_25)]/12 via-[var(--accent)]/8 to-transparent",
-  qrcodes: "from-[oklch(0.6_0.25_280)]/15 via-[var(--accent)]/8 to-transparent",
+  cyan: "bg-[var(--neon-cyan)]/15",
+  violet: "bg-[var(--neon-violet)]/15",
+  success: "bg-[var(--neon-success)]/12",
+  danger: "bg-[var(--neon-danger)]/12",
+};
+
+const ACCENT_GLOWS_2: Record<NonNullable<PageHeroProps["accent"]>, string> = {
+  cyan: "bg-[var(--neon-violet)]/10",
+  violet: "bg-[var(--neon-cyan)]/12",
+  success: "bg-[var(--neon-cyan)]/10",
+  danger: "bg-[var(--neon-violet)]/8",
 };
 
 /**
- * Header de page haut-de-gamme — gradient mesh subtil, typographie display,
- * slots dédiés pour eyebrow / actions / KPIs.
- *
- * Pensé pour être réutilisé sur tous les écrans dashboard (Menu, Mon resto,
- * QR codes, etc.) afin d'unifier l'identité visuelle.
+ * Header de page haut-de-gamme — DS Ruliz (glass + néon).
+ * - Glass surface + backdrop-blur
+ * - 2 glows ambiants colorés selon l'accent
+ * - Grille décorative subtile
+ * - Slots eyebrow / title / description / actions / kpis
  */
 export function PageHero({
   eyebrow,
@@ -38,29 +44,33 @@ export function PageHero({
   description,
   actions,
   kpis,
-  accent = "default",
+  accent = "cyan",
   className,
 }: PageHeroProps) {
   return (
     <header
       className={cn(
-        "relative isolate overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 px-6 py-7 sm:px-8",
+        "relative isolate overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-6 py-7 backdrop-blur-2xl sm:px-8",
         className,
       )}
     >
-      {/* Glow décoratif */}
+      {/* Glow primaire */}
       <div
         aria-hidden
         className={cn(
-          "pointer-events-none absolute -top-24 -left-24 size-72 rounded-full bg-gradient-to-br opacity-90 blur-3xl",
+          "pointer-events-none absolute -top-24 -left-24 size-72 rounded-full blur-3xl",
           ACCENT_GLOWS[accent],
         )}
       />
+      {/* Glow secondaire */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-32 -bottom-32 size-72 rounded-full bg-gradient-to-tl from-[var(--accent)]/8 via-transparent to-transparent opacity-60 blur-3xl"
+        className={cn(
+          "pointer-events-none absolute -right-24 -bottom-24 size-72 rounded-full blur-3xl",
+          ACCENT_GLOWS_2[accent],
+        )}
       />
-      {/* Grille subtile */}
+      {/* Grille décorative */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -104,34 +114,44 @@ export function PageHero({
   );
 }
 
-/**
- * Petit chip d'eyebrow — texte court + icône optionnelle, ton uniforme.
- */
+/** Petit chip d'eyebrow — DS Ruliz. */
 export function HeroEyebrow({
   icon,
   children,
   className,
+  tone = "cyan",
 }: {
   icon?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  tone?: "cyan" | "violet" | "success" | "danger" | "neutral";
 }) {
+  const TONE_CLASSES: Record<NonNullable<typeof tone>, string> = {
+    cyan: "border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]",
+    violet:
+      "border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] text-[var(--neon-violet)]",
+    success:
+      "border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] text-[var(--neon-success)]",
+    danger:
+      "border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] text-[var(--neon-danger)]",
+    neutral:
+      "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-secondary)]",
+  };
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-card)]/70 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wider text-[var(--text-secondary)] backdrop-blur",
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider backdrop-blur",
+        TONE_CLASSES[tone],
         className,
       )}
     >
-      {icon && <span className="text-[var(--accent)]">{icon}</span>}
+      {icon}
       {children}
     </span>
   );
 }
 
-/**
- * KPI chip pour la zone droite du PageHero — valeur mise en avant + label.
- */
+/** KPI chip pour la zone droite du PageHero. */
 export function HeroKpi({
   label,
   value,
@@ -146,14 +166,14 @@ export function HeroKpi({
   return (
     <div
       className={cn(
-        "flex items-baseline gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)]/60 px-3 py-1.5 backdrop-blur",
+        "flex items-baseline gap-2 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-3 py-1.5 backdrop-blur",
         className,
       )}
     >
       <span className="text-lg font-semibold tabular-nums text-[var(--text-primary)]">
         {value}
       </span>
-      <span className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-tertiary)]">
         {label}
       </span>
       {hint && (

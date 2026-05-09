@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  ArrowUpRight,
   Gift,
   Megaphone,
   MessageSquare,
@@ -14,10 +15,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-/**
- * Mapping iconKey → LucideIcon. Comme KpiCard : on évite de passer
- * des forwardRef Lucide depuis les Server Components (RSC).
- */
 const QUICK_ACTION_ICONS: Record<string, LucideIcon> = {
   utensils: UtensilsCrossed,
   scanText: ScanText,
@@ -31,19 +28,22 @@ const QUICK_ACTION_ICONS: Record<string, LucideIcon> = {
 
 export type QuickActionIconKey = keyof typeof QUICK_ACTION_ICONS;
 
+/** Variantes de couleur d'accent — strictement DS Ruliz (palette néon). */
+export type QuickActionTone = "cyan" | "violet" | "success" | "danger";
+
 interface WelcomeHeroProps {
   firstName: string;
   restaurantName: string;
-  /** Optional plan badge à afficher à côté du badge de bienvenue */
+  /** Plan badge à afficher dans la zone droite (slot KPI) */
   planBadge?: React.ReactNode;
 }
 
 /**
- * Header de bienvenue dynamique avec :
- * - Salutation contextuelle ("Bonjour" / "Bon après-midi" / "Bonsoir")
- * - Heure courante affichée façon clock digital
- * - Badge "Bienvenue" + plan + animation d'entrée
- * - Subtle gradient background qui pulse doucement
+ * Hero status premium (DS Ruliz) — pas de "Welcome back 👋" mou.
+ * - Status chip "Carte en ligne" avec dot vert pulsant
+ * - Titre = nom du restaurant (display large)
+ * - Sous-titre direct : "Vue d'ensemble · {date}"
+ * - Glow ambient cyan en haut-gauche, violet en bas-droite
  */
 export function WelcomeHero({
   firstName,
@@ -58,91 +58,148 @@ export function WelcomeHero({
     return () => clearInterval(id);
   }, []);
 
-  const greeting = now ? getTimeGreeting(now) : "Bonjour";
-  const timeStr = now
-    ? now.toLocaleTimeString("fr-FR", {
-        hour: "2-digit",
-        minute: "2-digit",
+  // Hint discret avec date + heure si on a chargé côté client
+  const dateStr = now
+    ? now.toLocaleDateString("fr-FR", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
       })
+    : "";
+  const timeStr = now
+    ? now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
     : "";
 
   return (
-    <motion.div
+    <motion.header
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="relative overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-gradient-to-br from-[var(--bg-elevated)] via-[var(--bg-card)] to-[var(--bg-elevated)] p-6 md:p-8"
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+      className="relative isolate overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] p-6 backdrop-blur-2xl md:p-8"
     >
-      {/* Fond animé subtil — orbe lumineux qui flotte */}
-      <motion.div
-        className="absolute -right-20 -top-20 size-64 rounded-full opacity-30 blur-3xl"
-        style={{ background: "var(--accent)" }}
-        animate={{
-          x: [0, 20, 0],
-          y: [0, -15, 0],
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      {/* Glows ambiants néon */}
+      <div
         aria-hidden
+        className="pointer-events-none absolute -left-20 -top-20 size-72 rounded-full bg-[var(--neon-cyan)]/12 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -right-24 -bottom-24 size-72 rounded-full bg-[var(--neon-violet)]/10 blur-3xl"
+      />
+      {/* Grille décorative */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
       />
 
-      <div className="relative z-10 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
-              <Sparkles className="size-3" />
-              {greeting}
-            </span>
+      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0 max-w-3xl space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusPill />
             {planBadge}
           </div>
-
-          <h1 className="mt-3 text-balance text-3xl font-semibold leading-tight tracking-tight md:text-4xl">
-            {greeting} {firstName} 👋
+          <h1 className="text-balance text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+            {restaurantName}
           </h1>
-          <p className="mt-2 text-sm text-[var(--text-secondary)] md:text-base">
-            Voici ce qui se passe sur la carte de{" "}
-            <strong className="text-[var(--text-primary)]">
-              {restaurantName}
-            </strong>
-            {" — "}
-            <span className="font-mono text-xs tabular-nums">{timeStr}</span>
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--text-secondary)]">
+            <span>Vue d&apos;ensemble</span>
+            {firstName && (
+              <>
+                <span aria-hidden className="text-[var(--text-tertiary)]">·</span>
+                <span>{firstName}</span>
+              </>
+            )}
+            {dateStr && (
+              <>
+                <span aria-hidden className="text-[var(--text-tertiary)]">·</span>
+                <span className="capitalize">{dateStr}</span>
+              </>
+            )}
+            {timeStr && (
+              <span className="font-mono text-xs tabular-nums text-[var(--text-tertiary)]">
+                {timeStr}
+              </span>
+            )}
           </p>
         </div>
       </div>
-    </motion.div>
+    </motion.header>
   );
 }
 
-function getTimeGreeting(d: Date): string {
-  const h = d.getHours();
-  if (h < 5) return "Bonne nuit";
-  if (h < 12) return "Bonjour";
-  if (h < 18) return "Bon après-midi";
-  if (h < 22) return "Bonsoir";
-  return "Bonne soirée";
+/** Status pill "Carte en ligne" avec dot vert pulsant. */
+function StatusPill() {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--neon-success)]">
+      <span className="relative flex size-1.5">
+        <span
+          aria-hidden
+          className="pulse-dot absolute inset-0 rounded-full bg-[var(--neon-success)]"
+        />
+        <span className="relative size-1.5 rounded-full bg-[var(--neon-success)]" />
+      </span>
+      Carte en ligne
+    </span>
+  );
 }
+
+// ---------------------------------------------------------------------------
+// QUICK ACTIONS
+// ---------------------------------------------------------------------------
+
+const TONE_STYLES: Record<
+  QuickActionTone,
+  { bg: string; text: string; glow: string; border: string }
+> = {
+  cyan: {
+    bg: "bg-[var(--neon-cyan-soft)]",
+    text: "text-[var(--neon-cyan)]",
+    glow: "group-hover:shadow-[0_0_24px_rgba(0,229,255,0.35)]",
+    border: "group-hover:border-[var(--neon-cyan)]/40",
+  },
+  violet: {
+    bg: "bg-[var(--neon-violet-soft)]",
+    text: "text-[var(--neon-violet)]",
+    glow: "group-hover:shadow-[0_0_24px_rgba(177,108,255,0.35)]",
+    border: "group-hover:border-[var(--neon-violet)]/40",
+  },
+  success: {
+    bg: "bg-[var(--neon-success-soft)]",
+    text: "text-[var(--neon-success)]",
+    glow: "group-hover:shadow-[0_0_24px_rgba(0,255,163,0.30)]",
+    border: "group-hover:border-[var(--neon-success)]/40",
+  },
+  danger: {
+    bg: "bg-[var(--neon-danger-soft)]",
+    text: "text-[var(--neon-danger)]",
+    glow: "group-hover:shadow-[0_0_24px_rgba(255,61,113,0.30)]",
+    border: "group-hover:border-[var(--neon-danger)]/40",
+  },
+};
 
 export interface QuickAction {
   label: string;
   description: string;
   href: string;
-  /** Clé d'icône (mapping vers LucideIcon en interne) */
   iconKey: QuickActionIconKey;
-  /** Couleur d'accent — CSS color */
-  accentColor?: string;
+  tone?: QuickActionTone;
 }
 
 interface QuickActionsProps {
   actions: QuickAction[];
 }
 
-/**
- * Grille de raccourcis (4-6 actions). Cards interactives avec hover qui scale.
- */
 export function QuickActions({ actions }: QuickActionsProps) {
   return (
     <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
       {actions.map((a, i) => {
         const Icon = QUICK_ACTION_ICONS[a.iconKey] ?? Sparkles;
+        const tone = TONE_STYLES[a.tone ?? "cyan"];
         return (
           <motion.a
             key={a.href}
@@ -151,30 +208,29 @@ export function QuickActions({ actions }: QuickActionsProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{
               duration: 0.3,
-              delay: i * 0.05,
-              ease: [0.16, 1, 0.3, 1],
+              delay: i * 0.04,
+              ease: [0.22, 1, 0.36, 1],
             }}
             whileHover={{ y: -2 }}
-            className="group relative flex items-start gap-3 overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 transition-colors hover:border-[var(--accent)]/40"
+            className={`group relative flex items-start gap-3 overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] p-4 backdrop-blur-md transition-all duration-200 hover:bg-[var(--bg-glass-hover)] ${tone.border} ${tone.glow}`}
           >
             <div
-              className="flex size-10 shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-110"
-              style={{ background: `${a.accentColor ?? "var(--accent)"}15` }}
+              className={`flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110 ${tone.bg} ${tone.text} ring-1 ring-current/20`}
             >
-              <Icon
-                className="size-4"
-                style={{ color: a.accentColor ?? "var(--accent)" }}
-              />
+              <Icon className="size-4" strokeWidth={1.75} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-[var(--text-primary)]">{a.label}</p>
-              <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+              <p className="font-semibold tracking-tight text-[var(--text-primary)]">
+                {a.label}
+              </p>
+              <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
                 {a.description}
               </p>
             </div>
-            <span className="opacity-0 transition-opacity group-hover:opacity-100 text-[var(--text-muted)]">
-              →
-            </span>
+            <ArrowUpRight
+              className="size-4 shrink-0 text-[var(--text-tertiary)] opacity-0 transition-all duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:opacity-100"
+              strokeWidth={1.75}
+            />
           </motion.a>
         );
       })}

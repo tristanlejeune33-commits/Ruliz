@@ -52,8 +52,8 @@ export function LiveFeed({ initialItems }: LiveFeedProps) {
           <div>
             <CardTitle className="flex items-center gap-2">
               <span className="relative flex size-2">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[oklch(0.7_0.18_145)] opacity-75" />
-                <span className="relative inline-flex size-2 rounded-full bg-[oklch(0.7_0.18_145)]" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--neon-success)] opacity-75" />
+                <span className="relative inline-flex size-2 rounded-full bg-[var(--neon-success)]" />
               </span>
               Live feed
             </CardTitle>

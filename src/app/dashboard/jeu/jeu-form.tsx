@@ -417,8 +417,8 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                 <span
                   className={
                     isTotalOk
-                      ? "rounded-md bg-[oklch(0.7_0.18_145)]/15 px-2.5 py-1 font-mono text-xs font-semibold text-[oklch(0.75_0.18_145)]"
-                      : "rounded-md bg-[var(--color-destructive)]/15 px-2.5 py-1 font-mono text-xs font-semibold text-[var(--color-destructive)]"
+                      ? "rounded-md bg-[var(--neon-success-soft)] px-2.5 py-1 font-mono text-xs font-semibold text-[var(--neon-success)]"
+                      : "rounded-md bg-[var(--neon-danger-soft)] px-2.5 py-1 font-mono text-xs font-semibold text-[var(--neon-danger)]"
                   }
                 >
                   Total : {total}%

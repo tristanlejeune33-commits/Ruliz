@@ -37,12 +37,12 @@ export function AutoSaveIndicator({
     saved: {
       label: "Sauvegardé",
       icon: <Check className="size-3" />,
-      color: "text-[oklch(0.7_0.18_145)]",
+      color: "text-[var(--neon-success)]",
     },
     error: {
       label: errorMessage || "Erreur de sauvegarde",
       icon: <CircleAlert className="size-3" />,
-      color: "text-[var(--color-destructive)]",
+      color: "text-[var(--neon-danger)]",
     },
   };
 

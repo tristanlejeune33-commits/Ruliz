@@ -21,11 +21,20 @@ export const metadata: Metadata = {
   title: "Dashboard · Ruliz",
 };
 
+const LANG_LABELS: Record<string, string> = {
+  fr: "Français",
+  en: "English",
+  es: "Español",
+  de: "Deutsch",
+  it: "Italiano",
+  pt: "Português",
+  zh: "中文",
+};
+
 export default async function DashboardHome() {
   const { session, restaurant } = await getCurrentRestaurant();
   const stats = await getRestaurantStats(restaurant.id, "30d");
 
-  // Compteurs supplémentaires pour les KPI cards
   const [categoriesCount, produitsCount, totalClicks, jeuParticipations] =
     await Promise.all([
       prisma.categorie.count({
@@ -44,54 +53,51 @@ export default async function DashboardHome() {
     ]);
 
   const firstName = session.user.name?.split(" ")[0] ?? "";
-
-  // Sparklines : on transforme perDay en array de counts pour le mini-chart
   const scansSparkline = stats.perDay.map((d) => d.scans);
 
-  // QuickActions reçoivent des "iconKey" strings → mapping côté Client
-  // (RSC ne sait pas serializer les forwardRef Lucide).
+  // Quick actions — DS palette stricte (cyan/violet/success/danger)
   const quickActions = [
     {
       label: "Éditer ma carte",
       description: "Drag & drop catégories + produits",
       href: "/dashboard/menu",
       iconKey: "utensils" as const,
-      accentColor: "oklch(0.65 0.22 25)",
+      tone: "cyan" as const,
     },
     {
       label: "Importer un menu",
       description: "Photo → carte digitale en 30s",
       href: "/dashboard/menu/import",
       iconKey: "scanText" as const,
-      accentColor: "oklch(0.7 0.18 145)",
+      tone: "success" as const,
     },
     {
       label: "Mes QR codes",
       description: "Génère et imprime tes codes",
       href: "/dashboard/qrcodes",
       iconKey: "qrcode" as const,
-      accentColor: "oklch(0.6 0.25 280)",
+      tone: "violet" as const,
     },
     {
       label: "Roulette d'avis",
       description: "Capte les coordonnées clients",
       href: "/dashboard/jeu",
       iconKey: "gift" as const,
-      accentColor: "#FF9B4A",
+      tone: "violet" as const,
     },
     {
       label: "Pop-ups événement",
       description: "Annonce une promo en 1 clic",
       href: "/dashboard/popups",
       iconKey: "megaphone" as const,
-      accentColor: "oklch(0.65 0.2 320)",
+      tone: "cyan" as const,
     },
     {
       label: "SMS marketing",
       description: "Relance ta base clients",
       href: "/dashboard/sms",
       iconKey: "message" as const,
-      accentColor: "oklch(0.7 0.18 200)",
+      tone: "cyan" as const,
     },
   ];
 
@@ -103,7 +109,7 @@ export default async function DashboardHome() {
         planBadge={<PlanBadge plan={restaurant.plan as Plan} />}
       />
 
-      {/* KPI BENTO — 4 colonnes desktop */}
+      {/* KPI BENTO */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Scans 30j"
@@ -112,7 +118,7 @@ export default async function DashboardHome() {
           trendPct={stats.evolutionPct}
           iconKey="scan"
           sparkline={scansSparkline}
-          accentColor="oklch(0.7 0.18 145)"
+          tone="cyan"
           delay={0}
         />
         <KpiCard
@@ -120,44 +126,44 @@ export default async function DashboardHome() {
           value={Number(totalClicks._sum.clicCount ?? 0)}
           hint="depuis le lancement"
           iconKey="sparkles"
-          accentColor="oklch(0.65 0.22 25)"
-          delay={0.05}
+          tone="success"
+          delay={0.04}
         />
         <KpiCard
           label="Catégories · Produits"
           value={`${categoriesCount} · ${produitsCount}`}
           hint="dans ta carte"
           iconKey="utensils"
-          accentColor="oklch(0.6 0.25 280)"
-          delay={0.1}
+          tone="violet"
+          delay={0.08}
         />
         <KpiCard
           label="Participations jeu"
           value={jeuParticipations}
           hint="leads captés"
           iconKey="gift"
-          accentColor="#FF9B4A"
-          delay={0.15}
+          tone="violet"
+          delay={0.12}
         />
       </div>
 
-      {/* SCANS CHART : grand bloc horizontal */}
+      {/* SCANS CHART */}
       <Card className="overflow-hidden">
         <CardHeader className="flex flex-row items-end justify-between gap-4 space-y-0">
           <div>
-            <CardDescription className="text-xs uppercase tracking-wider">
+            <CardDescription className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-tertiary)]">
               Activité 30 jours
             </CardDescription>
             <CardTitle className="mt-1 flex items-baseline gap-3 text-3xl tabular-nums">
               {stats.scansThis.toLocaleString("fr-FR")}
-              <span className="text-sm font-normal text-[var(--text-muted)]">
+              <span className="text-sm font-normal text-[var(--text-tertiary)]">
                 scans
               </span>
             </CardTitle>
           </div>
           <Button asChild variant="ghost" size="sm">
             <Link href="/dashboard/stats">
-              <ChartLine className="size-3.5" />
+              <ChartLine className="size-3.5" strokeWidth={1.75} />
               Voir analytics
             </Link>
           </Button>
@@ -174,13 +180,13 @@ export default async function DashboardHome() {
             <h2 className="text-lg font-semibold tracking-tight">
               Actions rapides
             </h2>
-            <p className="text-xs text-[var(--text-muted)]">
-              Les 6 trucs qu&apos;un restaurateur fait le plus.
+            <p className="text-xs text-[var(--text-tertiary)]">
+              Les 6 actions les plus fréquentes pour un restaurateur.
             </p>
           </div>
           <Button asChild variant="outline" size="sm">
             <Link href={`/carte/${restaurant.id.toString()}`} target="_blank">
-              <ExternalLink className="size-3.5" />
+              <ExternalLink className="size-3.5" strokeWidth={1.75} />
               Voir ma carte
             </Link>
           </Button>
@@ -188,12 +194,12 @@ export default async function DashboardHome() {
         <QuickActions actions={quickActions} />
       </div>
 
-      {/* LANGUES CONSULTÉES */}
+      {/* LANGUES CONSULTÉES — pas d'emoji, code langue mono */}
       {stats.langBreakdown.length > 0 && (
         <Card>
           <CardHeader className="flex-row items-start justify-between gap-4 space-y-0 pb-3">
             <div>
-              <CardDescription className="text-xs uppercase tracking-wider">
+              <CardDescription className="text-[10px] font-semibold uppercase tracking-widest text-[var(--text-tertiary)]">
                 Langues consultées
               </CardDescription>
               <CardTitle className="mt-1 text-2xl">
@@ -201,20 +207,25 @@ export default async function DashboardHome() {
                 {stats.langBreakdown.length > 1 ? "s" : ""}
               </CardTitle>
             </div>
-            <Globe2 className="size-4 text-[var(--text-muted)]" />
+            <Globe2
+              className="size-4 text-[var(--text-tertiary)]"
+              strokeWidth={1.75}
+            />
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-2">
               {stats.langBreakdown.map((l) => (
                 <div
                   key={l.lang}
-                  className="flex items-center gap-2 rounded-full border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-1.5 text-xs"
+                  className="flex items-center gap-2 rounded-full border border-[var(--border-glass)] bg-[var(--bg-glass)] px-3 py-1.5 text-xs"
                 >
-                  <span className="text-base leading-none">
-                    {flagFor(l.lang)}
+                  <span className="font-mono font-semibold uppercase tracking-wider text-[var(--neon-cyan)]">
+                    {l.lang}
                   </span>
-                  <span className="font-medium uppercase">{l.lang}</span>
-                  <span className="font-mono text-[var(--text-muted)]">
+                  <span className="text-[var(--text-secondary)]">
+                    {LANG_LABELS[l.lang] ?? l.lang}
+                  </span>
+                  <span className="font-mono text-[var(--text-tertiary)]">
                     {l.count}
                   </span>
                 </div>
@@ -224,9 +235,13 @@ export default async function DashboardHome() {
         </Card>
       )}
 
-      {/* CTA BAS DE PAGE */}
-      <Card className="bg-gradient-to-br from-[var(--bg-card)] via-[var(--bg-elevated)] to-[var(--bg-card)]">
-        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+      {/* CTA bas de page */}
+      <Card className="relative overflow-hidden lift-hover">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-[var(--neon-cyan)]/15 blur-3xl"
+        />
+        <CardHeader className="relative flex flex-row items-start justify-between gap-4 space-y-0">
           <div>
             <CardTitle>Édite ta carte</CardTitle>
             <CardDescription className="mt-1">
@@ -237,24 +252,11 @@ export default async function DashboardHome() {
           <Button asChild>
             <Link href="/dashboard/menu">
               Ouvrir l&apos;éditeur
-              <ArrowUpRight className="size-3.5" />
+              <ArrowUpRight className="size-3.5" strokeWidth={2} />
             </Link>
           </Button>
         </CardHeader>
       </Card>
     </div>
   );
-}
-
-function flagFor(lang: string): string {
-  const map: Record<string, string> = {
-    fr: "🇫🇷",
-    en: "🇬🇧",
-    es: "🇪🇸",
-    de: "🇩🇪",
-    it: "🇮🇹",
-    pt: "🇵🇹",
-    zh: "🇨🇳",
-  };
-  return map[lang] ?? "🌐";
 }

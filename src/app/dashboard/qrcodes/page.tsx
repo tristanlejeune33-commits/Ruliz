@@ -29,7 +29,7 @@ export default async function QrcodesPage() {
   return (
     <div className="space-y-8">
       <PageHero
-        accent="qrcodes"
+        accent="violet"
         eyebrow={
           <HeroEyebrow icon={<QrCode className="size-3" />}>
             QR codes

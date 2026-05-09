@@ -62,20 +62,20 @@ type StatutFilter = "tous" | "actif" | "inactif" | "perdu";
 const STATUT_FALLBACK = {
   label: "Inactif",
   classes:
-    "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-muted)]",
+    "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
 };
 
 const STATUT_META: Record<string, { label: string; classes: string }> = {
   actif: {
     label: "Actif",
     classes:
-      "border-[oklch(0.7_0.18_145)]/30 bg-[oklch(0.7_0.18_145)]/15 text-[oklch(0.75_0.18_145)]",
+      "border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] text-[var(--neon-success)]",
   },
   inactif: STATUT_FALLBACK,
   perdu: {
     label: "Perdu",
     classes:
-      "border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/15 text-[var(--color-destructive)]",
+      "border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] text-[var(--neon-danger)]",
   },
 };
 
@@ -235,8 +235,8 @@ function FilterTab({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all duration-150",
         active
-          ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--border-subtle)]"
-          : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
+          ? "bg-[var(--bg-glass-strong)] text-[var(--text-primary)] shadow-sm ring-1 ring-[var(--border-glass-hover)]"
+          : "text-[var(--text-secondary)] hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)]",
       )}
     >
       {label}
@@ -245,11 +245,11 @@ function FilterTab({
           "rounded-full px-1.5 py-0 font-mono text-[10px] tabular-nums",
           active
             ? tone === "success"
-              ? "bg-[oklch(0.7_0.18_145)]/15 text-[oklch(0.75_0.18_145)]"
+              ? "bg-[var(--neon-success-soft)] text-[var(--neon-success)]"
               : tone === "danger"
-                ? "bg-[var(--color-destructive)]/15 text-[var(--color-destructive)]"
-                : "bg-[var(--accent)]/15 text-[var(--accent)]"
-            : "bg-[var(--bg-elevated)] text-[var(--text-muted)]",
+                ? "bg-[var(--neon-danger-soft)] text-[var(--neon-danger)]"
+                : "bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]"
+            : "bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
         )}
       >
         {count}

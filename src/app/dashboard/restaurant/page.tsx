@@ -27,7 +27,7 @@ export default async function RestaurantPage() {
   return (
     <div className="space-y-8">
       <PageHero
-        accent="resto"
+        accent="cyan"
         eyebrow={
           <>
             <HeroEyebrow icon={<Building2 className="size-3" />}>

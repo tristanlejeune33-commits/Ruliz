@@ -14,14 +14,18 @@ interface DonutCardProps {
   data: Array<{ key: string; label: string; count: number }>;
 }
 
+/**
+ * Palette graphique — DS Ruliz strict (cyan / violet / success / danger)
+ * + tonalités cyan dérivées pour les segments supplémentaires.
+ */
 const COLORS = [
-  "var(--accent)",
-  "oklch(0.7 0.18 145)",
-  "oklch(0.65 0.22 25)",
-  "oklch(0.65 0.22 310)",
-  "oklch(0.7 0.18 70)",
-  "oklch(0.65 0.18 200)",
-  "oklch(0.55 0.1 270)",
+  "var(--neon-cyan)",
+  "var(--neon-violet)",
+  "var(--neon-success)",
+  "var(--neon-danger)",
+  "rgba(0, 229, 255, 0.6)",
+  "rgba(177, 108, 255, 0.6)",
+  "rgba(0, 255, 163, 0.6)",
 ];
 
 export function DonutCard({ title, data }: DonutCardProps) {

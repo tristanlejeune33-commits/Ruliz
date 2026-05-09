@@ -4,22 +4,22 @@ const STATUTS = {
   actif: {
     label: "Actif",
     classes:
-      "border-[oklch(0.7_0.18_145)]/30 bg-[oklch(0.7_0.18_145)]/15 text-[oklch(0.75_0.18_145)]",
+      "border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] text-[var(--neon-success)]",
   },
   suspendu: {
     label: "Suspendu",
     classes:
-      "border-[oklch(0.75_0.18_70)]/30 bg-[oklch(0.75_0.18_70)]/15 text-[oklch(0.78_0.18_70)]",
+      "border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] text-[var(--neon-violet)]",
   },
   archive: {
     label: "Archivé",
     classes:
-      "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-muted)]",
+      "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
   },
   demo_terminee: {
     label: "Démo terminée",
     classes:
-      "border-[var(--color-destructive)]/30 bg-[var(--color-destructive)]/15 text-[var(--color-destructive)]",
+      "border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] text-[var(--neon-danger)]",
   },
 } as const;
 
@@ -41,10 +41,7 @@ export function StatusBadge({
         className,
       )}
     >
-      <span
-        className="size-1.5 rounded-full bg-current"
-        aria-hidden
-      />
+      <span className="size-1.5 rounded-full bg-current" aria-hidden />
       {config.label}
     </span>
   );
@@ -54,17 +51,17 @@ const PLANS = {
   freemium: {
     label: "Freemium",
     classes:
-      "border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-secondary)]",
+      "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-secondary)]",
   },
   pro: {
     label: "Pro",
     classes:
-      "border-[var(--accent)]/30 bg-[var(--accent)]/15 text-[var(--accent)]",
+      "border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]",
   },
   premium: {
     label: "Premium",
     classes:
-      "border-[oklch(0.65_0.22_310)]/30 bg-[oklch(0.65_0.22_310)]/15 text-[oklch(0.7_0.22_310)]",
+      "border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] text-[var(--neon-violet)]",
   },
 } as const;
 
@@ -75,7 +72,7 @@ export function PlanBadge({ plan, className }: { plan: Plan; className?: string 
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-md border px-2 py-0.5 text-xs font-semibold uppercase tracking-wider",
         config.classes,
         className,
       )}

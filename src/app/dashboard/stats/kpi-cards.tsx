@@ -101,8 +101,8 @@ function Kpi({
               className={cn(
                 "inline-flex items-center gap-0.5 rounded text-[10px] font-medium tabular-nums",
                 positive
-                  ? "text-[oklch(0.7_0.18_145)]"
-                  : "text-[var(--color-destructive)]",
+                  ? "text-[var(--neon-success)]"
+                  : "text-[var(--neon-danger)]",
               )}
             >
               {positive ? (
