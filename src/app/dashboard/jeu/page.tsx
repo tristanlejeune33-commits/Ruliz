@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Sparkles, Star, Users } from "lucide-react";
+import { ArrowRight, Sparkles, Star, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -89,10 +91,18 @@ export default async function JeuPage() {
                 <CardDescription>Total participants</CardDescription>
                 <Users className="size-4 text-[var(--text-muted)]" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-3">
                 <CardTitle className="text-3xl tabular-nums">
                   {jeu?._count.participations ?? 0}
                 </CardTitle>
+                {jeu && jeu._count.participations > 0 && (
+                  <Button asChild variant="outline" size="sm" className="w-full">
+                    <Link href="/dashboard/jeu/participations">
+                      Voir tous les participants
+                      <ArrowRight className="size-3.5" />
+                    </Link>
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -104,24 +114,35 @@ export default async function JeuPage() {
                 </CardHeader>
                 <CardContent>
                   <ul className="divide-y divide-[var(--border-subtle)]">
-                    {serialize(jeu.participations).map((p) => (
-                      <li key={p.id} className="flex items-center gap-2 py-2">
-                        <Star className="size-3 text-[var(--accent)]" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">
-                            {p.prenom ?? p.email ?? "Anonyme"}
-                          </p>
-                          <p className="truncate text-xs text-[var(--text-muted)]">
-                            {p.lotGagne ?? "—"}
-                          </p>
-                        </div>
-                        <span className="shrink-0 text-xs text-[var(--text-muted)]">
-                          {format(new Date(p.participatedAt), "d MMM HH:mm", {
-                            locale: fr,
-                          })}
-                        </span>
-                      </li>
-                    ))}
+                    {serialize(jeu.participations).map((p) => {
+                      const fullName =
+                        [p.prenom, p.nom].filter(Boolean).join(" ") ||
+                        p.email ||
+                        "Anonyme";
+                      return (
+                        <li key={p.id} className="flex items-center gap-2 py-2">
+                          <Star className="size-3 text-[var(--accent)]" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium">
+                              {fullName}
+                            </p>
+                            <p className="truncate text-xs text-[var(--text-muted)]">
+                              {p.lotGagne ?? "—"}
+                              {p.actionSociale && (
+                                <span className="ml-1 opacity-70">
+                                  · via {p.actionSociale.replace("_", " ")}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <span className="shrink-0 text-xs text-[var(--text-muted)]">
+                            {format(new Date(p.participatedAt), "d MMM HH:mm", {
+                              locale: fr,
+                            })}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </CardContent>
               </Card>
