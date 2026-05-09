@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Building2, ExternalLink } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Building2, ExternalLink, Globe2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  HeroEyebrow,
+  HeroKpi,
+  PageHero,
+} from "@/components/shared/page-hero";
 import { PlanBadge, type Plan } from "@/components/shared/status-badge";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { serialize } from "@/lib/serialize";
@@ -16,28 +20,57 @@ export default async function RestaurantPage() {
   const { restaurant } = await getCurrentRestaurant();
   const data = serialize(restaurant);
 
+  const ville = data.ville?.trim();
+  const pays = data.pays?.trim();
+  const localisation = [ville, pays].filter(Boolean).join(", ");
+
   return (
     <div className="space-y-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <Badge variant="secondary">
-            <Building2 className="size-3" /> Restaurant
-          </Badge>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight">{data.nom}</h1>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            Ces infos apparaissent sur la carte publique scannée par tes clients.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <PlanBadge plan={data.plan as Plan} />
+      <PageHero
+        accent="resto"
+        eyebrow={
+          <>
+            <HeroEyebrow icon={<Building2 className="size-3" />}>
+              Mon restaurant
+            </HeroEyebrow>
+            <PlanBadge plan={data.plan as Plan} />
+          </>
+        }
+        title={data.nom}
+        description="Ces infos apparaissent sur la carte publique scannée par tes clients."
+        actions={
           <Button asChild variant="outline" size="sm">
             <Link href={`/carte/${data.id}`} target="_blank" rel="noreferrer">
               <ExternalLink className="size-3.5" />
               Voir la carte
             </Link>
           </Button>
-        </div>
-      </header>
+        }
+        kpis={
+          <>
+            {localisation && (
+              <HeroKpi
+                label="Adresse"
+                value={
+                  <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                    <MapPin className="size-3.5 text-[var(--text-muted)]" />
+                    {localisation}
+                  </span>
+                }
+              />
+            )}
+            <HeroKpi
+              label="Devise"
+              value={
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+                  <Globe2 className="size-3.5 text-[var(--text-muted)]" />
+                  {data.deviseDefault ?? "€"}
+                </span>
+              }
+            />
+          </>
+        }
+      />
 
       <RestaurantForm
         restaurant={{
