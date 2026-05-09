@@ -5,6 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import type { PublicMenu } from "@/server/public/menu";
 import { CategoryAccordion } from "./category-accordion";
 import { FooterPublic } from "./footer-public";
+import { GoogleFeedbackCTA } from "./google-feedback-cta";
 import { HeaderPublic } from "./header-public";
 import { HeroSection } from "./hero-section";
 import { PopupBanner } from "./popup-banner";
@@ -112,6 +113,20 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
         deviseDefault={menu.restaurant.deviseDefault}
       />
 
+      {/* Box "Jeu Concours" si un jeu actif est configuré */}
+      {!preview && menu.jeu && (
+        <GoogleFeedbackCTA
+          title="Jeu Concours 🎉"
+          description={
+            menu.jeu.cta ||
+            "Donnez votre avis sur Google ou abonnez-vous à nos réseaux sociaux pour tenter de gagner des cadeaux !"
+          }
+          buttonLabel="Tourner la roue"
+          onSpinClick={() => setRouletteOpen(true)}
+          theme={theme}
+        />
+      )}
+
       <FooterPublic
         restaurant={menu.restaurant}
         theme={theme}
@@ -137,12 +152,16 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
         )}
       </AnimatePresence>
 
-      {/* Roulette cadeaux (déclenchée par bouton cadeau dans header) */}
-      {!preview && menu.jeu && rouletteOpen && (
+      {/* Roulette cadeaux (déclenchée par bouton cadeau header OU CTA jeu concours) */}
+      {!preview && menu.jeu && (
         <Roulette
           jeu={menu.jeu}
+          open={rouletteOpen}
+          onClose={() => setRouletteOpen(false)}
           accentColor={theme.primary}
           googleReviewUrl={menu.restaurant.googleReviewUrl}
+          facebookUrl={menu.restaurant.facebookUrl}
+          instagramUrl={menu.restaurant.instagramUrl}
         />
       )}
     </div>

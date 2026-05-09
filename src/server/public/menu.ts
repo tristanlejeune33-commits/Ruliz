@@ -32,6 +32,9 @@ export type PublicMenu = {
     ville: string | null;
     pays: string | null;
     adresse: string | null;
+    codePostal: string | null;
+    telephone: string | null;
+    email: string | null;
     facebookUrl: string | null;
     instagramUrl: string | null;
     tiktokUrl: string | null;
@@ -133,6 +136,9 @@ export async function getPublicMenu(
         ville: true,
         pays: true,
         adresse: true,
+        codePostal: true,
+        telephone: true,
+        email: true,
         facebookUrl: true,
         instagramUrl: true,
         tiktokUrl: true,
@@ -276,6 +282,9 @@ export async function getPublicMenu(
       ville: restaurant.ville,
       pays: restaurant.pays,
       adresse: restaurant.adresse,
+      codePostal: restaurant.codePostal,
+      telephone: restaurant.telephone,
+      email: restaurant.email,
       facebookUrl: restaurant.facebookUrl,
       instagramUrl: restaurant.instagramUrl,
       tiktokUrl: restaurant.tiktokUrl,

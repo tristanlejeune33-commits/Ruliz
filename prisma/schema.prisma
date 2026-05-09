@@ -393,17 +393,25 @@ model Jeu {
 }
 
 model JeuParticipation {
-  id             BigInt   @id @default(autoincrement())
-  jeuId          BigInt   @map("jeu_id")
-  email          String?  @db.VarChar(255)
-  prenom         String?  @db.VarChar(100)
-  telephone      String?  @db.VarChar(20)
-  lotGagne       String?  @map("lot_gagne") @db.VarChar(255)
-  participatedAt DateTime @default(now()) @map("participated_at") @db.Timestamptz()
+  id             BigInt    @id @default(autoincrement())
+  jeuId          BigInt    @map("jeu_id")
+  email          String?   @db.VarChar(255)
+  prenom         String?   @db.VarChar(100)
+  nom            String?   @db.VarChar(100)
+  /** Date de naissance saisie par le joueur (texte libre côté formulaire). */
+  naissance      String?   @db.VarChar(20)
+  telephone      String?   @db.VarChar(20)
+  /** Action sociale validée : "facebook" | "instagram" | "google_review" */
+  actionSociale  String?   @map("action_sociale") @db.VarChar(20)
+  lotGagne       String?   @map("lot_gagne") @db.VarChar(255)
+  /** IP du joueur — utile pour limiter le spam */
+  ip             String?   @db.VarChar(45)
+  participatedAt DateTime  @default(now()) @map("participated_at") @db.Timestamptz()
 
   jeu Jeu @relation(fields: [jeuId], references: [id], onDelete: Cascade)
 
   @@index([jeuId, participatedAt(sort: Desc)], map: "idx_participations_jeu")
+  @@index([email], map: "idx_participations_email")
   @@map("jeu_participations")
 }
 

@@ -2,393 +2,583 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Sparkles, Star, X } from "lucide-react";
+import { Loader2, Star, X } from "lucide-react";
+import { toast } from "sonner";
 import type { PublicMenu } from "@/server/public/menu";
-import { spinRoulette } from "@/server/dashboard/jeu-actions";
+import { submitParticipation } from "@/server/public/jeu-actions";
 
 type Jeu = NonNullable<PublicMenu["jeu"]>;
 
 interface RouletteProps {
   jeu: Jeu;
+  open: boolean;
+  onClose: () => void;
   accentColor: string;
   googleReviewUrl: string | null;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
 }
 
-export function Roulette({ jeu, accentColor, googleReviewUrl }: RouletteProps) {
-  const [open, setOpen] = useState(false);
-
+// Brand icons inline (Lucide ne livre plus les marques)
+function FacebookIcon({ className }: { className?: string }) {
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-30 flex h-12 items-center gap-2 rounded-full px-5 text-sm font-medium text-white shadow-2xl"
-        style={{ backgroundColor: accentColor }}
-      >
-        <Sparkles className="size-4" />
-        Tente ta chance
-      </button>
-      <RouletteModal
-        open={open}
-        onClose={() => setOpen(false)}
-        jeu={jeu}
-        accentColor={accentColor}
-        googleReviewUrl={googleReviewUrl}
-      />
-    </>
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" />
+    </svg>
   );
 }
 
-function RouletteModal({
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
+
+/**
+ * Modal "Tente ta chance" — réplique exacte du modal-spinning de l'ancien template Ruliz.
+ *
+ * 3 états :
+ *  - "form"     : étape 1 (prénom, nom, naissance, tél, email, conditions) puis étape 2 (réseau)
+ *  - "result"   : on affiche le lot gagné avec animation
+ *  - "error"    : message d'erreur (déjà participé, etc.)
+ *
+ * Soumet via submitParticipation() qui :
+ *  1. Valide les données
+ *  2. Vérifie l'anti-spam (24h par email)
+ *  3. Tire un lot selon les probabilités du jeu
+ *  4. Insère dans `jeu_participations` + `base_clients`
+ */
+export function Roulette({
+  jeu,
   open,
   onClose,
-  jeu,
   accentColor,
   googleReviewUrl,
-}: {
-  open: boolean;
-  onClose: () => void;
-  jeu: Jeu;
-  accentColor: string;
-  googleReviewUrl: string | null;
-}) {
-  type Step = "intro" | "form" | "spinning" | "result";
-  const [step, setStep] = useState<Step>("intro");
-  const [pending, setPending] = useState(false);
-  const [winningIndex, setWinningIndex] = useState<number>(0);
-  const [winningLabel, setWinningLabel] = useState<string>("");
-  const [form, setForm] = useState({ prenom: "", email: "", telephone: "" });
-  const [error, setError] = useState<string | null>(null);
+  facebookUrl,
+  instagramUrl,
+}: RouletteProps) {
+  const [step, setStep] = useState<"form" | "submitting" | "result" | "error">(
+    "form",
+  );
+  const [errorMsg, setErrorMsg] = useState<string>("");
+  const [lotGagne, setLotGagne] = useState<string | null>(null);
+  const [conditionsOK, setConditionsOK] = useState(false);
+  const [form, setForm] = useState({
+    prenom: "",
+    nom: "",
+    naissance: "",
+    telephone: "",
+    email: "",
+  });
 
-  const reset = () => {
-    setStep("intro");
-    setPending(false);
-    setError(null);
-    setWinningIndex(0);
-    setWinningLabel("");
-    setForm({ prenom: "", email: "", telephone: "" });
-  };
-
-  const handleSpin = async () => {
-    if (!form.prenom.trim() || !form.email.trim()) {
-      setError("Prénom et email requis.");
+  const handleSocialSubmit = async (
+    actionSociale: "facebook" | "instagram" | "google_review",
+  ) => {
+    if (!form.prenom || !form.nom || !form.telephone || !form.email) {
+      toast.error("Merci de remplir tous les champs obligatoires.");
       return;
     }
-    setError(null);
-    setPending(true);
+    if (!conditionsOK) {
+      toast.error("Tu dois accepter les règles du jeu.");
+      return;
+    }
 
-    const res = await spinRoulette({
+    setStep("submitting");
+    const res = await submitParticipation({
       jeuId: jeu.id,
-      prenom: form.prenom.trim(),
-      email: form.email.trim(),
-      telephone: form.telephone.trim(),
+      prenom: form.prenom,
+      nom: form.nom,
+      naissance: form.naissance,
+      telephone: form.telephone,
+      email: form.email,
+      actionSociale,
     });
 
-    setPending(false);
     if (!res.ok) {
-      setError(res.error);
+      setErrorMsg(res.error);
+      setStep("error");
       return;
     }
-    if (res.data) {
-      setWinningIndex(res.data.lotIndex);
-      setWinningLabel(res.data.lotLabel);
-      setStep("spinning");
-      // Spin animation duration : 4s, then go to result
-      setTimeout(() => setStep("result"), 4200);
+
+    setLotGagne(res.lotGagne);
+    setStep("result");
+
+    // Ouvre le réseau social demandé en nouvelle fenêtre
+    const targetUrl =
+      actionSociale === "facebook"
+        ? facebookUrl
+        : actionSociale === "instagram"
+          ? instagramUrl
+          : googleReviewUrl;
+    if (targetUrl) {
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
     }
   };
 
-  const handleStart = () => {
-    if (jeu.requireGoogleReview && googleReviewUrl) {
-      window.open(googleReviewUrl, "_blank", "noopener,noreferrer");
-    }
+  const reset = () => {
     setStep("form");
+    setErrorMsg("");
+    setLotGagne(null);
+    setConditionsOK(false);
   };
 
   return (
-    <AnimatePresence onExitComplete={reset}>
+    <AnimatePresence>
       {open && (
-        <>
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          onClick={() => {
+            onClose();
+            reset();
+          }}
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+          style={{
+            backgroundColor: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(5px)",
+          }}
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={step !== "spinning" ? onClose : undefined}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur"
-          />
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", damping: 28, stiffness: 280 }}
-            className="fixed left-1/2 top-1/2 z-50 w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-3xl bg-white shadow-2xl"
+            exit={{ opacity: 0, scale: 0.92, y: 20 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            className="relative flex max-h-[92vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-[10px] p-5 text-center text-white"
+            style={{
+              // Fond sombre en gradient navy → bleu nuit (réplique du bg.webp)
+              background: `linear-gradient(135deg, ${accentColor} 0%, #0a1450 50%, ${accentColor} 100%)`,
+              fontFamily: "var(--font-display)",
+            }}
           >
-            {step !== "spinning" && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="absolute right-4 top-4 z-10 flex size-9 items-center justify-center rounded-full bg-white/80 text-neutral-700 shadow-md backdrop-blur"
-                aria-label="Fermer"
-              >
-                <X className="size-4" />
-              </button>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                reset();
+              }}
+              className="absolute right-2.5 top-2.5 z-10 rounded-full p-1 text-white/80 hover:text-white"
+              aria-label="Fermer"
+            >
+              <X className="size-6" />
+            </button>
+
+            {step === "form" || step === "submitting" ? (
+              <FormStep
+                jeu={jeu}
+                form={form}
+                setForm={setForm}
+                conditionsOK={conditionsOK}
+                setConditionsOK={setConditionsOK}
+                onSocialSubmit={handleSocialSubmit}
+                submitting={step === "submitting"}
+                facebookUrl={facebookUrl}
+                instagramUrl={instagramUrl}
+                googleReviewUrl={googleReviewUrl}
+              />
+            ) : step === "result" ? (
+              <ResultStep
+                lotGagne={lotGagne}
+                onClose={() => {
+                  onClose();
+                  reset();
+                }}
+              />
+            ) : (
+              <ErrorStep
+                errorMsg={errorMsg}
+                onRetry={reset}
+                onClose={() => {
+                  onClose();
+                  reset();
+                }}
+              />
             )}
-
-            <div className="px-6 pt-8 pb-6">
-              {step === "intro" && (
-                <div className="space-y-4 text-center">
-                  <Wheel lots={jeu.lots} winningIndex={null} accentColor={accentColor} />
-                  <h2 className="text-balance text-xl font-semibold tracking-tight">
-                    {jeu.cta || "Tente ta chance !"}
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={handleStart}
-                    className="w-full rounded-xl py-3 text-sm font-medium text-white"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    {jeu.requireGoogleReview && googleReviewUrl
-                      ? "Laisser un avis Google et jouer"
-                      : "Jouer"}
-                  </button>
-                  {jeu.requireGoogleReview && googleReviewUrl && (
-                    <p className="text-xs text-neutral-500">
-                      Tu seras redirigé vers Google. Reviens ensuite ici pour spin.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {step === "form" && (
-                <div className="space-y-4">
-                  <h2 className="text-balance text-xl font-semibold tracking-tight">
-                    Tes coordonnées
-                  </h2>
-                  <p className="text-sm text-neutral-500">
-                    Le restaurant pourra te recontacter pour t&apos;offrir ton lot.
-                  </p>
-                  <input
-                    type="text"
-                    placeholder="Prénom"
-                    value={form.prenom}
-                    onChange={(e) => setForm({ ...form, prenom: e.target.value })}
-                    className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="email"
-                    placeholder="Email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm"
-                  />
-                  <input
-                    type="tel"
-                    placeholder="Téléphone (optionnel)"
-                    value={form.telephone}
-                    onChange={(e) => setForm({ ...form, telephone: e.target.value })}
-                    className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm"
-                  />
-                  {error && (
-                    <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
-                      {error}
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleSpin}
-                    disabled={pending}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-medium text-white disabled:opacity-50"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    {pending && <Loader2 className="size-4 animate-spin" />}
-                    Spin la roue
-                  </button>
-                </div>
-              )}
-
-              {step === "spinning" && (
-                <div className="space-y-4 text-center">
-                  <Wheel
-                    lots={jeu.lots}
-                    winningIndex={winningIndex}
-                    accentColor={accentColor}
-                  />
-                  <p className="text-sm font-medium text-neutral-600">
-                    La roue tourne…
-                  </p>
-                </div>
-              )}
-
-              {step === "result" && (
-                <div className="space-y-4 text-center">
-                  <Wheel
-                    lots={jeu.lots}
-                    winningIndex={winningIndex}
-                    accentColor={accentColor}
-                    settled
-                  />
-                  <h2 className="text-balance text-2xl font-semibold tracking-tight">
-                    Bravo !
-                  </h2>
-                  <p className="text-sm text-neutral-600">
-                    Tu as gagné <strong>{winningLabel}</strong>. Présente cet email à
-                    ton serveur, il s&apos;occupera du reste 🎁
-                  </p>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="w-full rounded-xl py-3 text-sm font-medium text-white"
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    Super, merci !
-                  </button>
-                </div>
-              )}
-            </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
 }
 
-function Wheel({
-  lots,
-  winningIndex,
-  accentColor,
-  settled,
+// ---------------------------------------------------------------------------
+// Étape formulaire (1 + 2 sur le même écran, comme l'ancien template)
+// ---------------------------------------------------------------------------
+
+function FormStep({
+  jeu,
+  form,
+  setForm,
+  conditionsOK,
+  setConditionsOK,
+  onSocialSubmit,
+  submitting,
+  facebookUrl,
+  instagramUrl,
+  googleReviewUrl,
 }: {
-  lots: Jeu["lots"];
-  winningIndex: number | null;
-  accentColor: string;
-  settled?: boolean;
+  jeu: Jeu;
+  form: {
+    prenom: string;
+    nom: string;
+    naissance: string;
+    telephone: string;
+    email: string;
+  };
+  setForm: React.Dispatch<React.SetStateAction<typeof form>>;
+  conditionsOK: boolean;
+  setConditionsOK: (v: boolean) => void;
+  onSocialSubmit: (
+    actionSociale: "facebook" | "instagram" | "google_review",
+  ) => void;
+  submitting: boolean;
+  facebookUrl: string | null;
+  instagramUrl: string | null;
+  googleReviewUrl: string | null;
 }) {
-  const total = lots.reduce((acc, l) => acc + l.probabilite, 0);
-  const colors = [
-    accentColor,
-    "oklch(0.7 0.2 25)",
-    "oklch(0.7 0.2 145)",
-    "oklch(0.65 0.2 280)",
-    "oklch(0.7 0.2 60)",
-    "oklch(0.7 0.2 200)",
-    "oklch(0.65 0.2 320)",
-    "oklch(0.65 0.2 100)",
-  ];
-
-  // Compute cumulative angles per lot (precomputed to avoid mutation during render)
-  const segments: Array<{
-    lot: Jeu["lots"][number];
-    start: number;
-    angle: number;
-    color: string;
-  }> = [];
-  {
-    let cumulative = 0;
-    for (let i = 0; i < lots.length; i++) {
-      const lot = lots[i]!;
-      const angle = (lot.probabilite / total) * 360;
-      segments.push({
-        lot,
-        start: cumulative,
-        angle,
-        color: colors[i % colors.length] ?? colors[0]!,
-      });
-      cumulative += angle;
-    }
-  }
-
-  // Determine where the winning index lies (mid of its segment)
-  const winningSeg = winningIndex !== null ? segments[winningIndex] : null;
-  const winningAngle = winningSeg ? winningSeg.start + winningSeg.angle / 2 : 0;
-
-  // Pointer is at the top (12 o'clock) → we need to rotate the wheel
-  // by `-winningAngle` so the winning segment lands under the pointer.
-  // Add full turns for spectacle.
-  const targetRotation =
-    winningIndex !== null ? 360 * 5 - winningAngle : 0;
+  const ctaTitle = jeu.cta || "TENTE TA CHANCE !";
 
   return (
-    <div className="relative mx-auto size-56">
-      {/* Pointer */}
-      <div
-        className="absolute left-1/2 top-0 z-10 size-0 -translate-x-1/2"
-        style={{
-          borderLeft: "10px solid transparent",
-          borderRight: "10px solid transparent",
-          borderTop: `18px solid ${accentColor}`,
-        }}
-      />
-      <motion.svg
-        viewBox="0 0 200 200"
-        className="size-full"
-        initial={{ rotate: 0 }}
-        animate={{ rotate: targetRotation }}
-        transition={
-          settled
-            ? { duration: 0 }
-            : winningIndex !== null
-              ? { duration: 4, ease: [0.16, 1, 0.3, 1] }
-              : { duration: 0 }
-        }
+    <>
+      {/* Titre principal */}
+      <h1 className="whitespace-pre-line text-[35px] font-bold leading-tight">
+        {ctaTitle.replace(/[\s]+/, "\n")}
+      </h1>
+
+      {/* Liste des lots — emoji + label sur fond blanc rounded */}
+      {jeu.lots.length > 0 && (
+        <ul className="flex flex-wrap justify-center gap-2.5">
+          {jeu.lots.slice(0, 3).map((lot, i) => (
+            <li
+              key={`${lot.label}-${i}`}
+              className="flex flex-col items-center justify-center text-black"
+            >
+              <span className="z-10 -mb-1.5 text-[30px]">
+                {extractEmoji(lot.label) ?? "🎁"}
+              </span>
+              <span className="rounded-[15px] bg-white px-2.5 py-1 text-[13px] font-medium">
+                {removeEmoji(lot.label)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className="text-base">Et bien d&apos;autres cadeaux à gagner...</p>
+
+      {/* Étape 1 : badge */}
+      <div className="flex justify-center">
+        <span
+          className="rounded-[15px] px-2.5 py-1 text-base text-white"
+          style={{ backgroundColor: "#FF9B4A", minWidth: "60px" }}
+        >
+          Étape 1
+        </span>
+      </div>
+
+      {/* Form */}
+      <form
+        className="flex flex-col gap-2.5"
+        onSubmit={(e) => e.preventDefault()}
       >
-        {segments.map((seg, i) => {
-          const startRad = ((seg.start - 90) * Math.PI) / 180;
-          const endRad = ((seg.start + seg.angle - 90) * Math.PI) / 180;
-          const x1 = 100 + 90 * Math.cos(startRad);
-          const y1 = 100 + 90 * Math.sin(startRad);
-          const x2 = 100 + 90 * Math.cos(endRad);
-          const y2 = 100 + 90 * Math.sin(endRad);
-          const largeArc = seg.angle > 180 ? 1 : 0;
-
-          const midRad =
-            ((seg.start + seg.angle / 2 - 90) * Math.PI) / 180;
-          const labelX = 100 + 55 * Math.cos(midRad);
-          const labelY = 100 + 55 * Math.sin(midRad);
-
-          return (
-            <g key={i}>
-              <path
-                d={`M 100 100 L ${x1} ${y1} A 90 90 0 ${largeArc} 1 ${x2} ${y2} Z`}
-                fill={seg.color}
-                stroke="white"
-                strokeWidth={2}
-                opacity={0.9}
-              />
-              <text
-                x={labelX}
-                y={labelY}
-                textAnchor="middle"
-                alignmentBaseline="middle"
-                className="fill-white text-[6px] font-medium"
-                transform={`rotate(${
-                  seg.start + seg.angle / 2
-                } ${labelX} ${labelY})`}
-              >
-                {seg.lot.label.length > 16
-                  ? seg.lot.label.slice(0, 14) + "…"
-                  : seg.lot.label}
-              </text>
-            </g>
-          );
-        })}
-        <circle
-          cx={100}
-          cy={100}
-          r={14}
-          fill="white"
-          stroke={accentColor}
-          strokeWidth={3}
+        <FormInput
+          name="prenom"
+          placeholder="Prénom"
+          value={form.prenom}
+          onChange={(v) => setForm((f) => ({ ...f, prenom: v }))}
         />
-        <Star
-          x={92}
-          y={92}
-          width={16}
-          height={16}
-          fill={accentColor}
-          stroke={accentColor}
+        <FormInput
+          name="nom"
+          placeholder="Nom"
+          value={form.nom}
+          onChange={(v) => setForm((f) => ({ ...f, nom: v }))}
         />
-      </motion.svg>
+        <FormInput
+          name="naissance"
+          placeholder="Date de naissance (jj/mm/aaaa)"
+          value={form.naissance}
+          onChange={(v) => setForm((f) => ({ ...f, naissance: v }))}
+        />
+        <FormInput
+          name="telephone"
+          type="tel"
+          placeholder="Téléphone"
+          value={form.telephone}
+          onChange={(v) => setForm((f) => ({ ...f, telephone: v }))}
+        />
+        <FormInput
+          name="email"
+          type="email"
+          placeholder="Email"
+          value={form.email}
+          onChange={(v) => setForm((f) => ({ ...f, email: v }))}
+        />
+
+        <label className="mx-2 flex items-start gap-2 text-left">
+          <input
+            type="checkbox"
+            checked={conditionsOK}
+            onChange={(e) => setConditionsOK(e.target.checked)}
+            className="mt-0.5 size-4 cursor-pointer accent-[#FF9B4A]"
+            required
+          />
+          <span className="text-[10px] leading-tight">
+            *Je confirme avoir pris connaissance et accepté les{" "}
+            <a
+              href="https://ruliz.fr/dp"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              règles du jeu
+            </a>
+            .
+          </span>
+        </label>
+
+        {/* Étape 2 : badge */}
+        <div className="mt-2 flex justify-center">
+          <span
+            className="rounded-[15px] px-2.5 py-1 text-base text-white"
+            style={{ backgroundColor: "#FF9B4A", minWidth: "60px" }}
+          >
+            Étape 2
+          </span>
+        </div>
+
+        <p className="text-sm uppercase tracking-wide">
+          Suis-nous{" "}
+          <span
+            className="inline-block rounded-full bg-white px-1.5 py-1 text-[#3131ac]"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            ou
+          </span>{" "}
+          laisse un avis
+        </p>
+
+        {/* Boutons sociaux : FB / IG / Google review */}
+        <ul className="flex justify-center gap-2.5">
+          {facebookUrl && (
+            <SocialActionBtn
+              onClick={() => onSocialSubmit("facebook")}
+              disabled={submitting}
+              ariaLabel="Participer via Facebook"
+            >
+              <FacebookIcon className="size-6" />
+            </SocialActionBtn>
+          )}
+          {instagramUrl && (
+            <SocialActionBtn
+              onClick={() => onSocialSubmit("instagram")}
+              disabled={submitting}
+              ariaLabel="Participer via Instagram"
+            >
+              <InstagramIcon className="size-6" />
+            </SocialActionBtn>
+          )}
+          {googleReviewUrl && (
+            <SocialActionBtn
+              onClick={() => onSocialSubmit("google_review")}
+              disabled={submitting}
+              ariaLabel="Participer via avis Google"
+            >
+              <Star className="size-6" />
+            </SocialActionBtn>
+          )}
+        </ul>
+
+        {submitting && (
+          <p className="flex items-center justify-center gap-2 text-sm">
+            <Loader2 className="size-4 animate-spin" />
+            Validation en cours...
+          </p>
+        )}
+      </form>
+    </>
+  );
+}
+
+function FormInput({
+  name,
+  type = "text",
+  placeholder,
+  value,
+  onChange,
+}: {
+  name: string;
+  type?: string;
+  placeholder: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <input
+      name={name}
+      type={type}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="rounded-[15px] border-0 px-2.5 py-2 text-base text-black"
+      style={{ fontFamily: "var(--font-body)" }}
+      required
+    />
+  );
+}
+
+function SocialActionBtn({
+  onClick,
+  disabled,
+  ariaLabel,
+  children,
+}: {
+  onClick: () => void;
+  disabled: boolean;
+  ariaLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={ariaLabel}
+        className="flex size-12 items-center justify-center rounded-full bg-white text-black transition-transform hover:scale-105 disabled:opacity-50"
+      >
+        {children}
+      </button>
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Étape résultat
+// ---------------------------------------------------------------------------
+
+function ResultStep({
+  lotGagne,
+  onClose,
+}: {
+  lotGagne: string | null;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-4 py-6">
+      <motion.div
+        initial={{ scale: 0.5, rotate: -90 }}
+        animate={{ scale: 1, rotate: 0 }}
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="text-7xl"
+      >
+        🎉
+      </motion.div>
+      <h2 className="text-3xl font-bold leading-tight">
+        Bravo !
+      </h2>
+      <p className="text-base">
+        {lotGagne ? (
+          <>
+            Tu as gagné :<br />
+            <span className="mt-2 inline-block rounded-[15px] bg-white px-4 py-2 text-lg font-semibold text-black">
+              {lotGagne}
+            </span>
+          </>
+        ) : (
+          <>Merci pour ta participation !</>
+        )}
+      </p>
+      <p className="text-sm opacity-80">
+        Nous te recontacterons par email/SMS si tu fais partie des gagnants.
+      </p>
+      <button
+        type="button"
+        onClick={onClose}
+        className="mt-2 rounded-full bg-[#FF9B4A] px-8 py-2.5 text-base font-bold uppercase text-white transition-transform hover:scale-105"
+      >
+        Fermer
+      </button>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Étape erreur
+// ---------------------------------------------------------------------------
+
+function ErrorStep({
+  errorMsg,
+  onRetry,
+  onClose,
+}: {
+  errorMsg: string;
+  onRetry: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-4 py-8">
+      <div className="text-5xl">😕</div>
+      <h2 className="text-2xl font-bold">Oups !</h2>
+      <div
+        className="rounded-[15px] px-4 py-2 text-sm"
+        style={{
+          backgroundColor: "#f8d7da",
+          color: "#721c24",
+          border: "1px solid #f5c6cb",
+        }}
+      >
+        {errorMsg}
+      </div>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onRetry}
+          className="rounded-full bg-white/20 px-4 py-2 text-sm font-semibold uppercase hover:bg-white/30"
+        >
+          Réessayer
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full bg-[#FF9B4A] px-4 py-2 text-sm font-semibold uppercase text-white"
+        >
+          Fermer
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Helpers : extraire un emoji du début d'un label de lot
+// ---------------------------------------------------------------------------
+
+function extractEmoji(text: string): string | null {
+  // Regex grossier qui matche les premiers caractères pictographiques.
+  // Couvre les emojis classiques (😍, 🎁, 💸, etc.) et les drapeaux.
+  // eslint-disable-next-line no-misleading-character-class
+  const match = text.match(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}]+/u);
+  return match ? match[0] : null;
+}
+
+function removeEmoji(text: string): string {
+  // eslint-disable-next-line no-misleading-character-class
+  return text
+    .replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, "")
+    .trim();
 }
