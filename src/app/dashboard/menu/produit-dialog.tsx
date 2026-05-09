@@ -75,12 +75,10 @@ const schema = z.object({
   descriptionRemarque: z.string().max(2000),
   vignettes: z.array(z.number().int()),
   allergenes: z.array(z.number().int()),
-  scheduleType: z
-    .enum(["always", "lunch", "dinner", "happy_hour", "custom"])
-    .default("always"),
-  scheduleStart: z.string().max(5).default(""),
-  scheduleEnd: z.string().max(5).default(""),
-  scheduleDays: z.string().min(1).max(7).default("1234567"),
+  scheduleType: z.enum(["always", "lunch", "dinner", "happy_hour", "custom"]),
+  scheduleStart: z.string().max(5),
+  scheduleEnd: z.string().max(5),
+  scheduleDays: z.string().min(1).max(7),
 });
 
 type Values = z.infer<typeof schema>;

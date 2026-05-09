@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Loader2, Star, X } from "lucide-react";
 import { toast } from "sonner";
@@ -163,6 +163,21 @@ export function Roulette({
   const handleSubmitForm = () => {
     if (!form.prenom || !form.nom || !form.telephone || !form.email) {
       toast.error("Merci de remplir tous les champs obligatoires.");
+      return;
+    }
+    // Email validation : regex stricte (RFC 5322 simplifiée)
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRe.test(form.email.trim())) {
+      toast.error("Email invalide. Format attendu : nom@domaine.fr");
+      return;
+    }
+    // Téléphone : doit avoir entre 8 et 15 chiffres (E.164 max), peut
+    // contenir espaces, tirets, parenthèses, +
+    const phoneDigits = form.telephone.replace(/\D/g, "");
+    if (phoneDigits.length < 8 || phoneDigits.length > 15) {
+      toast.error(
+        "Numéro de téléphone invalide (8 à 15 chiffres attendus).",
+      );
       return;
     }
     if (!conditionsOK) {
@@ -466,16 +481,20 @@ function FormStep({
         <FormInput
           name="telephone"
           type="tel"
-          placeholder="Téléphone"
+          placeholder="Téléphone (06 12 34 56 78)"
           value={form.telephone}
-          onChange={(v) => setForm((f) => ({ ...f, telephone: v }))}
+          onChange={(v) => setForm((f) => ({ ...f, telephone: formatPhoneFR(v) }))}
+          maxLength={20}
         />
         <FormInput
           name="email"
           type="email"
-          placeholder="Email"
+          placeholder="Email (ex: marie@gmail.com)"
           value={form.email}
-          onChange={(v) => setForm((f) => ({ ...f, email: v }))}
+          onChange={(v) =>
+            setForm((f) => ({ ...f, email: v.trim().toLowerCase() }))
+          }
+          inputMode="email"
         />
 
         <label className="mx-2 mt-1 flex cursor-pointer items-start gap-2 text-left">
@@ -528,12 +547,16 @@ function FormInput({
   placeholder,
   value,
   onChange,
+  maxLength,
+  inputMode,
 }: {
   name: string;
   type?: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
+  maxLength?: number;
+  inputMode?: "text" | "tel" | "email" | "numeric";
 }) {
   return (
     <input
@@ -542,11 +565,48 @@ function FormInput({
       placeholder={placeholder}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      maxLength={maxLength}
+      inputMode={inputMode}
+      autoComplete={
+        type === "email" ? "email" : type === "tel" ? "tel" : undefined
+      }
       className="rounded-[15px] border-0 bg-white px-3 py-2.5 text-base text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#FF9B4A]"
       style={{ fontFamily: "var(--font-body)", colorScheme: "light" }}
       required
     />
   );
+}
+
+/**
+ * Format un numéro de téléphone français en groupes de 2 chiffres.
+ * Accepte 0-prefixed (06 XX XX XX XX) ou international (+33 6 XX XX XX XX).
+ * Strip tout sauf chiffres et '+', puis groupe par 2.
+ */
+function formatPhoneFR(input: string): string {
+  // Garde uniquement chiffres et le + initial
+  let cleaned = input.replace(/[^\d+]/g, "");
+  if (cleaned.startsWith("+")) {
+    // International : +33 6 XX XX XX XX → garde le + + pays + groupes de 2
+    const plus = "+";
+    const rest = cleaned.slice(1).replace(/\D/g, "");
+    if (rest.length <= 2) return plus + rest;
+    if (rest.length <= 3) return plus + rest.slice(0, 2) + " " + rest.slice(2);
+    // +33 6 12 34 56 78
+    const country = rest.slice(0, 2);
+    const num = rest.slice(2);
+    const groups: string[] = [];
+    for (let i = 0; i < num.length; i += 2) {
+      groups.push(num.slice(i, i + 2));
+    }
+    return plus + country + " " + groups.join(" ");
+  }
+  cleaned = cleaned.replace(/\D/g, "");
+  // Format français standard : 06 12 34 56 78 (groupes de 2)
+  const groups: string[] = [];
+  for (let i = 0; i < cleaned.length; i += 2) {
+    groups.push(cleaned.slice(i, i + 2));
+  }
+  return groups.join(" ").trim();
 }
 
 // ---------------------------------------------------------------------------
@@ -700,6 +760,14 @@ function CountdownStep({
 // ÉTAPE 4 : Roue (carrousel des lots avec arrows + bouton "Lancer")
 // ---------------------------------------------------------------------------
 
+/**
+ * Slot machine vertical : le reel défile vers le haut très vite, ralentit
+ * progressivement (cubic-out) et s'arrête sur un lot final qui pulse.
+ *
+ * On utilise une astuce : on duplique la liste des lots N fois pour avoir
+ * une longue piste, puis on translate-Y avec ease-out smooth via Framer
+ * Motion. Le rendu est convaincant et CPU-friendly (pas de setInterval).
+ */
 function WheelStep({
   lots,
   onSpin,
@@ -709,37 +777,40 @@ function WheelStep({
   onSpin: () => void;
   submitting: boolean;
 }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [spinning, setSpinning] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [phase, setPhase] = useState<"idle" | "spinning" | "stopped">("idle");
+  const [finalIdx, setFinalIdx] = useState<number | null>(null);
+
+  // Hauteur d'un slot — doit être en sync avec la hauteur réelle
+  const SLOT_HEIGHT = 80; // px
+  const VISIBLE_SLOTS = 3; // on en montre 3 (centre + haut/bas masqués par fade)
+  const REPETITIONS = 8; // nb de tours complets avant l'arrêt
+
+  // Piste : on duplique les lots REPETITIONS fois + un index final
+  const reelItems = useMemo(() => {
+    if (lots.length === 0) return [] as typeof lots;
+    const copies: typeof lots = [];
+    for (let i = 0; i < REPETITIONS; i++) {
+      copies.push(...lots);
+    }
+    return copies;
+  }, [lots]);
 
   const handleSpin = () => {
-    if (spinning || submitting) return;
-    setSpinning(true);
-    // Animation : on défile rapidement les lots avec ralentissement progressif
-    let speed = 80;
-    let elapsed = 0;
-    const totalDuration = 3500;
-    const tick = () => {
-      setActiveIdx((i) => (i + 1) % lots.length);
-      elapsed += speed;
-      if (elapsed < totalDuration) {
-        speed = Math.min(speed + 8, 350);
-        intervalRef.current = setTimeout(tick, speed);
-      } else {
-        setSpinning(false);
-        // On déclenche la submit qui détermine le vrai lot côté serveur
-        onSpin();
-      }
-    };
-    intervalRef.current = setTimeout(tick, speed);
-  };
+    if (phase !== "idle" || submitting) return;
+    setPhase("spinning");
+    // On choisit un index "final" arbitraire dans la dernière copie (la wheel
+    // s'arrêtera dessus visuellement, mais le SERVEUR détermine le vrai lot
+    // dans `onSpin`). Pour donner un bel effet, on va simuler un lot aléatoire.
+    const randomLot = Math.floor(Math.random() * lots.length);
+    const finalReelIdx = (REPETITIONS - 1) * lots.length + randomLot;
+    setFinalIdx(finalReelIdx);
 
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearTimeout(intervalRef.current);
-    };
-  }, []);
+    // Au bout de 3.5s on déclenche le submit serveur
+    setTimeout(() => {
+      setPhase("stopped");
+      onSpin();
+    }, 3500);
+  };
 
   if (lots.length === 0) {
     return (
@@ -749,93 +820,158 @@ function WheelStep({
     );
   }
 
-  const prevIdx = (activeIdx - 1 + lots.length) % lots.length;
-  const nextIdx = (activeIdx + 1) % lots.length;
+  // Calcul du translate-Y final pour centrer l'item finalIdx dans la fenêtre.
+  // Le centre de la fenêtre est à (VISIBLE_SLOTS / 2) * SLOT_HEIGHT
+  // On veut que finalIdx soit à ce centre → translateY = -finalIdx * SLOT
+  //                                                + (VISIBLE_SLOTS-1)/2 * SLOT
+  const reelHeight = SLOT_HEIGHT * VISIBLE_SLOTS;
+  const targetY =
+    finalIdx !== null
+      ? -(finalIdx * SLOT_HEIGHT) +
+        ((VISIBLE_SLOTS - 1) / 2) * SLOT_HEIGHT
+      : 0;
 
   return (
-    <div className="relative flex flex-col items-center gap-6 py-4">
+    <div className="relative flex flex-col items-center gap-5 py-4">
       <h1 className="whitespace-pre-line text-center text-[35px] font-bold leading-tight">
         TENTE{`\n`}TA CHANCE !
       </h1>
 
-      {/* Indicateur haut */}
-      <div className="text-white/90">▼</div>
+      {/* Indicateur de sélection (flèches qui pointent vers le centre) */}
+      <div className="relative w-full">
+        <span
+          className="absolute -left-1 top-1/2 z-20 -translate-y-1/2 text-2xl text-[#FF9B4A] drop-shadow-lg"
+          aria-hidden
+        >
+          ▶
+        </span>
+        <span
+          className="absolute -right-1 top-1/2 z-20 -translate-y-1/2 text-2xl text-[#FF9B4A] drop-shadow-lg"
+          aria-hidden
+        >
+          ◀
+        </span>
 
-      {/* Carrousel : lot précédent, actuel, suivant */}
-      <div className="relative flex w-full items-center justify-center gap-2">
-        <SideCard label={lots[prevIdx]?.label ?? ""} side="left" />
-        <CenterCard
-          label={lots[activeIdx]?.label ?? ""}
-          spinning={spinning}
-        />
-        <SideCard label={lots[nextIdx]?.label ?? ""} side="right" />
+        {/* Fenêtre du slot — overflow hidden */}
+        <div
+          className="relative mx-auto w-[260px] overflow-hidden rounded-[16px] border-2 border-[#FF9B4A] bg-white/95 shadow-2xl md:w-[300px]"
+          style={{ height: `${reelHeight}px` }}
+        >
+          {/* Fade haut + bas pour effet 3D */}
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[80px] bg-gradient-to-b from-white/95 via-white/40 to-transparent"
+            aria-hidden
+          />
+          <div
+            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[80px] bg-gradient-to-t from-white/95 via-white/40 to-transparent"
+            aria-hidden
+          />
+
+          {/* Ligne centrale orange (indicateur de gain) */}
+          <div
+            className="pointer-events-none absolute inset-x-2 top-1/2 z-[5] h-[2px] -translate-y-1/2 bg-gradient-to-r from-transparent via-[#FF9B4A] to-transparent"
+            aria-hidden
+          />
+
+          {/* Le reel qui scrolle */}
+          <motion.div
+            animate={{ y: phase === "idle" ? 0 : targetY }}
+            transition={
+              phase === "spinning"
+                ? {
+                    duration: 3.5,
+                    ease: [0.16, 0.85, 0.32, 1], // cubic ease-out (decelerate)
+                  }
+                : { duration: 0 }
+            }
+            className="absolute inset-x-0 top-0 flex flex-col"
+          >
+            {reelItems.map((lot, i) => {
+              const emoji = extractEmoji(lot.label) ?? "🎁";
+              const text = removeEmoji(lot.label);
+              const isWinning = i === finalIdx && phase === "stopped";
+              return (
+                <div
+                  key={i}
+                  className="flex shrink-0 items-center justify-center gap-3 px-4 text-center"
+                  style={{ height: `${SLOT_HEIGHT}px` }}
+                >
+                  <motion.div
+                    animate={
+                      isWinning
+                        ? {
+                            scale: [1, 1.12, 1],
+                            color: ["#000", "#FF9B4A", "#000"],
+                          }
+                        : {}
+                    }
+                    transition={{
+                      duration: 0.6,
+                      repeat: isWinning ? 3 : 0,
+                    }}
+                    className="flex items-center gap-3"
+                  >
+                    <span className="text-3xl md:text-4xl">{emoji}</span>
+                    <span
+                      className="text-balance text-base font-bold leading-tight md:text-lg"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {text}
+                    </span>
+                  </motion.div>
+                </div>
+              );
+            })}
+          </motion.div>
+        </div>
       </div>
 
-      {/* Indicateur bas */}
-      <div className="text-white/90">▲</div>
+      {/* Sous-titre dynamique */}
+      <p className="text-center text-sm font-medium opacity-90">
+        {phase === "idle"
+          ? "Appuie pour lancer la roue"
+          : phase === "spinning"
+            ? "🎲 Tirage en cours…"
+            : submitting
+              ? "Validation…"
+              : "🎉"}
+      </p>
 
       <button
         type="button"
         onClick={handleSpin}
-        disabled={spinning || submitting}
-        className="rounded-full px-10 py-3 text-lg font-bold uppercase tracking-wide text-white transition-transform hover:scale-105 disabled:opacity-60"
-        style={{ backgroundColor: "#FF9B4A" }}
+        disabled={phase !== "idle" || submitting}
+        className="rounded-full px-10 py-3 text-lg font-bold uppercase tracking-wide text-white transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
+        style={{
+          backgroundColor: "#FF9B4A",
+          boxShadow:
+            phase === "idle"
+              ? "0 0 0 0 rgba(255, 155, 74, 0.7)"
+              : "0 0 30px rgba(255, 155, 74, 0.5)",
+          animation:
+            phase === "idle" ? "pulse-cta 2s ease-in-out infinite" : undefined,
+        }}
       >
         {submitting ? (
           <Loader2 className="size-5 animate-spin" />
-        ) : spinning ? (
+        ) : phase === "spinning" ? (
           "..."
         ) : (
           "Lancer la roue"
         )}
       </button>
-    </div>
-  );
-}
 
-function CenterCard({ label, spinning }: { label: string; spinning: boolean }) {
-  const emoji = extractEmoji(label) ?? "🎁";
-  const text = removeEmoji(label);
-  return (
-    <motion.div
-      animate={spinning ? { rotateX: [0, 360], scale: [1, 1.05, 1] } : {}}
-      transition={{ duration: 0.15, repeat: spinning ? Infinity : 0 }}
-      className="relative z-10 flex h-44 w-40 flex-col items-center justify-center gap-2 rounded-md border-4 border-[#FF9B4A] bg-neutral-100 px-3 py-4 text-center text-black md:h-52 md:w-48"
-      style={{
-        backgroundImage:
-          "repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,155,74,0.1) 4px, rgba(255,155,74,0.1) 6px)",
-      }}
-    >
-      <div
-        className="absolute inset-1.5 border-2 border-dashed border-[#FF9B4A]/40"
-        aria-hidden
-      />
-      <p
-        className="text-balance text-[15px] font-bold leading-tight md:text-base"
-        style={{ fontFamily: "var(--font-display)" }}
-      >
-        {text}
-      </p>
-      <span className="text-3xl">{emoji}</span>
-    </motion.div>
-  );
-}
-
-function SideCard({ label, side }: { label: string; side: "left" | "right" }) {
-  const emoji = extractEmoji(label) ?? "🎁";
-  const text = removeEmoji(label);
-  return (
-    <div
-      className="flex h-32 w-24 shrink-0 flex-col items-center justify-center gap-1 rounded-md bg-white p-2 text-center text-black opacity-70"
-      style={{
-        marginLeft: side === "left" ? "-24px" : 0,
-        marginRight: side === "right" ? "-24px" : 0,
-        transform:
-          side === "left" ? "rotate(-3deg) scale(0.85)" : "rotate(3deg) scale(0.85)",
-      }}
-    >
-      <p className="line-clamp-3 text-[10px] font-bold leading-tight">{text}</p>
-      <span className="text-xl">{emoji}</span>
+      {/* Style inline pour l'animation pulse-cta */}
+      <style jsx>{`
+        @keyframes pulse-cta {
+          0%, 100% {
+            box-shadow: 0 0 0 0 rgba(255, 155, 74, 0.7);
+          }
+          50% {
+            box-shadow: 0 0 0 14px rgba(255, 155, 74, 0);
+          }
+        }
+      `}</style>
     </div>
   );
 }
