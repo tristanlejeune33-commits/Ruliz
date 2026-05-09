@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useId } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -15,13 +15,11 @@ import {
   MessageSquare,
   QrCode,
   ScrollText,
-  Search,
   Settings,
   ShieldCheck,
   Sparkles,
   UtensilsCrossed,
   Users,
-  X,
 } from "lucide-react";
 import {
   Tooltip,
@@ -103,105 +101,58 @@ interface SidebarNavProps {
 export function SidebarNav({ scope, sections }: SidebarNavProps) {
   const pathname = usePathname();
   const layoutId = useId();
-  const [query, setQuery] = useState("");
   const { collapsed } = useSidebarCollapse();
 
   const resolved =
     sections ?? (scope === "admin" ? ADMIN_NAV : DASHBOARD_NAV);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q || collapsed) return resolved;
-    return resolved
-      .map((section) => ({
-        ...section,
-        items: section.items.filter((item) =>
-          item.label.toLowerCase().includes(q),
-        ),
-      }))
-      .filter((section) => section.items.length > 0);
-  }, [resolved, query, collapsed]);
-
   return (
-    <div className="flex flex-col gap-3">
-      {/* Filtre live — masqué en mode compact */}
-      {!collapsed && (
-        <div className="relative px-1">
-          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-tertiary)]" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Filtrer la nav…"
-            className="w-full rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] py-1.5 pl-9 pr-7 text-xs text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] transition-all duration-150 focus:border-[var(--neon-cyan)]/50 focus:bg-[var(--bg-glass-hover)] focus:outline-none focus:ring-1 focus:ring-[var(--neon-cyan)]/30"
-            aria-label="Filtrer les items du menu"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-[var(--text-tertiary)] hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)]"
-              aria-label="Effacer le filtre"
-            >
-              <X className="size-3" />
-            </button>
-          )}
-        </div>
-      )}
-
-      <nav className="flex flex-col gap-5">
-        {filtered.length === 0 && !collapsed && (
-          <div className="px-3 py-4 text-center text-[11px] text-[var(--text-tertiary)]">
-            Rien ne matche « {query} ».
-          </div>
-        )}
-        {filtered.map((section, sectionIdx) => (
-          <div key={sectionIdx} className="flex flex-col gap-1">
-            {section.title && !collapsed && (
-              <div className="mb-1 flex items-center gap-2 px-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-tertiary)]">
-                  {section.title}
-                </p>
-                <span
-                  aria-hidden
-                  className="h-px flex-1 bg-gradient-to-r from-[var(--border-glass)] to-transparent"
-                />
-              </div>
-            )}
-            {section.title && collapsed && (
-              <div
+    <nav className="flex flex-col gap-6">
+      {resolved.map((section, sectionIdx) => (
+        <div key={sectionIdx} className="flex flex-col gap-1.5">
+          {section.title && !collapsed && (
+            <div className="mb-1 flex items-center gap-2 px-3">
+              <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+                {section.title}
+              </p>
+              <span
                 aria-hidden
-                className="mx-3 my-1 h-px bg-[var(--border-glass)]"
+                className="h-px flex-1 bg-gradient-to-r from-[var(--border-glass)] to-transparent"
               />
-            )}
-            <div
-              className={cn(
-                "flex flex-col gap-0.5",
-                collapsed && "items-center",
-              )}
-            >
-              {section.items.map((item) => {
-                const active =
-                  pathname === item.href ||
-                  (item.href !== "/dashboard" &&
-                    item.href !== "/admin" &&
-                    pathname.startsWith(`${item.href}/`));
-                return (
-                  <NavItem
-                    key={item.href}
-                    item={item}
-                    active={active}
-                    collapsed={collapsed}
-                    layoutId={layoutId}
-                    query={query}
-                  />
-                );
-              })}
             </div>
+          )}
+          {section.title && collapsed && (
+            <div
+              aria-hidden
+              className="mx-3 my-1 h-px bg-[var(--border-glass)]"
+            />
+          )}
+          <div
+            className={cn(
+              "flex flex-col gap-1",
+              collapsed && "items-center",
+            )}
+          >
+            {section.items.map((item) => {
+              const active =
+                pathname === item.href ||
+                (item.href !== "/dashboard" &&
+                  item.href !== "/admin" &&
+                  pathname.startsWith(`${item.href}/`));
+              return (
+                <NavItem
+                  key={item.href}
+                  item={item}
+                  active={active}
+                  collapsed={collapsed}
+                  layoutId={layoutId}
+                />
+              );
+            })}
           </div>
-        ))}
-      </nav>
-    </div>
+        </div>
+      ))}
+    </nav>
   );
 }
 
@@ -210,13 +161,11 @@ function NavItem({
   active,
   collapsed,
   layoutId,
-  query,
 }: {
   item: SidebarNavItem;
   active: boolean;
   collapsed: boolean;
   layoutId: string;
-  query: string;
 }) {
   const link = (
     <Link
@@ -224,10 +173,10 @@ function NavItem({
       aria-current={active ? "page" : undefined}
       aria-label={collapsed ? item.label : undefined}
       className={cn(
-        "group relative flex items-center rounded-xl text-[13px] font-medium transition-colors duration-200",
+        "group relative flex items-center rounded-xl text-[14px] font-semibold transition-colors duration-200",
         collapsed
-          ? "size-10 justify-center"
-          : "gap-3 px-2.5 py-2",
+          ? "size-11 justify-center"
+          : "gap-3 px-3 py-2.5",
         active
           ? "text-[var(--text-primary)]"
           : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
@@ -256,33 +205,33 @@ function NavItem({
         <motion.span
           layoutId={`${layoutId}-bar`}
           aria-hidden
-          className="absolute -left-3 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--neon-cyan)] shadow-[0_0_12px_var(--neon-cyan-glow)]"
+          className="absolute -left-3 top-1/2 h-6 w-[3px] -translate-y-1/2 rounded-r-full bg-[var(--neon-cyan)] shadow-[0_0_12px_var(--neon-cyan-glow)]"
           transition={{ type: "spring", stiffness: 380, damping: 32 }}
         />
       )}
 
-      {/* Icône */}
+      {/* Icône — tile plus grande pour plus de présence */}
       <span
         className={cn(
-          "relative z-10 flex size-7 shrink-0 items-center justify-center rounded-lg transition-all duration-200",
+          "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200",
           active
             ? "bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)] ring-1 ring-[var(--neon-cyan)]/30"
-            : "text-[var(--text-tertiary)] group-hover:bg-[var(--bg-glass-hover)] group-hover:text-[var(--text-primary)] group-hover:scale-105",
+            : "text-[var(--text-secondary)] group-hover:bg-[var(--bg-glass-hover)] group-hover:text-[var(--text-primary)] group-hover:scale-105",
         )}
       >
-        <item.icon className="size-3.5" strokeWidth={1.75} />
+        <item.icon className="size-4" strokeWidth={1.75} />
       </span>
 
       {/* Label + badge — masqué en collapsed */}
       {!collapsed && (
         <>
-          <span className="relative z-10 flex-1 truncate">
-            {query ? <Highlight text={item.label} match={query} /> : item.label}
+          <span className="relative z-10 flex-1 truncate tracking-tight">
+            {item.label}
           </span>
           {item.badge && (
             <span
               className={cn(
-                "relative z-10 rounded-md border px-1.5 py-0 font-mono text-[9px] font-semibold uppercase tracking-wider transition-colors",
+                "relative z-10 rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider transition-colors",
                 active
                   ? "border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]"
                   : "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
@@ -309,20 +258,4 @@ function NavItem({
   }
 
   return link;
-}
-
-function Highlight({ text, match }: { text: string; match: string }) {
-  const m = match.trim();
-  if (!m) return <>{text}</>;
-  const idx = text.toLowerCase().indexOf(m.toLowerCase());
-  if (idx === -1) return <>{text}</>;
-  return (
-    <>
-      {text.slice(0, idx)}
-      <span className="rounded bg-[var(--neon-cyan-soft)] px-0.5 text-[var(--text-primary)]">
-        {text.slice(idx, idx + m.length)}
-      </span>
-      {text.slice(idx + m.length)}
-    </>
-  );
 }

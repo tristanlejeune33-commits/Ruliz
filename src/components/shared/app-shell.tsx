@@ -76,7 +76,7 @@ export function AppShell({
             "relative grid min-h-screen transition-[grid-template-columns] duration-300",
             collapsed
               ? "grid-cols-1 md:grid-cols-[72px_1fr]"
-              : "grid-cols-1 md:grid-cols-[240px_1fr]",
+              : "grid-cols-1 md:grid-cols-[260px_1fr]",
           )}
           style={{ transitionTimingFunction: "var(--ease-default)" }}
         >
