@@ -8,8 +8,11 @@ import {
   KeyboardSensor,
   PointerSensor,
   closestCenter,
+  pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
 } from "@dnd-kit/core";
 import {
@@ -36,6 +39,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
+  moveCategorie,
   moveProduit,
   reorderCategories,
   reorderProduits,
@@ -141,6 +145,24 @@ export function MenuEditor({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
+  /**
+   * Custom collision detection — résout le bug "drag produit vers sidebar
+   * ne détecte pas la cat" :
+   * - closestCenter compare le CENTRE du draggable au centre des droppables.
+   *   Quand on drag un produit (large) vers une cat (sidebar étroite), le
+   *   centre du produit reste loin → la cat n'est jamais "over".
+   * - On utilise pointerWithin (cursor position) en priorité, puis
+   *   rectIntersection en fallback, et finalement closestCenter pour le cas
+   *   où rien d'autre ne match. Standard pour les multi-context dnd-kit.
+   */
+  const collisionDetection: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    const rectCollisions = rectIntersection(args);
+    if (rectCollisions.length > 0) return rectCollisions;
+    return closestCenter(args);
+  };
+
   // ----------------------------------------------------------------------
   // Helpers state — opérations sur l'arbre (top-level + sub-cats)
   // ----------------------------------------------------------------------
@@ -178,6 +200,77 @@ export function MenuEditor({
       if (found) return found;
     }
     return null;
+  };
+
+  /**
+   * Déplace une sous-catégorie vers un nouveau parent (top-level cat).
+   * Optimistic UI : on retire la sub-cat de son parent actuel, et on
+   * l'ajoute au nouveau parent (avec ses produits).
+   * Server : moveCategorie(catId, toParentId).
+   */
+  const migrateSubCatToParent = (subCatId: string, toParentId: string) => {
+    // Trouve la sub-cat à déplacer
+    let movedSubCat: SerializedCategorie | null = null;
+    let oldParentId: string | null = null;
+    for (const c of optimisticCategories) {
+      const children =
+        ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+      const found = children.find((ch) => ch.id === subCatId);
+      if (found) {
+        movedSubCat = found;
+        oldParentId = c.id;
+        break;
+      }
+    }
+    if (!movedSubCat || !oldParentId) return;
+    if (oldParentId === toParentId) return; // déjà dans ce parent
+    if (subCatId === toParentId) return; // self
+
+    // Vérifie que la cible est bien un top-level (pas une sub-cat)
+    const targetParent = optimisticCategories.find((c) => c.id === toParentId);
+    if (!targetParent) return;
+
+    // Optimistic UI : retire de l'ancien parent, ajoute au nouveau
+    const updatedSubCat = {
+      ...movedSubCat,
+      parentId: toParentId,
+    } as SerializedCategorie;
+
+    setOptimisticCategories((prev) =>
+      prev.map((c) => {
+        if (c.id === oldParentId) {
+          const children =
+            ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+          return {
+            ...c,
+            children: children.filter((ch) => ch.id !== subCatId),
+          } as SerializedCategorie;
+        }
+        if (c.id === toParentId) {
+          const children =
+            ((c as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+          return {
+            ...c,
+            children: [...children, updatedSubCat],
+          } as SerializedCategorie;
+        }
+        return c;
+      }),
+    );
+
+    const targetTitre = targetParent.titre;
+    startTransition(async () => {
+      const res = await moveCategorie({
+        categorieId: subCatId,
+        toParentId,
+      });
+      if (res.ok) {
+        toast.success(`Sous-catégorie déplacée dans « ${targetTitre} »`);
+      } else {
+        toast.error(res.error);
+        setOptimisticCategories(tree);
+      }
+    });
   };
 
   // ----------------------------------------------------------------------
@@ -230,40 +323,63 @@ export function MenuEditor({
       return;
     }
 
-    // === SUB-CAT → SUB-CAT (siblings du même parent uniquement) ===
-    if (activeType === "subcategory" && overType === "subcategory") {
+    // === SUB-CAT → ... ===
+    if (activeType === "subcategory") {
       const activeParentId = active.data.current?.parentId as string | undefined;
-      const overParentId = over.data.current?.parentId as string | undefined;
-      if (!activeParentId || activeParentId !== overParentId) return;
+      if (!activeParentId) return;
 
-      const parentIndex = optimisticCategories.findIndex((c) => c.id === activeParentId);
-      if (parentIndex < 0) return;
-      const parent = optimisticCategories[parentIndex];
-      if (!parent) return;
-      const children =
-        ((parent as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
-      const oldIdx = children.findIndex((ch) => ch.id === activeId);
-      const newIdx = children.findIndex((ch) => ch.id === overId);
-      if (oldIdx < 0 || newIdx < 0) return;
+      // Cas A : sub-cat → sub-cat même parent → reorder dans la liste enfants
+      if (overType === "subcategory") {
+        const overParentId = over.data.current?.parentId as string | undefined;
 
-      const newChildren = arrayMove(children, oldIdx, newIdx);
-      setOptimisticCategories((prev) =>
-        prev.map((c, idx) =>
-          idx === parentIndex
-            ? ({ ...c, children: newChildren } as SerializedCategorie)
-            : c,
-        ),
-      );
-      startTransition(async () => {
-        const res = await reorderCategories({
-          restaurantId,
-          ids: newChildren.map((ch) => ch.id),
-        });
-        if (!res.ok) {
-          toast.error(res.error);
-          setOptimisticCategories(tree);
+        if (activeParentId === overParentId) {
+          // Reorder siblings
+          const parentIndex = optimisticCategories.findIndex(
+            (c) => c.id === activeParentId,
+          );
+          if (parentIndex < 0) return;
+          const parent = optimisticCategories[parentIndex];
+          if (!parent) return;
+          const children =
+            ((parent as unknown as { children?: SerializedCategorie[] }).children ?? []) as SerializedCategorie[];
+          const oldIdx = children.findIndex((ch) => ch.id === activeId);
+          const newIdx = children.findIndex((ch) => ch.id === overId);
+          if (oldIdx < 0 || newIdx < 0) return;
+
+          const newChildren = arrayMove(children, oldIdx, newIdx);
+          setOptimisticCategories((prev) =>
+            prev.map((c, idx) =>
+              idx === parentIndex
+                ? ({ ...c, children: newChildren } as SerializedCategorie)
+                : c,
+            ),
+          );
+          startTransition(async () => {
+            const res = await reorderCategories({
+              restaurantId,
+              ids: newChildren.map((ch) => ch.id),
+            });
+            if (!res.ok) {
+              toast.error(res.error);
+              setOptimisticCategories(tree);
+            }
+          });
+          return;
         }
-      });
+
+        // Sub-cat → sub-cat avec parent différent → migre vers le parent du over
+        if (overParentId) {
+          migrateSubCatToParent(activeId, overParentId);
+          return;
+        }
+        return;
+      }
+
+      // Cas B : sub-cat → catégorie top-level → migre vers cette nouvelle parente
+      if (overType === "category") {
+        migrateSubCatToParent(activeId, overId);
+        return;
+      }
       return;
     }
 
@@ -338,7 +454,7 @@ export function MenuEditor({
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={collisionDetection}
       onDragEnd={handleDragEnd}
     >
       <div className="grid flex-1 grid-cols-1 lg:grid-cols-[280px_1fr_minmax(0,420px)]">

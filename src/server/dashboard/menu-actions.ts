@@ -445,3 +445,83 @@ export async function moveProduit(input: unknown): Promise<ActionResult> {
   await bumpRestaurantCaches(cat.restaurantId);
   return { ok: true };
 }
+
+// ----------------------------------------------------------------------
+// Move catégorie : change le parent d'une cat. parentId = "" / null →
+// devient top-level. Sinon → devient sous-cat du parent fourni.
+// On garantit qu'on ne supporte qu'un niveau de nesting (un parent ne
+// peut pas être lui-même une sous-cat).
+// ----------------------------------------------------------------------
+
+const moveCategorieSchema = z.object({
+  categorieId: z.string(),
+  /** "" ou non fourni = devient top-level */
+  toParentId: z.string().optional().or(z.literal("")),
+});
+
+export async function moveCategorie(input: unknown): Promise<ActionResult> {
+  const parsed = moveCategorieSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Données invalides" };
+
+  const catId = bigOrNull(parsed.data.categorieId);
+  if (!catId) return { ok: false, error: "Identifiant invalide" };
+
+  const moving = await assertCategorieOwner(catId);
+  if (!moving) return { ok: false, error: "Accès refusé" };
+
+  const newParentId = bigOrNull(parsed.data.toParentId);
+
+  // Garde-fou : pas de self-reference
+  if (newParentId && newParentId === catId) {
+    return { ok: false, error: "Une catégorie ne peut pas être son propre parent" };
+  }
+
+  // Garde-fou : si on déplace vers un parent qui est lui-même une sous-cat,
+  // on refuse (un seul niveau de nesting supporté).
+  if (newParentId) {
+    const futureParent = await prisma.categorie.findUnique({
+      where: { id: newParentId },
+      select: { restaurantId: true, parentId: true },
+    });
+    if (!futureParent) return { ok: false, error: "Catégorie parente introuvable" };
+    if (futureParent.parentId !== null) {
+      return {
+        ok: false,
+        error: "Une sous-catégorie ne peut pas avoir d'enfants",
+      };
+    }
+    if (futureParent.restaurantId !== moving.restaurantId) {
+      return { ok: false, error: "Accès refusé" };
+    }
+  }
+
+  // Garde-fou : si la cat a elle-même des enfants, elle ne peut pas devenir
+  // sous-cat (sinon on aurait 2 niveaux de nesting)
+  if (newParentId) {
+    const childrenCount = await prisma.categorie.count({
+      where: { parentId: catId },
+    });
+    if (childrenCount > 0) {
+      return {
+        ok: false,
+        error: "Cette catégorie contient des sous-catégories — impossible de la déplacer",
+      };
+    }
+  }
+
+  // Calcule la position : on append en bout de la liste cible (top-level
+  // si newParentId=null, sinon enfants de newParentId)
+  const last = await prisma.categorie.findFirst({
+    where: { restaurantId: moving.restaurantId, parentId: newParentId },
+    orderBy: { position: "desc" },
+  });
+  const position = (last?.position ?? 0) + 1;
+
+  await prisma.categorie.update({
+    where: { id: catId },
+    data: { parentId: newParentId, position },
+  });
+
+  await bumpRestaurantCaches(moving.restaurantId);
+  return { ok: true };
+}
