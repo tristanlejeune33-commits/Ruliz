@@ -419,18 +419,28 @@ function FormStep({
         {ctaTitle}
       </h1>
 
-      {/* Liste des lots avec emojis */}
+      {/* Liste des lots avec emojis ou image custom */}
       {jeu.lots.length > 0 && (
         <ul className="flex flex-wrap justify-center gap-2.5">
           {jeu.lots.slice(0, 3).map((lot, i) => {
             const emoji = extractEmoji(lot.label) ?? "🎁";
             const text = removeEmoji(lot.label);
+            const hasImage = !!lot.imageUrl;
             return (
               <li
                 key={`${lot.label}-${i}`}
                 className="flex flex-col items-center justify-center text-black"
               >
-                <span className="z-10 -mb-1.5 text-[30px]">{emoji}</span>
+                {hasImage ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={lot.imageUrl}
+                    alt=""
+                    className="z-10 -mb-1.5 size-9 rounded-full bg-white object-cover shadow-md"
+                  />
+                ) : (
+                  <span className="z-10 -mb-1.5 text-[30px]">{emoji}</span>
+                )}
                 <span className="rounded-[15px] bg-white px-2.5 py-1 text-[13px] font-medium">
                   {text}
                 </span>
@@ -773,7 +783,7 @@ function WheelStep({
   onSpin,
   submitting,
 }: {
-  lots: Array<{ label: string; probabilite: number }>;
+  lots: Array<{ label: string; probabilite: number; imageUrl?: string }>;
   onSpin: () => void;
   submitting: boolean;
 }) {
@@ -889,6 +899,7 @@ function WheelStep({
             {reelItems.map((lot, i) => {
               const emoji = extractEmoji(lot.label) ?? "🎁";
               const text = removeEmoji(lot.label);
+              const hasImage = !!lot.imageUrl;
               const isWinning = i === finalIdx && phase === "stopped";
               return (
                 <div
@@ -911,7 +922,16 @@ function WheelStep({
                     }}
                     className="flex items-center gap-3 text-black"
                   >
-                    <span className="text-3xl md:text-4xl">{emoji}</span>
+                    {hasImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={lot.imageUrl}
+                        alt=""
+                        className="size-12 rounded-md object-cover md:size-14"
+                      />
+                    ) : (
+                      <span className="text-3xl md:text-4xl">{emoji}</span>
+                    )}
                     <span
                       className="text-balance text-base font-bold leading-tight text-black md:text-lg"
                       style={{ fontFamily: "var(--font-display)" }}

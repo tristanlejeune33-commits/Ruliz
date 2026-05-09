@@ -49,7 +49,12 @@ export type PublicMenu = {
   jeu: {
     id: string;
     cta: string;
-    lots: Array<{ label: string; probabilite: number }>;
+    lots: Array<{
+      label: string;
+      probabilite: number;
+      /** URL d'image/logo optionnelle (R2 ou externe) */
+      imageUrl?: string;
+    }>;
     requireGoogleReview: boolean;
     /** Si true, le modal s'ouvre automatiquement à l'ouverture de la carte */
     autoPopup: boolean;
@@ -216,7 +221,11 @@ export async function getPublicMenu(
 
   type JeuConfigShape = {
     cta?: string;
-    lots?: Array<{ label: string; probabilite: number }>;
+    lots?: Array<{
+      label: string;
+      probabilite: number;
+      imageUrl?: string;
+    }>;
     require_google_review?: boolean;
   };
   const jeuConfig = (jeuRow?.configJson as unknown as JeuConfigShape | null) ?? null;

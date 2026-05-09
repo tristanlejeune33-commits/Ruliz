@@ -46,6 +46,8 @@ const schema = z.object({
       z.object({
         label: z.string().min(1).max(100),
         probabilite: z.number().int().min(1).max(100),
+        /** URL d'image/logo du lot (uploaded via R2 ou collé). Vide = pas de logo. */
+        imageUrl: z.string().max(500).optional().or(z.literal("")),
       }),
     )
     .min(1)
@@ -70,12 +72,16 @@ interface JeuFormProps {
   } | null;
 }
 
-const DEFAULT_LOTS = [
-  { label: "Café offert", probabilite: 40 },
-  { label: "Dessert offert", probabilite: 25 },
-  { label: "Apéritif maison", probabilite: 20 },
-  { label: "10% sur ta prochaine note", probabilite: 10 },
-  { label: "Menu offert pour 2", probabilite: 5 },
+const DEFAULT_LOTS: Array<{
+  label: string;
+  probabilite: number;
+  imageUrl?: string;
+}> = [
+  { label: "☕ Café offert", probabilite: 40, imageUrl: "" },
+  { label: "🍰 Dessert offert", probabilite: 25, imageUrl: "" },
+  { label: "🍹 Apéritif maison", probabilite: 20, imageUrl: "" },
+  { label: "💸 -10% sur ta prochaine note", probabilite: 10, imageUrl: "" },
+  { label: "🎁 Menu offert pour 2", probabilite: 5, imageUrl: "" },
 ];
 
 export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
@@ -439,52 +445,106 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
             </div>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {fields.map((f, i) => (
-                <li key={f.id} className="grid grid-cols-[1fr_100px_40px] gap-2">
+                <li
+                  key={f.id}
+                  className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3"
+                >
+                  <div className="grid grid-cols-[1fr_100px_40px] gap-2">
+                    <FormField
+                      control={form.control}
+                      name={`lots.${i}.label`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              placeholder="🎁 Label du lot (avec emoji)"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`lots.${i}.probabilite`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={100}
+                              value={field.value}
+                              onChange={(e) =>
+                                field.onChange(Number(e.target.value) || 0)
+                              }
+                              placeholder="%"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => remove(i)}
+                      disabled={fields.length === 1}
+                      aria-label="Supprimer le lot"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+
+                  {/* Logo du lot — URL ou upload */}
                   <FormField
                     control={form.control}
-                    name={`lots.${i}.label`}
+                    name={`lots.${i}.imageUrl`}
                     render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input placeholder="Label du lot" {...field} />
-                        </FormControl>
-                        <FormMessage />
+                      <FormItem className="mt-2">
+                        <div className="flex items-center gap-2">
+                          {field.value ? (
+                            <div className="relative size-10 shrink-0 overflow-hidden rounded-md border border-[var(--border-subtle)]">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={field.value}
+                                alt=""
+                                className="size-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50">
+                              <span className="text-xs text-[var(--text-muted)]">
+                                📷
+                              </span>
+                            </div>
+                          )}
+                          <FormControl>
+                            <Input
+                              placeholder="https://… (logo / image du lot, optionnel)"
+                              value={field.value ?? ""}
+                              onChange={field.onChange}
+                              className="text-xs"
+                            />
+                          </FormControl>
+                          {field.value && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => field.onChange("")}
+                            >
+                              ✕
+                            </Button>
+                          )}
+                        </div>
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name={`lots.${i}.probabilite`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            min={1}
-                            max={100}
-                            value={field.value}
-                            onChange={(e) =>
-                              field.onChange(Number(e.target.value) || 0)
-                            }
-                            placeholder="%"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => remove(i)}
-                    disabled={fields.length === 1}
-                    aria-label="Supprimer le lot"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
                 </li>
               ))}
             </ul>

@@ -13,6 +13,7 @@ export type ActionResult<T = unknown> =
 const lotSchema = z.object({
   label: z.string().min(1).max(100),
   probabilite: z.number().int().min(1).max(100),
+  imageUrl: z.string().max(500).optional().or(z.literal("")),
 });
 
 const configSchema = z.object({

@@ -246,6 +246,40 @@ export function vignetteLabel(
 // Allergènes (codes du seed)
 // ---------------------------------------------------------------------------
 
+/**
+ * Emoji par allergène — pour rendre la liste plus visuelle/sympa.
+ */
+export const ALLERGENE_EMOJI: Record<string, string> = {
+  gluten: "🌾",
+  crustaces: "🦐",
+  oeufs: "🥚",
+  poissons: "🐟",
+  arachides: "🥜",
+  soja: "🫘",
+  lait: "🥛",
+  fruits_a_coque: "🌰",
+  celeri: "🥬",
+  moutarde: "🌭",
+  sesame: "🫓",
+  sulfites: "🍷",
+  lupin: "🌱",
+  mollusques: "🦪",
+};
+
+/**
+ * Emoji par vignette — pour les pills colorées.
+ */
+export const VIGNETTE_EMOJI: Record<string, string> = {
+  vegetarien: "🥗",
+  vegan: "🌱",
+  sans_gluten: "🚫🌾",
+  fait_maison: "🏠",
+  epice: "🌶️",
+  bio: "🍃",
+  local: "📍",
+  signature: "⭐",
+};
+
 export const ALLERGENE_LABELS: Record<string, Partial<Record<SupportedLang, string>>> = {
   gluten: {
     fr: "Gluten",

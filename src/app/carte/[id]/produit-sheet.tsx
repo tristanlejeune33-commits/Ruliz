@@ -6,7 +6,13 @@ import { X } from "lucide-react";
 import type { PublicMenu } from "@/server/public/menu";
 import type { SupportedLang } from "@/lib/langs";
 import { VignetteIcon, hasVignetteVisual } from "./vignette-icon";
-import { allergeneLabel, t, vignetteLabel } from "./i18n";
+import {
+  ALLERGENE_EMOJI,
+  VIGNETTE_EMOJI,
+  allergeneLabel,
+  t,
+  vignetteLabel,
+} from "./i18n";
 import type { CarteTheme } from "./theme";
 
 type Produit = PublicMenu["categories"][number]["produits"][number];
@@ -202,25 +208,37 @@ function DishDetail({
           >
             {t("allergens", lang)}
           </h3>
-          <p
-            className="text-[14px] font-light"
-            style={{
-              color: theme.textBody,
-              fontFamily: "var(--font-body)",
-            }}
+          <ul
+            className="flex flex-wrap gap-1.5"
+            style={{ fontFamily: "var(--font-body)" }}
           >
-            {produit.allergenes
-              .map((a) => allergeneLabel(a.code, a.labelFr, lang))
-              .join(", ")}
-          </p>
+            {produit.allergenes.map((a) => {
+              const emoji = ALLERGENE_EMOJI[a.code] ?? "⚠️";
+              return (
+                <li
+                  key={a.code}
+                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px]"
+                  style={{
+                    backgroundColor: "rgba(245, 158, 11, 0.12)",
+                    color: "#92400e",
+                    border: "1px solid rgba(245, 158, 11, 0.25)",
+                  }}
+                >
+                  <span aria-hidden>{emoji}</span>
+                  <span>{allergeneLabel(a.code, a.labelFr, lang)}</span>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       )}
 
-      {/* Tags / vignettes pills */}
+      {/* Tags / vignettes pills (icône + emoji fallback) */}
       {produit.vignettes.length > 0 && (
         <ul className="mt-1 flex flex-wrap items-center gap-2.5">
           {produit.vignettes.map((v) => {
             const hasVisual = hasVignetteVisual(v.code);
+            const emoji = VIGNETTE_EMOJI[v.code];
             return (
               <li
                 key={v.code}
@@ -232,7 +250,13 @@ function DishDetail({
                   fontFamily: "var(--font-display)",
                 }}
               >
-                {hasVisual && <VignetteIcon code={v.code} size={16} />}
+                {hasVisual ? (
+                  <VignetteIcon code={v.code} size={16} />
+                ) : emoji ? (
+                  <span className="text-base" aria-hidden>
+                    {emoji}
+                  </span>
+                ) : null}
                 <span>{vignetteLabel(v.code, v.labelFr, lang)}</span>
               </li>
             );
