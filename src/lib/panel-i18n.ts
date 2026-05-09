@@ -235,6 +235,15 @@ const DICT: Record<string, LangDict> = {
     pt: "Logs",
     zh: "日志",
   },
+  "nav.admin.factures": {
+    fr: "Factures",
+    en: "Invoices",
+    es: "Facturas",
+    de: "Rechnungen",
+    it: "Fatture",
+    pt: "Faturas",
+    zh: "发票",
+  },
 
   // -----------------------------------------------------------------------
   // Topbar
