@@ -5,6 +5,11 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getActingUserId } from "@/lib/impersonation";
 import { requireDashboard } from "@/lib/session";
+import { clearCartAction } from "./boutique-cart-actions";
+import {
+  sendCommandeConfirmationToClient,
+  sendCommandeNotificationToAdmin,
+} from "@/server/boutique/emails";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -19,11 +24,22 @@ function bigOrNull(value: string | null | undefined) {
   }
 }
 
-const createCommandeSchema = z.object({
+function formatEuros(centimes: number, devise: string = "EUR"): string {
+  return (centimes / 100).toLocaleString("fr-FR", {
+    style: "currency",
+    currency: devise,
+  });
+}
+
+const itemSchema = z.object({
   produitId: z.string(),
   quantite: z.number().int().positive().max(1000),
+});
+
+const createCommandeSchema = z.object({
+  items: z.array(itemSchema).min(1, "Panier vide"),
   restaurantId: z.string().optional().or(z.literal("")),
-  livraisonNom: z.string().max(255),
+  livraisonNom: z.string().min(1, "Nom requis").max(255),
   livraisonAdresse: z.string().min(1, "Adresse requise").max(500),
   livraisonCodePostal: z.string().max(10),
   livraisonVille: z.string().max(100),
@@ -33,13 +49,14 @@ const createCommandeSchema = z.object({
 });
 
 /**
- * Crée une commande boutique pour le user connecté (ou impersonné si admin SAV).
+ * Crée une commande boutique multi-items pour le user agissant.
  *
- * Snapshot : on copie le prix unitaire au moment de la commande pour que le
- * total reste cohérent même si l'admin change le prix du produit plus tard.
- *
- * Pas de Stripe pour MVP — la commande est créée avec statut "en_attente",
- * l'admin la traite manuellement et change le statut depuis /admin/boutique/commandes.
+ * - Snapshot du nom + prix à la création (cohérence post-modification du
+ *   produit côté admin)
+ * - Vérifie que TOUS les produits du panier existent et sont publiés
+ * - Vide le panier après succès
+ * - Envoie 2 emails : confirmation client + notif admin (si Resend configuré
+ *   ET ADMIN_EMAIL set)
  */
 export async function createBoutiqueCommande(
   input: unknown,
@@ -54,23 +71,30 @@ export async function createBoutiqueCommande(
   }
   const data = parsed.data;
 
-  // Récupère l'user agissant (impersonné si admin SAV, sinon le réel)
   const acting = await getActingUserId();
   if (!acting) return { ok: false, error: "Session invalide" };
 
-  const produitId = bigOrNull(data.produitId);
-  if (!produitId) return { ok: false, error: "Produit invalide" };
-
-  // Vérifie que le produit existe ET est publié
-  const produit = await prisma.boutiqueProduit.findUnique({
-    where: { id: produitId },
-  });
-  if (!produit) return { ok: false, error: "Produit introuvable" };
-  if (produit.statut !== "publie") {
-    return { ok: false, error: "Ce produit n'est pas disponible à la commande" };
+  // Récupère TOUS les produits demandés en 1 query
+  const produitIds = data.items
+    .map((i) => bigOrNull(i.produitId))
+    .filter((x): x is bigint => x !== null);
+  if (produitIds.length !== data.items.length) {
+    return { ok: false, error: "Identifiant produit invalide" };
   }
 
-  // Restaurant rattaché — si fourni, on vérifie que le user en est bien propriétaire
+  const produits = await prisma.boutiqueProduit.findMany({
+    where: { id: { in: produitIds }, statut: "publie" },
+  });
+
+  // Validation : tous les produits doivent exister + être publiés
+  if (produits.length !== data.items.length) {
+    return {
+      ok: false,
+      error: "Certains produits ne sont plus disponibles. Recharge la page.",
+    };
+  }
+
+  // Restaurant rattaché — vérifie ownership si fourni
   let restaurantId: bigint | null = null;
   if (data.restaurantId) {
     const restoBig = bigOrNull(data.restaurantId);
@@ -83,18 +107,29 @@ export async function createBoutiqueCommande(
     }
   }
 
-  const totalCentimes = produit.prixCentimes * data.quantite;
+  // Construit les items avec snapshots
+  const itemsData = data.items.map((i) => {
+    const produit = produits.find((p) => p.id === BigInt(i.produitId))!;
+    const totalCentimes = produit.prixCentimes * i.quantite;
+    return {
+      produitId: produit.id,
+      produitNom: produit.nom,
+      quantite: i.quantite,
+      prixUnitaire: produit.prixCentimes,
+      totalCentimes,
+    };
+  });
+
+  const totalCentimes = itemsData.reduce((s, i) => s + i.totalCentimes, 0);
+  const devise = produits[0]?.devise ?? "EUR";
 
   const created = await prisma.boutiqueCommande.create({
     data: {
-      produitId: produit.id,
       userId: acting.actingUserId,
       restaurantId,
-      quantite: data.quantite,
-      prixUnitaire: produit.prixCentimes,
       totalCentimes,
-      devise: produit.devise,
-      livraisonNom: data.livraisonNom || null,
+      devise,
+      livraisonNom: data.livraisonNom,
       livraisonAdresse: data.livraisonAdresse,
       livraisonCodePostal: data.livraisonCodePostal || null,
       livraisonVille: data.livraisonVille || null,
@@ -102,8 +137,66 @@ export async function createBoutiqueCommande(
       livraisonTelephone: data.livraisonTelephone || null,
       notesClient: data.notesClient || null,
       statut: "en_attente",
+      items: {
+        create: itemsData,
+      },
     },
   });
+
+  // Vide le panier
+  await clearCartAction().catch((e) =>
+    console.warn("[boutique] clearCart failed:", e),
+  );
+
+  // Récupère l'email du client pour les emails
+  const clientUser = await prisma.user
+    .findUnique({
+      where: { id: acting.actingUserId },
+      select: { email: true, prenom: true, nom: true },
+    })
+    .catch(() => null);
+
+  // Envoie les emails (best-effort, ne bloque pas la commande si fail)
+  if (clientUser?.email) {
+    const livraisonAdresseHtml = [
+      data.livraisonNom,
+      data.livraisonAdresse,
+      [data.livraisonCodePostal, data.livraisonVille].filter(Boolean).join(" "),
+      data.livraisonPays,
+      data.livraisonTelephone ? `Tél : ${data.livraisonTelephone}` : null,
+    ]
+      .filter(Boolean)
+      .join("<br/>");
+
+    const emailData = {
+      commandeId: created.id.toString(),
+      clientNom:
+        [clientUser.prenom, clientUser.nom].filter(Boolean).join(" ") ||
+        clientUser.email,
+      clientEmail: clientUser.email,
+      totalEuros: formatEuros(totalCentimes, devise),
+      items: itemsData.map((i) => ({
+        nom: i.produitNom,
+        quantite: i.quantite,
+        totalEuros: formatEuros(i.totalCentimes, devise),
+      })),
+      livraisonAdresseHtml,
+      notesClient: data.notesClient || null,
+    };
+
+    // Confirmation client
+    sendCommandeConfirmationToClient(emailData).catch((e) =>
+      console.warn("[boutique] mail client failed:", e),
+    );
+
+    // Notif admin (si ADMIN_EMAIL défini)
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (adminEmail) {
+      sendCommandeNotificationToAdmin({ ...emailData, adminEmail }).catch(
+        (e) => console.warn("[boutique] mail admin failed:", e),
+      );
+    }
+  }
 
   revalidatePath("/dashboard/boutique/commandes");
   revalidatePath("/admin/boutique/commandes");

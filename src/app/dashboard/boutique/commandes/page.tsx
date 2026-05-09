@@ -90,13 +90,15 @@ export default async function MesCommandesPage() {
         <ul className="space-y-3">
           {commandes.map((c) => {
             const tone = STATUT_TONE[c.statut] ?? STATUT_TONE.en_attente;
+            const firstItem = c.items[0];
+            const otherCount = c.items.length - 1;
             return (
               <Card key={c.id.toString()} className="p-4">
                 <div className="flex items-center gap-4">
                   <div className="flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[var(--bg-glass-strong)]">
-                    {c.produit.imageUrl ? (
+                    {firstItem?.produit.imageUrl ? (
                       <Image
-                        src={c.produit.imageUrl}
+                        src={firstItem.produit.imageUrl}
                         alt=""
                         width={64}
                         height={64}
@@ -113,7 +115,12 @@ export default async function MesCommandesPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="font-semibold tracking-tight text-[var(--text-primary)]">
-                        {c.produit.nom}
+                        {firstItem?.produitNom ?? "Commande"}
+                        {otherCount > 0 && (
+                          <span className="ml-1 text-xs font-normal text-[var(--text-tertiary)]">
+                            + {otherCount} autre{otherCount > 1 ? "s" : ""}
+                          </span>
+                        )}
                       </h3>
                       <span
                         className={cn(
@@ -125,7 +132,11 @@ export default async function MesCommandesPage() {
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-[var(--text-tertiary)]">
-                      {c.quantite}× ·{" "}
+                      {c.items.reduce((s, i) => s + i.quantite, 0)} article
+                      {c.items.reduce((s, i) => s + i.quantite, 0) > 1
+                        ? "s"
+                        : ""}
+                      {" · "}
                       {format(new Date(c.createdAt), "d MMM yyyy", { locale: fr })}
                       {c.restaurant && (
                         <>

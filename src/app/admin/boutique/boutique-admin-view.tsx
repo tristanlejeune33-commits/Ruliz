@@ -27,7 +27,7 @@ import { ProduitDrawer, type SerializedBoutiqueProduit } from "./produit-drawer"
 interface BoutiqueAdminViewProps {
   produits: Array<
     SerializedBoutiqueProduit & {
-      _count: { commandes: number };
+      _count: { commandeItems: number };
     }
   >;
 }
@@ -189,8 +189,8 @@ export function BoutiqueAdminView({ produits }: BoutiqueAdminViewProps) {
                       </span>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-right">
-                      {p._count.commandes > 0 ? (
-                        <Badge variant="secondary">{p._count.commandes}</Badge>
+                      {p._count.commandeItems > 0 ? (
+                        <Badge variant="secondary">{p._count.commandeItems}</Badge>
                       ) : (
                         <span className="text-xs text-[var(--text-tertiary)]">0</span>
                       )}

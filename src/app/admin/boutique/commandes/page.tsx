@@ -5,14 +5,34 @@ import { Button } from "@/components/ui/button";
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { serialize } from "@/lib/serialize";
 import { listBoutiqueCommandesAdmin } from "@/server/admin/boutique/queries";
-import { CommandesAdminTable } from "./commandes-table";
+import { CommandesAdminView } from "./commandes-view";
 
 export const metadata: Metadata = {
   title: "Commandes boutique · Admin Ruliz",
 };
 
-export default async function AdminBoutiqueCommandesPage() {
-  const commandes = await listBoutiqueCommandesAdmin();
+const VALID_STATUTS = [
+  "en_attente",
+  "en_preparation",
+  "expediee",
+  "livree",
+  "annulee",
+] as const;
+
+interface PageProps {
+  searchParams: Promise<{ statut?: string; q?: string }>;
+}
+
+export default async function AdminBoutiqueCommandesPage({
+  searchParams,
+}: PageProps) {
+  const params = await searchParams;
+  const statut = (VALID_STATUTS as readonly string[]).includes(params.statut ?? "")
+    ? (params.statut as (typeof VALID_STATUTS)[number])
+    : undefined;
+  const query = params.q ?? "";
+
+  const commandes = await listBoutiqueCommandesAdmin({ statut, query });
 
   return (
     <div className="space-y-8">
@@ -36,10 +56,14 @@ export default async function AdminBoutiqueCommandesPage() {
           </HeroEyebrow>
         }
         title="Toutes les commandes boutique"
-        description="Gère les commandes passées par les restaurateurs sur la boutique QR : préparation, expédition, livraison."
+        description="Filtre par statut, cherche un client, exporte en CSV."
       />
 
-      <CommandesAdminTable commandes={serialize(commandes)} />
+      <CommandesAdminView
+        commandes={serialize(commandes)}
+        currentStatut={statut ?? "all"}
+        currentQuery={query}
+      />
     </div>
   );
 }

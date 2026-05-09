@@ -1,21 +1,31 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { ImageOff, Package, ShoppingBag } from "lucide-react";
+import { ImageOff, Package, ShoppingBag, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
   HeroEyebrow,
   PageHero,
 } from "@/components/shared/page-hero";
-import { listBoutiqueProduitsPublic } from "@/server/dashboard/boutique-queries";
+import { cartCount } from "@/lib/boutique-cart";
+import {
+  getHydratedCart,
+  listBoutiqueProduitsPublic,
+} from "@/server/dashboard/boutique-queries";
 
 export const metadata: Metadata = {
   title: "Boutique QR · Ruliz",
 };
 
 export default async function BoutiquePage() {
-  const produits = await listBoutiqueProduitsPublic();
+  const [produits, cart] = await Promise.all([
+    listBoutiqueProduitsPublic(),
+    getHydratedCart(),
+  ]);
+  const cartTotal = cartCount(
+    cart.map((c) => ({ produitId: c.produitId, quantite: c.quantite })),
+  );
 
   // Group by categorie pour un meilleur catalogue
   const groupedByCat = produits.reduce<
@@ -42,12 +52,25 @@ export default async function BoutiquePage() {
         title="Commande tes supports physiques"
         description="Sets de table imprimés, stickers QR, présentoirs, supports vitrine. Ton QR code unique pré-imprimé, livré chez toi."
         actions={
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/boutique/commandes">
-              <ShoppingBag className="size-3.5" strokeWidth={1.75} />
-              Mes commandes
-            </Link>
-          </Button>
+          <>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/boutique/commandes">
+                <ShoppingBag className="size-3.5" strokeWidth={1.75} />
+                Mes commandes
+              </Link>
+            </Button>
+            <Button asChild variant="primary" size="sm" className="relative">
+              <Link href="/dashboard/boutique/panier">
+                <ShoppingCart className="size-3.5" strokeWidth={1.75} />
+                Mon panier
+                {cartTotal > 0 && (
+                  <span className="ml-1 rounded-md bg-white/20 px-1.5 py-0 font-mono text-[10px] font-bold tabular-nums">
+                    {cartTotal}
+                  </span>
+                )}
+              </Link>
+            </Button>
+          </>
         }
       />
 

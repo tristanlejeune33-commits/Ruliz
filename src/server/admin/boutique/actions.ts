@@ -146,14 +146,14 @@ export async function deleteBoutiqueProduit(
   const id = bigOrNull(produitId);
   if (!id) return { ok: false, error: "Identifiant invalide" };
 
-  // Vérifie qu'il n'y a pas de commandes liées (onDelete: Restrict en DB)
-  const commandeCount = await prisma.boutiqueCommande.count({
+  // Vérifie qu'il n'y a pas d'items de commande liés (onDelete: Restrict en DB)
+  const itemsCount = await prisma.boutiqueCommandeItem.count({
     where: { produitId: id },
   });
-  if (commandeCount > 0) {
+  if (itemsCount > 0) {
     return {
       ok: false,
-      error: `Impossible de supprimer : ${commandeCount} commande${commandeCount > 1 ? "s" : ""} liée${commandeCount > 1 ? "s" : ""}. Archive le produit à la place.`,
+      error: `Impossible de supprimer : ${itemsCount} ligne${itemsCount > 1 ? "s" : ""} de commande liée${itemsCount > 1 ? "s" : ""}. Archive le produit à la place.`,
     };
   }
 

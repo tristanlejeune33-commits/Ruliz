@@ -5,11 +5,9 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Check, ImageOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { prisma } from "@/lib/db";
-import { getActingUserId } from "@/lib/impersonation";
 import { serialize } from "@/lib/serialize";
 import { getBoutiqueProduitBySlug } from "@/server/dashboard/boutique-queries";
-import { CommandeForm } from "./commande-form";
+import { AddToCartButton } from "./add-to-cart-button";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -28,35 +26,11 @@ export default async function BoutiqueProduitPage({ params }: PageProps) {
   const produit = await getBoutiqueProduitBySlug(slug);
   if (!produit) notFound();
 
-  // Restaurants du user courant (pour le rattachement de la commande)
-  const acting = await getActingUserId();
-  const restaurants = acting
-    ? await prisma.restaurant.findMany({
-        where: { userId: acting.actingUserId },
-        select: { id: true, nom: true },
-        orderBy: { createdAt: "asc" },
-      })
-    : [];
-
-  // Adresse pré-remplie depuis le profil user
-  const userProfile = acting
-    ? await prisma.user.findUnique({
-        where: { id: acting.actingUserId },
-        select: {
-          prenom: true,
-          nom: true,
-          adresse: true,
-          codePostal: true,
-          ville: true,
-          pays: true,
-          telephone: true,
-        },
-      })
-    : null;
-
   const features = Array.isArray(produit.featuresJson)
     ? produit.featuresJson.filter((x): x is string => typeof x === "string")
     : [];
+
+  const serialized = serialize(produit);
 
   return (
     <div className="space-y-6">
@@ -94,7 +68,7 @@ export default async function BoutiqueProduitPage({ params }: PageProps) {
           </div>
         </Card>
 
-        {/* Détails + form commande */}
+        {/* Détails */}
         <div className="space-y-6">
           <div className="space-y-3">
             {produit.categorie && (
@@ -139,22 +113,9 @@ export default async function BoutiqueProduitPage({ params }: PageProps) {
             </ul>
           )}
 
-          <CommandeForm
-            produit={serialize(produit)}
-            restaurants={restaurants.map((r) => ({
-              id: r.id.toString(),
-              nom: r.nom,
-            }))}
-            defaultLivraison={{
-              nom: [userProfile?.prenom, userProfile?.nom]
-                .filter(Boolean)
-                .join(" "),
-              adresse: userProfile?.adresse ?? "",
-              codePostal: userProfile?.codePostal ?? "",
-              ville: userProfile?.ville ?? "",
-              pays: userProfile?.pays ?? "France",
-              telephone: userProfile?.telephone ?? "",
-            }}
+          <AddToCartButton
+            produitId={serialized.id}
+            produitNom={serialized.nom}
           />
         </div>
       </div>

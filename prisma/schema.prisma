@@ -564,7 +564,7 @@ model BoutiqueProduit {
   createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz()
 
-  commandes BoutiqueCommande[]
+  commandeItems BoutiqueCommandeItem[]
 
   @@index([statut, position], map: "idx_boutique_produits_statut_position")
   @@map("boutique_produits")
@@ -580,15 +580,11 @@ enum BoutiqueCommandeStatut {
 
 model BoutiqueCommande {
   id              BigInt                 @id @default(autoincrement())
-  produitId       BigInt                 @map("produit_id")
   /** User qui a commandé (depuis son dashboard) */
   userId          Int                    @map("user_id")
   /** Restaurant auquel la commande est rattachée (optionnel — pour stats) */
   restaurantId    BigInt?                @map("restaurant_id")
-  quantite        Int                    @default(1)
-  /** Snapshot du prix unitaire au moment de la commande */
-  prixUnitaire    Int                    @map("prix_unitaire")
-  /** Total en centimes = prixUnitaire × quantite */
+  /** Total en centimes = somme des items.totalCentimes (snapshot post-création) */
   totalCentimes   Int                    @map("total_centimes")
   devise          String                 @default("EUR") @db.VarChar(3)
   /** Adresse de livraison (snapshot) */
@@ -606,12 +602,36 @@ model BoutiqueCommande {
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz()
 
-  produit    BoutiqueProduit @relation(fields: [produitId], references: [id], onDelete: Restrict)
-  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  restaurant Restaurant?     @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant Restaurant?            @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+  items      BoutiqueCommandeItem[]
 
   @@index([userId, createdAt(sort: Desc)], map: "idx_boutique_commandes_user")
   @@index([statut, createdAt(sort: Desc)], map: "idx_boutique_commandes_statut")
-  @@index([produitId], map: "idx_boutique_commandes_produit")
   @@map("boutique_commandes")
+}
+
+/**
+ * Ligne de commande : 1 commande peut contenir N items, chaque item =
+ * 1 produit × quantité, avec snapshot du prix au moment de la commande.
+ */
+model BoutiqueCommandeItem {
+  id            BigInt   @id @default(autoincrement())
+  commandeId    BigInt   @map("commande_id")
+  produitId     BigInt   @map("produit_id")
+  /** Snapshot du nom du produit (au cas où le produit serait renommé/supprimé après) */
+  produitNom    String   @map("produit_nom") @db.VarChar(255)
+  quantite      Int      @default(1)
+  /** Snapshot du prix unitaire en centimes */
+  prixUnitaire  Int      @map("prix_unitaire")
+  /** Total ligne = prixUnitaire × quantite */
+  totalCentimes Int      @map("total_centimes")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  commande BoutiqueCommande @relation(fields: [commandeId], references: [id], onDelete: Cascade)
+  produit  BoutiqueProduit  @relation(fields: [produitId], references: [id], onDelete: Restrict)
+
+  @@index([commandeId], map: "idx_boutique_commande_items_commande")
+  @@index([produitId], map: "idx_boutique_commande_items_produit")
+  @@map("boutique_commande_items")
 }

@@ -1,5 +1,7 @@
 import "server-only";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
+import { CART_COOKIE, parseCart } from "@/lib/boutique-cart";
 import { getActingUserId } from "@/lib/impersonation";
 
 /**
@@ -20,10 +22,7 @@ export async function getBoutiqueProduitBySlug(slug: string) {
   });
 }
 
-/**
- * Commandes du user connecté (ou impersonné). Retourne array vide si pas de
- * session.
- */
+/** Commandes du user connecté (ou impersonné). Inclut les items. */
 export async function listMyBoutiqueCommandes() {
   const acting = await getActingUserId();
   if (!acting) return [];
@@ -31,9 +30,53 @@ export async function listMyBoutiqueCommandes() {
     where: { userId: acting.actingUserId },
     orderBy: { createdAt: "desc" },
     include: {
-      produit: { select: { id: true, nom: true, slug: true, imageUrl: true } },
+      items: {
+        include: {
+          produit: {
+            select: { id: true, nom: true, slug: true, imageUrl: true },
+          },
+        },
+      },
       restaurant: { select: { id: true, nom: true } },
     },
     take: 100,
   });
+}
+
+/**
+ * Panier "hydraté" — pour chaque produitId du cookie, on jointure sur la DB
+ * pour obtenir nom, prix, image actuels. Si un produit n'existe plus ou
+ * n'est plus publié, il est filtré silencieusement.
+ */
+export async function getHydratedCart() {
+  const cookieStore = await cookies();
+  const items = parseCart(cookieStore.get(CART_COOKIE)?.value);
+  if (items.length === 0) return [];
+
+  const produitIds = items
+    .map((i) => {
+      try {
+        return BigInt(i.produitId);
+      } catch {
+        return null;
+      }
+    })
+    .filter((x): x is bigint => x !== null);
+
+  const produits = await prisma.boutiqueProduit.findMany({
+    where: { id: { in: produitIds }, statut: "publie" },
+  });
+
+  return items
+    .map((i) => {
+      const produit = produits.find((p) => p.id.toString() === i.produitId);
+      if (!produit) return null;
+      return {
+        produitId: i.produitId,
+        quantite: i.quantite,
+        produit,
+        totalCentimes: produit.prixCentimes * i.quantite,
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
 }
