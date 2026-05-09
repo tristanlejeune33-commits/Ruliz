@@ -32,6 +32,13 @@ type ActionSociale = "facebook" | "instagram" | "google_review";
 
 const COUNTDOWN_SECONDS = 10;
 
+// Couleurs FIXES de la roulette — indépendantes du thème restaurant.
+// Le restaurateur configure couleurPrimaire pour la carte, mais la modal jeu
+// reste toujours dans la palette navy/orange Ruliz pour cohérence d'image.
+const WHEEL_BG = `repeating-conic-gradient(from 0deg at 50% 50%, #1849c9 0deg 18deg, #3b6ee8 18deg 36deg)`;
+const FORM_BG = `linear-gradient(135deg, #1849c9 0%, #0a1450 50%, #1849c9 100%)`;
+const MODAL_MIN_HEIGHT = "560px"; // gardé constant pour éviter le collapse en transition
+
 // Brand icons inline
 function FacebookIcon({ className }: { className?: string }) {
   return (
@@ -230,13 +237,17 @@ export function Roulette({
             onClick={(e) => e.stopPropagation()}
             className="relative flex max-h-[95vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-[10px] p-5 text-center"
             style={{
+              // Couleurs FIXES indépendantes du thème resto
               background:
-                step === "wheel" || step === "victory"
-                  ? `repeating-conic-gradient(from 0deg at 50% 50%, ${accentColor} 0deg 18deg, #2350c8 18deg 36deg)`
-                  : `linear-gradient(135deg, ${accentColor} 0%, #0a1450 50%, ${accentColor} 100%)`,
+                step === "wheel" || step === "victory" ? WHEEL_BG : FORM_BG,
               color: "white",
               fontFamily: "var(--font-display)",
-              minHeight: step === "wheel" ? "560px" : undefined,
+              // Hauteur min CONSTANTE pour wheel + victory + countdown afin
+              // d'éviter que la modal "s'écrase" pendant la transition.
+              minHeight:
+                step === "wheel" || step === "victory" || step === "countdown"
+                  ? MODAL_MIN_HEIGHT
+                  : undefined,
             }}
           >
             <button
