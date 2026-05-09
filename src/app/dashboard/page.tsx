@@ -109,7 +109,8 @@ export default async function DashboardHome() {
         planBadge={<PlanBadge plan={restaurant.plan as Plan} />}
       />
 
-      {/* KPI BENTO */}
+      {/* KPI BENTO — innovation #10 light : marque de coin diagonale bleue
+          en haut-droite des 4 KPIs principaux (inerte en dark) */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           label="Scans 30j"
@@ -120,6 +121,7 @@ export default async function DashboardHome() {
           sparkline={scansSparkline}
           tone="cyan"
           delay={0}
+          coinMarker
         />
         <KpiCard
           label="Clics produits"
@@ -128,6 +130,7 @@ export default async function DashboardHome() {
           iconKey="sparkles"
           tone="success"
           delay={0.04}
+          coinMarker
         />
         <KpiCard
           label="Catégories · Produits"
@@ -136,6 +139,7 @@ export default async function DashboardHome() {
           iconKey="utensils"
           tone="violet"
           delay={0.08}
+          coinMarker
         />
         <KpiCard
           label="Participations jeu"
@@ -144,6 +148,7 @@ export default async function DashboardHome() {
           iconKey="gift"
           tone="violet"
           delay={0.12}
+          coinMarker
         />
       </div>
 

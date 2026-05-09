@@ -79,6 +79,13 @@ interface KpiCardProps {
   tone?: KpiTone;
   delay?: number;
   formatter?: (v: string | number) => string;
+  /**
+   * Active la marque de coin diagonale en haut-droite (innovation #10 du DS
+   * light). N'a aucun effet visible en dark — la classe est inerte côté CSS
+   * tant que data-theme≠"light". Réservée aux KPIs principaux pour signer
+   * le détail tech sans en faire un motif.
+   */
+  coinMarker?: boolean;
 }
 
 export function KpiCard({
@@ -91,6 +98,7 @@ export function KpiCard({
   tone = "cyan",
   delay = 0,
   formatter,
+  coinMarker = false,
 }: KpiCardProps) {
   const Icon = ICON_MAP[iconKey] ?? ScanLine;
   const t = TONE_STYLES[tone];
@@ -110,6 +118,7 @@ export function KpiCard({
         className={cn(
           "group relative overflow-hidden p-5 transition-all duration-300",
           t.glow,
+          coinMarker && "card-coin-marker",
         )}
       >
         {/* Glow décoratif au hover */}

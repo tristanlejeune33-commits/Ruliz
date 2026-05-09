@@ -1,11 +1,16 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
+/* Tailwind v4 : `dark:` modifier matche les éléments dans data-theme="dark"
+   (next-themes ajoute cet attribut sur <html>). On garde aussi le matching
+   .dark pour rétrocompat si jamais une classe dark explicite est posée. */
+@custom-variant dark (&:is([data-theme="dark"] *), &:is(.dark *));
 
 /* ============================================================================
- * RULIZ DESIGN SYSTEM v1 — glassmorphism + néon
- * Voir docs/design-system.md
+ * RULIZ DESIGN SYSTEM v1
+ * - Dark mode : glassmorphism + néon (default, voir docs/design-system.md)
+ * - Light mode : bleu signature #26438A (voir docs/design-system-light.md)
+ * Le toggle se fait via attribute="data-theme" sur <html> (ThemeProvider).
  * ========================================================================= */
 
 @theme inline {
@@ -36,7 +41,12 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
+/* ============================================================================
+ * DARK MODE TOKENS (default)
+ * ========================================================================= */
+
 :root,
+[data-theme="dark"],
 .dark {
   /* === Surfaces === */
   --bg-primary: #070b14;
@@ -87,6 +97,77 @@
   --dur-fast: 120ms;
   --dur-default: 240ms;
   --dur-page: 320ms;
+}
+
+/* ============================================================================
+ * LIGHT MODE TOKENS — bleu signature #26438A
+ * Voir docs/design-system-light.md
+ * Les composants ne sont pas dupliqués : ils référencent les mêmes variables
+ * (bridge legacy via --neon-cyan, --bg-glass, etc.) qui prennent ces nouvelles
+ * valeurs quand <html data-theme="light">.
+ * ========================================================================= */
+
+[data-theme="light"] {
+  /* === Surfaces === */
+  --bg-primary: #ffffff;
+  --bg-canvas: #fafbfd;
+  --bg-glass: #ffffff;            /* glass devient solide en light */
+  --bg-glass-strong: #f6f8fc;     /* sidebar / panels */
+  --bg-glass-hover: #f1f4fa;
+  --bg-active: #eef2fa;           /* item nav actif, sélections */
+
+  /* Bridge legacy */
+  --bg-elevated: var(--bg-glass);
+  --bg-card: var(--bg-glass-strong);
+
+  /* === Borders === */
+  --border-glass: #eceff5;
+  --border-glass-hover: #d8e1f3;
+  --border-subtle: var(--border-glass);
+  --border-focus: #26438a;
+  --divider: #f1f4fa;
+
+  /* === Texte === */
+  --text-primary: #0b1530;
+  --text-secondary: #4a5573;
+  --text-tertiary: #8892ab;
+  --text-muted: var(--text-tertiary);
+
+  /* === Bleu signature (remplace tous les "néon" du dark) === */
+  --neon-cyan: #26438a;
+  --neon-cyan-soft: #eef2fa;
+  --neon-cyan-glow: rgba(38, 67, 138, 0.18); /* devient focus ring */
+
+  /* Single-accent : violet est aliasé sur le bleu en light */
+  --neon-violet: #26438a;
+  --neon-violet-soft: #eef2fa;
+  --neon-violet-glow: rgba(38, 67, 138, 0.18);
+
+  /* États sémantiques sobres */
+  --neon-success: #1a7f5a;
+  --neon-success-soft: #e6f4ee;
+
+  --neon-danger: #b91c3b;
+  --neon-danger-soft: #fce8ec;
+
+  /* Tokens light-spécifiques (ombres) */
+  --shadow-card: 0 1px 2px rgba(11, 21, 48, 0.04), 0 1px 3px rgba(11, 21, 48, 0.04);
+  --shadow-card-hover: 0 4px 12px rgba(11, 21, 48, 0.06), 0 2px 4px rgba(11, 21, 48, 0.04);
+  --shadow-modal: 0 24px 48px rgba(11, 21, 48, 0.12), 0 8px 16px rgba(11, 21, 48, 0.08);
+  --shadow-focus: 0 0 0 3px rgba(38, 67, 138, 0.18);
+
+  /* Bridge legacy accent → bleu */
+  --accent: var(--neon-cyan);
+  --accent-foreground: #ffffff;
+  --color-destructive: var(--neon-danger);
+}
+
+/* En light, le body utilise le canvas off-white bleuté + pas de gradient
+   (la sobriété est la signature). Les radial-gradients néon du dark sont
+   désactivés via la cascade naturelle (background-image override). */
+[data-theme="light"] body {
+  background-color: var(--bg-canvas);
+  background-image: none;
 }
 
 @layer base {
@@ -385,6 +466,161 @@
 }
 .loading-dots > *:nth-child(2) { animation-delay: 0.16s; }
 .loading-dots > *:nth-child(3) { animation-delay: 0.32s; }
+
+/* ============================================================================
+ * LIGHT MODE — Utilities theme-aware overrides
+ * Voir docs/design-system-light.md
+ * Les composants ne changent pas, seules les utilities CSS partagées
+ * (.glass, .glow-*, .lift-hover, .ambient-bg, .pulse-dot, *:focus-visible)
+ * adoptent une recipe différente quand <html data-theme="light">.
+ * ========================================================================= */
+
+/* Glass : on garde la surface mais on retire le blur (inutile sur fond opaque) */
+[data-theme="light"] .glass {
+  background: var(--bg-glass);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-card);
+}
+[data-theme="light"] .glass-strong {
+  background: var(--bg-glass-strong);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border-glass);
+}
+
+/* Glows : remplacés par focus rings nets style Linear (pas de néon en light) */
+[data-theme="light"] .glow-cyan {
+  box-shadow: 0 0 0 3px rgba(38, 67, 138, 0.18);
+}
+[data-theme="light"] .glow-cyan-sm {
+  box-shadow: 0 0 0 2px rgba(38, 67, 138, 0.15);
+}
+[data-theme="light"] .glow-violet {
+  box-shadow: 0 0 0 3px rgba(38, 67, 138, 0.18);
+}
+[data-theme="light"] .glow-success {
+  box-shadow: 0 0 0 3px rgba(26, 127, 90, 0.16);
+}
+[data-theme="light"] .glow-danger {
+  box-shadow: 0 0 0 3px rgba(185, 28, 59, 0.16);
+}
+
+/* Lift hover : -1px max en light (pas -2px = amateur), elevation shadow */
+[data-theme="light"] .lift-hover:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--border-glass-hover);
+}
+
+/* Skeleton shimmer : gradient sur les surfaces light */
+[data-theme="light"] .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-glass-strong) 0%,
+    var(--bg-glass-hover) 50%,
+    var(--bg-glass-strong) 100%
+  );
+}
+
+/* Pulse dot : halo bleu signature au lieu du néon vert */
+[data-theme="light"] .pulse-dot::after {
+  /* Le keyframes pulse-ring reste le même mais sur fond bleu */
+  background: rgba(38, 67, 138, 0.4);
+}
+
+/* Ambient background : on désactive les blobs néon, on remplace par un mesh
+   subtil bleu signature (recipe 3.1 du DS light). Le mesh est visible UNIQUEMENT
+   si le wrapper porte la classe .ambient-bg (dashboard home). */
+[data-theme="light"] .ambient-bg::before,
+[data-theme="light"] .ambient-bg::after,
+[data-theme="light"] .ambient-bg > .blob {
+  display: none;
+}
+[data-theme="light"] .ambient-bg {
+  background:
+    radial-gradient(at 20% 0%, rgba(38, 67, 138, 0.06) 0%, transparent 40%),
+    radial-gradient(at 100% 30%, rgba(61, 107, 214, 0.04) 0%, transparent 35%),
+    radial-gradient(at 50% 100%, rgba(38, 67, 138, 0.04) 0%, transparent 45%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 30%, black 40%, transparent 100%);
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 30%, black 40%, transparent 100%);
+}
+
+/* Focus ring : remplace l'outline néon par un box-shadow doux */
+[data-theme="light"] *:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(38, 67, 138, 0.18);
+  border-radius: 6px;
+}
+
+/* Selection : bleu signature transparent */
+[data-theme="light"] ::selection {
+  background-color: rgba(38, 67, 138, 0.18);
+  color: var(--text-primary);
+}
+
+/* Scrollbar : ajustée pour fond light */
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #d8e1f3;
+}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #b6c2dc;
+}
+
+/* ============================================================================
+ * LIGHT MODE — Recipes signature (innovations #2 + #6 + #10 du DS light)
+ * Ces classes sont appliquées explicitement sur certains composants (ex:
+ * KpiCard avec marque de coin) — elles n'ont d'effet visible qu'en light.
+ * En dark, elles sont inertes (selectors filtrés).
+ * ========================================================================= */
+
+/* Innovation #2 — Double-layer border : border externe + ring intérieur bleu 8% */
+[data-theme="light"] .card-double-layer {
+  box-shadow: inset 0 0 0 1px rgba(38, 67, 138, 0.08), var(--shadow-card);
+}
+
+/* Innovation #10 — Marque de coin diagonale top-right (KPI principaux) */
+.card-coin-marker {
+  position: relative;
+  overflow: hidden;
+}
+[data-theme="light"] .card-coin-marker::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  background: linear-gradient(
+    135deg,
+    transparent 50%,
+    var(--neon-cyan) 50%,
+    var(--neon-cyan) 53%,
+    transparent 53%
+  );
+}
+
+/* Innovation #6 — Status dot pulse bleu (override de .pulse-dot bg automatique
+   via le token --pulse-color qui peut être surchargé par classe parent) */
+[data-theme="light"] .status-dot-blue {
+  position: relative;
+  background: var(--neon-cyan);
+  border-radius: 9999px;
+}
+[data-theme="light"] .status-dot-blue::after {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  box-shadow: 0 0 0 4px rgba(38, 67, 138, 0.15);
+  animation: pulse-halo 1.8s var(--ease-default) infinite;
+}
+@keyframes pulse-halo {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0; transform: scale(1.4); }
+}
 
 /* Reduced motion — désactive tous les transforms / animations longues */
 @media (prefers-reduced-motion: reduce) {
