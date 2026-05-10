@@ -19,18 +19,28 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { FlagIcon } from "@/components/shared/flag-icon";
-import { cn } from "@/lib/utils";
 import { LANG_META, SUPPORTED_LANGS } from "@/lib/langs";
 import type { AnalyticsFilters } from "@/server/dashboard/analytics";
 
-const PERIOD_OPTIONS = [
+type PeriodValue = "7d" | "30d" | "90d" | "365d" | "custom";
+
+const PERIOD_OPTIONS: Array<{ value: PeriodValue; label: React.ReactNode }> = [
   { value: "7d", label: "7 j" },
   { value: "30d", label: "30 j" },
   { value: "90d", label: "90 j" },
   { value: "365d", label: "1 an" },
-  { value: "custom", label: "Période…" },
-] as const;
+  {
+    value: "custom",
+    label: (
+      <span className="flex items-center gap-1">
+        <CalendarRange className="size-3.5" />
+        Période…
+      </span>
+    ),
+  },
+];
 
 interface FiltersBarProps {
   currentFilters: AnalyticsFilters;
@@ -65,28 +75,20 @@ export function FiltersBar({
     (currentFilters.lang && currentFilters.lang !== "all" ? 1 : 0);
 
   return (
-    <div className="sticky top-14 z-20 -mx-6 border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 px-6 py-3 backdrop-blur-xl">
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Period switcher */}
-        <div className="inline-flex h-9 items-center gap-1 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] p-1">
-          {PERIOD_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => updateParams({ period: opt.value })}
-              disabled={pending}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors duration-150",
-                opt.value === currentFilters.period
-                  ? "bg-[var(--bg-card)] text-[var(--text-primary)] shadow-sm"
-                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
-              )}
-            >
-              {opt.value === "custom" && <CalendarRange className="size-3" />}
-              {opt.label}
-            </button>
-          ))}
-        </div>
+    <div
+      className="sticky z-20 -mx-4 border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 px-4 py-3 backdrop-blur-xl lg:-mx-6 lg:px-6"
+      style={{ top: "calc(var(--h-mobile-topbar) + env(safe-area-inset-top))" }}
+    >
+      <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
+        {/* Period switcher — SegmentedControl mobile-first (44px touch + scroll-snap si > 4) */}
+        <SegmentedControl<PeriodValue>
+          value={(currentFilters.period as PeriodValue) ?? "30d"}
+          onChange={(v) => updateParams({ period: v })}
+          options={PERIOD_OPTIONS}
+          size="compact"
+          ariaLabel="Période"
+          className="flex-1 lg:flex-initial"
+        />
 
         {currentFilters.period === "custom" && (
           <CustomDateRange

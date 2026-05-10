@@ -35,6 +35,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { FAB } from "@/components/ui/fab";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { cn } from "@/lib/utils";
 import {
   createQrcode,
@@ -143,37 +145,28 @@ export function QrcodesView({ restaurantId, qrcodes }: QrcodesViewProps) {
 
   return (
     <div className="space-y-5">
-      {/* Toolbar : filtre + action principale */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-1.5 pl-3">
-        <div className="flex flex-wrap items-center gap-1">
-          <FilterTab
-            active={filter === "tous"}
-            onClick={() => setFilter("tous")}
-            label="Tous"
-            count={counts.tous}
-          />
-          <FilterTab
-            active={filter === "actif"}
-            onClick={() => setFilter("actif")}
-            label="Actifs"
-            count={counts.actif}
-            tone="success"
-          />
-          <FilterTab
-            active={filter === "inactif"}
-            onClick={() => setFilter("inactif")}
-            label="Inactifs"
-            count={counts.inactif}
-          />
-          <FilterTab
-            active={filter === "perdu"}
-            onClick={() => setFilter("perdu")}
-            label="Perdus"
-            count={counts.perdu}
-            tone="danger"
-          />
-        </div>
-        <Button onClick={handleCreate} disabled={pending} size="sm">
+      {/* Toolbar : SegmentedControl mobile-first + bouton "Générer" desktop only.
+          Sur mobile le bouton est promu en FAB en bas (cf. JSX en bas du return). */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between">
+        <SegmentedControl<StatutFilter>
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: "tous", label: <span>Tous · <span className="font-mono tabular-nums opacity-60">{counts.tous}</span></span> },
+            { value: "actif", label: <span>Actifs · <span className="font-mono tabular-nums opacity-60">{counts.actif}</span></span> },
+            { value: "inactif", label: <span>Inactifs · <span className="font-mono tabular-nums opacity-60">{counts.inactif}</span></span> },
+            { value: "perdu", label: <span>Perdus · <span className="font-mono tabular-nums opacity-60">{counts.perdu}</span></span> },
+          ]}
+          size="compact"
+          ariaLabel="Filtre statut"
+          className="w-full lg:w-auto"
+        />
+        <Button
+          onClick={handleCreate}
+          disabled={pending}
+          size="sm"
+          className="hidden lg:inline-flex"
+        >
           {pending ? (
             <Loader2 className="size-3.5 animate-spin" />
           ) : (
@@ -196,7 +189,7 @@ export function QrcodesView({ restaurantId, qrcodes }: QrcodesViewProps) {
           </Button>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((qr) => (
             <QrcodeCard
               key={qr.id}
@@ -209,6 +202,13 @@ export function QrcodesView({ restaurantId, qrcodes }: QrcodesViewProps) {
           ))}
         </div>
       )}
+
+      {/* FAB mobile : "Générer un QR code" (le bouton inline est hidden lg:) */}
+      <FAB
+        icon={<Plus />}
+        label="Générer un QR code"
+        onClick={handleCreate}
+      />
     </div>
   );
 }

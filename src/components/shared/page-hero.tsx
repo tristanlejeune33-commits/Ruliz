@@ -53,7 +53,7 @@ export function PageHero({
         // En dark : glass + backdrop-blur. En light : surface blanche + ombres
         // (le backdrop-blur est neutralisé par l'utility theme-aware) + ring
         // intérieur bleu 8% via .card-double-layer (innovation #2 du DS light).
-        "card-double-layer relative isolate overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-6 py-7 backdrop-blur-2xl sm:px-8",
+        "card-double-layer relative isolate overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-5 py-6 backdrop-blur-2xl sm:px-6 sm:py-7 lg:px-8",
         className,
       )}
     >
@@ -89,7 +89,7 @@ export function PageHero({
           {eyebrow && (
             <div className="flex flex-wrap items-center gap-2">{eyebrow}</div>
           )}
-          <h1 className="text-balance text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+          <h1 className="text-balance text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
             {title}
           </h1>
           {description && (
