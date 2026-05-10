@@ -21,6 +21,19 @@ export const metadata: Metadata = {
   description:
     "SaaS de menus digitaux : QR code, traduction IA en 7 langues, dashboard pro pour restaurateurs.",
   metadataBase: new URL(getAppUrl()),
+  // PWA installable iOS / Android — voir src/app/manifest.ts
+  manifest: "/manifest.webmanifest",
+  applicationName: "Ruliz",
+  appleWebApp: {
+    capable: true,
+    title: "Ruliz",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: "/brand/logo-mark.png",
+    shortcut: "/brand/logo-mark.png",
+    apple: "/brand/logo-mark.png",
+  },
 };
 
 /**

@@ -10,10 +10,14 @@ const TabsList = React.forwardRef<
   React.ComponentRef<typeof TabsPrimitive.List>,
   React.ComponentPropsWithoutRef<typeof TabsPrimitive.List>
 >(({ className, ...props }, ref) => (
+  // Mobile : flex (pas inline-flex) + scroll horizontal si trop d'onglets,
+  // touch target h-11 (44px). Desktop : inline-flex compact h-10.
   <TabsPrimitive.List
     ref={ref}
     className={cn(
-      "inline-flex h-10 items-center justify-center gap-1 rounded-lg bg-[var(--bg-elevated)] p-1 text-[var(--text-secondary)]",
+      "no-scrollbar flex h-11 w-full items-center gap-1 overflow-x-auto rounded-lg bg-[var(--bg-elevated)] p-1 text-[var(--text-secondary)]",
+      "scroll-snap-x",
+      "lg:inline-flex lg:h-10 lg:w-auto lg:overflow-visible lg:justify-center",
       className,
     )}
     {...props}
@@ -28,7 +32,7 @@ const TabsTrigger = React.forwardRef<
   <TabsPrimitive.Trigger
     ref={ref}
     className={cn(
-      "inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200",
+      "inline-flex shrink-0 snap-center items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all duration-200",
       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]",
       "disabled:pointer-events-none disabled:opacity-50",
       "data-[state=active]:bg-[var(--bg-card)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:shadow-sm",

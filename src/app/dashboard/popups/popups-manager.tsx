@@ -11,6 +11,7 @@ import { z } from "zod";
 import { Loader2, MoreHorizontal, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { FAB } from "@/components/ui/fab";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -90,7 +91,8 @@ export function PopupsManager({ restaurantId, popups }: PopupsManagerProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      {/* Bouton inline desktop, FAB mobile (cf. JSX en bas du return) */}
+      <div className="hidden justify-end lg:flex">
         <Button onClick={() => setEditing("new")}>
           <Plus className="size-4" />
           Nouveau pop-up
@@ -186,6 +188,13 @@ export function PopupsManager({ restaurantId, popups }: PopupsManagerProps) {
           onSaved={() => router.refresh()}
         />
       )}
+
+      {/* FAB mobile : "Nouveau pop-up" (le bouton inline est hidden lg:) */}
+      <FAB
+        icon={<Plus />}
+        label="Nouveau pop-up"
+        onClick={() => setEditing("new")}
+      />
     </div>
   );
 }

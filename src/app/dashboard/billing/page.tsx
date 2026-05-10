@@ -133,20 +133,32 @@ export default async function BillingPage({ searchParams }: PageProps) {
         </div>
       </div>
 
-      {/* Plans grid */}
-      <section className="grid gap-4 lg:grid-cols-3">
+      {/* Plans :
+          - Mobile : scroll-snap horizontal (1 plan = 1 écran swipeable, peek
+            de 24px sur la droite pour suggérer l'affordance)
+          - Desktop : grille 3 colonnes classique */}
+      <section
+        className={[
+          "scroll-snap-x no-scrollbar -mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2",
+          "lg:-mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:pb-0",
+        ].join(" ")}
+      >
         {(Object.values(PLANS) as (typeof PLANS)[Plan][]).map((p) => {
           const isCurrent = p.id === restaurant.plan;
           const isUpgrade = !isAtLeastPlan(restaurant.plan, p.id);
           return (
-            <PlanCard
+            <div
               key={p.id}
-              plan={p}
-              currentPlan={restaurant.plan}
-              isCurrent={isCurrent}
-              isUpgrade={isUpgrade}
-              restaurantId={restaurant.id.toString()}
-            />
+              className="snap-center w-[calc(100%-32px)] shrink-0 lg:w-auto lg:shrink"
+            >
+              <PlanCard
+                plan={p}
+                currentPlan={restaurant.plan}
+                isCurrent={isCurrent}
+                isUpgrade={isUpgrade}
+                restaurantId={restaurant.id.toString()}
+              />
+            </div>
           );
         })}
       </section>
