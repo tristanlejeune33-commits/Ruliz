@@ -24,6 +24,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -377,13 +378,15 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
               )}
             />
 
-            {/* Features */}
+            {/* Features — état local, pas un champ react-hook-form, donc on
+                utilise <Label> standard et un <p> au lieu de FormLabel /
+                FormDescription qui exigent un <FormField> parent. */}
             <div className="space-y-2">
-              <FormLabel>Caractéristiques (bullet list)</FormLabel>
-              <FormDescription className="text-[10px]">
+              <Label>Caractéristiques (bullet list)</Label>
+              <p className="text-[10px] text-[var(--text-secondary)]">
                 Ex : « 100 unités », « Format A4 », « Pelliculage mat ». Affiché
                 en liste sur la fiche produit.
-              </FormDescription>
+              </p>
               <div className="flex gap-2">
                 <Input
                   value={featureInput}
