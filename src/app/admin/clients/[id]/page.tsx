@@ -9,6 +9,7 @@ import {
   History,
   Monitor,
   ScrollText,
+  ShieldCheck,
   Sparkles,
   User as UserIcon,
 } from "lucide-react";
@@ -32,6 +33,7 @@ import { getClientById } from "@/server/admin/queries";
 import { serialize } from "@/lib/serialize";
 import { ClientForm } from "./client-form";
 import { ClientActions } from "./client-actions";
+import { ClientPermissions } from "./client-permissions";
 import { ImpersonateButton } from "./impersonate-button";
 
 interface PageProps {
@@ -103,6 +105,9 @@ export default async function ClientDetailPage({ params }: PageProps) {
           <TabsTrigger value="compte">
             <UserIcon className="size-3.5" /> Compte
           </TabsTrigger>
+          <TabsTrigger value="droits">
+            <ShieldCheck className="size-3.5" /> Droits & Plans
+          </TabsTrigger>
           <TabsTrigger value="restaurants">
             <Building2 className="size-3.5" /> Restaurants ({data.restaurants.length})
           </TabsTrigger>
@@ -129,6 +134,20 @@ export default async function ClientDetailPage({ params }: PageProps) {
               ville: data.ville ?? "",
               pays: data.pays ?? "France",
             }}
+          />
+        </TabsContent>
+
+        <TabsContent value="droits">
+          <ClientPermissions
+            userId={data.id}
+            userEmail={data.email}
+            userRole={data.role ?? "client"}
+            restaurants={data.restaurants.map((r) => ({
+              id: r.id.toString(),
+              nom: r.nom,
+              plan: r.plan,
+              ville: r.ville,
+            }))}
           />
         </TabsContent>
 

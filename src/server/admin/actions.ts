@@ -181,6 +181,64 @@ export async function setRestaurantPlan(
   return { ok: true };
 }
 
+const ROLES = ["admin", "client"] as const;
+
+/**
+ * Bascule le rôle d'un utilisateur entre `client` et `admin`.
+ *
+ * Garde-fou : on refuse de retirer le rôle admin si c'est le DERNIER admin
+ * de la base — sinon plus personne ne pourrait gérer le SaaS.
+ */
+export async function setUserRole(
+  id: number,
+  role: (typeof ROLES)[number],
+): Promise<ActionResult> {
+  await requireAdmin();
+  if (!ROLES.includes(role)) return { ok: false, error: "Rôle invalide" };
+
+  // Si on retire le rôle admin → vérifier qu'il en reste au moins 1 autre
+  if (role === "client") {
+    const adminCount = await prisma.user.count({ where: { role: "admin" } });
+    const target = await prisma.user.findUnique({
+      where: { id },
+      select: { role: true },
+    });
+    if (target?.role === "admin" && adminCount <= 1) {
+      return {
+        ok: false,
+        error:
+          "Impossible : tu es le dernier admin. Promeus quelqu'un d'autre avant de te rétrograder.",
+      };
+    }
+  }
+
+  await prisma.user.update({ where: { id }, data: { role } });
+  await logAdminAction("user.set_role", { id, role });
+  revalidatePath("/admin/clients");
+  revalidatePath(`/admin/clients/${id}`);
+  return { ok: true };
+}
+
+/**
+ * Wrapper string-friendly pour `setRestaurantPlan` (utilisable depuis un
+ * Client Component sans gérer de BigInt côté browser).
+ */
+export async function setRestaurantPlanByStringId(
+  restaurantId: string,
+  plan: string,
+): Promise<ActionResult> {
+  let bigId: bigint;
+  try {
+    bigId = BigInt(restaurantId);
+  } catch {
+    return { ok: false, error: "Identifiant restaurant invalide" };
+  }
+  if (!PLANS.includes(plan as (typeof PLANS)[number])) {
+    return { ok: false, error: "Plan invalide" };
+  }
+  return setRestaurantPlan(bigId, plan as (typeof PLANS)[number]);
+}
+
 export async function sendResetPasswordEmail(email: string): Promise<ActionResult> {
   await requireAdmin();
   const valid = z.email().safeParse(email);
