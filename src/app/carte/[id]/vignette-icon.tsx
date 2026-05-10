@@ -55,19 +55,63 @@ interface VignetteIconProps {
   code: string;
   size?: number;
   className?: string;
+  /**
+   * Enrobe l'icône dans une bulle blanche circulaire avec ombre légère.
+   * Indispensable quand l'icône est rendue directement sur le fond du resto
+   * (qui peut être sombre, coloré ou photo) — sans la bulle, l'icône
+   * disparaît visuellement.
+   *
+   * Mettre à `false` UNIQUEMENT quand l'icône est déjà dans un container
+   * avec son propre fond (ex: pill `theme.cardBody` dans la modal détail).
+   *
+   * Default: `true` (cohérent avec le besoin universel de lisibilité).
+   */
+  wrapped?: boolean;
 }
 
-export function VignetteIcon({ code, size = 18, className }: VignetteIconProps) {
+export function VignetteIcon({
+  code,
+  size = 18,
+  className,
+  wrapped = true,
+}: VignetteIconProps) {
   const key = code.trim().toLowerCase();
   const visual = VIGNETTE_MAP[key];
   if (!visual) return null;
   const { Icon, color } = visual;
+
+  if (!wrapped) {
+    return (
+      <Icon
+        className={className}
+        style={{ color, width: size, height: size }}
+        aria-hidden
+      />
+    );
+  }
+
+  // Bulle blanche : padding ~22% de la taille pour un cercle propre, ombre
+  // discrète pour décoller du fond. Ratio 28/16 = 1.75 sur la cible Lucide.
+  const wrapperSize = Math.round(size * 1.55);
   return (
-    <Icon
+    <span
       className={className}
-      style={{ color, width: size, height: size }}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: wrapperSize,
+        height: wrapperSize,
+        borderRadius: "9999px",
+        backgroundColor: "#ffffff",
+        boxShadow:
+          "0 1px 2px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04)",
+        flexShrink: 0,
+      }}
       aria-hidden
-    />
+    >
+      <Icon style={{ color, width: size, height: size }} aria-hidden />
+    </span>
   );
 }
 

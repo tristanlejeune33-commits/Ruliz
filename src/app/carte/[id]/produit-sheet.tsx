@@ -217,11 +217,15 @@ function DishDetail({
               return (
                 <li
                   key={a.code}
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[12px]"
+                  // Fond blanc opaque + border jaune pour rester lisibles sur
+                  // tout thème resto (sombre, photo, fond custom). Le fond
+                  // translucide précédent disparaissait sur les fonds clairs
+                  // ou texturés.
+                  className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-medium shadow-sm"
                   style={{
-                    backgroundColor: "rgba(245, 158, 11, 0.12)",
+                    backgroundColor: "#ffffff",
                     color: "#92400e",
-                    border: "1px solid rgba(245, 158, 11, 0.25)",
+                    borderColor: "rgba(245, 158, 11, 0.5)",
                   }}
                 >
                   <span aria-hidden>{emoji}</span>
@@ -251,7 +255,9 @@ function DishDetail({
                 }}
               >
                 {hasVisual ? (
-                  <VignetteIcon code={v.code} size={16} />
+                  // Pas de bulle ici : l'icône est déjà dans une pill avec
+                  // fond `theme.cardBody`, le double cercle serait laid.
+                  <VignetteIcon code={v.code} size={16} wrapped={false} />
                 ) : emoji ? (
                   <span className="text-base" aria-hidden>
                     {emoji}
