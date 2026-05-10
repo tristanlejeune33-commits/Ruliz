@@ -94,6 +94,40 @@ export async function createBoutiqueCommande(
     };
   }
 
+  // Validation stock : pour chaque produit avec stockMax défini, vérifie
+  // que la somme des items déjà commandés (non annulés) + qty demandée
+  // ne dépasse pas le stockMax.
+  const produitsAvecStock = produits.filter((p) => p.stockMax !== null);
+  if (produitsAvecStock.length > 0) {
+    const stockGroups = await prisma.boutiqueCommandeItem.groupBy({
+      by: ["produitId"],
+      where: {
+        produitId: { in: produitsAvecStock.map((p) => p.id) },
+        commande: { statut: { not: "annulee" } },
+      },
+      _sum: { quantite: true },
+    });
+    const usedMap = new Map<string, number>();
+    for (const g of stockGroups) {
+      usedMap.set(g.produitId.toString(), g._sum.quantite ?? 0);
+    }
+    for (const p of produitsAvecStock) {
+      const used = usedMap.get(p.id.toString()) ?? 0;
+      const remaining = Math.max(0, (p.stockMax ?? 0) - used);
+      const wanted =
+        data.items.find((i) => i.produitId === p.id.toString())?.quantite ?? 0;
+      if (wanted > remaining) {
+        return {
+          ok: false,
+          error:
+            remaining === 0
+              ? `« ${p.nom} » est en rupture de stock — retire-le du panier pour finaliser.`
+              : `Stock insuffisant pour « ${p.nom} » : ${remaining} unité${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""}, tu en demandes ${wanted}.`,
+        };
+      }
+    }
+  }
+
   // Restaurant rattaché — vérifie ownership si fourni
   let restaurantId: bigint | null = null;
   if (data.restaurantId) {

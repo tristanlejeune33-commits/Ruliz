@@ -2,13 +2,58 @@ import "server-only";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 
+/**
+ * Calcule le stock utilisé pour une liste de produit IDs : somme des
+ * quantites des items de commandes non annulées.
+ *
+ * Renvoie un Map<produitId, stockUtilise>. Les produits sans commande sont
+ * absents du Map (interpréter comme 0).
+ */
+export async function getStockUsedByProduitIds(produitIds: bigint[]) {
+  if (produitIds.length === 0) return new Map<string, number>();
+  const groups = await prisma.boutiqueCommandeItem.groupBy({
+    by: ["produitId"],
+    where: {
+      produitId: { in: produitIds },
+      commande: { statut: { not: "annulee" } },
+    },
+    _sum: { quantite: true },
+  });
+  const map = new Map<string, number>();
+  for (const g of groups) {
+    map.set(g.produitId.toString(), g._sum.quantite ?? 0);
+  }
+  return map;
+}
+
+/**
+ * Stock utilisé pour un seul produit (commandes non annulées).
+ */
+export async function getStockUsedForProduit(produitId: bigint): Promise<number> {
+  const agg = await prisma.boutiqueCommandeItem.aggregate({
+    where: {
+      produitId,
+      commande: { statut: { not: "annulee" } },
+    },
+    _sum: { quantite: true },
+  });
+  return agg._sum.quantite ?? 0;
+}
+
 /** Liste tous les produits boutique pour l'admin (tous statuts confondus). */
 export async function listBoutiqueProduitsAdmin() {
-  return prisma.boutiqueProduit.findMany({
+  const produits = await prisma.boutiqueProduit.findMany({
     orderBy: [{ position: "asc" }, { createdAt: "desc" }],
     include: {
       _count: { select: { commandeItems: true } },
     },
+  });
+  // Enrichit chaque produit avec stockUtilise et stockRestant calculés
+  const stockUsed = await getStockUsedByProduitIds(produits.map((p) => p.id));
+  return produits.map((p) => {
+    const used = stockUsed.get(p.id.toString()) ?? 0;
+    const remaining = p.stockMax === null ? null : Math.max(0, p.stockMax - used);
+    return { ...p, stockUtilise: used, stockRestant: remaining };
   });
 }
 

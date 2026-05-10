@@ -46,6 +46,8 @@ const produitSchema = z.object({
   categorie: z.string().max(100).optional().or(z.literal("")),
   position: z.number().int().nonnegative().default(0),
   statut: z.enum(["brouillon", "publie", "archive"]).default("brouillon"),
+  /** Stock max : null = illimité, sinon entier ≥ 0 */
+  stockMax: z.number().int().nonnegative().nullable().optional(),
   /** Liste libre de features (ex: "100 unités", "Format A4") */
   features: z.array(z.string().max(120)).max(20).optional(),
 });
@@ -81,6 +83,7 @@ export async function createBoutiqueProduit(
       categorie: data.categorie || null,
       position: data.position,
       statut: data.statut,
+      stockMax: data.stockMax ?? null,
       featuresJson: data.features ?? [],
     },
   });
@@ -129,6 +132,7 @@ export async function updateBoutiqueProduit(
       categorie: data.categorie || null,
       position: data.position,
       statut: data.statut,
+      stockMax: data.stockMax ?? null,
       featuresJson: data.features ?? [],
     },
   });

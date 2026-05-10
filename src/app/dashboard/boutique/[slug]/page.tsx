@@ -116,6 +116,7 @@ export default async function BoutiqueProduitPage({ params }: PageProps) {
           <AddToCartButton
             produitId={serialized.id}
             produitNom={serialized.nom}
+            stockRestant={produit.stockRestant}
           />
         </div>
       </div>

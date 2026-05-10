@@ -116,16 +116,45 @@ interface ProduitCardProps {
     prixCentimes: number;
     devise: string;
     imageUrl: string | null;
+    stockMax: number | null;
+    stockUtilise?: number;
+    stockRestant?: number | null;
   };
 }
 
 function ProduitCard({ produit }: ProduitCardProps) {
+  // Stock state : null = illimité, 0 = rupture, >0 = restant
+  const stockRestant = produit.stockRestant;
+  const isOutOfStock = stockRestant === 0;
+  const isLowStock =
+    stockRestant !== null &&
+    stockRestant !== undefined &&
+    stockRestant > 0 &&
+    stockRestant <= 10;
+
   return (
     <Link
       href={`/dashboard/boutique/${produit.slug}`}
-      className="group"
+      className={`group ${isOutOfStock ? "pointer-events-none" : ""}`}
+      aria-disabled={isOutOfStock}
     >
-      <Card className="lift-hover overflow-hidden p-0 transition-all">
+      <Card
+        className={`lift-hover relative overflow-hidden p-0 transition-all ${
+          isOutOfStock ? "opacity-60" : ""
+        }`}
+      >
+        {/* Badge stock — top right */}
+        {isOutOfStock && (
+          <span className="absolute right-2 top-2 z-10 rounded-md border border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--neon-danger)]">
+            Rupture
+          </span>
+        )}
+        {!isOutOfStock && isLowStock && (
+          <span className="absolute right-2 top-2 z-10 rounded-md border border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] px-2 py-0.5 font-mono text-[10px] font-bold tabular-nums text-[var(--neon-violet)]">
+            Plus que {stockRestant}
+          </span>
+        )}
+
         <div className="aspect-[4/3] overflow-hidden bg-[var(--bg-glass-strong)]">
           {produit.imageUrl ? (
             <Image
@@ -134,7 +163,9 @@ function ProduitCard({ produit }: ProduitCardProps) {
               width={400}
               height={300}
               unoptimized
-              className="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+              className={`size-full object-cover transition-transform duration-300 ${
+                isOutOfStock ? "grayscale" : "group-hover:scale-105"
+              }`}
             />
           ) : (
             <div className="flex size-full items-center justify-center">
@@ -162,7 +193,7 @@ function ProduitCard({ produit }: ProduitCardProps) {
               })}
             </span>
             <span className="text-xs text-[var(--neon-cyan)] opacity-0 transition-opacity group-hover:opacity-100">
-              Voir →
+              {isOutOfStock ? "Indisponible" : "Voir →"}
             </span>
           </div>
         </div>

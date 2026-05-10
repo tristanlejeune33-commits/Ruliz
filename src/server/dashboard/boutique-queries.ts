@@ -3,23 +3,38 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { CART_COOKIE, parseCart } from "@/lib/boutique-cart";
 import { getActingUserId } from "@/lib/impersonation";
+import {
+  getStockUsedByProduitIds,
+  getStockUsedForProduit,
+} from "@/server/admin/boutique/queries";
 
 /**
  * Catalogue côté client : uniquement les produits publiés, triés par position
- * puis par date de création.
+ * puis par date de création. Enrichi avec stockRestant (null = illimité).
  */
 export async function listBoutiqueProduitsPublic() {
-  return prisma.boutiqueProduit.findMany({
+  const produits = await prisma.boutiqueProduit.findMany({
     where: { statut: "publie" },
     orderBy: [{ position: "asc" }, { createdAt: "desc" }],
   });
+  const stockUsed = await getStockUsedByProduitIds(produits.map((p) => p.id));
+  return produits.map((p) => {
+    const used = stockUsed.get(p.id.toString()) ?? 0;
+    const remaining = p.stockMax === null ? null : Math.max(0, p.stockMax - used);
+    return { ...p, stockUtilise: used, stockRestant: remaining };
+  });
 }
 
-/** Détail d'un produit publié par slug. null si introuvable ou non-publié. */
+/** Détail d'un produit publié par slug + stock restant. null si introuvable. */
 export async function getBoutiqueProduitBySlug(slug: string) {
-  return prisma.boutiqueProduit.findFirst({
+  const produit = await prisma.boutiqueProduit.findFirst({
     where: { slug, statut: "publie" },
   });
+  if (!produit) return null;
+  const used = await getStockUsedForProduit(produit.id);
+  const remaining =
+    produit.stockMax === null ? null : Math.max(0, produit.stockMax - used);
+  return { ...produit, stockUtilise: used, stockRestant: remaining };
 }
 
 /** Commandes du user connecté (ou impersonné). Inclut les items. */

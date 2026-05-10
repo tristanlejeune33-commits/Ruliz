@@ -128,7 +128,7 @@ export function BoutiqueAdminView({ produits }: BoutiqueAdminViewProps) {
                 <TableHead className="text-right">Prix</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="hidden md:table-cell text-right">
-                  Commandes
+                  Stock
                 </TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
@@ -189,11 +189,11 @@ export function BoutiqueAdminView({ produits }: BoutiqueAdminViewProps) {
                       </span>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-right">
-                      {p._count.commandeItems > 0 ? (
-                        <Badge variant="secondary">{p._count.commandeItems}</Badge>
-                      ) : (
-                        <span className="text-xs text-[var(--text-tertiary)]">0</span>
-                      )}
+                      <StockBadge
+                        stockMax={p.stockMax}
+                        stockUtilise={p.stockUtilise ?? 0}
+                        stockRestant={p.stockRestant}
+                      />
                     </TableCell>
                     <TableCell>
                       <Button
@@ -227,5 +227,50 @@ export function BoutiqueAdminView({ produits }: BoutiqueAdminViewProps) {
         />
       )}
     </div>
+  );
+}
+
+/**
+ * Badge stock — affiche stockUtilise / stockMax avec coloration palière :
+ *   - null stockMax → "∞" gris (illimité)
+ *   - rupture (restant === 0) → rouge
+ *   - low stock (≤ 10) → violet warning
+ *   - sinon → vert success
+ */
+function StockBadge({
+  stockMax,
+  stockUtilise,
+  stockRestant,
+}: {
+  stockMax: number | null;
+  stockUtilise: number;
+  stockRestant: number | null | undefined;
+}) {
+  if (stockMax === null) {
+    return (
+      <span
+        className="inline-flex items-center gap-1 font-mono text-xs text-[var(--text-tertiary)]"
+        title={`${stockUtilise} unité(s) commandée(s) — stock illimité`}
+      >
+        <span className="text-base leading-none">∞</span>
+        <span className="tabular-nums">· {stockUtilise}</span>
+      </span>
+    );
+  }
+  const remaining = stockRestant ?? Math.max(0, stockMax - stockUtilise);
+  const tone =
+    remaining === 0
+      ? "text-[var(--neon-danger)]"
+      : remaining <= 10
+        ? "text-[var(--neon-violet)]"
+        : "text-[var(--neon-success)]";
+  return (
+    <span
+      className={cn("inline-flex items-center gap-1 font-mono text-xs tabular-nums", tone)}
+      title={`${stockUtilise} commandées · ${remaining} restantes sur ${stockMax}`}
+    >
+      <span className="font-semibold">{remaining}</span>
+      <span className="text-[var(--text-tertiary)]">/ {stockMax}</span>
+    </span>
   );
 }

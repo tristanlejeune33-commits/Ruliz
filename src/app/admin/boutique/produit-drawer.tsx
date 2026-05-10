@@ -62,6 +62,12 @@ export interface SerializedBoutiqueProduit {
   position: number;
   statut: "brouillon" | "publie" | "archive";
   featuresJson: unknown;
+  /** null = stock illimité */
+  stockMax: number | null;
+  /** Calculé : somme des items des commandes non annulées */
+  stockUtilise?: number;
+  /** Calculé : stockMax - stockUtilise (null si stockMax null) */
+  stockRestant?: number | null;
 }
 
 const schema = z.object({
@@ -74,6 +80,10 @@ const schema = z.object({
   categorie: z.string().max(100).optional().or(z.literal("")),
   position: z.number().int().nonnegative(),
   statut: z.enum(["brouillon", "publie", "archive"]),
+  // null/empty = stock illimité ; sinon entier ≥ 0
+  stockMax: z
+    .union([z.number().int().nonnegative(), z.literal("" as const), z.null()])
+    .optional(),
 });
 
 type Values = z.infer<typeof schema>;
@@ -114,6 +124,7 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
       categorie: produit?.categorie ?? "",
       position: produit?.position ?? 0,
       statut: produit?.statut ?? "brouillon",
+      stockMax: produit?.stockMax ?? "",
     },
   });
 
@@ -131,9 +142,19 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
 
   const onSubmit = (values: Values) => {
     startTransition(async () => {
+      // stockMax peut être "" (illimité), null, ou un entier — normalise en
+      // null pour le serveur (cohérent avec la colonne nullable Prisma).
+      const stockMaxNormalized =
+        values.stockMax === "" ||
+        values.stockMax === null ||
+        values.stockMax === undefined
+          ? null
+          : values.stockMax;
+
       const payload = {
         ...values,
         prixCentimes: Math.round(values.prixEuros * 100),
+        stockMax: stockMaxNormalized,
         features,
       };
       const res =
@@ -348,6 +369,64 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
                 )}
               />
             </div>
+
+            {/* Stock max — null/vide = illimité, sinon entier ≥ 0.
+                Affichage du stock utilisé / restant en mode édition. */}
+            <FormField
+              control={form.control}
+              name="stockMax"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Stock maximum</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      inputMode="numeric"
+                      placeholder="Vide = illimité"
+                      value={field.value ?? ""}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        field.onChange(
+                          v === "" ? "" : Number.parseInt(v || "0", 10),
+                        );
+                      }}
+                      className="font-mono"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-[10px]">
+                    Capacité totale en unités. Laisse vide pour stock
+                    illimité.
+                    {isEdit && produit?.stockUtilise !== undefined && (
+                      <>
+                        {" "}
+                        <span className="font-mono text-[var(--text-secondary)]">
+                          · {produit.stockUtilise} unité
+                          {produit.stockUtilise > 1 ? "s" : ""} déjà commandée
+                          {produit.stockUtilise > 1 ? "s" : ""}
+                        </span>
+                        {produit.stockRestant !== null &&
+                          produit.stockRestant !== undefined && (
+                            <span
+                              className={`ml-1 font-mono ${
+                                produit.stockRestant === 0
+                                  ? "text-[var(--neon-danger)]"
+                                  : produit.stockRestant <= 10
+                                    ? "text-[var(--neon-violet)]"
+                                    : "text-[var(--neon-success)]"
+                              }`}
+                            >
+                              · {produit.stockRestant} restant
+                              {produit.stockRestant > 1 ? "s" : ""}
+                            </span>
+                          )}
+                      </>
+                    )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField
               control={form.control}
