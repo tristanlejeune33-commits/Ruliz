@@ -34,6 +34,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   Table,
   TableBody,
   TableCell,
@@ -46,17 +51,37 @@ import { downloadCSV, toCSV } from "@/lib/csv";
 import {
   sendResetPasswordEmail,
   setClientStatut,
+  setRestaurantPlanByStringId,
   toggleClientDemo,
 } from "@/server/admin/actions";
+import { cn } from "@/lib/utils";
 
 import type { Serialized } from "@/lib/serialize";
 import type { ClientListItem } from "@/server/admin/queries";
 
 type ClientRow = Serialized<ClientListItem>;
 
+type SortKey = "createdAtDesc" | "planDesc" | "planAsc" | "nameAsc" | "lastLoginDesc";
+
 interface ClientsTableProps {
   clients: ClientRow[];
   initialFilters: { search: string; statut: string; plan: string };
+}
+
+const PLAN_RANK: Record<string, number> = {
+  premium: 3,
+  pro: 2,
+  freemium: 1,
+};
+
+/** Renvoie le plan le plus haut parmi les restaurants d'un client. */
+function highestPlan(c: ClientRow): { name: string; rank: number } {
+  const ranks = c.restaurants.map((r) => ({
+    name: r.plan,
+    rank: PLAN_RANK[r.plan] ?? 0,
+  }));
+  if (ranks.length === 0) return { name: "—", rank: 0 };
+  return ranks.reduce((a, b) => (b.rank > a.rank ? b : a));
 }
 
 export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
@@ -65,6 +90,7 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
   const [search, setSearch] = useState(initialFilters.search);
   const [statut, setStatut] = useState(initialFilters.statut);
   const [plan, setPlan] = useState(initialFilters.plan);
+  const [sortBy, setSortBy] = useState<SortKey>("createdAtDesc");
   const [isPending, startTransition] = useTransition();
 
   const updateFilter = (key: "q" | "statut" | "plan", value: string) => {
@@ -76,14 +102,33 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
     });
   };
 
-  const sortedClients = useMemo(
-    () =>
-      [...clients].sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      ),
-    [clients],
-  );
+  const sortedClients = useMemo(() => {
+    const arr = [...clients];
+    switch (sortBy) {
+      case "planDesc":
+        return arr.sort((a, b) => highestPlan(b).rank - highestPlan(a).rank);
+      case "planAsc":
+        return arr.sort((a, b) => highestPlan(a).rank - highestPlan(b).rank);
+      case "nameAsc":
+        return arr.sort((a, b) =>
+          `${a.prenom ?? ""} ${a.nom ?? ""}`
+            .trim()
+            .localeCompare(`${b.prenom ?? ""} ${b.nom ?? ""}`.trim(), "fr"),
+        );
+      case "lastLoginDesc":
+        return arr.sort((a, b) => {
+          const ax = a.lastLoginAt ? new Date(a.lastLoginAt).getTime() : 0;
+          const bx = b.lastLoginAt ? new Date(b.lastLoginAt).getTime() : 0;
+          return bx - ax;
+        });
+      case "createdAtDesc":
+      default:
+        return arr.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+    }
+  }, [clients, sortBy]);
 
   const handleExport = () => {
     const rows = sortedClients.map((c) => ({
@@ -151,6 +196,22 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
             <SelectItem value="premium">Premium</SelectItem>
           </SelectContent>
         </Select>
+        {/* Tri client-side : pas besoin de re-fetch, on travaille sur les data déjà chargées */}
+        <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+          <SelectTrigger className="w-[200px]">
+            <span className="inline-flex items-center gap-1.5">
+              <ArrowUpDown className="size-3.5" />
+              <SelectValue placeholder="Trier par" />
+            </span>
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="createdAtDesc">Date d&apos;inscription (récent)</SelectItem>
+            <SelectItem value="planDesc">Plan ↓ (Premium → Free)</SelectItem>
+            <SelectItem value="planAsc">Plan ↑ (Free → Premium)</SelectItem>
+            <SelectItem value="lastLoginDesc">Dernière connexion</SelectItem>
+            <SelectItem value="nameAsc">Nom A-Z</SelectItem>
+          </SelectContent>
+        </Select>
         <div className="ml-auto flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handleExport} disabled={!sortedClients.length}>
             <Download className="size-3.5" />
@@ -205,7 +266,10 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
                   {client.restaurants.slice(0, 2).map((r) => (
                     <div key={r.id} className="flex items-center gap-2">
                       <span className="truncate text-sm">{r.nom}</span>
-                      <PlanBadge plan={r.plan as Plan} />
+                      <PlanSwitcher
+                        restaurantId={r.id.toString()}
+                        currentPlan={r.plan as Plan}
+                      />
                     </div>
                   ))}
                   {client.restaurants.length > 2 && (
@@ -334,5 +398,130 @@ function RowActions({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/**
+ * PlanSwitcher — PlanBadge cliquable qui ouvre un popover avec 3 boutons
+ * Free / Pro / Premium pour basculer le plan du restaurant en un click.
+ *
+ * Server action : setRestaurantPlanByStringId (déjà admin-protected).
+ * Bypasse Stripe — utile pour offrir un upgrade gratuit, débloquer une démo,
+ * ou corriger un sub Stripe désynchronisé.
+ */
+function PlanSwitcher({
+  restaurantId,
+  currentPlan,
+}: {
+  restaurantId: string;
+  currentPlan: Plan;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [open, setOpen] = useState(false);
+
+  const handleChange = (next: Plan) => {
+    if (next === currentPlan) {
+      setOpen(false);
+      return;
+    }
+    startTransition(async () => {
+      const res = await setRestaurantPlanByStringId(restaurantId, next);
+      if (res.ok) {
+        toast.success(`Plan basculé en ${next}`);
+        setOpen(false);
+        router.refresh();
+      } else {
+        toast.error(res.error);
+      }
+    });
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Plan actuel : ${currentPlan}. Cliquer pour changer.`}
+          disabled={pending}
+          className="cursor-pointer transition-opacity hover:opacity-80 disabled:opacity-50"
+        >
+          <PlanBadge plan={currentPlan} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-44 p-2" align="start">
+        <p className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+          Changer le plan
+        </p>
+        <div className="flex flex-col gap-1">
+          <PlanOption
+            label="Freemium"
+            value="freemium"
+            current={currentPlan}
+            onClick={() => handleChange("freemium")}
+            disabled={pending}
+          />
+          <PlanOption
+            label="Pro"
+            value="pro"
+            current={currentPlan}
+            onClick={() => handleChange("pro")}
+            disabled={pending}
+          />
+          <PlanOption
+            label="Premium"
+            value="premium"
+            current={currentPlan}
+            onClick={() => handleChange("premium")}
+            disabled={pending}
+          />
+        </div>
+        <p className="mt-2 px-1 text-[10px] text-[var(--text-tertiary)]">
+          Bypass Stripe · loggé dans /admin/logs
+        </p>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function PlanOption({
+  label,
+  value,
+  current,
+  onClick,
+  disabled,
+}: {
+  label: string;
+  value: Plan;
+  current: Plan;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  const isActive = value === current;
+  const TONE: Record<Plan, string> = {
+    freemium: "text-[var(--text-secondary)]",
+    pro: "text-[var(--neon-cyan)]",
+    premium: "text-[var(--neon-violet)]",
+  };
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || isActive}
+      className={cn(
+        "flex h-8 items-center justify-between rounded-md px-2 text-sm font-medium transition-colors",
+        isActive
+          ? "bg-[var(--bg-glass-strong)] cursor-default"
+          : "hover:bg-[var(--bg-glass-hover)] cursor-pointer",
+        TONE[value],
+      )}
+    >
+      <span>{label}</span>
+      {isActive && (
+        <span className="font-mono text-[10px] uppercase tracking-wider opacity-70">
+          actuel
+        </span>
+      )}
+    </button>
   );
 }
