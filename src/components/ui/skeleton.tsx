@@ -43,4 +43,64 @@ function SkeletonRow({ cols = 4 }: { cols?: number }) {
   );
 }
 
-export { Skeleton, SkeletonLine, SkeletonCard, SkeletonRow };
+/* =============================================================================
+ * Variants mobile-shaped — formes réalistes pour les listes mobile (cf. spec
+ * docs/design-system-mobile.md §8 Skeleton).
+ * ===========================================================================*/
+
+/** Skeleton avatar circulaire (40px par défaut, override via size). */
+function SkeletonAvatar({ size = 40 }: { size?: number }) {
+  return (
+    <Skeleton
+      className="shrink-0 rounded-full"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+/** Item de liste mobile : avatar + 2 lignes texte + valeur droite, hauteur 72px. */
+function SkeletonListItem() {
+  return (
+    <div className="flex items-center gap-3 rounded-xl bg-[var(--bg-card)] p-4">
+      <SkeletonAvatar size={48} />
+      <div className="min-w-0 flex-1 space-y-2">
+        <SkeletonLine className="h-4 w-2/3" />
+        <SkeletonLine className="h-3 w-1/2" />
+      </div>
+      <SkeletonLine className="h-5 w-12 shrink-0" />
+    </div>
+  );
+}
+
+/** KPI hero card mobile : label + grosse valeur + sparkline placeholder. */
+function SkeletonKpiHero() {
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl bg-[var(--bg-card)] p-5">
+      <SkeletonLine className="h-3 w-24" />
+      <SkeletonLine className="h-10 w-32" />
+      <Skeleton className="h-12 w-full rounded-md" />
+    </div>
+  );
+}
+
+/** Liste de N items mobile, prêt à drop dans une page. */
+function SkeletonListMobile({ count = 5 }: { count?: number }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {Array.from({ length: count }).map((_, i) => (
+        <SkeletonListItem key={i} />
+      ))}
+    </div>
+  );
+}
+
+export {
+  Skeleton,
+  SkeletonLine,
+  SkeletonCard,
+  SkeletonRow,
+  SkeletonAvatar,
+  SkeletonListItem,
+  SkeletonListMobile,
+  SkeletonKpiHero,
+};

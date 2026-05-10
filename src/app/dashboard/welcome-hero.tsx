@@ -89,7 +89,7 @@ export function WelcomeHero({
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-      className="relative isolate overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] p-6 backdrop-blur-2xl md:p-8"
+      className="relative isolate overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] p-5 backdrop-blur-2xl md:p-6 lg:p-8"
     >
       {/* Glows ambiants néon */}
       <div
@@ -117,7 +117,7 @@ export function WelcomeHero({
             <StatusPill />
             {planBadge}
           </div>
-          <h1 className="text-balance text-3xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-4xl">
+          <h1 className="text-balance text-2xl font-semibold tracking-tight text-[var(--text-primary)] sm:text-3xl lg:text-4xl">
             {restaurantName}
           </h1>
           <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--text-secondary)]">

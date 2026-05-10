@@ -18,6 +18,7 @@ import { isSupportedLang } from "@/lib/langs";
 import { ScansChart } from "./stats/scans-chart";
 import { KpiCard } from "./kpi-bento";
 import { WelcomeHero, QuickActions } from "./welcome-hero";
+import { DashboardMobileWrap } from "./dashboard-mobile-wrap";
 
 export const metadata: Metadata = {
   title: "Dashboard · Ruliz",
@@ -104,6 +105,7 @@ export default async function DashboardHome() {
   ];
 
   return (
+    <DashboardMobileWrap publicMenuUrl={`/carte/${restaurant.id.toString()}`}>
     <div className="space-y-6 md:space-y-8">
       <WelcomeHero
         firstName={firstName}
@@ -248,7 +250,7 @@ export default async function DashboardHome() {
           aria-hidden
           className="pointer-events-none absolute -right-20 -top-20 size-64 rounded-full bg-[var(--neon-cyan)]/15 blur-3xl"
         />
-        <CardHeader className="relative flex flex-row items-start justify-between gap-4 space-y-0">
+        <CardHeader className="relative flex flex-col items-start gap-4 space-y-0 md:flex-row md:items-start md:justify-between">
           <div>
             <CardTitle>Édite ta carte</CardTitle>
             <CardDescription className="mt-1">
@@ -256,7 +258,7 @@ export default async function DashboardHome() {
               live à droite. Auto-save activé sur les modifs.
             </CardDescription>
           </div>
-          <Button asChild>
+          <Button asChild className="w-full md:w-auto">
             <Link href="/dashboard/menu">
               Ouvrir l&apos;éditeur
               <ArrowUpRight className="size-3.5" strokeWidth={2} />
@@ -265,5 +267,6 @@ export default async function DashboardHome() {
         </CardHeader>
       </Card>
     </div>
+    </DashboardMobileWrap>
   );
 }
