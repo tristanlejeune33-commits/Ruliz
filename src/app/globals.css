@@ -97,6 +97,29 @@
   --dur-fast: 120ms;
   --dur-default: 240ms;
   --dur-page: 320ms;
+
+  /* === Z-index échelle (cf. design-system-mobile.md §7) === */
+  --z-content: 1;
+  --z-sticky: 10;
+  --z-fab: 20;
+  --z-bottom-nav: 30;
+  --z-toast: 40;
+  --z-sheet-backdrop: 50;
+  --z-sheet: 51;
+  --z-modal-backdrop: 60;
+  --z-modal: 61;
+  --z-popover: 70;
+  --z-tooltip: 80;
+
+  /* === Hauteurs shell mobile === */
+  --h-mobile-topbar: 56px;
+  --h-mobile-bottomnav: 64px;
+  --h-fab: 56px;
+
+  /* === Ombres mobiles spécifiques === */
+  --shadow-bottom-nav: 0 -1px 0 var(--border-glass), 0 -8px 24px rgba(0, 0, 0, 0.18);
+  --shadow-fab: 0 8px 16px rgba(0, 229, 255, 0.32), 0 4px 8px rgba(0, 0, 0, 0.24);
+  --shadow-sheet: 0 -16px 48px rgba(0, 0, 0, 0.32);
 }
 
 /* ============================================================================
@@ -160,6 +183,11 @@
   --accent: var(--neon-cyan);
   --accent-foreground: #ffffff;
   --color-destructive: var(--neon-danger);
+
+  /* === Ombres mobiles override pour light mode (sobres) === */
+  --shadow-bottom-nav: 0 -1px 0 var(--border-glass), 0 -8px 24px rgba(11, 21, 48, 0.06);
+  --shadow-fab: 0 8px 16px rgba(38, 67, 138, 0.24), 0 4px 8px rgba(11, 21, 48, 0.08);
+  --shadow-sheet: 0 -16px 48px rgba(11, 21, 48, 0.12);
 }
 
 /* En light, le body utilise le canvas off-white bleuté + pas de gradient
@@ -176,6 +204,9 @@
   }
   html {
     scroll-behavior: smooth;
+    /* Anti-zoom landscape iOS, base globale pour le panel mobile */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
   body {
     background-color: var(--bg-primary);
@@ -183,11 +214,23 @@
     font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Anti-frictions mobiles : pas de flash bleu Android, pas de delay 300ms,
+       pas d'overflow horizontal accidentel */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overflow-x: hidden;
     /* Body gradient subtil pour donner un fond moins plat */
     background-image:
       radial-gradient(at 0% 0%, rgba(0, 229, 255, 0.06) 0%, transparent 35%),
       radial-gradient(at 100% 100%, rgba(177, 108, 255, 0.05) 0%, transparent 35%);
     background-attachment: fixed;
+  }
+
+  /* Inputs : 16px minimum pour empêcher le zoom auto Safari iOS au focus */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 
   /* Headings tendus */
@@ -631,6 +674,82 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================================================
+ * UTILITAIRES MOBILE — touch targets, safe areas, viewport dynamique
+ * (cf. docs/design-system-mobile.md §3, §4)
+ * ========================================================================= */
+
+@layer utilities {
+  /* === Touch targets (Apple HIG / Material) === */
+  .tap-44 { min-width: 44px; min-height: 44px; }
+  .tap-48 { min-width: 48px; min-height: 48px; }
+  .tap-56 { min-width: 56px; min-height: 56px; }
+
+  /* === Safe areas iOS (notch + Dynamic Island + home indicator) === */
+  .safe-top    { padding-top:    env(safe-area-inset-top); }
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
+  .safe-left   { padding-left:   env(safe-area-inset-left); }
+  .safe-right  { padding-right:  env(safe-area-inset-right); }
+  .safe-x      { padding-left:   env(safe-area-inset-left);
+                  padding-right:  env(safe-area-inset-right); }
+
+  /* Variants avec minimum garanti — usage le plus fréquent */
+  .safe-top-min-3    { padding-top:    max(12px, env(safe-area-inset-top)); }
+  .safe-bottom-min-3 { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+  .safe-bottom-min-4 { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  .safe-bottom-min-5 { padding-bottom: max(20px, env(safe-area-inset-bottom)); }
+
+  /* Margin variants pour FAB et éléments flottants */
+  .safe-bottom-mb-4  { margin-bottom: max(16px, env(safe-area-inset-bottom)); }
+  .safe-bottom-mb-5  { margin-bottom: max(20px, env(safe-area-inset-bottom)); }
+
+  /* === Viewport dynamique (gère barre URL Safari mobile) === */
+  .h-dvh-screen     { height:     100dvh; }
+  .min-h-dvh-screen { min-height: 100dvh; }
+  .max-h-dvh-90     { max-height: 90dvh;  }
+  .max-h-dvh-95     { max-height: 95dvh;  }
+
+  /* === Scroll snap horizontal — pour SegmentedControl, ScrollSnapList === */
+  .scroll-snap-x {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .scroll-snap-y {
+    scroll-snap-type: y mandatory;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  .snap-center { scroll-snap-align: center; }
+  .snap-start  { scroll-snap-align: start; }
+
+  /* Cache la scrollbar (souvent utile sur scroll horizontal compact) */
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* === Échelle typo mobile fluide (clamp) === */
+  .text-display-1 { font-size: clamp(28px, 7vw, 40px); line-height: 1.15; letter-spacing: -0.02em; }
+  .text-display-2 { font-size: clamp(24px, 6vw, 32px); line-height: 1.2;  letter-spacing: -0.02em; }
+  .text-h1-mobile { font-size: clamp(22px, 5.5vw, 28px); line-height: 1.25; letter-spacing: -0.015em; }
+  .text-h2-mobile { font-size: clamp(20px, 5vw,   24px); line-height: 1.3;  letter-spacing: -0.01em; }
+  .text-h3-mobile { font-size: clamp(18px, 4.5vw, 20px); line-height: 1.35; }
+  .text-overline  { font-size: 11px; line-height: 1.4; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* === Ombres shell mobile (utilisent les tokens définis ci-dessus) === */
+  .shadow-bottom-nav { box-shadow: var(--shadow-bottom-nav); }
+  .shadow-fab        { box-shadow: var(--shadow-fab); }
+  .shadow-sheet      { box-shadow: var(--shadow-sheet); }
+
+  /* === Drag handle pour bottom sheet (centré, gris) === */
+  .drag-handle {
+    width: 32px;
+    height: 4px;
+    border-radius: 9999px;
+    background: var(--text-tertiary);
+    opacity: 0.4;
   }
 }
 

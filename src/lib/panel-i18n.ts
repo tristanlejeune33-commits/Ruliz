@@ -186,6 +186,24 @@ const DICT: Record<string, LangDict> = {
     pt: "Loja QR",
     zh: "二维码商店",
   },
+  "nav.more": {
+    fr: "Plus",
+    en: "More",
+    es: "Más",
+    de: "Mehr",
+    it: "Altro",
+    pt: "Mais",
+    zh: "更多",
+  },
+  "drawer.section.compte": {
+    fr: "Compte",
+    en: "Account",
+    es: "Cuenta",
+    de: "Konto",
+    it: "Account",
+    pt: "Conta",
+    zh: "账户",
+  },
 
   // -----------------------------------------------------------------------
   // Sidebar — items admin

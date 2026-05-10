@@ -17,7 +17,10 @@ const Input = React.forwardRef<
       type={type}
       ref={ref}
       className={cn(
-        "flex h-10 w-full rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-md px-3 py-2 text-sm text-[var(--text-primary)]",
+        // Mobile-first : h-12 (48px touch + 16px font hérité de globals → no zoom iOS).
+        // Desktop dense : h-10. Le 16px reste appliqué globalement par globals.css mais
+        // text-sm (14px) override la taille visuelle du label / placeholder.
+        "flex h-12 w-full rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-md px-3 py-2 text-base text-[var(--text-primary)] lg:h-10 lg:text-sm",
         "placeholder:text-[var(--text-tertiary)]",
         "transition-all duration-200",
         "hover:border-[var(--border-glass-hover)]",

@@ -34,11 +34,15 @@ const buttonVariants = cva(
           "text-[var(--neon-cyan)] underline-offset-4 hover:underline p-0 h-auto",
       },
       size: {
-        default: "h-9 px-4 py-2",
-        sm: "h-8 rounded-lg px-3 text-xs",
-        lg: "h-11 rounded-xl px-6 text-base",
-        icon: "size-9 rounded-lg",
-        "icon-sm": "size-8 rounded-lg",
+        // Defaults : mobile-first (h-11 = 44px touch, Apple HIG) → h-9 desktop (compact dense UI)
+        default: "h-11 px-4 py-2 lg:h-9",
+        sm: "h-9 rounded-lg px-3 text-xs lg:h-8",
+        lg: "h-12 rounded-xl px-6 text-base lg:h-11",
+        // CTA primaire mobile (bottom sheet, formulaires sticky)
+        xl: "h-14 rounded-2xl px-7 text-base font-semibold",
+        // Icon variants : mobile-first 44px, desktop 36/32
+        icon: "size-11 rounded-xl lg:size-9 lg:rounded-lg",
+        "icon-sm": "size-9 rounded-lg lg:size-8",
       },
     },
     defaultVariants: {

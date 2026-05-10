@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -23,6 +23,26 @@ export const metadata: Metadata = {
   metadataBase: new URL(getAppUrl()),
 };
 
+/**
+ * Viewport mobile-first.
+ *
+ * - `viewportFit: "cover"` active `env(safe-area-inset-*)` pour les iPhones
+ *   avec encoche / Dynamic Island. Indispensable pour les bottom nav, top bar
+ *   et modales qui doivent respecter la safe area. (cf. design-system-mobile.md §2)
+ * - Pas de `maximumScale` ni `userScalable: false` : on garde le zoom utilisateur
+ *   accessible (WCAG AA, jusqu'à 200%).
+ * - `themeColor` dual mode : la barre URL mobile prend la teinte du thème actif.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#070b14" },
+    { media: "(prefers-color-scheme: light)", color: "#26438a" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,7 +60,9 @@ export default function RootLayout({
         >
           <TooltipProvider delayDuration={150}>
             {children}
-            <Toaster richColors position="bottom-right" />
+            {/* Toaster : position est gérée en interne (mobile = bottom-center
+                au-dessus de la BottomNav, desktop = bottom-right) */}
+            <Toaster richColors />
           </TooltipProvider>
         </ThemeProvider>
       </body>
