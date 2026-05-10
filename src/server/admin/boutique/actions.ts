@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
+import {
+  archiveProduitOnStripe,
+  syncProduitToStripeAndPersist,
+} from "./stripe-sync";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -88,6 +92,11 @@ export async function createBoutiqueProduit(
     },
   });
 
+  // Sync Stripe en best-effort (ne bloque pas la réponse en cas d'échec)
+  await syncProduitToStripeAndPersist(created.id).catch((err) =>
+    console.warn("[boutique.create] sync Stripe failed:", err),
+  );
+
   revalidatePath("/admin/boutique");
   revalidatePath("/dashboard/boutique");
   return { ok: true, data: { id: created.id.toString() } };
@@ -137,6 +146,11 @@ export async function updateBoutiqueProduit(
     },
   });
 
+  // Sync Stripe en best-effort
+  await syncProduitToStripeAndPersist(id).catch((err) =>
+    console.warn("[boutique.update] sync Stripe failed:", err),
+  );
+
   revalidatePath("/admin/boutique");
   revalidatePath("/dashboard/boutique");
   revalidatePath(`/dashboard/boutique/${slug}`);
@@ -161,7 +175,25 @@ export async function deleteBoutiqueProduit(
     };
   }
 
+  // Récupère les IDs Stripe avant suppression pour archive
+  const before = await prisma.boutiqueProduit.findUnique({
+    where: { id },
+    select: { stripeProductId: true, stripePriceId: true },
+  });
+
   await prisma.boutiqueProduit.delete({ where: { id } });
+
+  // Archive sur Stripe (Stripe ne permet pas la suppression réelle si le
+  // Product/Price est référencé par une transaction)
+  if (before) {
+    await archiveProduitOnStripe({
+      stripeProductId: before.stripeProductId,
+      stripePriceId: before.stripePriceId,
+    }).catch((err) =>
+      console.warn("[boutique.delete] archive Stripe failed:", err),
+    );
+  }
+
   revalidatePath("/admin/boutique");
   revalidatePath("/dashboard/boutique");
   return { ok: true };

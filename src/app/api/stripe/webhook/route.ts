@@ -65,19 +65,56 @@ export async function POST(req: Request) {
 // ---------------- Handlers ----------------
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+  // === Mode "subscription" : abonnement Pro/Premium ===
   const restaurantId = session.metadata?.ruliz_restaurant_id;
-  if (!restaurantId || !session.subscription) return;
+  if (restaurantId && session.subscription) {
+    const subId =
+      typeof session.subscription === "string"
+        ? session.subscription
+        : session.subscription.id;
 
-  const subId =
-    typeof session.subscription === "string"
-      ? session.subscription
-      : session.subscription.id;
+    // The subscription updated event will follow with full data ; we just bind here.
+    await prisma.restaurant.updateMany({
+      where: { id: BigInt(restaurantId) },
+      data: { stripeSubscriptionId: subId },
+    });
+    return;
+  }
 
-  // The subscription updated event will follow with full data ; we just bind here.
-  await prisma.restaurant.updateMany({
-    where: { id: BigInt(restaurantId) },
-    data: { stripeSubscriptionId: subId },
-  });
+  // === Mode "payment" : commande boutique QR (one-shot) ===
+  const commandeId = session.metadata?.ruliz_boutique_commande_id;
+  if (commandeId && session.mode === "payment") {
+    const paymentIntentId =
+      typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id ?? null;
+
+    let bigId: bigint;
+    try {
+      bigId = BigInt(commandeId);
+    } catch {
+      console.warn(
+        "[stripe.webhook] invalid boutique_commande_id metadata:",
+        commandeId,
+      );
+      return;
+    }
+
+    await prisma.boutiqueCommande.updateMany({
+      where: { id: bigId, paidAt: null },
+      data: {
+        paidAt: new Date(),
+        stripePaymentIntentId: paymentIntentId,
+        // Optionnel : passer en "en_preparation" automatiquement après paiement
+        // pour signaler à l'admin que c'est prêt à expédier
+        statut: "en_preparation",
+      },
+    });
+    console.log(
+      `[stripe.webhook] boutique commande ${commandeId} paid (PI: ${paymentIntentId})`,
+    );
+    return;
+  }
 }
 
 async function handleSubscriptionUpsert(sub: Stripe.Subscription) {

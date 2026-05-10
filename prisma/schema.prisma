@@ -565,6 +565,13 @@ model BoutiqueProduit {
   stockMax      Int?                  @map("stock_max")
   /** JSON des features bullet (ex: ["100 unités", "Format A4", "Pelliculage mat"]) */
   featuresJson  Json?                 @map("features_json")
+  /** ID Stripe Product (synchro auto à chaque create/update). null si Stripe
+      pas configuré ou sync non encore effectuée. */
+  stripeProductId String?             @map("stripe_product_id") @db.VarChar(100)
+  /** ID Stripe Price (one-shot, pas récurrent). Utilisé par Checkout Session.
+      Recréé à chaque changement de prix (Stripe ne permet pas de modifier un
+      Price existant — on archive l'ancien et on crée un nouveau). */
+  stripePriceId   String?             @map("stripe_price_id") @db.VarChar(100)
   createdAt     DateTime              @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt     DateTime              @updatedAt @map("updated_at") @db.Timestamptz()
 
@@ -603,6 +610,14 @@ model BoutiqueCommande {
   /** Notes internes admin (ex: "facture envoyée le 12/05") */
   notesAdmin      String?                @map("notes_admin") @db.Text
   statut          BoutiqueCommandeStatut @default(en_attente)
+  /** Stripe Checkout Session ID (cs_test_... / cs_live_...). Présent si le
+      client a démarré un paiement en ligne. */
+  stripeCheckoutSessionId String?        @map("stripe_checkout_session_id") @db.VarChar(255)
+  /** Stripe Payment Intent ID (pi_...). Set par le webhook quand le paiement
+      réussit. */
+  stripePaymentIntentId   String?        @map("stripe_payment_intent_id") @db.VarChar(100)
+  /** Date du paiement réussi (set par le webhook). null = pas encore payé. */
+  paidAt                  DateTime?      @map("paid_at") @db.Timestamptz()
   createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz()
   updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz()
 

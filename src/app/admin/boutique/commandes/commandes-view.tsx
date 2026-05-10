@@ -49,6 +49,9 @@ interface SerializedCommande {
   notesClient: string | null;
   notesAdmin: string | null;
   statut: Statut;
+  paidAt: string | null;
+  stripePaymentIntentId: string | null;
+  stripeCheckoutSessionId: string | null;
   createdAt: string;
   items: Array<{
     id: string;
@@ -314,6 +317,7 @@ export function CommandesAdminView({
                 <TableHead>Client</TableHead>
                 <TableHead className="hidden lg:table-cell">Livraison</TableHead>
                 <TableHead className="text-right">Total</TableHead>
+                <TableHead>Paiement</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead className="hidden md:table-cell">Date</TableHead>
               </TableRow>
@@ -407,6 +411,28 @@ export function CommandesAdminView({
                         style: "currency",
                         currency: c.devise,
                       })}
+                    </TableCell>
+                    <TableCell>
+                      {c.paidAt ? (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-md border border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--neon-success)]"
+                          title={
+                            c.stripePaymentIntentId
+                              ? `Stripe : ${c.stripePaymentIntentId}`
+                              : undefined
+                          }
+                        >
+                          ✓ Payée
+                        </span>
+                      ) : c.stripeCheckoutSessionId ? (
+                        <span className="inline-flex items-center rounded-md border border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] px-2 py-0.5 text-[11px] font-medium text-[var(--neon-violet)]">
+                          En cours…
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-md border border-[var(--border-glass)] bg-[var(--bg-glass)] px-2 py-0.5 text-[11px] font-medium text-[var(--text-tertiary)]">
+                          À facturer
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Select

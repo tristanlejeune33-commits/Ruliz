@@ -10,11 +10,14 @@ import { Card } from "@/components/ui/card";
 import { Logo } from "@/components/shared/logo";
 import { prisma } from "@/lib/db";
 import { getActingUserId } from "@/lib/impersonation";
+import { isStripeConfigured } from "@/lib/stripe";
 import { cn } from "@/lib/utils";
+import { PayButton } from "./pay-button";
 import { PrintButton } from "./print-button";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ checkout?: string }>;
 }
 
 export const metadata: Metadata = {
@@ -49,8 +52,12 @@ const STATUT_TONE: Record<string, { label: string; classes: string }> = {
   },
 };
 
-export default async function CommandeDetailPage({ params }: PageProps) {
+export default async function CommandeDetailPage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
+  const sp = await searchParams;
   const acting = await getActingUserId();
   if (!acting) notFound();
 
@@ -103,8 +110,29 @@ export default async function CommandeDetailPage({ params }: PageProps) {
             Mes commandes & factures
           </Link>
         </Button>
-        <PrintButton />
+        <div className="flex items-center gap-2">
+          <PayButton
+            commandeId={commande.id.toString()}
+            paidAt={commande.paidAt?.toISOString() ?? null}
+            stripeConfigured={isStripeConfigured()}
+            isAnnulee={commande.statut === "annulee"}
+          />
+          <PrintButton />
+        </div>
       </div>
+
+      {/* Bandeau retour Stripe — succès / annulation */}
+      {sp.checkout === "success" && !commande.paidAt && (
+        <Card className="border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] p-4 text-center text-sm text-[var(--text-primary)] print:hidden">
+          ✅ Paiement confirmé. La mise à jour est en cours via Stripe — recharge
+          la page dans quelques secondes si le statut n&apos;a pas encore changé.
+        </Card>
+      )}
+      {sp.checkout === "cancel" && (
+        <Card className="border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] p-4 text-center text-sm text-[var(--text-primary)] print:hidden">
+          Paiement annulé. Tu peux réessayer ci-dessus à tout moment.
+        </Card>
+      )}
 
       {/* Bon de commande imprimable */}
       <Card className="mx-auto max-w-3xl space-y-8 p-8 print:border-none print:bg-white print:p-0 print:shadow-none">
