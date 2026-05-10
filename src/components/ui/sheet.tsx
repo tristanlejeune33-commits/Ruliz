@@ -28,16 +28,19 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-[var(--bg-card)] p-6 shadow-2xl border-[var(--border-subtle)] transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out",
+  "fixed z-50 gap-4 bg-[var(--bg-card)] shadow-2xl border-[var(--border-subtle)] transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out",
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
+        top: "inset-x-0 top-0 border-b p-6 data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
         bottom:
-          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
+          "inset-x-0 bottom-0 border-t p-6 max-h-[92dvh] safe-bottom-min-5 rounded-t-2xl data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
+        // Left/right : sur mobile basculent en bottom sheet (anti-cramped)
+        // pour respecter la spec docs/design-system-mobile.md §8 BottomSheet.
+        left:
+          "inset-x-0 bottom-0 border-t p-6 max-h-[92dvh] safe-bottom-min-5 rounded-t-2xl data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom lg:inset-y-0 lg:bottom-auto lg:left-0 lg:right-auto lg:h-full lg:w-3/4 lg:max-h-none lg:rounded-none lg:border-l-0 lg:border-r lg:p-6 lg:data-[state=closed]:slide-out-to-left lg:data-[state=open]:slide-in-from-left lg:data-[state=closed]:slide-out-to-bottom-0 lg:max-w-sm",
         right:
-          "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+          "inset-x-0 bottom-0 border-t p-6 max-h-[92dvh] safe-bottom-min-5 rounded-t-2xl data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom lg:inset-y-0 lg:bottom-auto lg:left-auto lg:right-0 lg:h-full lg:w-3/4 lg:max-h-none lg:rounded-none lg:border-l lg:border-t-0 lg:p-6 lg:data-[state=closed]:slide-out-to-right lg:data-[state=open]:slide-in-from-right lg:max-w-sm",
       },
     },
     defaultVariants: { side: "right" },
@@ -59,9 +62,15 @@ const SheetContent = React.forwardRef<
       className={cn(sheetVariants({ side }), className)}
       {...props}
     >
+      {/* Drag handle visuel sur mobile (left/right qui deviennent bottom sheet) */}
+      {(side === "left" || side === "right" || side === "bottom") && (
+        <div className="mx-auto -mt-3 mb-2 flex h-3 w-full items-center justify-center lg:hidden">
+          <div className="drag-handle" aria-hidden />
+        </div>
+      )}
       {children}
       <SheetPrimitive.Close
-        className="absolute right-4 top-4 rounded-md p-1 text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:pointer-events-none"
+        className="absolute right-3 top-3 flex size-9 items-center justify-center rounded-full text-[var(--text-muted)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] disabled:pointer-events-none lg:right-4 lg:top-4 lg:size-7 lg:rounded-md lg:p-1"
         aria-label="Fermer"
       >
         <X className="size-4" />
