@@ -451,7 +451,7 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                   key={f.id}
                   className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3"
                 >
-                  <div className="grid grid-cols-[1fr_100px_40px] gap-2">
+                  <div className="grid grid-cols-[1fr_80px_40px] gap-2 sm:grid-cols-[1fr_100px_40px]">
                     <FormField
                       control={form.control}
                       name={`lots.${i}.label`}

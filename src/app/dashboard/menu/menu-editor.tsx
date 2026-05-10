@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   moveCategorie,
   moveProduit,
@@ -72,6 +73,10 @@ export function MenuEditor({
 }: MenuEditorProps) {
   const router = useRouter();
   const [showPreview, setShowPreview] = useState(true);
+  // Mode mobile uniquement : "edit" (default) montre l'éditeur, "preview"
+  // montre l'iframe full-width. Sur desktop, le toggle showPreview gère
+  // la 3ème colonne — le mode mobile est ignoré (le SegmentedControl est lg:hidden).
+  const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [activeCategorieId, setActiveCategorieId] = useState<string | null>(
     tree[0]?.id ?? null,
   );
@@ -513,7 +518,91 @@ export function MenuEditor({
       collisionDetection={collisionDetection}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid flex-1 grid-cols-1 lg:grid-cols-[280px_1fr_minmax(0,420px)]">
+      {/* Toggle mobile-only Édition / Aperçu — caché desktop (la 3ème colonne
+          de preview prend le relais). Empilé avec le mode preview qui swap
+          le contenu entre éditeur (sidebar+produits) et iframe full-width. */}
+      <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 px-4 py-2 lg:hidden">
+        <SegmentedControl<"edit" | "preview">
+          value={mobileView}
+          onChange={setMobileView}
+          options={[
+            {
+              value: "edit",
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  <Pencil className="size-3.5" strokeWidth={1.75} />
+                  Édition
+                </span>
+              ),
+            },
+            {
+              value: "preview",
+              label: (
+                <span className="inline-flex items-center gap-1.5">
+                  <Smartphone className="size-3.5" strokeWidth={1.75} />
+                  Aperçu
+                </span>
+              ),
+            },
+          ]}
+          size="compact"
+          className="w-full"
+          ariaLabel="Mode éditeur mobile"
+        />
+      </div>
+
+      {/* Aperçu mobile full-width — visible seulement en mode "preview" sous lg.
+          Sur desktop l'iframe est dans la 3ème colonne (cf. plus bas). */}
+      {mobileView === "preview" && (
+        <section className="flex flex-1 flex-col items-center justify-start bg-[var(--bg-elevated)]/40 p-4 lg:hidden">
+          <div className="mb-3 flex w-full items-center justify-between">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+              <Smartphone className="size-3.5" strokeWidth={1.75} />
+              Aperçu live
+            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={refreshAll}
+                aria-label="Rafraîchir l'aperçu"
+                className="h-8 px-2"
+              >
+                <RefreshCcw className="size-3.5" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                asChild
+                aria-label="Ouvrir dans un nouvel onglet"
+                className="h-8 px-2"
+              >
+                <a
+                  href={`/carte/${restaurantId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <ExternalLink className="size-3.5" />
+                </a>
+              </Button>
+            </div>
+          </div>
+          <div className="aspect-[9/19] w-full max-w-[380px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-white shadow-xl">
+            <iframe
+              key={`mobile-${previewKey}-${previewLang}`}
+              src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
+              title="Preview carte publique"
+              className="h-full w-full"
+            />
+          </div>
+        </section>
+      )}
+
+      <div
+        className={`grid flex-1 grid-cols-1 lg:grid-cols-[280px_1fr_minmax(0,420px)] ${
+          mobileView === "preview" ? "hidden lg:grid" : ""
+        }`}
+      >
         {/* Sidebar catégories */}
         <aside className="flex min-h-0 flex-col border-r border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40">
           <div className="sticky top-14 z-10 flex items-center justify-between gap-2 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/95 px-4 py-2.5 backdrop-blur">
