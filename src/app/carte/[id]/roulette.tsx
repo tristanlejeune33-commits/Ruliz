@@ -702,6 +702,20 @@ function SocialStep({
       <p className="mt-auto text-center text-xs italic text-neutral-500">
         Votre avis ou votre abonnement n&apos;influencera pas vos chances de gagner.
       </p>
+
+      {/* Rappel règles du jeu — lien permanent en bas */}
+      <p className="text-center text-[10px] text-neutral-400">
+        ✓ En participant, vous acceptez les{" "}
+        <a
+          href="https://ruliz.fr/dp"
+          target="_blank"
+          rel="noreferrer"
+          className="underline hover:text-neutral-700"
+        >
+          règles du jeu
+        </a>
+        .
+      </p>
     </div>
   );
 }
@@ -761,6 +775,20 @@ function CountdownStep({
           ? "Merci pour ton avis ! "
           : "Merci de t'être abonné ! "}
         Votre avis ou votre abonnement n&apos;influencera pas vos chances de gagner.
+      </p>
+
+      {/* Rappel règles du jeu — lien permanent en bas */}
+      <p className="text-center text-[10px] text-neutral-400">
+        ✓ En participant, vous acceptez les{" "}
+        <a
+          href="https://ruliz.fr/dp"
+          target="_blank"
+          rel="noreferrer"
+          className="underline hover:text-neutral-700"
+        >
+          règles du jeu
+        </a>
+        .
       </p>
     </div>
   );
