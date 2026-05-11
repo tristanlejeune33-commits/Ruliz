@@ -13,7 +13,7 @@ import {
   shift,
   useFloating,
 } from "@floating-ui/react";
-import { Sparkles, X } from "lucide-react";
+import { Gift, Sparkles, X } from "lucide-react";
 import { ONBOARDING_STEPS, TOTAL_STEPS } from "./steps";
 import {
   setOnboardingStep,
@@ -48,7 +48,7 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
 
   // Démarrage : si initialStep === 0 (jamais démarré), on commence à 1
   const [currentStepId, setCurrentStepId] = useState<number>(
-    initialStep === 0 ? 1 : Math.max(1, Math.min(6, initialStep)),
+    initialStep === 0 ? 1 : Math.max(1, Math.min(TOTAL_STEPS, initialStep)),
   );
   const [skipConfirmOpen, setSkipConfirmOpen] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -135,7 +135,7 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
 
     if (!nextStep) {
       // Dernière étape → complétion
-      await setOnboardingStep(6);
+      await setOnboardingStep(TOTAL_STEPS);
       setCompleted(true);
       setPending(false);
       return;
@@ -231,15 +231,36 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
           }
           style={isFloating ? undefined : floatingStyles}
         >
-          <BubbleCard>
+          <BubbleCard kind={currentStep.kind}>
             {/* Header : avatar + counter + close */}
             <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="flex size-7 items-center justify-center rounded-full bg-[var(--accent)]/15">
-                  <Sparkles className="size-3.5 text-[var(--accent)]" />
+                <span
+                  className="flex size-7 items-center justify-center rounded-full"
+                  style={{
+                    background:
+                      currentStep.kind === "value"
+                        ? "color-mix(in oklch, #d4a017 18%, transparent)"
+                        : "color-mix(in oklch, var(--accent) 15%, transparent)",
+                  }}
+                >
+                  {currentStep.kind === "value" ? (
+                    <Gift className="size-3.5" style={{ color: "#d4a017" }} />
+                  ) : (
+                    <Sparkles className="size-3.5 text-[var(--accent)]" />
+                  )}
                 </span>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                  Étape {currentStep.id}/{TOTAL_STEPS}
+                  {currentStep.kind === "value" ? (
+                    <>
+                      Bonus {currentStep.id - 10}/2 ·{" "}
+                      <span style={{ color: "#d4a017" }}>plus-value</span>
+                    </>
+                  ) : (
+                    <>
+                      Étape {currentStep.id}/{TOTAL_STEPS}
+                    </>
+                  )}
                 </span>
               </div>
               <button
@@ -255,7 +276,11 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
             {/* Progress bar */}
             <div className="mb-3 h-1 overflow-hidden rounded-full bg-[var(--bg-glass)]">
               <motion.div
-                className="h-full bg-[var(--accent)]"
+                className="h-full"
+                style={{
+                  background:
+                    currentStep.kind === "value" ? "#d4a017" : "var(--accent)",
+                }}
                 initial={{ width: 0 }}
                 animate={{ width: `${(currentStep.id / TOTAL_STEPS) * 100}%` }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
@@ -290,7 +315,11 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
                 type="button"
                 onClick={handleNext}
                 disabled={pending}
-                className="rounded-md bg-[var(--accent)] px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
+                className="rounded-md px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
+                style={{
+                  background:
+                    currentStep.kind === "value" ? "#d4a017" : "var(--accent)",
+                }}
               >
                 {currentStep.cta}
               </button>
@@ -302,7 +331,7 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
                 ref={arrowRef}
                 context={context}
                 fill="var(--bg-elevated, #1a1a1a)"
-                stroke="var(--accent)"
+                stroke={currentStep.kind === "value" ? "#d4a017" : "var(--accent)"}
                 strokeWidth={1}
                 width={14}
                 height={7}
@@ -315,13 +344,22 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
   );
 }
 
-function BubbleCard({ children }: { children: React.ReactNode }) {
+function BubbleCard({
+  children,
+  kind = "base",
+}: {
+  children: React.ReactNode;
+  kind?: "base" | "value";
+}) {
   return (
     <div
       className="rounded-2xl border p-4 shadow-2xl backdrop-blur-md"
       style={{
         background: "var(--bg-popover-solid, var(--bg-elevated))",
-        borderColor: "color-mix(in oklch, var(--accent) 30%, transparent)",
+        borderColor:
+          kind === "value"
+            ? "color-mix(in oklch, #d4a017 35%, transparent)"
+            : "color-mix(in oklch, var(--accent) 30%, transparent)",
       }}
     >
       {children}

@@ -143,10 +143,13 @@ export async function getOnboardingState(): Promise<{
  * Marque l'étape courante du tour. Si step === 1 et qu'on n'a jamais démarré,
  * on note onboardingStartedAt. Si step === 6 (dernière), on complète.
  */
+/** Nombre total d'étapes du tour (12 = base + plus-value). Doit matcher TOTAL_STEPS côté client. */
+const ONBOARDING_TOTAL_STEPS = 12;
+
 export async function setOnboardingStep(
   step: number,
 ): Promise<OnboardingActionResult> {
-  if (step < 0 || step > 6) {
+  if (step < 0 || step > ONBOARDING_TOTAL_STEPS) {
     return { ok: false, error: "Étape invalide" };
   }
 
@@ -173,7 +176,7 @@ export async function setOnboardingStep(
   if (step === 1) {
     payload.onboardingStartedAt = new Date();
   }
-  if (step >= 6) {
+  if (step >= ONBOARDING_TOTAL_STEPS) {
     payload.onboardingCompleted = true;
     payload.onboardingCompletedAt = new Date();
   }

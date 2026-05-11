@@ -125,11 +125,15 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs defaultValue="infos">
           <TabsList data-onboarding-anchor="restaurant-branding">
-            <TabsTrigger value="infos">Infos</TabsTrigger>
+            <TabsTrigger value="infos" data-onboarding-anchor="restaurant-infos">
+              Infos
+            </TabsTrigger>
             <TabsTrigger value="theme">Thème</TabsTrigger>
             <TabsTrigger value="couleurs">Couleurs</TabsTrigger>
             <TabsTrigger value="branding">Médias</TabsTrigger>
-            <TabsTrigger value="social">Réseaux</TabsTrigger>
+            <TabsTrigger value="social" data-onboarding-anchor="restaurant-social">
+              Réseaux
+            </TabsTrigger>
           </TabsList>
 
           {/* ===================== INFOS ===================== */}

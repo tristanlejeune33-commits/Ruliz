@@ -1,5 +1,9 @@
 /**
- * Config des 6 étapes du tour onboarding.
+ * Config des 12 étapes du tour onboarding.
+ *
+ * Structure :
+ *  - Slides 1-10 = tour de base (mise en place de la carte)
+ *  - Slides 11-12 = plus-value (features avancées qui font vendre)
  *
  * Chaque étape :
  *  - path  : route où la bulle doit emmener l'utilisateur via router.push()
@@ -8,56 +12,95 @@
  *  - title : 1 ligne, max 40 caractères
  *  - body  : 2 lignes max, ton tutoiement, zéro jargon
  *  - cta   : texte du bouton principal
- *  - allowSkip : true sauf à la dernière étape
- *
- * IMPORTANT : les éléments du DOM ciblés DOIVENT porter l'attribut
- * `data-onboarding-anchor="<id>"` pour être trouvés (cf. anchorSelector ci-dessous).
+ *  - kind  : "base" ou "value" (visuel différent pour les 2 dernières)
  */
 
+export type StepKind = "base" | "value";
+
 export interface OnboardingStep {
-  id: 1 | 2 | 3 | 4 | 5 | 6;
+  id: number;
   path: string;
   anchorSelector: string | null;
   title: string;
   body: string;
   cta: string;
   allowSkip: boolean;
-  /** Placement par défaut quand ancré, en mode flottant ignore */
+  /** Placement par défaut quand ancré */
   placement?: "top" | "bottom" | "left" | "right";
+  /** "base" = parcours essentiel, "value" = features premium (slides 11-12) */
+  kind: StepKind;
 }
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
+  // =========================================================================
+  // TOUR DE BASE — slides 1 à 10
+  // =========================================================================
   {
     id: 1,
     path: "/dashboard",
     anchorSelector: null,
     title: "Salut 👋 Bienvenue dans Ruliz.",
-    body: "Je te montre comment mettre ta carte en ligne en 2 minutes. C'est parti ?",
+    body: "Je te montre tout en 12 étapes — 3 minutes chrono. C'est parti ?",
     cta: "C'est parti →",
     allowSkip: true,
+    kind: "base",
   },
   {
     id: 2,
     path: "/dashboard/restaurant",
     anchorSelector: "[data-onboarding-anchor='restaurant-branding']",
-    title: "Ton identité visuelle",
-    body: "Ajoute ton logo (glisse ou Ctrl+V) et choisis la couleur de ta carte.",
+    title: "Ton identité visuelle 🎨",
+    body: "Logo (glisse ou Ctrl+V) et couleur principale — tout le reste s'adapte.",
     cta: "Suivant →",
     allowSkip: true,
     placement: "bottom",
+    kind: "base",
   },
   {
     id: 3,
-    path: "/dashboard/menu",
-    anchorSelector: "[data-onboarding-anchor='add-category']",
-    title: "Crée tes catégories",
-    body: "Entrées, Plats, Vins… autant que tu veux, glisse pour réorganiser.",
+    path: "/dashboard/restaurant",
+    anchorSelector: "[data-onboarding-anchor='restaurant-infos']",
+    title: "Infos pratiques 📍",
+    body: "Adresse, téléphone, horaires — affichés sur ta carte pour rassurer tes clients.",
     cta: "Suivant →",
     allowSkip: true,
-    placement: "right",
+    placement: "bottom",
+    kind: "base",
   },
   {
     id: 4,
+    path: "/dashboard/restaurant",
+    anchorSelector: "[data-onboarding-anchor='restaurant-social']",
+    title: "Réseaux & Google reviews 🌐",
+    body: "Facebook, Insta, lien Google — affichés en haut de ta carte pour booster ton SEO local.",
+    cta: "Suivant →",
+    allowSkip: true,
+    placement: "bottom",
+    kind: "base",
+  },
+  {
+    id: 5,
+    path: "/dashboard/menu",
+    anchorSelector: "[data-onboarding-anchor='add-category']",
+    title: "Crée tes catégories 🍽️",
+    body: "Entrées, Plats, Vins, Desserts… glisse pour réorganiser, autant que tu veux.",
+    cta: "Suivant →",
+    allowSkip: true,
+    placement: "right",
+    kind: "base",
+  },
+  {
+    id: 6,
+    path: "/dashboard/menu",
+    anchorSelector: null,
+    title: "Ton premier produit 🍕",
+    body: "Sélectionne une catégorie, puis clique « + Produit » pour ajouter un plat.",
+    cta: "Suivant →",
+    allowSkip: true,
+    kind: "base",
+  },
+  {
+    id: 7,
     path: "/dashboard/menu",
     anchorSelector: "[data-onboarding-anchor='produit-photo']",
     title: "Astuce photos 📸",
@@ -65,26 +108,65 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     cta: "Suivant →",
     allowSkip: true,
     placement: "left",
+    kind: "base",
   },
   {
-    id: 5,
+    id: 8,
+    path: "/dashboard/menu",
+    anchorSelector: "[data-onboarding-anchor='produit-allergenes']",
+    title: "Allergènes & vignettes 🌿",
+    body: "Coche fait maison, végé, sans gluten, épicé — affiché en pills sur la fiche produit.",
+    cta: "Suivant →",
+    allowSkip: true,
+    placement: "left",
+    kind: "base",
+  },
+  {
+    id: 9,
     path: "/dashboard/menu",
     anchorSelector: "[data-onboarding-anchor='preview-iframe']",
-    title: "Aperçu live",
-    body: "Regarde à droite : c'est exactement ce que tes clients voient.",
+    title: "Aperçu live + 7 langues 🌍",
+    body: "À droite : ce que tes clients voient. Change la langue, l'IA traduit automatiquement.",
     cta: "Voir mon QR →",
     allowSkip: true,
     placement: "left",
+    kind: "base",
   },
   {
-    id: 6,
+    id: 10,
     path: "/dashboard/qrcodes",
     anchorSelector: "[data-onboarding-anchor='qr-display']",
-    title: "Scanne-toi avec ton phone",
-    body: "Sors ton téléphone, scanne — c'est ce que tes clients verront.",
+    title: "Ton QR code 📱",
+    body: "Télécharge le PNG, imprime-le, pose-le sur tes tables. Pointe toujours vers la dernière version.",
+    cta: "Voir les plus 🎁",
+    allowSkip: true,
+    placement: "left",
+    kind: "base",
+  },
+  // =========================================================================
+  // PLUS-VALUE — slides 11 et 12 (features qui font vendre / fidéliser)
+  // =========================================================================
+  {
+    id: 11,
+    path: "/dashboard/jeu",
+    anchorSelector: "[data-onboarding-anchor='jeu-page']",
+    title: "🎁 Roulette d'avis Google",
+    body: "Tes clients tournent la roue, gagnent un cadeau → laissent un avis Google. Boost SEO local immédiat.",
+    cta: "Suivant →",
+    allowSkip: true,
+    placement: "bottom",
+    kind: "value",
+  },
+  {
+    id: 12,
+    path: "/dashboard/stats",
+    anchorSelector: "[data-onboarding-anchor='stats-page']",
+    title: "📊 Stats & Plan Premium",
+    body: "Suis tes scans en temps réel. Plan Premium : sans branding Ruliz, multi-restos, SMS marketing.",
     cta: "Terminer 🎉",
     allowSkip: false,
-    placement: "left",
+    placement: "bottom",
+    kind: "value",
   },
 ];
 

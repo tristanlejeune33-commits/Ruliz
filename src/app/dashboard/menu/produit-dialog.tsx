@@ -454,7 +454,7 @@ export function ProduitDialog({
                 </div>
 
                 {/* Vignettes */}
-                <div>
+                <div data-onboarding-anchor="produit-allergenes">
                   <Label>Vignettes</Label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {vignettes.map((v) => {

@@ -46,7 +46,7 @@ export default async function JeuPage() {
   const config = (jeu?.configJson as unknown as JeuConfig | null) ?? null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-onboarding-anchor="jeu-page">
       <PageHero
         accent="violet"
         eyebrow={

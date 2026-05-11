@@ -60,7 +60,7 @@ export default async function StatsPage({ searchParams }: PageProps) {
   const analytics = await getAnalytics(restaurant.id, filters);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-onboarding-anchor="stats-page">
       <PageHero
         accent="cyan"
         eyebrow={
