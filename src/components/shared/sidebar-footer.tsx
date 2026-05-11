@@ -5,7 +5,9 @@ import {
   ChevronsUpDown,
   HelpCircle,
   LogOut,
+  Scale,
   Settings,
+  ShieldCheck,
   User as UserIcon,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -150,6 +152,33 @@ export function SidebarFooter({
         className="rounded-md gap-2"
       >
         <HelpCircle strokeWidth={1.75} /> {t("userMenu.help")}
+      </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      {/* === Liens légaux : ouverts dans un nouvel onglet pour ne pas
+           interrompre le flow de travail dans le panel === */}
+      <DropdownMenuItem
+        onClick={() =>
+          window.open(
+            "/legal/mentions-legales",
+            "_blank",
+            "noopener,noreferrer",
+          )
+        }
+        className="rounded-md gap-2"
+      >
+        <Scale strokeWidth={1.75} /> {t("userMenu.legalMentions")}
+      </DropdownMenuItem>
+      <DropdownMenuItem
+        onClick={() =>
+          window.open(
+            "/legal/politique-confidentialite",
+            "_blank",
+            "noopener,noreferrer",
+          )
+        }
+        className="rounded-md gap-2"
+      >
+        <ShieldCheck strokeWidth={1.75} /> {t("userMenu.legalPrivacy")}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem

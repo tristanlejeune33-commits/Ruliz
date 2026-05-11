@@ -3,9 +3,12 @@ import Link from "next/link";
 import {
   ArrowRight,
   CreditCard,
+  ExternalLink,
   GraduationCap,
   Receipt,
+  Scale,
   Settings as SettingsIcon,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -93,6 +96,52 @@ export default async function SettingsPage() {
             </CardHeader>
             <CardContent>
               <RestartTourButton />
+            </CardContent>
+          </Card>
+
+          {/* === Informations légales ===
+              Liens vers les pages publiques /legal/* — toujours accessibles
+              depuis le dropdown utilisateur en sidebar, mais on les remet
+              ici en évidence pour que ce soit trouvable. Ouverture en
+              nouvel onglet (rel="noopener" auto sur target=_blank). */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--neon-violet-soft)] text-[var(--neon-violet)] ring-1 ring-[var(--neon-violet)]/30">
+                  <Scale className="size-5" strokeWidth={1.75} />
+                </span>
+                <div>
+                  <CardTitle>Informations légales</CardTitle>
+                  <CardDescription className="mt-1">
+                    Mentions légales, CGV et politique de confidentialité de
+                    Ruliz. Consulte-les à tout moment depuis ton espace.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link
+                  href="/legal/mentions-legales"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Scale className="size-3.5" strokeWidth={1.75} />
+                  Mentions légales &amp; CGV
+                  <ExternalLink className="size-3" strokeWidth={1.75} />
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link
+                  href="/legal/politique-confidentialite"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ShieldCheck className="size-3.5" strokeWidth={1.75} />
+                  Politique de confidentialité
+                  <ExternalLink className="size-3" strokeWidth={1.75} />
+                </Link>
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>

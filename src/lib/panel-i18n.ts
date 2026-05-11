@@ -400,6 +400,24 @@ const DICT: Record<string, LangDict> = {
     pt: "Sair",
     zh: "登出",
   },
+  "userMenu.legalMentions": {
+    fr: "Mentions légales & CGV",
+    en: "Legal notice & T&Cs",
+    es: "Aviso legal y CGV",
+    de: "Impressum & AGB",
+    it: "Note legali e CGV",
+    pt: "Avisos legais & CGV",
+    zh: "法律声明与条款",
+  },
+  "userMenu.legalPrivacy": {
+    fr: "Politique de confidentialité",
+    en: "Privacy policy",
+    es: "Política de privacidad",
+    de: "Datenschutzerklärung",
+    it: "Politica sulla privacy",
+    pt: "Política de privacidade",
+    zh: "隐私政策",
+  },
 
   // -----------------------------------------------------------------------
   // Dashboard home — Welcome / Status
