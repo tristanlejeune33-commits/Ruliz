@@ -77,10 +77,19 @@ export default async function DashboardLayout({
   // Affiche la bulle si :
   //  - L'user a un resto (sinon il est sur /dashboard/onboarding pour le créer)
   //  - Le tour n'est ni complété ni skippé
-  // On la lit ici dans le layout pour qu'elle persiste à travers toutes
-  // les pages du dashboard (la bulle se gère sa propre navigation).
-  const onboardingState =
-    restaurants.length > 0 ? await getOnboardingState() : null;
+  //  - La migration DB est appliquée (sinon getOnboardingState retourne null)
+  // Double try/catch : getOnboardingState gère déjà le P2022, mais on garde
+  // un filet de sécurité ici au cas où une exception remonterait — il ne faut
+  // JAMAIS qu'un bug onboarding casse l'accès au dashboard.
+  let onboardingState: Awaited<ReturnType<typeof getOnboardingState>> = null;
+  if (restaurants.length > 0) {
+    try {
+      onboardingState = await getOnboardingState();
+    } catch (err) {
+      console.warn("[onboarding] state fetch failed, bubble disabled:", err);
+      onboardingState = null;
+    }
+  }
   const showOnboarding =
     onboardingState !== null &&
     !onboardingState.completed &&
@@ -147,7 +156,7 @@ export default async function DashboardLayout({
         )}
         {children}
       </AppShell>
-      {showOnboarding && (
+      {showOnboarding && onboardingState && (
         <OnboardingBubble initialStep={onboardingState.step} />
       )}
     </PanelLangProvider>

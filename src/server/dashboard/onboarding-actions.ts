@@ -6,10 +6,15 @@ import { requireDashboard } from "@/lib/session";
 /**
  * Server actions du tour onboarding (bulle guidée).
  *
+ * Robustesse : toutes les opérations sont try/catch — si la migration
+ * `20260511120000_user_onboarding` n'est pas encore appliquée sur la DB
+ * (Railway en cours de redeploy, rollback, etc.), on retombe sur des
+ * defaults safe (pas de bulle) au lieu de crasher tout le dashboard avec
+ * un P2022 "column does not exist".
+ *
  * Note Prisma : sur Windows le client est verrouillé (EPERM) ce qui empêche
  * la régénération des types après ajout de colonnes. On caste les payloads
- * en `as never` côté update pour bypasser les types stale. La DB et la
- * migration sont OK, c'est juste un workaround local.
+ * en `as never` côté update pour bypasser les types stale.
  */
 
 export type OnboardingActionResult =
@@ -17,8 +22,19 @@ export type OnboardingActionResult =
   | { ok: false; error: string };
 
 /**
+ * Retourne `true` si l'erreur Prisma indique une colonne manquante (P2022)
+ * ou table manquante (P2021) — typiquement quand la migration n'a pas
+ * encore tourné.
+ */
+function isMissingSchemaError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const code = (err as { code?: string }).code;
+  return code === "P2022" || code === "P2021";
+}
+
+/**
  * Récupère l'état d'onboarding de l'utilisateur courant.
- * Retourne null si l'utilisateur n'est pas authentifié.
+ * Retourne null si non authentifié, ou si la migration n'a pas encore tourné.
  */
 export async function getOnboardingState(): Promise<{
   step: number;
@@ -33,39 +49,56 @@ export async function getOnboardingState(): Promise<{
     return null;
   }
 
-  const authUser = await prisma.authUser.findUnique({
-    where: { id: session.user.id },
-    select: { userId: true },
-  });
+  let authUser;
+  try {
+    authUser = await prisma.authUser.findUnique({
+      where: { id: session.user.id },
+      select: { userId: true },
+    });
+  } catch {
+    return null;
+  }
   if (!authUser?.userId) return null;
 
-  // Champs ajoutés par migration 20260511120000_user_onboarding — cast
-  // nécessaire tant que `prisma generate` n'a pas tourné en local (lock Windows).
+  // Champs ajoutés par migration 20260511120000_user_onboarding.
   const selectPayload = {
     onboardingStep: true,
     onboardingCompleted: true,
     onboardingSkipped: true,
     onboardingSelfScanned: true,
   };
-  const user = (await prisma.user.findUnique({
-    where: { id: authUser.userId },
-    select: selectPayload as never,
-  })) as unknown as
-    | {
-        onboardingStep: number;
-        onboardingCompleted: boolean;
-        onboardingSkipped: boolean;
-        onboardingSelfScanned: boolean;
-      }
-    | null;
+
+  let user: unknown;
+  try {
+    user = await prisma.user.findUnique({
+      where: { id: authUser.userId },
+      select: selectPayload as never,
+    });
+  } catch (err) {
+    if (isMissingSchemaError(err)) {
+      // Migration pas encore appliquée → on désactive silencieusement le
+      // tour. Réessaiera au prochain refresh une fois la migration passée.
+      console.warn(
+        "[onboarding] schema pas à jour (P2022) — bulle désactivée le temps que la migration tourne",
+      );
+      return null;
+    }
+    throw err;
+  }
 
   if (!user) return null;
+  const u = user as {
+    onboardingStep?: number;
+    onboardingCompleted?: boolean;
+    onboardingSkipped?: boolean;
+    onboardingSelfScanned?: boolean;
+  };
 
   return {
-    step: user.onboardingStep ?? 0,
-    completed: user.onboardingCompleted ?? false,
-    skipped: user.onboardingSkipped ?? false,
-    selfScanned: user.onboardingSelfScanned ?? false,
+    step: u.onboardingStep ?? 0,
+    completed: u.onboardingCompleted ?? false,
+    skipped: u.onboardingSkipped ?? false,
+    selfScanned: u.onboardingSelfScanned ?? false,
   };
 }
 
@@ -87,17 +120,18 @@ export async function setOnboardingStep(
     return { ok: false, error: "Non authentifié" };
   }
 
-  const authUser = await prisma.authUser.findUnique({
-    where: { id: session.user.id },
-    select: { userId: true },
-  });
+  const authUser = await prisma.authUser
+    .findUnique({
+      where: { id: session.user.id },
+      select: { userId: true },
+    })
+    .catch(() => null);
   if (!authUser?.userId) {
     return { ok: false, error: "Compte introuvable" };
   }
 
   const payload: Record<string, unknown> = { onboardingStep: step };
   if (step === 1) {
-    // Si déjà démarré, on n'écrase pas — sinon on note le startedAt.
     payload.onboardingStartedAt = new Date();
   }
   if (step >= 6) {
@@ -105,17 +139,25 @@ export async function setOnboardingStep(
     payload.onboardingCompletedAt = new Date();
   }
 
-  await prisma.user.update({
-    where: { id: authUser.userId },
-    data: payload as never,
-  });
-
-  return { ok: true };
+  try {
+    await prisma.user.update({
+      where: { id: authUser.userId },
+      data: payload as never,
+    });
+    return { ok: true };
+  } catch (err) {
+    if (isMissingSchemaError(err)) {
+      console.warn(
+        "[onboarding] setStep : schema pas à jour — étape non persistée",
+      );
+      return { ok: true }; // silencieux : le tour fonctionne côté client même sans persistance
+    }
+    return { ok: false, error: "Update échoué" };
+  }
 }
 
 /**
  * L'utilisateur clique "Passer le tour" — on ne réaffichera plus la bulle.
- * Reste accessible via "Refaire le tour" depuis l'aide.
  */
 export async function skipOnboarding(): Promise<OnboardingActionResult> {
   let session;
@@ -125,20 +167,29 @@ export async function skipOnboarding(): Promise<OnboardingActionResult> {
     return { ok: false, error: "Non authentifié" };
   }
 
-  const authUser = await prisma.authUser.findUnique({
-    where: { id: session.user.id },
-    select: { userId: true },
-  });
+  const authUser = await prisma.authUser
+    .findUnique({
+      where: { id: session.user.id },
+      select: { userId: true },
+    })
+    .catch(() => null);
   if (!authUser?.userId) {
     return { ok: false, error: "Compte introuvable" };
   }
 
-  await prisma.user.update({
-    where: { id: authUser.userId },
-    data: { onboardingSkipped: true } as never,
-  });
-
-  return { ok: true };
+  try {
+    await prisma.user.update({
+      where: { id: authUser.userId },
+      data: { onboardingSkipped: true } as never,
+    });
+    return { ok: true };
+  } catch (err) {
+    if (isMissingSchemaError(err)) {
+      console.warn("[onboarding] skip : schema pas à jour — non persisté");
+      return { ok: true };
+    }
+    return { ok: false, error: "Skip échoué" };
+  }
 }
 
 /**
@@ -153,32 +204,42 @@ export async function restartOnboarding(): Promise<OnboardingActionResult> {
     return { ok: false, error: "Non authentifié" };
   }
 
-  const authUser = await prisma.authUser.findUnique({
-    where: { id: session.user.id },
-    select: { userId: true },
-  });
+  const authUser = await prisma.authUser
+    .findUnique({
+      where: { id: session.user.id },
+      select: { userId: true },
+    })
+    .catch(() => null);
   if (!authUser?.userId) {
     return { ok: false, error: "Compte introuvable" };
   }
 
-  await prisma.user.update({
-    where: { id: authUser.userId },
-    data: {
-      onboardingStep: 0,
-      onboardingSkipped: false,
-      onboardingCompleted: false,
-      onboardingCompletedAt: null,
-    } as never,
-  });
-
-  return { ok: true };
+  try {
+    await prisma.user.update({
+      where: { id: authUser.userId },
+      data: {
+        onboardingStep: 0,
+        onboardingSkipped: false,
+        onboardingCompleted: false,
+        onboardingCompletedAt: null,
+      } as never,
+    });
+    return { ok: true };
+  } catch (err) {
+    if (isMissingSchemaError(err)) {
+      return {
+        ok: false,
+        error:
+          "La fonctionnalité didacticiel s'active après le prochain déploiement. Réessaie dans quelques minutes.",
+      };
+    }
+    return { ok: false, error: "Restart échoué" };
+  }
 }
 
 /**
  * Marque que l'utilisateur a scanné son propre QR depuis le tour.
  * Appelé par /carte/[id] quand on détecte ?ref=onboarding-self.
- * Sécurité : on accepte le userId en param (depuis l'URL signée) et on vérifie
- * juste qu'il existe — pas besoin d'être authentifié (la carte est publique).
  */
 export async function markOnboardingSelfScanned(
   userId: number,
@@ -193,7 +254,12 @@ export async function markOnboardingSelfScanned(
       data: { onboardingSelfScanned: true } as never,
     });
     return { ok: true };
-  } catch {
+  } catch (err) {
+    if (isMissingSchemaError(err)) {
+      // Migration pas appliquée → on ignore silencieusement, la carte
+      // publique continue de s'afficher normalement.
+      return { ok: true };
+    }
     return { ok: false, error: "Update échoué" };
   }
 }
