@@ -59,10 +59,22 @@ export default async function DashboardLayout({
   const activeId = activeIdFromCookie ?? restaurants[0]?.id ?? null;
 
   const activeRestaurant = activeId
-    ? await prisma.restaurant.findUnique({
+    ? ((await prisma.restaurant.findUnique({
         where: { id: BigInt(activeId) },
-        select: { stripeSubscriptionStatus: true, statut: true, plan: true },
-      })
+        select: {
+          stripeSubscriptionStatus: true,
+          statut: true,
+          plan: true,
+          // planOffertExpiresAt : ajouté par migration plan_offert
+          // (cast as never pour bypasser types Prisma potentiellement stale)
+          planOffertExpiresAt: true,
+        } as never,
+      })) as unknown as {
+        stripeSubscriptionStatus: string | null;
+        statut: string;
+        plan: string;
+        planOffertExpiresAt: Date | null;
+      } | null)
     : null;
 
   const userHint = activeRestaurant?.plan
@@ -151,6 +163,14 @@ export default async function DashboardLayout({
             <SubscriptionBanner
               status={activeRestaurant.stripeSubscriptionStatus}
               restaurantStatut={activeRestaurant.statut}
+              currentPlan={activeRestaurant.plan}
+              trialExpiresAt={activeRestaurant.planOffertExpiresAt}
+              hasStripeSubscription={
+                !!activeRestaurant.stripeSubscriptionStatus &&
+                ["active", "trialing"].includes(
+                  activeRestaurant.stripeSubscriptionStatus,
+                )
+              }
             />
           </div>
         )}

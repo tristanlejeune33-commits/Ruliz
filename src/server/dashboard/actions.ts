@@ -181,6 +181,20 @@ export async function createFirstRestaurant(
 
   const empty = (v: string | undefined) => (v && v.trim().length > 0 ? v : null);
 
+  // === Cadeau de bienvenue : 14 jours de Premium offerts ===
+  // On vérifie que c'est bien le PREMIER restaurant de l'utilisateur.
+  // Si c'est le N-ième (canCreateRestaurant a déjà validé qu'il est Pro+),
+  // pas de cadeau supplémentaire.
+  const existingCount = await prisma.restaurant.count({
+    where: { userId: authUser.userId },
+  });
+  const isFirstRestaurant = existingCount === 0;
+
+  const WELCOME_TRIAL_DAYS = 14;
+  const trialExpiresAt = isFirstRestaurant
+    ? new Date(Date.now() + WELCOME_TRIAL_DAYS * 24 * 3600 * 1000)
+    : null;
+
   // Pré-remplit le pays et la langue native depuis le profil utilisateur
   // (renseignés au signup via le picker de pays)
   const restaurant = await prisma.restaurant.create({
@@ -192,8 +206,12 @@ export async function createFirstRestaurant(
       telephone: empty(parsed.data.telephone),
       pays: authUser.user?.pays ?? "France",
       langueNative: authUser.user?.langueNative ?? "fr",
-      plan: "freemium",
+      plan: isFirstRestaurant ? "premium" : "freemium",
       statut: "actif",
+      // Cadeau de bienvenue (cast as never car client Prisma peut être stale)
+      ...(trialExpiresAt
+        ? ({ planOffertExpiresAt: trialExpiresAt } as never)
+        : {}),
     },
   });
 
