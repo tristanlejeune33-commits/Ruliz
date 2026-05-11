@@ -61,7 +61,7 @@ export default function MarketingLayout({
               CGV
             </Link>
             <Link
-              href="/legal/mentions-legales#confidentialite"
+              href="/legal/politique-confidentialite"
               className="hover:text-[var(--text-primary)]"
             >
               Confidentialité
