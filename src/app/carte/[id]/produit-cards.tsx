@@ -196,17 +196,19 @@ function ProduitItem({
             </div>
           </div>
 
-          {/* Middle : photo gauche + prix droite */}
-          <div className="flex items-center justify-between gap-3 pt-1">
+          {/* Middle : photo + prix CENTRÉS ENSEMBLE (pas justify-between qui
+              les éloignait aux 2 bords — ça créait un trou visuel entre les
+              pictos centrés au-dessus et l'image / prix flottants en bas). */}
+          <div className="flex items-center justify-center gap-5 pt-1">
             <div
-              className="relative size-[72px] shrink-0 overflow-hidden rounded-lg md:size-[88px]"
+              className="relative size-[88px] shrink-0 overflow-hidden rounded-lg md:size-[104px]"
               style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
             >
               <Image
                 src={produit.imageUrl!}
                 alt=""
                 fill
-                sizes="88px"
+                sizes="104px"
                 unoptimized
                 className="object-cover"
               />
