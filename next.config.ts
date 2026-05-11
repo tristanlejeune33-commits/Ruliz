@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   typedRoutes: true,
+  // === Pin l'encryption key des Server Actions ===
+  // Sans clé fixée, Next.js génère une nouvelle clé à CHAQUE build → les IDs
+  // hashés des Server Actions changent entre les déploiements Railway. Les
+  // onglets navigateur ouverts avant un deploy appellent les anciens IDs →
+  // "Failed to find Server Action XYZ" en boucle.
+  // En Next.js 15 la clé se configure UNIQUEMENT via l'env var
+  // NEXT_SERVER_ACTIONS_ENCRYPTION_KEY (pas dans next.config). Voir Railway.
   // ESLint pendant `next build` : désactivé car les nouvelles règles strict
   // de React 19 (react-hooks/purity, set-state-in-effect, static-components)
   // produisent des faux positifs bloquants sur des patterns parfaitement
