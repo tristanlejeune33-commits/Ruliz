@@ -353,10 +353,10 @@ function DishDetail({
       {/* Remarque (Le mot du chef…) */}
       {produit.titreRemarque && (
         <div
-          className="mt-2 rounded-[8px] border-l-4 p-3"
+          className="mt-2 rounded-[8px] border border-black/5 border-l-4 p-3 shadow-sm"
           style={{
             borderLeftColor: theme.primary,
-            backgroundColor: "rgba(0,0,0,0.03)",
+            backgroundColor: "#ffffff",
           }}
         >
           <p
@@ -372,7 +372,7 @@ function DishDetail({
             <p
               className="mt-1 text-[14px] italic"
               style={{
-                color: theme.textBody,
+                color: "#1f2937",
                 fontFamily: "var(--font-body)",
               }}
             >

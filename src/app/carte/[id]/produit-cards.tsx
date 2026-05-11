@@ -146,33 +146,47 @@ function ProduitItem({
         boxShadow: theme.shadow,
       }}
     >
-      {/* === Layout AVEC photo : vertical "preview-like" ===
-          - HEADER pleine largeur centré : titre + badge Nouveau + pills vignettes
-          - MIDDLE : photo gauche + prix droite (aligned center)
-          - FOOTER : description + "Voir photo" centrés
-          Indépendant du viewport — rendu cohérent preview / live. */}
+      {/* === Layout AVEC photo : COMPACT horizontal style food-delivery ===
+          Photo 72×72 à gauche (visible mais discrète), contenu à droite
+          en stack : titre + badges/pills inline + description 2 lignes,
+          colonne prix à l'extrême droite. Hauteur ~110-130 px vs 340 px
+          avant — même densité visuelle que les cartes sans image. */}
       {hasImage ? (
         <button
           type="button"
           onClick={() => onOpen(produit)}
-          className="flex h-full w-full flex-col gap-2 p-[15px] text-center md:p-4 lg:p-5"
+          className="flex h-full w-full items-center gap-3 p-[12px] text-left md:gap-4 md:p-[14px] lg:p-4"
           style={{ color: theme.textBody }}
         >
-          {/* Header centré : titre + badges + pills */}
-          <div className="flex flex-col items-center gap-1.5">
+          {/* Photo à gauche — 72×72 mobile, 84×84 desktop */}
+          <div
+            className="relative size-[72px] shrink-0 overflow-hidden rounded-lg md:size-[84px]"
+            style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
+          >
+            <Image
+              src={produit.imageUrl!}
+              alt=""
+              fill
+              sizes="84px"
+              unoptimized
+              className="object-cover"
+            />
+          </div>
+
+          {/* Contenu central — titre + badges + description + voir photo */}
+          <div className="min-w-0 flex-1">
+            {/* Titre + badges + pills inline */}
             <h3
-              className="text-balance text-[18px] font-semibold leading-tight md:text-[19px] lg:text-[20px]"
+              className="flex flex-wrap items-center gap-1.5 text-[16px] font-semibold leading-snug md:text-[17px] lg:text-[18px]"
               style={{
                 fontFamily: "var(--font-display)",
                 color: theme.textBody,
               }}
             >
-              {produit.titre}
-            </h3>
-            <div className="flex flex-wrap items-center justify-center gap-1.5">
+              <span>{produit.titre}</span>
               {produit.estNouveau && (
                 <span
-                  className="inline-block rounded-[5px] px-[7px] py-1 text-[11px] font-bold"
+                  className="inline-block rounded-[5px] px-[6px] py-0.5 text-[10px] font-bold not-italic"
                   style={{
                     backgroundColor: theme.bgTag,
                     color: theme.textTag,
@@ -191,36 +205,14 @@ function ProduitItem({
                 </span>
               )}
               {visualVignettes.map((v) => (
-                <VignetteIcon key={v.code} code={v.code} size={20} />
+                <VignetteIcon key={v.code} code={v.code} size={15} />
               ))}
-            </div>
-          </div>
+            </h3>
 
-          {/* Middle : photo + prix CENTRÉS ENSEMBLE (pas justify-between qui
-              les éloignait aux 2 bords — ça créait un trou visuel entre les
-              pictos centrés au-dessus et l'image / prix flottants en bas). */}
-          <div className="flex items-center justify-center gap-5 pt-1">
-            <div
-              className="relative size-[88px] shrink-0 overflow-hidden rounded-lg md:size-[104px]"
-              style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
-            >
-              <Image
-                src={produit.imageUrl!}
-                alt=""
-                fill
-                sizes="104px"
-                unoptimized
-                className="object-cover"
-              />
-            </div>
-            {PriceBlock}
-          </div>
-
-          {/* Footer : description + "Voir photo" */}
-          <div className="flex flex-col items-center gap-1">
+            {/* Description — 2 lignes max */}
             {produit.description && (
               <p
-                className="line-clamp-2 text-sm font-light leading-relaxed md:text-[14px] lg:text-[15px]"
+                className="mt-0.5 line-clamp-2 text-[13px] font-light leading-snug md:text-[13.5px] lg:text-[14px]"
                 style={{
                   color: theme.textBody,
                   opacity: 0.85,
@@ -230,8 +222,10 @@ function ProduitItem({
                 {produit.description}
               </p>
             )}
+
+            {/* "Voir photo" italique */}
             <span
-              className="text-[14px] font-semibold italic lg:text-[15px]"
+              className="mt-1 inline-block text-[12px] font-semibold italic md:text-[13px]"
               style={{
                 color: theme.textBody,
                 fontFamily: "var(--font-body)",
@@ -240,6 +234,9 @@ function ProduitItem({
               {t("voirPhoto", lang)}
             </span>
           </div>
+
+          {/* Prix à l'extrême droite */}
+          {PriceBlock}
         </button>
       ) : (
         /* === Layout SANS photo : horizontal classique (inchangé) === */
