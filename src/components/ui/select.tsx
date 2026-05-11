@@ -13,11 +13,14 @@ const SelectTrigger = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>
 >(({ className, children, ...props }, ref) => (
+  // Mobile-first : h-12 (48px touch + 16px font global). Desktop dense h-10.
+  // Border plus marquée pour bien décoller du fond en light mode.
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      "flex h-10 w-full items-center justify-between rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-3 py-2 text-sm text-[var(--text-primary)]",
+      "flex h-12 w-full items-center justify-between rounded-md border border-[var(--border-glass-hover)] bg-[var(--bg-elevated)] px-3 py-2 text-base text-[var(--text-primary)] lg:h-10 lg:text-sm",
       "placeholder:text-[var(--text-muted)]",
+      "hover:border-[var(--border-glass-hover)]",
       "focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20",
       "disabled:cursor-not-allowed disabled:opacity-50",
       "[&>span]:line-clamp-1",
@@ -76,7 +79,11 @@ const SelectContent = React.forwardRef<
       ref={ref}
       position={position}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] text-[var(--text-primary)] shadow-xl",
+        // Background plus contrasté que --bg-card (qui était trop proche du
+        // canvas en light mode → dropdown quasi invisible). On force
+        // --bg-elevated (= glass) + border-glass-hover plus marquée +
+        // shadow-2xl pour décoller visuellement du fond.
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border-2 border-[var(--border-glass-hover)] bg-[var(--bg-elevated)] backdrop-blur-xl text-[var(--text-primary)] shadow-2xl",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",
@@ -122,8 +129,12 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-md py-1.5 pl-8 pr-2 text-sm outline-none transition-colors duration-150",
-      "text-[var(--text-secondary)] data-[highlighted]:bg-[var(--bg-elevated)] data-[highlighted]:text-[var(--text-primary)]",
+      // Touch target plus large mobile (h-10 / py-2.5) → compact desktop.
+      // Hover utilise --bg-glass-hover qui DIFFÈRE de bg-elevated en light
+      // mode (donc le highlight reste visible), text-primary par défaut
+      // pour contraste max.
+      "relative flex w-full cursor-pointer select-none items-center rounded-md py-2.5 pl-8 pr-2 text-base outline-none transition-colors duration-150 lg:py-1.5 lg:text-sm",
+      "text-[var(--text-primary)] data-[highlighted]:bg-[var(--bg-glass-hover)] data-[highlighted]:text-[var(--text-primary)]",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className,
     )}

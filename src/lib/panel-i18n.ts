@@ -195,6 +195,15 @@ const DICT: Record<string, LangDict> = {
     pt: "Mais",
     zh: "更多",
   },
+  "nav.openMyMenu": {
+    fr: "Voir ma carte",
+    en: "View my menu",
+    es: "Ver mi carta",
+    de: "Karte ansehen",
+    it: "Vedi il mio menù",
+    pt: "Ver minha carta",
+    zh: "查看菜单",
+  },
   "drawer.section.compte": {
     fr: "Compte",
     en: "Account",

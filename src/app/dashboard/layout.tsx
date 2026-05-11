@@ -102,6 +102,7 @@ export default async function DashboardLayout({
         user={sidebarUser}
         scope="dashboard"
         defaultCollapsed={defaultCollapsed}
+        activeRestaurantId={activeId}
         sidebar={
           <>
             <SidebarBrand href="/dashboard" />

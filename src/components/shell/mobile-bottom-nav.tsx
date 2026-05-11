@@ -7,10 +7,10 @@ import {
   ActivitySquare,
   BarChart3,
   Building2,
+  ExternalLink,
   Home,
   type LucideIcon,
   Menu,
-  QrCode,
   ScrollText,
   ShieldCheck,
   UtensilsCrossed,
@@ -41,14 +41,37 @@ interface NavItem {
   icon: LucideIcon;
   /** Item central surélevé. */
   primary?: boolean;
+  /** Si défini, ouvre dans un nouvel onglet (pour la carte publique). */
+  external?: boolean;
 }
 
-const DASHBOARD_ITEMS: NavItem[] = [
-  { labelKey: "nav.dashboard", href: "/dashboard", icon: Home },
-  { labelKey: "nav.menu", href: "/dashboard/menu", icon: UtensilsCrossed },
-  { labelKey: "nav.qrcodes", href: "/dashboard/qrcodes", icon: QrCode, primary: true },
-  { labelKey: "nav.stats", href: "/dashboard/stats", icon: BarChart3 },
-];
+/**
+ * Construit les items dashboard. L'item central est dynamique : si on a un
+ * resto actif, il pointe vers la carte publique du resto en nouvel onglet
+ * (action #1 d'un restaurateur : voir comment ses clients voient le menu).
+ * Si pas de resto (onboarding pas fini), fallback sur QR codes.
+ */
+function buildDashboardItems(activeRestaurantId: string | null): NavItem[] {
+  return [
+    { labelKey: "nav.dashboard", href: "/dashboard", icon: Home },
+    { labelKey: "nav.menu", href: "/dashboard/menu", icon: UtensilsCrossed },
+    activeRestaurantId
+      ? {
+          labelKey: "nav.openMyMenu",
+          href: `/carte/${activeRestaurantId}`,
+          icon: ExternalLink,
+          primary: true,
+          external: true,
+        }
+      : {
+          labelKey: "nav.qrcodes",
+          href: "/dashboard/qrcodes",
+          icon: ExternalLink,
+          primary: true,
+        },
+    { labelKey: "nav.stats", href: "/dashboard/stats", icon: BarChart3 },
+  ];
+}
 
 const ADMIN_ITEMS: NavItem[] = [
   { labelKey: "nav.admin.overview", href: "/admin", icon: ShieldCheck },
@@ -70,14 +93,21 @@ const ADMIN_SECTIONS_PLUS = [
 
 interface MobileBottomNavProps {
   scope: "admin" | "dashboard";
+  /** ID du resto actif côté dashboard — alimente le bouton central
+      "Voir ma carte" qui ouvre la carte publique en nouvel onglet. */
+  activeRestaurantId?: string | null;
 }
 
-export function MobileBottomNav({ scope }: MobileBottomNavProps) {
+export function MobileBottomNav({
+  scope,
+  activeRestaurantId = null,
+}: MobileBottomNavProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
   const { t } = usePanelLang();
 
-  const items = scope === "admin" ? ADMIN_ITEMS : DASHBOARD_ITEMS;
+  const items =
+    scope === "admin" ? ADMIN_ITEMS : buildDashboardItems(activeRestaurantId);
 
   const handleTap = () => {
     haptic.light();
@@ -171,6 +201,8 @@ function NavLink({
         onClick={onTap}
         aria-label={label}
         aria-current={active ? "page" : undefined}
+        target={item.external ? "_blank" : undefined}
+        rel={item.external ? "noreferrer" : undefined}
         className={cn(
           "tap-48 flex w-full flex-col items-center justify-end pb-2",
           "active:scale-[0.96] transition-transform",

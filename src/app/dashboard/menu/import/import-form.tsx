@@ -196,18 +196,6 @@ export function ImportMenuForm({
             </p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Coût estimé</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-[var(--text-secondary)]">
-            <p>
-              ~$0.005 - $0.02 par menu importé (Anthropic Haiku Vision).
-              Inclus dans ton abonnement Ruliz.
-            </p>
-          </CardContent>
-        </Card>
       </aside>
     </div>
   );

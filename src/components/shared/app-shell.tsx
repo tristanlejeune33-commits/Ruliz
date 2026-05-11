@@ -14,19 +14,18 @@ import { Topbar } from "./topbar";
  *
  * Spec : `docs/design-system-mobile.md` §10 Shell responsive
  *
- * Stratégie : un seul DOM, swap CSS via `lg:` breakpoint (1024px). Évite le
- * flash hydratation que produirait un `useIsMobile()` côté client. Coût payload
- * négligeable (< 5kb pour les deux navs).
+ * Architecture v2 (post-fix bug navigation répétée) :
+ *   - `{children}` est rendu UNE SEULE FOIS dans un <main> partagé avec
+ *     padding adaptatif. Évite le double-mount de PageTransition (Framer
+ *     Motion AnimatePresence) qui causait un blocage de page après plusieurs
+ *     navigations rapides — les 2 AnimatePresence se battaient sur le
+ *     exit/enter.
+ *   - La sidebar desktop est fixed à gauche, la mobile-top-bar/bottom-nav
+ *     sont aussi fixed (déjà). Le main gère l'offset via padding/margin
+ *     responsive : px-4 mobile / pl-[260px] lg quand sidebar étendue.
  *
  * - < 1024px (mobile shell) : MobileTopBar (rétractable) + content + MobileBottomNav
- * - ≥ 1024px (desktop shell) : sidebar collapsible + topbar + content
- *
- * ⚠️ Tradeoff connu V1 : `{children}` est mounté dans les deux branches (l'une
- * cachée par CSS `display:none`). Les Server Components fetch sont dedupés
- * par Next.js, donc pas de double appel DB. Les effets de Client Components
- * dans les pages enfants peuvent fire 2× — à monitorer en perf review. Si gênant,
- * migrer vers une structure unique (sidebar/topbar/bottomnav en éléments fixed
- * frères, main partagé avec padding adaptatif).
+ * - ≥ 1024px (desktop shell) : sidebar fixed + topbar sticky + content
  */
 
 interface AppShellProps {
@@ -45,6 +44,9 @@ interface AppShellProps {
   mobileTitle?: string;
   /** Slot gauche mobile (ex: switcher resto compact, fallback sur back si non défini ET pas racine). */
   mobileLeftSlot?: React.ReactNode;
+  /** ID du resto actif (scope dashboard uniquement) — alimente l'item central
+      de la BottomNav qui ouvre la carte publique en nouvel onglet. */
+  activeRestaurantId?: string | null;
   children: React.ReactNode;
 }
 
@@ -58,6 +60,7 @@ export function AppShell({
   defaultCollapsed = false,
   mobileTitle,
   mobileLeftSlot,
+  activeRestaurantId = null,
   children,
 }: AppShellProps) {
   const [commandOpen, setCommandOpen] = React.useState(false);
@@ -102,7 +105,7 @@ export function AppShell({
           <span className="blob" />
         </div>
 
-        {/* ============= MOBILE SHELL (< lg) ============= */}
+        {/* === MOBILE chrome (fixed, hidden ≥ lg) === */}
         <div className="lg:hidden">
           <MobileTopBar
             leftSlot={mobileLeftSlot}
@@ -110,25 +113,26 @@ export function AppShell({
             showSearch
             onSearchClick={() => setCommandOpen(true)}
           />
-          {/* Padding-top = topbar 56 + safe-top, padding-bottom = bottomnav 64 + safe-bottom */}
-          <main className="px-4 pb-[calc(64px+env(safe-area-inset-bottom)+24px)] pt-[calc(56px+env(safe-area-inset-top)+16px)]">
-            <PageTransition>{children}</PageTransition>
-          </main>
-          <MobileBottomNav scope={scope} />
+          <MobileBottomNav scope={scope} activeRestaurantId={activeRestaurantId} />
         </div>
 
-        {/* ============= DESKTOP SHELL (≥ lg) ============= */}
+        {/* === DESKTOP grid (≥ lg) : sidebar | (topbar + main).
+            Sur mobile (< lg) : 1 colonne, sidebar hidden, content prend tout.
+            children est rendu UNE SEULE FOIS dans le <main> partagé → fix
+            du bug navigation répétée (double PageTransition AnimatePresence). */}
         <div
           className={cn(
-            "relative hidden min-h-screen lg:grid",
-            "transition-[grid-template-columns] duration-300",
+            "relative grid min-h-screen",
+            "grid-cols-1",
+            "lg:transition-[grid-template-columns] lg:duration-300",
             collapsed
-              ? "grid-cols-[72px_1fr]"
-              : "grid-cols-[260px_1fr]",
+              ? "lg:grid-cols-[72px_1fr]"
+              : "lg:grid-cols-[260px_1fr]",
           )}
           style={{ transitionTimingFunction: "var(--ease-default)" }}
         >
-          <aside className="sticky top-0 flex h-screen flex-col border-r border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-2xl">
+          {/* Sidebar desktop only */}
+          <aside className="sticky top-0 hidden h-screen flex-col border-r border-[var(--border-glass)] bg-[var(--bg-glass)] backdrop-blur-2xl lg:flex">
             <div
               aria-hidden
               className="pointer-events-none absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-[var(--border-glass-hover)] to-transparent"
@@ -136,13 +140,26 @@ export function AppShell({
             {sidebar}
           </aside>
 
+          {/* Colonne main : topbar desktop + content + PageTransition unique */}
           <div className="flex min-w-0 flex-col">
-            <Topbar
-              user={user}
-              onOpenCommand={() => setCommandOpen(true)}
-              leftSlot={topbarLeftSlot}
-            />
-            <main className="flex-1 px-6 py-8">
+            {/* Topbar desktop only — hidden mobile */}
+            <div className="hidden lg:block">
+              <Topbar
+                user={user}
+                onOpenCommand={() => setCommandOpen(true)}
+                leftSlot={topbarLeftSlot}
+              />
+            </div>
+
+            <main
+              className={cn(
+                "flex-1",
+                // Mobile : padding pour topbar fixed + bottomnav fixed
+                "px-4 pb-[calc(64px+env(safe-area-inset-bottom)+24px)] pt-[calc(56px+env(safe-area-inset-top)+16px)]",
+                // Desktop : padding standard (topbar dans le flow, pas fixed)
+                "lg:px-6 lg:py-8 lg:pb-8 lg:pt-0",
+              )}
+            >
               <PageTransition>{children}</PageTransition>
             </main>
           </div>
