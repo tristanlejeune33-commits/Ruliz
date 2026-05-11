@@ -36,24 +36,113 @@ export default async function QrcodesPage() {
 
   return (
     <div className="space-y-8">
-      {/* === CTA BRILLANT EN PREMIER — Boutique QR Made in France ===
-          Vrai drapeau français (3 bandes nettes verticales bleu/blanc/rouge)
-          en background, overlay dark pour lisibilité, contenu blanc en avant. */}
+      {/* === CTA BRILLANT — Boutique QR Made in France ===
+          Drapeau stylisé SVG : 3 bandes ondulées (wave effect) avec gradient
+          vertical donnant un effet de relief, ombre portée entre bandes,
+          highlight blanc au bord du blanc et shadow noir au bord du rouge
+          pour un look pro de "soie qui flotte". */}
       <Link
         href="/dashboard/boutique"
-        className="group relative block overflow-hidden rounded-2xl"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(0,0,0,0.62), rgba(0,0,0,0.62)),
-            linear-gradient(
-              to right,
-              #0055A4 0%, #0055A4 33.34%,
-              #FFFFFF 33.34%, #FFFFFF 66.66%,
-              #EF4135 66.66%, #EF4135 100%
-            )
-          `,
-        }}
+        className="group relative block overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10"
       >
+        {/* SVG drapeau ondulé */}
+        <svg
+          aria-hidden
+          className="absolute inset-0 size-full"
+          viewBox="0 0 1200 400"
+          preserveAspectRatio="none"
+        >
+          <defs>
+            {/* Drop shadow pour le relief général */}
+            <filter
+              id="flag-shadow"
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+            >
+              <feGaussianBlur in="SourceAlpha" stdDeviation="6" />
+              <feOffset dx="0" dy="4" result="offsetblur" />
+              <feComponentTransfer>
+                <feFuncA type="linear" slope="0.35" />
+              </feComponentTransfer>
+              <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            {/* Gradient bleu (highlight haut → ombre bas) */}
+            <linearGradient id="cta-bleu" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#1A6FBC" />
+              <stop offset="45%" stopColor="#0055A4" />
+              <stop offset="100%" stopColor="#003C7A" />
+            </linearGradient>
+            {/* Gradient blanc (subtle pour ne pas faire plat) */}
+            <linearGradient id="cta-blanc" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FFFFFF" />
+              <stop offset="50%" stopColor="#FAFAFA" />
+              <stop offset="100%" stopColor="#E0E0E0" />
+            </linearGradient>
+            {/* Gradient rouge */}
+            <linearGradient id="cta-rouge" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#FF5C4F" />
+              <stop offset="45%" stopColor="#EF4135" />
+              <stop offset="100%" stopColor="#C8362C" />
+            </linearGradient>
+          </defs>
+
+          {/* Bande BLEUE — wave en cubic bezier (vague vers la droite haut, gauche bas) */}
+          <path
+            d="M 0,0 L 410,0 C 460,100 360,280 420,400 L 0,400 Z"
+            fill="url(#cta-bleu)"
+            filter="url(#flag-shadow)"
+          />
+          {/* Bande BLANCHE — fit entre les 2 waves */}
+          <path
+            d="M 410,0 C 460,100 360,280 420,400 L 790,400 C 850,280 750,100 800,0 Z"
+            fill="url(#cta-blanc)"
+            filter="url(#flag-shadow)"
+          />
+          {/* Bande ROUGE — wave miroir */}
+          <path
+            d="M 800,0 C 850,100 750,280 790,400 L 1200,400 L 1200,0 Z"
+            fill="url(#cta-rouge)"
+            filter="url(#flag-shadow)"
+          />
+
+          {/* Reflets subtils sur les courbes : highlight sur la transition bleu/blanc */}
+          <path
+            d="M 410,0 C 460,100 360,280 420,400"
+            stroke="rgba(255,255,255,0.35)"
+            strokeWidth="2"
+            fill="none"
+          />
+          {/* Ombre douce sur la transition blanc/rouge (côté blanc) */}
+          <path
+            d="M 800,0 C 850,100 750,280 790,400"
+            stroke="rgba(0,0,0,0.15)"
+            strokeWidth="2"
+            fill="none"
+          />
+        </svg>
+
+        {/* Overlay dark pour la lisibilité du texte blanc */}
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-black/65 via-black/55 to-black/65"
+          aria-hidden
+        />
+
+        {/* Liseré shimmer en haut */}
+        <div
+          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent"
+          aria-hidden
+        />
+        {/* Liseré shimmer en bas */}
+        <div
+          className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent"
+          aria-hidden
+        />
+
         <div className="relative flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div className="flex-1">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
