@@ -50,6 +50,7 @@ import {
   updateCategorie,
 } from "@/server/dashboard/menu-actions";
 import { SCHEDULE_OPTIONS } from "@/lib/schedule";
+import { EmojiPicker } from "@/components/ui/emoji-picker";
 import type { SerializedCategorie } from "./types";
 
 const DAYS_LABELS = [
@@ -197,7 +198,7 @@ export function CategorieDrawer({
           </SheetTitle>
           <SheetDescription>
             {isEdit
-              ? "Modifie le nom, l'affichage ou l'icône."
+              ? "Modifie le nom, l'affichage ou l'emoji."
               : "Donne un nom et choisis le mode d'affichage."}
           </SheetDescription>
         </SheetHeader>
@@ -222,11 +223,40 @@ export function CategorieDrawer({
               name="icone"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Icône (optionnelle)</FormLabel>
+                  <FormLabel>Emoji (optionnel)</FormLabel>
                   <FormControl>
-                    <Input placeholder="salad, utensils, wine…" {...field} />
+                    <div className="flex items-center gap-2">
+                      <EmojiPicker onSelect={(e) => field.onChange(e)}>
+                        <button
+                          type="button"
+                          className="flex h-10 w-14 items-center justify-center rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-xl transition-colors hover:bg-[var(--bg-glass-hover)]"
+                          aria-label="Choisir un emoji"
+                        >
+                          {field.value ? (
+                            field.value
+                          ) : (
+                            <span className="text-[var(--text-tertiary)] text-base">
+                              🍽️
+                            </span>
+                          )}
+                        </button>
+                      </EmojiPicker>
+                      {field.value && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => field.onChange("")}
+                        >
+                          Retirer
+                        </Button>
+                      )}
+                    </div>
                   </FormControl>
-                  <FormDescription>Nom d&apos;icône Lucide.</FormDescription>
+                  <FormDescription>
+                    Affiché à côté du nom de la catégorie sur la carte
+                    publique. Clic pour parcourir tous les emojis.
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

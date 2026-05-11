@@ -98,6 +98,15 @@ interface CategoryIconProps {
 }
 
 /**
+ * Détecte si la chaîne est un emoji plutôt qu'un code Lucide. On regarde
+ * la présence d'au moins un caractère "Extended_Pictographic" — robuste
+ * vis-à-vis des emojis ZWJ-séquences (👨‍👩‍👧, 🏳️‍🌈, etc.).
+ */
+function isEmojiString(value: string): boolean {
+  return /\p{Extended_Pictographic}/u.test(value);
+}
+
+/**
  * Note d'implémentation : on passe par `createElement` pour le rendering
  * dynamique au lieu de `<Icon />` JSX. Le React Compiler de React 19 +
  * Next 15 considère le pattern `const Icon = MAP[key]; return <Icon />`
@@ -105,9 +114,39 @@ interface CategoryIconProps {
  * alors qu'ici on rend juste un composant existant qu'on a sélectionné
  * dynamiquement. `createElement` rend l'intention plus explicite et
  * passe l'analyse statique.
+ *
+ * Depuis l'intro du picker emoji dans le dashboard, `icone` peut contenir
+ * soit un code Lucide (legacy : "salad", "wine"…), soit un emoji Unicode.
+ * On détecte automatiquement et on rend en conséquence — backward-compatible
+ * avec toutes les catégories déjà existantes.
  */
 export function CategoryIcon({ code, className, style }: CategoryIconProps) {
-  const key = code?.trim().toLowerCase();
+  const raw = code?.trim();
+
+  // Cas emoji : rendu en <span> typo, taille héritée du className via 1em
+  if (raw && isEmojiString(raw)) {
+    return (
+      <span
+        className={className}
+        style={{
+          // Si le parent fixe la taille via size-X (height + width), on
+          // s'adapte avec un line-height qui centre l'emoji dedans.
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: "1em",
+          lineHeight: 1,
+          ...style,
+        }}
+        aria-hidden
+      >
+        {raw}
+      </span>
+    );
+  }
+
+  // Cas legacy : code Lucide
+  const key = raw?.toLowerCase();
   const iconComponent = (key && ICON_MAP[key]) || UtensilsCrossed;
   return createElement(iconComponent, {
     className,
