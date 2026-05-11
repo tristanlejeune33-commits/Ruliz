@@ -142,12 +142,27 @@ export default async function ClientDetailPage({ params }: PageProps) {
             userId={data.id}
             userEmail={data.email}
             userRole={data.role ?? "client"}
-            restaurants={data.restaurants.map((r) => ({
-              id: r.id.toString(),
-              nom: r.nom,
-              plan: r.plan,
-              ville: r.ville,
-            }))}
+            restaurants={data.restaurants.map((r) => {
+              // Cast pour accéder aux nouveaux champs planOffert* avant que
+              // le client Prisma soit régénéré localement.
+              const ext = r as unknown as {
+                planOffertExpiresAt?: Date | null;
+                stripeCurrentPeriodEnd?: Date | null;
+                stripeSubscriptionStatus?: string | null;
+              };
+              return {
+                id: r.id.toString(),
+                nom: r.nom,
+                plan: r.plan,
+                ville: r.ville,
+                planOffertExpiresAt:
+                  ext.planOffertExpiresAt?.toISOString() ?? null,
+                stripeCurrentPeriodEnd:
+                  ext.stripeCurrentPeriodEnd?.toISOString() ?? null,
+                stripeSubscriptionStatus:
+                  ext.stripeSubscriptionStatus ?? null,
+              };
+            })}
           />
         </TabsContent>
 
@@ -162,6 +177,38 @@ export default async function ClientDetailPage({ params }: PageProps) {
             )}
             {data.restaurants.map((r) => {
               const totalScans = r.qrcodes.reduce((acc, q) => acc + Number(q.scanTotal), 0);
+              // Calcule la durée restante : max(stripeEnd, offerEnd) — null si rien d'actif
+              const rExt = r as unknown as {
+                planOffertExpiresAt?: string | Date | null;
+                stripeCurrentPeriodEnd?: string | Date | null;
+                stripeSubscriptionStatus?: string | null;
+              };
+              const stripeEnd = rExt.stripeCurrentPeriodEnd
+                ? new Date(rExt.stripeCurrentPeriodEnd)
+                : null;
+              const offerEnd = rExt.planOffertExpiresAt
+                ? new Date(rExt.planOffertExpiresAt)
+                : null;
+              const now = new Date();
+              const validEnds: Date[] = [];
+              if (offerEnd && offerEnd > now) validEnds.push(offerEnd);
+              if (
+                stripeEnd &&
+                stripeEnd > now &&
+                rExt.stripeSubscriptionStatus &&
+                ["active", "trialing", "past_due"].includes(
+                  rExt.stripeSubscriptionStatus,
+                )
+              ) {
+                validEnds.push(stripeEnd);
+              }
+              const endsAt =
+                validEnds.length > 0
+                  ? new Date(Math.max(...validEnds.map((d) => d.getTime())))
+                  : null;
+              const daysLeft = endsAt
+                ? Math.ceil((endsAt.getTime() - now.getTime()) / 86_400_000)
+                : null;
               return (
                 <Card key={r.id}>
                   <CardHeader className="flex-row items-start justify-between gap-3 space-y-0">
@@ -170,6 +217,22 @@ export default async function ClientDetailPage({ params }: PageProps) {
                       <CardDescription>
                         {r.ville ?? "—"} · {r._count.categories} catégorie
                         {r._count.categories > 1 ? "s" : ""}
+                        {daysLeft !== null && daysLeft > 0 && (
+                          <>
+                            {" · "}
+                            <span
+                              className={
+                                daysLeft <= 7
+                                  ? "text-[var(--neon-danger)]"
+                                  : daysLeft <= 30
+                                    ? "text-[var(--neon-violet)]"
+                                    : "text-[var(--neon-success)]"
+                              }
+                            >
+                              ⏳ {daysLeft}j restant{daysLeft > 1 ? "s" : ""}
+                            </span>
+                          </>
+                        )}
                       </CardDescription>
                     </div>
                     <PlanBadge plan={r.plan as Plan} />

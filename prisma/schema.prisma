@@ -189,6 +189,13 @@ model Restaurant {
   stripePriceId            String?   @map("stripe_price_id") @db.VarChar(255)
   stripeSubscriptionStatus String?   @map("stripe_subscription_status") @db.VarChar(50)
   stripeCurrentPeriodEnd   DateTime? @map("stripe_current_period_end") @db.Timestamptz()
+  /** Plan offert par l'admin (bypass Stripe) — la date d'expiration de la
+      période gratuite Pro/Premium accordée. Si > now → le plan reste actif
+      même sans Stripe sub. À l'expiration, le code peut revert automatiquement
+      en freemium (ou laisser l'admin gérer). null = aucun cadeau actif. */
+  planOffertExpiresAt      DateTime? @map("plan_offert_expires_at") @db.Timestamptz()
+  /** Plan offert par qui (admin user id) — pour l'audit / traçabilité. */
+  planOffertByUserId       Int?      @map("plan_offert_by_user_id")
   logoUrl                  String?   @map("logo_url")
   banniereUrl              String?   @map("banniere_url")
   description              String?

@@ -239,6 +239,120 @@ export async function setRestaurantPlanByStringId(
   return setRestaurantPlan(bigId, plan as (typeof PLANS)[number]);
 }
 
+/**
+ * Offre N jours de Pro/Premium à un restaurant (bypass Stripe).
+ *
+ * Effets :
+ *   - Set le plan (pro ou premium)
+ *   - Set `planOffertExpiresAt = now + days` (étendable si déjà actif)
+ *   - Stocke l'admin qui a accordé le cadeau pour audit
+ *   - Logue dans la table logs
+ *
+ * Le plan restera actif jusqu'à `planOffertExpiresAt`. À l'expiration,
+ * l'admin doit revert manuellement vers freemium (un cron pourrait
+ * automatiser ça en V2).
+ *
+ * Si l'admin offre des jours en plus d'une période déjà active, on étend
+ * depuis la date de fin actuelle (pas depuis now) → le client cumule.
+ */
+export async function grantPlanForDays(input: {
+  restaurantId: string;
+  plan: "pro" | "premium";
+  days: number;
+}): Promise<ActionResult> {
+  const session = await requireAdmin();
+  let bigId: bigint;
+  try {
+    bigId = BigInt(input.restaurantId);
+  } catch {
+    return { ok: false, error: "Identifiant restaurant invalide" };
+  }
+  if (!["pro", "premium"].includes(input.plan)) {
+    return { ok: false, error: "Plan invalide (pro ou premium uniquement)" };
+  }
+  if (!Number.isInteger(input.days) || input.days < 1 || input.days > 730) {
+    return { ok: false, error: "Durée invalide (1 à 730 jours)" };
+  }
+
+  // Récupère l'admin user qui accorde le cadeau (pour audit)
+  const authUser = await prisma.authUser.findUnique({
+    where: { id: session.user.id },
+    select: { userId: true },
+  });
+  const adminUserId = authUser?.userId ?? null;
+
+  const current = await prisma.restaurant.findUnique({
+    where: { id: bigId },
+    select: { planOffertExpiresAt: true } as never,
+  });
+
+  // Base de calcul : si une période est déjà active dans le futur, on
+  // l'étend ; sinon on part de maintenant
+  const currentExpiresAt = (current as unknown as {
+    planOffertExpiresAt: Date | null;
+  } | null)?.planOffertExpiresAt;
+  const baseDate =
+    currentExpiresAt && currentExpiresAt > new Date()
+      ? currentExpiresAt
+      : new Date();
+  const newExpiresAt = new Date(baseDate.getTime() + input.days * 24 * 3600 * 1000);
+
+  await prisma.restaurant.update({
+    where: { id: bigId },
+    data: {
+      plan: input.plan,
+      // Cast `as never` car client Prisma peut être stale localement
+      planOffertExpiresAt: newExpiresAt,
+      planOffertByUserId: adminUserId,
+    } as never,
+  });
+
+  await logAdminAction("restaurant.grant_plan", {
+    restaurantId: input.restaurantId,
+    plan: input.plan,
+    days: input.days,
+    expiresAt: newExpiresAt.toISOString(),
+    byAdmin: adminUserId,
+  });
+
+  revalidatePath("/admin/clients");
+  revalidatePath(`/admin/clients`);
+  revalidatePath("/admin/restaurants");
+  return { ok: true };
+}
+
+/**
+ * Révoque immédiatement le cadeau de plan offert (rétrograde en freemium).
+ * Utile si un admin a accordé par erreur, ou pour terminer prématurément.
+ */
+export async function revokeOfferedPlan(
+  restaurantId: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  let bigId: bigint;
+  try {
+    bigId = BigInt(restaurantId);
+  } catch {
+    return { ok: false, error: "Identifiant restaurant invalide" };
+  }
+
+  await prisma.restaurant.update({
+    where: { id: bigId },
+    data: {
+      plan: "freemium",
+      planOffertExpiresAt: null,
+      planOffertByUserId: null,
+    } as never,
+  });
+
+  await logAdminAction("restaurant.revoke_offered_plan", {
+    restaurantId,
+  });
+
+  revalidatePath("/admin/clients");
+  return { ok: true };
+}
+
 export async function sendResetPasswordEmail(email: string): Promise<ActionResult> {
   await requireAdmin();
   const valid = z.email().safeParse(email);
