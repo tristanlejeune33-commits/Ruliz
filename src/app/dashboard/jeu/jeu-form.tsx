@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { EmojiPicker } from "@/components/ui/emoji-picker";
 import {
   Card,
   CardContent,
@@ -525,45 +526,47 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                   <FormField
                     control={form.control}
                     name={`lots.${i}.label`}
-                    render={({ field }) => (
-                      <FormItem className="mt-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-                            Emoji :
-                          </span>
-                          <input
-                            type="text"
-                            value={extractEmojiFromLabel(field.value || "")}
-                            onChange={(e) => {
-                              const v = e.target.value;
-                              // Garde le premier emoji uniquement
-                              const match = v.match(
-                                /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u,
-                              );
-                              const newEmoji = match ? match[0] : "";
-                              const current = field.value || "";
-                              const stripped = current.replace(
-                                /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u,
-                                "",
-                              );
-                              field.onChange(
-                                newEmoji ? `${newEmoji} ${stripped}`.trim() : stripped,
-                              );
-                            }}
-                            placeholder="🎁"
-                            maxLength={4}
-                            className="flex h-9 w-14 items-center justify-center rounded-md border border-[var(--border-glass-hover)] bg-[var(--bg-elevated)] text-center text-lg outline-none focus:border-[var(--accent)]"
-                            aria-label="Emoji du lot — utilise le clavier emoji système"
-                          />
-                          <p className="text-[10px] text-[var(--text-tertiary)]">
-                            {/* Hint contextuel pour l'utilisateur */}
-                            <kbd className="font-mono">Win+.</kbd> ou{" "}
-                            <kbd className="font-mono">⌘⌃␣</kbd> pour ouvrir le
-                            picker
-                          </p>
-                        </div>
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      const currentEmoji = extractEmojiFromLabel(
+                        field.value || "",
+                      );
+                      const handlePickEmoji = (emoji: string) => {
+                        const current = field.value || "";
+                        const stripped = current.replace(
+                          /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u,
+                          "",
+                        );
+                        field.onChange(`${emoji} ${stripped}`.trim());
+                      };
+                      return (
+                        <FormItem className="mt-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                              Emoji :
+                            </span>
+                            {/* Click sur le bouton → ouvre directement le
+                                picker (Popover avec grille catégorisée). Plus
+                                besoin de connaître Win+. ou Cmd+Ctrl+Espace. */}
+                            <EmojiPicker onSelect={handlePickEmoji}>
+                              <button
+                                type="button"
+                                className="flex h-9 w-14 items-center justify-center rounded-md border border-[var(--border-glass-hover)] bg-[var(--bg-elevated)] text-center text-lg outline-none transition-colors hover:bg-[var(--bg-glass-hover)] focus:border-[var(--accent)]"
+                                aria-label="Choisir un emoji"
+                              >
+                                {currentEmoji || (
+                                  <span className="text-[var(--text-tertiary)]">
+                                    🎁
+                                  </span>
+                                )}
+                              </button>
+                            </EmojiPicker>
+                            <p className="text-[10px] text-[var(--text-tertiary)]">
+                              Click pour choisir parmi 250+ emojis classés
+                            </p>
+                          </div>
+                        </FormItem>
+                      );
+                    }}
                   />
                 </li>
               ))}

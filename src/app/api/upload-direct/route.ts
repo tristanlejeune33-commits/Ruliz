@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { buildR2Key, isR2Configured, uploadBuffer } from "@/lib/r2";
+import { requireAdmin } from "@/lib/session";
 
 /**
  * Server-side upload proxy.
@@ -49,10 +50,10 @@ export async function POST(req: Request) {
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Fichier manquant" }, { status: 400 });
   }
-  if (typeof restaurantId !== "string" || typeof kind !== "string") {
+  if (typeof kind !== "string") {
     return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
   }
-  if (!["logo", "banniere", "produit", "qrcode"].includes(kind)) {
+  if (!["logo", "banniere", "produit", "qrcode", "boutique"].includes(kind)) {
     return NextResponse.json({ error: "Type d'image inconnu" }, { status: 400 });
   }
   if (file.size > MAX_BYTES) {
@@ -65,21 +66,52 @@ export async function POST(req: Request) {
     );
   }
 
-  let bigId: bigint;
-  try {
-    bigId = BigInt(restaurantId);
-  } catch {
-    return NextResponse.json({ error: "Identifiant invalide" }, { status: 400 });
+  let key: string;
+
+  // === Kind "boutique" : produits boutique globaux gérés par admin ===
+  // Pas de restaurantId requis, mais auth admin obligatoire.
+  if (kind === "boutique") {
+    try {
+      await requireAdmin();
+    } catch {
+      return NextResponse.json(
+        { error: "Accès admin requis pour la boutique" },
+        { status: 403 },
+      );
+    }
+    key = buildR2Key({
+      restaurantId: BigInt(0), // sentinelle, le path sera boutique-prefixed
+      kind: "boutique",
+      filename: file.name,
+    });
+  } else {
+    // === Kinds resto-scoped (logo / banniere / produit / qrcode) ===
+    if (typeof restaurantId !== "string") {
+      return NextResponse.json(
+        { error: "restaurantId manquant" },
+        { status: 400 },
+      );
+    }
+    let bigId: bigint;
+    try {
+      bigId = BigInt(restaurantId);
+    } catch {
+      return NextResponse.json(
+        { error: "Identifiant invalide" },
+        { status: 400 },
+      );
+    }
+
+    const owned = await assertRestaurantOwner(bigId);
+    if (!owned)
+      return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
+
+    key = buildR2Key({
+      restaurantId: bigId,
+      kind: kind as "logo" | "banniere" | "produit" | "qrcode",
+      filename: file.name,
+    });
   }
-
-  const owned = await assertRestaurantOwner(bigId);
-  if (!owned) return NextResponse.json({ error: "Accès refusé" }, { status: 403 });
-
-  const key = buildR2Key({
-    restaurantId: bigId,
-    kind: kind as "logo" | "banniere" | "produit" | "qrcode",
-    filename: file.name,
-  });
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);

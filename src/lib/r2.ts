@@ -67,11 +67,14 @@ export async function generatePresignedUpload(opts: {
 
 export function buildR2Key(opts: {
   restaurantId: bigint | string;
-  kind: "logo" | "banniere" | "produit" | "qrcode";
+  kind: "logo" | "banniere" | "produit" | "qrcode" | "boutique";
   filename: string;
 }) {
   const safe = opts.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
   const stamp = Date.now();
+  if (opts.kind === "boutique") {
+    return `boutique/${stamp}-${safe}`;
+  }
   return `restaurants/${opts.restaurantId}/${opts.kind}/${stamp}-${safe}`;
 }
 

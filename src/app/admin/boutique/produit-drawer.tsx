@@ -49,6 +49,7 @@ import {
   deleteBoutiqueProduit,
   updateBoutiqueProduit,
 } from "@/server/admin/boutique/actions";
+import { ImageUploader } from "@/components/shared/image-uploader";
 
 export interface SerializedBoutiqueProduit {
   id: string;
@@ -200,32 +201,29 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
             onSubmit={form.handleSubmit(onSubmit)}
             className="mt-6 space-y-5"
           >
-            {/* Image — URL directe (l'upload R2 demande un resto, pas pertinent ici) */}
+            {/* Image produit — upload direct R2 (bucket "boutique/"), drag,
+                copier-coller ou URL externe. Ratio 1:1 recommandé. */}
             <FormField
               control={form.control}
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>URL de la photo</FormLabel>
+                  <FormLabel>Photo du produit</FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="https://… (R2, Imgur, Cloudinary)"
-                      {...field}
-                      className="font-mono text-xs"
-                    />
+                    <div className="max-w-xs">
+                      <ImageUploader
+                        kind="boutique"
+                        value={field.value || null}
+                        onChange={(url) => field.onChange(url ?? "")}
+                        aspect="1/1"
+                        label="Ajouter une photo"
+                      />
+                    </div>
                   </FormControl>
                   <FormDescription className="text-[10px]">
-                    Ratio 1:1 recommandé. Upload l&apos;image sur R2 / Imgur puis
-                    colle l&apos;URL ici.
+                    Glisse, colle (Ctrl+V) ou clique pour uploader. Format
+                    carré recommandé, max 5 MB.
                   </FormDescription>
-                  {field.value && (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={field.value}
-                      alt="Aperçu"
-                      className="mt-2 size-32 rounded-md border border-[var(--border-glass)] object-cover"
-                    />
-                  )}
                   <FormMessage />
                 </FormItem>
               )}
