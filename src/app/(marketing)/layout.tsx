@@ -54,16 +54,28 @@ export default function MarketingLayout({
             <span>© {new Date().getFullYear()} Ruliz · Made in Bordeaux</span>
           </div>
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-[var(--text-tertiary)]">
-            <Link href="/legal/cgv" className="hover:text-[var(--text-primary)]">
+            <Link
+              href="/legal/mentions-legales#cgv"
+              className="hover:text-[var(--text-primary)]"
+            >
               CGV
             </Link>
-            <Link href="/legal/privacy" className="hover:text-[var(--text-primary)]">
+            <Link
+              href="/legal/mentions-legales#confidentialite"
+              className="hover:text-[var(--text-primary)]"
+            >
               Confidentialité
             </Link>
-            <Link href="/legal/cookies" className="hover:text-[var(--text-primary)]">
+            <Link
+              href="/legal/mentions-legales#cookies"
+              className="hover:text-[var(--text-primary)]"
+            >
               Cookies
             </Link>
-            <Link href="/legal/mentions" className="hover:text-[var(--text-primary)]">
+            <Link
+              href="/legal/mentions-legales"
+              className="hover:text-[var(--text-primary)]"
+            >
               Mentions légales
             </Link>
           </nav>

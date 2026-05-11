@@ -39,23 +39,24 @@ export type CompanyInfo = {
 
 function pickVatRate(): number {
   const raw = process.env.RULIZ_VAT_RATE;
-  if (raw === undefined || raw === "") return 0.2;
+  // Défaut : 0 (micro-entreprise — TVA non applicable, art. 293 B du CGI)
+  if (raw === undefined || raw === "") return 0;
   const n = parseFloat(raw);
-  if (Number.isNaN(n) || n < 0 || n > 1) return 0.2;
+  if (Number.isNaN(n) || n < 0 || n > 1) return 0;
   return n;
 }
 
 export function getCompanyInfo(): CompanyInfo {
   return {
     name: process.env.RULIZ_COMPANY_NAME || "Ruliz",
-    address: process.env.RULIZ_COMPANY_ADDRESS || "—",
-    city: process.env.RULIZ_COMPANY_CITY || "Bordeaux, France",
+    address: process.env.RULIZ_COMPANY_ADDRESS || "15 chemin de la Pallue",
+    city: process.env.RULIZ_COMPANY_CITY || "16440 Nersac, France",
     country: process.env.RULIZ_COMPANY_COUNTRY || "France",
-    email: process.env.RULIZ_COMPANY_EMAIL || "contact@ruliz.app",
-    phone: process.env.RULIZ_COMPANY_PHONE || null,
-    siret: process.env.RULIZ_COMPANY_SIRET || null,
+    email: process.env.RULIZ_COMPANY_EMAIL || "tom.rullier@ruliz.fr",
+    phone: process.env.RULIZ_COMPANY_PHONE || "06 51 11 79 51",
+    siret: process.env.RULIZ_COMPANY_SIRET || "984 519 298 00017",
     tva: process.env.RULIZ_COMPANY_TVA || null,
-    rcs: process.env.RULIZ_COMPANY_RCS || null,
+    rcs: process.env.RULIZ_COMPANY_RCS || "RCS Bordeaux",
     capital: process.env.RULIZ_COMPANY_CAPITAL || null,
     iban: process.env.RULIZ_COMPANY_IBAN || null,
     bic: process.env.RULIZ_COMPANY_BIC || null,
