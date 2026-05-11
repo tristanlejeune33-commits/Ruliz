@@ -33,6 +33,41 @@ function isMissingSchemaError(err: unknown): boolean {
 }
 
 /**
+ * Auto-ensure schema : crée les colonnes onboarding si elles n'existent pas
+ * encore. Idempotent (IF NOT EXISTS), tourne 1× par process Node (cache flag),
+ * coût ~1 ms.
+ *
+ * Pourquoi ici et pas via une migration Prisma ? Parce que sur Railway la
+ * commande `prisma migrate deploy` peut être désynchronisée (deploy déjà
+ * cached, conflit de timestamp avec migrations parallèles, etc.). Pour ne
+ * pas bloquer l'utilisateur en attendant que ça résolve, on garantit le
+ * schema côté app au prix d'une ALTER idempotente.
+ *
+ * Une fois la migration officielle appliquée, ce code devient un no-op.
+ */
+let schemaEnsured = false;
+async function ensureOnboardingSchema(): Promise<void> {
+  if (schemaEnsured) return;
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "users"
+        ADD COLUMN IF NOT EXISTS "onboarding_step" INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS "onboarding_completed" BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS "onboarding_skipped" BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS "onboarding_started_at" TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS "onboarding_completed_at" TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS "onboarding_self_scanned" BOOLEAN NOT NULL DEFAULT FALSE;
+    `);
+    schemaEnsured = true;
+  } catch (err) {
+    // Si l'ALTER échoue (table users elle-même manquante, droits insuffisants),
+    // on log et on continue — les queries en aval retomberont sur le P2022
+    // handling défensif.
+    console.warn("[onboarding] ensureOnboardingSchema failed:", err);
+  }
+}
+
+/**
  * Récupère l'état d'onboarding de l'utilisateur courant.
  * Retourne null si non authentifié, ou si la migration n'a pas encore tourné.
  */
@@ -42,6 +77,8 @@ export async function getOnboardingState(): Promise<{
   skipped: boolean;
   selfScanned: boolean;
 } | null> {
+  await ensureOnboardingSchema();
+
   let session;
   try {
     session = await requireDashboard();
@@ -113,6 +150,8 @@ export async function setOnboardingStep(
     return { ok: false, error: "Étape invalide" };
   }
 
+  await ensureOnboardingSchema();
+
   let session;
   try {
     session = await requireDashboard();
@@ -160,6 +199,8 @@ export async function setOnboardingStep(
  * L'utilisateur clique "Passer le tour" — on ne réaffichera plus la bulle.
  */
 export async function skipOnboarding(): Promise<OnboardingActionResult> {
+  await ensureOnboardingSchema();
+
   let session;
   try {
     session = await requireDashboard();
@@ -197,6 +238,8 @@ export async function skipOnboarding(): Promise<OnboardingActionResult> {
  * Reset step à 0 et clear skipped/completed.
  */
 export async function restartOnboarding(): Promise<OnboardingActionResult> {
+  await ensureOnboardingSchema();
+
   let session;
   try {
     session = await requireDashboard();
@@ -247,6 +290,8 @@ export async function markOnboardingSelfScanned(
   if (!Number.isFinite(userId) || userId <= 0) {
     return { ok: false, error: "userId invalide" };
   }
+
+  await ensureOnboardingSchema();
 
   try {
     await prisma.user.update({
