@@ -92,19 +92,37 @@ export function ImageUploader({
     }
   }
 
-  // Paste image support : on écoute le paste sur le container (focus-within)
-  // OU globalement quand l'utilisateur a la souris hover sur la dropzone.
-  // Coût : 1 listener léger, ne déclenche le upload QUE si clipboard contient image.
+  // Paste image support : listener GLOBAL sur window.
+  // Stratégie : on intercepte le paste seulement si :
+  //  1. La clipboard contient bel et bien une image (sinon on ignore, le user
+  //     est en train de coller du texte ailleurs)
+  //  2. Aucun input texte / textarea n'a le focus (sinon le user veut taper)
+  // Ainsi pas besoin de cliquer sur la dropzone d'abord : ouvre le drawer,
+  // Ctrl+V → l'image se charge. UX qui matche ce que les gens attendent.
   useEffect(() => {
     if (!enablePaste) return;
     if (value) return; // déjà une image, ne pas écraser sans intention
 
-    const node = containerRef.current;
-    if (!node) return;
+    const onGlobalPaste = (e: ClipboardEvent) => {
+      // Ne pas intercepter si l'user est en train de taper dans un champ
+      const active = document.activeElement as HTMLElement | null;
+      if (active) {
+        const tag = active.tagName;
+        const isTextField =
+          (tag === "INPUT" &&
+            (active as HTMLInputElement).type !== "file" &&
+            (active as HTMLInputElement).type !== "image" &&
+            (active as HTMLInputElement).type !== "button" &&
+            (active as HTMLInputElement).type !== "submit") ||
+          tag === "TEXTAREA" ||
+          active.isContentEditable;
+        if (isTextField) return;
+      }
 
-    const onPaste = (e: ClipboardEvent) => {
       const items = e.clipboardData?.items;
       if (!items) return;
+
+      // Cherche une image dans la clipboard
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
         if (!item) continue;
@@ -119,22 +137,8 @@ export function ImageUploader({
       }
     };
 
-    // Listener global, mais on filtre : actif uniquement si focus dans la zone
-    // OU si la dropzone est focusée. Léger et ne lague pas.
-    const onGlobalPaste = (e: ClipboardEvent) => {
-      // Si l'utilisateur tape dans un input ailleurs, on ignore
-      const active = document.activeElement;
-      if (active && node.contains(active)) {
-        onPaste(e);
-      }
-    };
-
-    node.addEventListener("paste", onPaste);
     window.addEventListener("paste", onGlobalPaste);
-    return () => {
-      node.removeEventListener("paste", onPaste);
-      window.removeEventListener("paste", onGlobalPaste);
-    };
+    return () => window.removeEventListener("paste", onGlobalPaste);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enablePaste, value, restaurantId, kind]);
 
