@@ -5,16 +5,19 @@
  *  - Slides 1-10 = tour de base (mise en place de la carte)
  *  - Slides 11-12 = plus-value (features avancées qui font vendre)
  *
+ * Ton : tutoiement, vocabulaire simple, zéro jargon technique. On vise
+ * une compréhension par un restaurateur 50 ans pas calé en informatique.
+ * Mots BANNIS : SEO, IA, CDN, API, INCO, slug, payload, async, lead, KPI,
+ * CTR, etc. → on dit "remonter dans Google", "traduction automatique",
+ * "adresse de la carte", "récupérer les contacts" etc.
+ *
  * Chaque étape :
  *  - path  : route où la bulle doit emmener l'utilisateur via router.push()
  *  - anchorSelector : sélecteur CSS de l'élément à pointer (data-onboarding-anchor)
  *                     ou null pour la position par défaut (bottom-right)
  *  - title : 1 ligne, max 40 caractères
- *  - body  : 2 lignes max, ton tutoiement, zéro jargon
- *  - details : texte long structuré déplié au clic sur "Plus de détails"
- *              utilise des \n pour séparer les paragraphes ; les lignes qui
- *              commencent par "• " ou "1. " sont rendues telles quelles
- *              (whitespace-pre-line)
+ *  - body  : 2 lignes max, simple
+ *  - details : texte long expliqué pas-à-pas, lisible par un enfant de 12 ans
  *  - cta   : texte du bouton principal
  *  - kind  : "base" ou "value" (visuel différent pour les 2 dernières)
  */
@@ -27,13 +30,10 @@ export interface OnboardingStep {
   anchorSelector: string | null;
   title: string;
   body: string;
-  /** Texte long structuré, optionnel — affiché au clic sur "Plus de détails" */
   details?: string;
   cta: string;
   allowSkip: boolean;
-  /** Placement par défaut quand ancré */
   placement?: "top" | "bottom" | "left" | "right";
-  /** "base" = parcours essentiel, "value" = features premium (slides 11-12) */
   kind: StepKind;
 }
 
@@ -47,18 +47,18 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
     anchorSelector: null,
     title: "Salut 👋 Bienvenue dans Ruliz.",
     body: "Je te montre tout en 12 étapes — 3 minutes chrono. C'est parti ?",
-    details: `Ce tour couvre :
+    details: `On va voir ensemble :
 • Comment configurer ton restaurant (logo, couleurs, infos)
-• Créer ta première catégorie + ton premier produit
-• Uploader des photos en 1 clic
-• Gérer les allergènes et vignettes
-• Voir ton aperçu live + tester les 7 langues
-• Imprimer ton QR code
-• 2 features bonus : la roulette d'avis Google et tes statistiques
+• Créer tes premières catégories et plats
+• Ajouter des photos en 1 clic
+• Indiquer les allergènes et les pictos végé / épicé / fait maison
+• Voir ta carte comme tes clients la verront
+• Imprimer ton QR code à poser sur les tables
+• 2 fonctions bonus : la roulette à avis Google et tes statistiques
 
-À chaque étape, tu pourras cliquer "Plus de détails" pour avoir
-le mode d'emploi complet. Tu peux passer à tout moment et reprendre
-plus tard depuis Paramètres › Profil.`,
+À chaque étape, clique sur "Plus de détails" pour avoir le mode
+d'emploi complet. Tu peux quitter le tour quand tu veux, et le
+relancer plus tard depuis Paramètres › Profil.`,
     cta: "C'est parti →",
     allowSkip: true,
     kind: "base",
@@ -68,22 +68,24 @@ plus tard depuis Paramètres › Profil.`,
     path: "/dashboard/restaurant",
     anchorSelector: "[data-onboarding-anchor='restaurant-branding']",
     title: "Ton identité visuelle 🎨",
-    body: "Logo (glisse ou Ctrl+V) et couleur principale — tout le reste s'adapte.",
-    details: `Onglet Médias :
-• Logo : PNG ou JPG, max 5 MB, idéalement carré 512×512 px
-• Bannière (optionnelle) : 1920×640 px, affichée en hero de ta carte
-• Glisser-déposer OU Ctrl+V depuis une capture/clipboard
+    body: "Logo et couleur de ta carte. Glisse une image ou colle-la (Ctrl+V).",
+    details: `Onglet "Médias" :
+• Logo : une image carrée (idéal 500×500 pixels, PNG ou JPG)
+• Bannière : une grande image qui s'affiche tout en haut de ta carte
+• Tu peux glisser l'image avec ta souris, OU faire Ctrl+V après l'avoir copiée
 
-Onglet Couleurs :
-• Couleur principale = boutons, titres, accents de toute ta carte
-• Couleur de fond + couleur du texte = adaptables si besoin spécifique
-• Reset à tout moment pour revenir au thème par défaut
+Onglet "Couleurs" :
+• Choisis ta couleur principale → toute la carte s'adapte
+  (boutons, titres, accents)
+• Tu peux aussi changer la couleur de fond et celle du texte
+• Bouton "Reset" pour revenir aux couleurs de départ
 
-Onglet Thème :
-• 3 presets prêts : Clair, Sombre, Bois (idéal bistrot)
-• Choisis-en un, ajuste les couleurs après si tu veux
+Onglet "Thème" :
+• 3 styles prêts à l'emploi : Clair, Sombre, Bois (style bistrot)
+• Choisis-en un, tu peux ajuster les couleurs après si tu veux
 
-La preview à droite se met à jour en LIVE à chaque save.`,
+À droite, tu vois ta carte se mettre à jour en direct à chaque
+modification — c'est exactement ce que tes clients verront.`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "bottom",
@@ -94,19 +96,21 @@ La preview à droite se met à jour en LIVE à chaque save.`,
     path: "/dashboard/restaurant",
     anchorSelector: "[data-onboarding-anchor='restaurant-infos']",
     title: "Infos pratiques 📍",
-    body: "Adresse, téléphone, horaires — affichés sur ta carte pour rassurer tes clients.",
-    details: `Onglet Infos :
+    body: "Adresse, téléphone, horaires. C'est ce qui rassure tes clients.",
+    details: `Onglet "Infos" — remplis les champs de ton restaurant :
 
-• Nom du restaurant (affiché en header)
-• Slug : la partie unique de ton URL publique (ex: ruliz.fr/carte/le-tire-bouchon)
-• Adresse complète : numéro, rue, code postal, ville — affichée en footer + clic = ouvre Google Maps
-• Téléphone : cliquable depuis mobile = appel direct
-• Email : utilisé pour les notifications (bientôt : réservations)
-• Devise par défaut : €, $, £…
-• Langue native : la langue dans laquelle TU rédiges ta carte (les autres sont traduites)
+• Nom du restaurant (s'affiche en haut de ta carte)
+• Adresse complète : numéro, rue, code postal, ville
+  → les clients peuvent cliquer dessus pour ouvrir Google Maps
+• Téléphone : si un client clique dessus depuis son mobile,
+  ça appelle directement le resto
+• Email : on s'en sert pour t'envoyer les notifications importantes
+• Devise : € pour la France, $ pour les USA, etc.
+• Langue principale : celle dans laquelle TU écris ta carte
+  (les autres langues seront traduites toutes seules)
 
-ASTUCE : tout est PUBLIC sur ta carte. Évite d'y mettre ton tel perso —
-mets celui du resto, ou une ligne dédiée.`,
+Attention : tout ce que tu mets ici est PUBLIC sur ta carte.
+Évite ton numéro personnel — mets celui du resto.`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "bottom",
@@ -116,28 +120,28 @@ mets celui du resto, ou une ligne dédiée.`,
     id: 4,
     path: "/dashboard/restaurant",
     anchorSelector: "[data-onboarding-anchor='restaurant-social']",
-    title: "Réseaux & Google reviews 🌐",
-    body: "Facebook, Insta, lien Google — affichés en haut de ta carte pour booster ton SEO local.",
-    details: `Onglet Réseaux — toutes les URLs sont optionnelles :
+    title: "Réseaux & avis Google 🌐",
+    body: "Facebook, Insta, lien Google — pour remonter dans les recherches.",
+    details: `Onglet "Réseaux" — tout est optionnel, mets ce que tu veux :
 
-• Facebook : URL complète de ta page (https://facebook.com/tonresto)
-• Instagram : idem
-• TikTok : idem
-• Site web : si tu en as un externe à Ruliz
+• Facebook : copie l'adresse de ta page (ex: facebook.com/tonresto)
+• Instagram : pareil
+• TikTok : pareil
+• Site web : si tu en as un autre
 
-• Google Reviews (LE PLUS IMPORTANT) :
-  Va sur ta fiche Google Business → "Demander un avis" → copie l'URL
-  Elle ressemble à : https://g.page/r/CXXXXXX/review
+• LIEN POUR AVIS GOOGLE (le plus important) :
+  Va sur ta fiche Google Business → clic "Demander un avis"
+  → copie l'adresse qui s'affiche (elle ressemble à g.page/r/...)
 
-Pourquoi c'est critique :
-• Boutons affichés en haut de ta carte (pills navy contour)
-• Le bouton Google déclenche le compteur de la roulette d'avis (slide 11)
-• Chaque clic vers Google = un avis potentiel = boost de ton ranking local
-• En moyenne, les restos avec lien Google sur leur carte digitale captent
-  +35% d'avis dans les 60 premiers jours
+Pourquoi c'est si important ?
+• Tes clients voient un bouton "Avis Google" en haut de ta carte
+• Plus tu as d'avis, plus tu remontes dans les recherches Google
+  (les gens qui cherchent "restaurant + ta ville" te trouvent en premier)
+• En moyenne, les restos qui ajoutent ce lien ont 35% d'avis en plus
+  dans les 2 mois qui suivent
 
-ASTUCE : si tu n'as pas de fiche Google encore, crée-la AVANT — c'est gratuit
-et c'est ce qui te rapporte le plus de visibilité locale.`,
+Tu n'as pas encore de fiche Google ? Crée-la AVANT — c'est gratuit
+et c'est ce qui te rapporte le plus de visibilité dans ton quartier.`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "bottom",
@@ -148,28 +152,32 @@ et c'est ce qui te rapporte le plus de visibilité locale.`,
     path: "/dashboard/menu",
     anchorSelector: "[data-onboarding-anchor='add-category']",
     title: "Crée tes catégories 🍽️",
-    body: "Entrées, Plats, Vins, Desserts… glisse pour réorganiser, autant que tu veux.",
-    details: `Catégories = sections de ta carte (Entrées, Plats, Vins…).
+    body: "Entrées, Plats, Vins, Desserts… autant que tu veux, dans l'ordre que tu veux.",
+    details: `Les catégories, ce sont les grandes sections de ta carte
+(Entrées, Plats, Boissons, Desserts…).
 
-Pour créer :
+Pour créer une catégorie :
 1. Clic sur "+ Catégorie" en haut à gauche
-2. Donne-lui un titre (ex: "Entrées")
-3. Optionnel : choisis un emoji (clique sur le bouton 🍽️ → picker complet)
-4. Sauvegarde
+2. Donne-lui un nom (ex: "Entrées")
+3. Choisis un emoji (optionnel) — clique sur le bouton 🍽️
+4. Clic "Créer"
 
-Options avancées :
-• Mode d'affichage : Liste verticale (défaut) / Grille (avec photos) / Carrousel horizontal
-• Catégorie parente : transforme en sous-catégorie (ex: Vins ↳ Rouges / Blancs / Rosés)
-• Couleur custom : override la couleur globale (ex: rouge vif pour "Épicés", or pour "Spécialités du chef")
-• Créneau d'affichage : visible uniquement midi / soir / happy hour / horaires custom
-  - utile pour les cartes qui changent (carte du jour, brunch)
+Options supplémentaires :
+• Affichage : liste (défaut), grille (avec photos), carrousel
+• Catégorie parente : pour faire des sous-catégories
+  (exemple : Vins ↳ Rouges / Blancs / Rosés)
+• Couleur custom : pour qu'une catégorie ressorte
+  (exemple : rouge vif pour "Épicés")
+• Horaire d'affichage : visible seulement le midi /
+  le soir / happy hour
+  → utile si tu as une carte qui change selon le moment de la journée
 
-Drag & drop :
-• Glisse une catégorie dans la sidebar pour changer son ordre
-• Glisse-la SUR une autre pour en faire une sous-cat
-• Maintiens Shift en glissant pour duplicate (à venir)
+Pour réorganiser tes catégories :
+glisse-les avec ta souris dans la liste de gauche.
+Tu peux aussi les glisser SUR une autre pour en faire une sous-catégorie.
 
-Catégories vides = pas affichées sur ta carte publique.`,
+Une catégorie qui n'a aucun produit dedans n'apparaît pas
+sur ta carte publique.`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "right",
@@ -179,29 +187,33 @@ Catégories vides = pas affichées sur ta carte publique.`,
     id: 6,
     path: "/dashboard/menu",
     anchorSelector: null,
-    title: "Ton premier produit 🍕",
-    body: "Sélectionne une catégorie, puis clique « + Produit » pour ajouter un plat.",
-    details: `Pour ajouter un produit :
-1. Clique sur une catégorie dans la sidebar gauche
+    title: "Ton premier plat 🍕",
+    body: "Clique sur une catégorie, puis sur « + Produit » pour ajouter un plat.",
+    details: `Pour ajouter ton premier plat :
+1. Clique sur une catégorie dans la liste de gauche
 2. Bouton "+ Produit" en haut à droite
-3. Le drawer s'ouvre avec tous les champs
+3. Le panneau d'ajout s'ouvre
 
 Champs essentiels :
-• Titre : nom du plat (obligatoire)
-• Description : 2-3 lignes appétissantes, c'est ça qui donne envie
-• Photo : 1 image carrée recommandée (cf. slide suivante)
-• Prix : en €, avec virgule
+• Titre : le nom du plat
+• Description : 2-3 lignes qui donnent envie
+  (parfum, ingrédients, texture…)
+• Photo : 1 image carrée (voir l'étape suivante)
+• Prix : en euros, avec virgule (ex: 12,50)
 
-Champs optionnels mais utiles :
-• Description prix : précision sous le prix (ex: "20cl", "la pièce", "à partir de")
-• Variantes de prix : plusieurs tailles ou volumes (ex: Bière demi 4€ / pinte 7€)
-• Sous-catégorie : ré-affecte dans la cat parent
-• Position : ordre d'affichage (sinon glisse pour réorganiser)
-• Statut : Publié / Brouillon (pour préparer sans afficher)
-• Origine : pays d'origine (ex: France) → affiche drapeau 🇫🇷
+Champs en option, mais bien utiles :
+• Petite précision sous le prix
+  (ex: "20cl", "la pièce", "à partir de")
+• Variantes de prix : si plusieurs tailles
+  (ex: Bière demi 4€ / pinte 7€)
+• Sous-catégorie : pour ranger dans une cat parent
+• Position : l'ordre dans la liste
+• Statut : Publié (visible par les clients) ou Brouillon
+  (caché tant que tu n'as pas fini)
+• Pays d'origine : affiche un petit drapeau 🇫🇷 à côté
 
-ASTUCE : commence simple — titre + description + prix suffit pour publier.
-Tu enrichis ensuite (photos, allergènes, variantes) au fur et à mesure.`,
+Conseil : commence simple. Juste nom + description + prix suffit
+pour publier ton plat. Tu enrichiras (photos, allergènes…) plus tard.`,
     cta: "Suivant →",
     allowSkip: true,
     kind: "base",
@@ -211,32 +223,32 @@ Tu enrichis ensuite (photos, allergènes, variantes) au fur et à mesure.`,
     path: "/dashboard/menu",
     anchorSelector: "[data-onboarding-anchor='produit-photo']",
     title: "Astuce photos 📸",
-    body: "Glisse une image, ou Ctrl+V une capture — pas besoin de la sauver avant.",
-    details: `3 manières d'uploader une photo :
+    body: "Glisse une image, ou colle-la avec Ctrl+V. Aucun besoin de l'enregistrer avant.",
+    details: `3 façons d'ajouter une photo :
 
-1. CLIC : clique la zone, choisis depuis ton ordi (Finder/Explorer)
+1. CLIQUER : clic sur la zone photo, choisis l'image sur ton ordi
 
-2. DRAG & DROP : glisse une image directement depuis ton bureau
-   ou ton navigateur (clic-droit "Glisser-déposer")
+2. GLISSER : prends une image avec ta souris depuis ton bureau,
+   glisse-la dans la zone photo
 
-3. PASTE (Ctrl+V) — la plus rapide :
-   • Windows : Win+Shift+S pour capturer une zone, puis Ctrl+V ici
-   • Mac : Cmd+Shift+4 pour capturer, puis Cmd+V ici
-   • Copie depuis Insta, Google Images, Pinterest : clic-droit "Copier l'image", puis Ctrl+V
-   • Photos depuis Finder/Explorer : clic-droit "Copier", puis Ctrl+V
+3. COLLER (Ctrl+V) — le plus rapide :
+   • Sur Windows : appuie sur Win+Maj+S pour faire une capture d'écran,
+     puis Ctrl+V dans la zone photo
+   • Sur Mac : appuie sur Cmd+Maj+4 pour la capture,
+     puis Cmd+V dans la zone photo
+   • Tu peux aussi copier une image depuis Instagram, Google, Pinterest
+     (clic-droit → "Copier l'image") puis Ctrl+V
 
-Formats supportés : PNG, JPG, JPEG, WebP, AVIF, GIF
-Taille max : 5 MB par image
-Ratio recommandé : carré 1:1 ou 4:3
+Formats acceptés : PNG, JPG, WebP, GIF
+Poids max : 5 Mo
+Format conseillé : carré (même hauteur que largeur)
 
-Stockage :
-• Cloudflare R2 (CDN mondial, ultra rapide)
-• Tes images sont compressées automatiquement
-• Affichées en WebP optimisé sur la carte publique
-• Mobile 4G : moins de 600 KB par page
-
-ASTUCE : prends tes photos avec ton phone, en lumière naturelle (fenêtre),
-fond neutre. Pas besoin de photographe pro — du simple bien éclairé > du flou pro.`,
+Conseils pour de belles photos :
+• Prends-les avec ton téléphone, près d'une fenêtre
+  (la lumière naturelle est ton amie)
+• Fond simple (assiette blanche, table en bois)
+• Pas besoin d'un photographe pro :
+  une photo simple bien éclairée vaut mieux qu'une photo "pro" floue`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "left",
@@ -246,38 +258,38 @@ fond neutre. Pas besoin de photographe pro — du simple bien éclairé > du flo
     id: 8,
     path: "/dashboard/menu",
     anchorSelector: "[data-onboarding-anchor='produit-allergenes']",
-    title: "Allergènes & vignettes 🌿",
-    body: "Coche fait maison, végé, sans gluten, épicé — affiché en pills sur la fiche produit.",
-    details: `Tags visuels affichés sur la fiche produit publique.
+    title: "Allergènes & pictos 🌿",
+    body: "Coche fait maison, végé, sans gluten, épicé… affiché sur la fiche du plat.",
+    details: `Petits pictos affichés sur la fiche de chaque plat.
 
-VIGNETTES (pills colorées en haut de la fiche) :
+PICTOS COLORÉS (en haut de la fiche) :
 • 🌿 Fait maison
 • 🌱 Végétarien
-• 🥬 Vegan
+• 🥬 Vegan (aucun produit animal)
 • 🌾 Sans gluten
 • 🔥 Épicé
 • ⭐ Spécialité du chef
-• ❄️ À consommer froid
+• ❄️ À manger froid
 • 🐟 Pêche locale
-• 🍷 Accord vins
-… et 10+ autres options
+• 🍷 Accord avec un vin
+… et plein d'autres
 
-ALLERGÈNES (sigles règlementaires 14 obligatoires) :
+ALLERGÈNES (les 14 obligatoires en France) :
 • Gluten, Crustacés, Œufs, Poissons, Arachides
 • Soja, Lait, Fruits à coque, Céleri, Moutarde
 • Sésame, Sulfites, Lupin, Mollusques
 
-OBLIGATION LÉGALE (France/UE) :
-Tu DOIS afficher les allergènes — c'est dans le règlement INCO 1169/2011.
-Une carte digitale qui les liste te met en conformité instantanément.
+ATTENTION : la loi française t'oblige à afficher les allergènes
+de chaque plat. Une carte digitale qui les liste te met en règle
+automatiquement, sans paperasse.
 
-Affichage public :
-• Pills colorées en haut de la fiche
-• Allergènes affichés en bas avec leur sigle officiel
-• Visible dans toutes les langues (traduit automatiquement)
+Comment ça s'affiche pour tes clients :
+• Les pictos colorés apparaissent en haut de la fiche du plat
+• Les allergènes en bas, avec leur sigle officiel
+• Tout est traduit dans les 7 langues
 
-ASTUCE : coche tout ce qui s'applique vraiment, ne survends pas
-le "fait maison" — les clients lisent et apprécient l'honnêteté.`,
+Conseil : ne triche pas avec le "fait maison" — les clients lisent
+et apprécient quand c'est honnête.`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "left",
@@ -288,34 +300,36 @@ le "fait maison" — les clients lisent et apprécient l'honnêteté.`,
     path: "/dashboard/menu",
     anchorSelector: "[data-onboarding-anchor='preview-iframe']",
     title: "Aperçu live + 7 langues 🌍",
-    body: "À droite : ce que tes clients voient. Change la langue, l'IA traduit automatiquement.",
-    details: `L'aperçu à droite est ta VRAIE carte publique chargée dans une iframe.
+    body: "À droite, ta carte comme tes clients la voient. Change la langue, on traduit tout seul.",
+    details: `Ce que tu vois à droite, c'est ta vraie carte publique —
+exactement ce que tes clients verront.
 
 Comportement :
-• Tu vois EXACTEMENT ce que tes clients verront
-• Refresh auto en ~500 ms après chaque save
-• Bouton refresh manuel en haut à droite si besoin
-• Lien "Ouvrir dans un onglet" pour tester en grand
+• Ta carte se met à jour TOUTE SEULE à chaque modification
+  (en moins d'1 seconde)
+• Si besoin, bouton "Rafraîchir" en haut à droite de l'aperçu
+• Clic sur "Ouvrir dans un onglet" pour la tester en grand format
 
-Sélecteur de langue (en haut de la preview) :
-• FR (langue source) — ta langue de rédaction
-• EN, ES, DE, IT, PT, ZH — traduites automatiquement
+Choix de la langue (en haut de l'aperçu) :
+• FR : ta langue d'écriture (français)
+• EN, ES, DE, IT, PT, ZH : Anglais, Espagnol, Allemand,
+  Italien, Portugais, Chinois — traduites automatiquement
 
-Traduction IA (Anthropic Claude Haiku) :
-• 1ère consultation d'une langue = traduction live en ~3 secondes
-• Ensuite c'est caché POUR TOUJOURS (pas de re-traduction inutile)
-• Si tu modifies un texte FR, les trads sont régénérées en arrière-plan
-• Prompt spécialisé "menu de restaurant" — respecte les noms propres,
-  les vins, les fromages français en italique
+Comment marche la traduction automatique ?
+• La première fois qu'un client consulte ta carte en anglais
+  → traduction faite en quelques secondes
+• Ensuite c'est enregistré POUR TOUJOURS — la prochaine fois c'est instantané
+• Si tu modifies un texte en français, les traductions
+  se mettent à jour toutes seules en arrière-plan
+• Tu n'as RIEN à faire — c'est inclus
 
 Bouton "Re-traduire" :
-• Force la regénération de toutes les trads d'une langue
-• Utile si tu changes le ton de marque ou corriges des trads bizarres
-• Coût : 0 (inclus dans tous les plans)
+• Force une nouvelle traduction si tu veux changer le style
+• Aucun coût supplémentaire — inclus dans tous les abonnements
 
-Bandeau "Traduction partielle" : apparaît automatiquement si certains
-champs ne sont pas encore traduits (ex: un produit ajouté il y a 2 secondes).
-Ça disparait dès que la trad de fond termine (~10s).`,
+Si tu vois un bandeau orange "Traduction partielle" :
+ça veut juste dire que la traduction est encore en cours
+(10 secondes max). Ça disparaît tout seul.`,
     cta: "Voir mon QR →",
     allowSkip: true,
     placement: "left",
@@ -326,88 +340,98 @@ champs ne sont pas encore traduits (ex: un produit ajouté il y a 2 secondes).
     path: "/dashboard/qrcodes",
     anchorSelector: "[data-onboarding-anchor='qr-display']",
     title: "Ton QR code 📱",
-    body: "Télécharge le PNG, imprime-le, pose-le sur tes tables. Pointe toujours vers la dernière version.",
-    details: `Tu peux générer PLUSIEURS QR codes pour tracker leur efficacité séparément.
+    body: "Télécharge-le, imprime-le, pose-le sur tes tables. Il pointe toujours vers ta carte à jour.",
+    details: `Tu peux créer PLUSIEURS QR codes pour savoir lequel marche le mieux.
 
-Création :
-• Bouton "+ QR" en haut
-• Slug optionnel (ex: "table-12", "vitrine", "flyer-octobre")
-• Statut : Actif / Suspendu (suspends-le si tu changes de campagne)
+Pour créer un QR :
+• Bouton "+ QR" en haut de la page
+• Donne-lui un nom (ex: "table-12", "vitrine", "flyer-octobre")
+• Statut : Actif ou Suspendu
+  (pratique pour stopper une vieille campagne marketing)
 
-Téléchargement (par QR) :
-• PNG haute résolution 1024×1024 (pour impression standard)
-• SVG vectoriel (pour imprimeur pro, gravure laser, etc.)
-• Lien direct vers /carte/{id}?qr={qrId} pour partage WhatsApp/Mail
+Pour le télécharger :
+• Format PNG haute résolution 1024×1024 pixels
+  (parfait pour l'impression standard)
+• Format SVG (pour imprimeur professionnel, gravure laser…)
+• Lien direct pour partager par WhatsApp, mail, etc.
 
-Stats par QR (page Analyse) :
+Statistiques par QR (page Analyse) :
 • Quel QR scanne le plus
-• Quels horaires
-• Conversion produit (top plats cliqués après ce QR)
+• À quelles heures
+• Quels plats les clients de ce QR regardent le plus
+  (exemple : "Les clients de la vitrine commandent surtout des desserts")
 
-Bonnes pratiques d'impression :
-• Sticker MAT (pas brillant — les reflets gênent le scan)
-• Taille minimum : 4×4 cm pour scan smartphone confortable
-• Hauteur d'œil sur les tables (pas dessous, pas trop haut)
-• Évite les coins pliés, les poches de set de table en plastique
-• Ajoute "Scannez pour voir notre carte 📱" à côté
-• Imprime sur la boutique Ruliz : sets de table tout-faits
+Conseils pour l'impression :
+• Imprime sur sticker MAT (pas brillant — sinon ça fait des reflets
+  et bloque le scan)
+• Taille minimum : 4×4 cm pour un scan smartphone confortable
+• Pose à hauteur des yeux sur les tables
+• Évite les coins pliés ou les pochettes plastiques
+• Ajoute "Scannez pour voir notre carte 📱" à côté du QR
+• Tu peux commander des sets de table tout-faits sur la boutique Ruliz
 
-ASTUCE : si tu changes ta carte (saison été → hiver), tu n'as PAS à ré-imprimer.
-Le QR pointe vers la dernière version — modifie le contenu côté dashboard et c'est tout.`,
+ASTUCE GÉNIALE : si tu changes ta carte (été → hiver),
+tu n'as PAS à ré-imprimer ton QR code. Le QR pointe toujours
+vers ta carte à jour — tu modifies côté dashboard, c'est tout.`,
     cta: "Voir les plus 🎁",
     allowSkip: true,
     placement: "left",
     kind: "base",
   },
   // =========================================================================
-  // PLUS-VALUE — slides 11 et 12 (features qui font vendre / fidéliser)
+  // PLUS-VALUE — slides 11 et 12
   // =========================================================================
   {
     id: 11,
     path: "/dashboard/jeu",
     anchorSelector: "[data-onboarding-anchor='jeu-page']",
-    title: "🎁 Roulette d'avis Google",
-    body: "Tes clients tournent la roue, gagnent un cadeau → laissent un avis Google. Boost SEO local immédiat.",
-    details: `Le mécanisme qui fait passer ton resto de 4.2⭐ à 4.7⭐ en 90 jours.
+    title: "🎁 Roulette à avis Google",
+    body: "Tes clients tournent la roue, gagnent un cadeau, laissent un avis Google. Magique.",
+    details: `Le système qui fait passer ton resto de 4.2 ⭐ à 4.7 ⭐ en 3 mois.
 
 Comment ça marche :
 
-1. Tu configures un jeu avec des lots et leurs probabilités :
-   • Café offert : 25%
+1. Tu choisis les lots à gagner et leurs chances :
+   • Café offert : 25% de chances
    • Dessert maison offert : 15%
-   • Apéro maison : 10%
-   • Rien gagné : 50%
-   (l'addition fait 100%)
+   • Apéritif offert : 10%
+   • Rien : 50%
+   (le total doit faire 100%)
 
-2. Tu actives le pop-up automatique :
-   • S'ouvre 3 secondes après le scan QR
-   • Le client peut le fermer s'il veut juste voir la carte
-   • Mais c'est ALLÉCHANT donc 60-70% tournent la roue
+2. Activation du pop-up automatique :
+   • Apparaît 3 secondes après que le client scanne ton QR
+   • Le client peut le fermer s'il préfère juste voir la carte
+   • Mais c'est tentant — 60 à 70% des clients tournent la roue
 
-3. Le client tourne la roue (animation canvas fluide)
+3. Le client tourne la roue (jolie animation)
 
 4. S'il GAGNE :
-   • Pop-up "Bravo ! Pour récupérer ton lot, laisse-nous un avis Google 5⭐"
-   • Bouton qui ouvre directement le lien Google reviews
-   • Il laisse l'avis → reçoit un code à montrer en caisse
-   • Tu valides le code dans ton dashboard → client repart avec son cadeau
+   • Pop-up "Bravo ! Pour récupérer ton lot, laisse-nous un avis
+     Google 5 étoiles"
+   • Le bouton ouvre directement la page Google reviews de ton resto
+   • Le client laisse son avis → reçoit un code à montrer au resto
+   • Tu vérifies le code dans ton dashboard → le client repart avec son cadeau
 
-5. Si NE GAGNE PAS :
+5. S'il PERD :
    • Message "Pas de chance, mais notre carte vaut le coup d'œil 😉"
-   • Tu peux quand même demander de laisser un avis (optionnel)
+   • Tu peux quand même demander un avis (optionnel)
 
-Résultats moyens (sur 50+ restos clients) :
-• +35 à 60% d'avis Google dans les 60 jours
-• Ranking local : 4.2⭐ (1000 avis) → 4.6⭐ après 3 mois
-• Lead capture : prénom + tel + email des participants
-  → tu les recontactes par SMS (cf. plan Premium)
+Résultats observés chez nos 50+ restos clients :
+• +35 à 60% d'avis Google en 2 mois
+• Note moyenne qui passe de 4.2 à 4.6 étoiles en 3 mois
+• Tu récupères le prénom + le numéro de chaque participant
+  → tu peux les recontacter par SMS plus tard
+  (avec l'abonnement Premium)
 
-Coût : inclus dans le plan Pro (29.90€/mois).
-Lots offerts : à TA charge — mais 1 café à 1.50€ qui ramène un avis 5⭐
-qui ramène 3 clients sur 6 mois = ROI x 10.
+Coût : inclus dans l'abonnement Pro (29,90€/mois).
+Les lots offerts sont à TA charge.
 
-ASTUCE : commence avec des petits lots (café, dessert) plus probables.
-Garde les gros lots (bouteille de vin, repas pour 2) à 2-5% pour le wow effect.`,
+Mais 1 café offert à 1,50€ → 1 avis 5⭐ → 3 nouveaux clients sur 6 mois.
+Très rentable.
+
+Conseil : commence avec des petits lots qui ont beaucoup de chances
+(café, dessert). Garde les gros lots (bouteille de vin, repas pour 2)
+à 2-5% pour faire l'effet "wow" quand quelqu'un gagne.`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "bottom",
@@ -415,62 +439,70 @@ Garde les gros lots (bouteille de vin, repas pour 2) à 2-5% pour le wow effect.
   },
   {
     id: 12,
-    path: "/dashboard/stats",
-    anchorSelector: "[data-onboarding-anchor='stats-page']",
-    title: "📊 Stats & Plan Premium",
-    body: "Suis tes scans en temps réel. Plan Premium : sans branding Ruliz, multi-restos, SMS marketing.",
-    details: `STATISTIQUES (inclus TOUS plans) :
+    // On reste sur /dashboard (page d'accueil) pour garantir que la slide
+    // s'affiche, même si l'utilisateur n'a pas accès à /dashboard/stats
+    // (paywall, plan gratuit, etc.). La bulle apparaît en bottom-right.
+    path: "/dashboard",
+    anchorSelector: null,
+    title: "📊 Statistiques & Abonnements",
+    body: "Suis tes scans en direct. Et compare les abonnements pour aller plus loin.",
+    details: `STATISTIQUES (incluses dans TOUS les abonnements) :
 
-• Scans / jour / semaine / mois / personnalisé
-• Heatmap horaire : quand tes clients scannent vraiment
-  (utile pour caler le personnel)
-• Top produits cliqués : ce qui intéresse vraiment
-• Top QR codes : quel emplacement marche mieux
+Ce que tu peux voir dans la page "Analyse" :
+• Nombre de scans par jour, par semaine, par mois
+• Heures où tes clients scannent le plus
+  (pour caler tes équipes en cuisine)
+• Top des plats les plus regardés
+• Quel QR code marche mieux
   (vitrine vs table vs flyer)
-• Pays + langue des visiteurs (touristes ?)
-• Devices : mobile vs desktop, iOS vs Android
-• Live feed des scans en temps réel
-• Tendances : comparaison période sur période
-• Export CSV pour ton comptable / ton équipe
+• Pays et langue des visiteurs (touristes ou locaux ?)
+• Téléphone vs ordinateur, iPhone vs Android
+• Liste en direct des derniers scans
+• Comparaison entre 2 périodes (cette semaine vs semaine dernière)
+• Export Excel pour ton comptable
 
-PLAN GRATUIT (Freemium) :
+═══════════════════════════════════════
+LES 3 ABONNEMENTS RULIZ :
+═══════════════════════════════════════
+
+📦 GRATUIT (Freemium) — 0€/mois
 • 1 restaurant
-• Stats 7 jours
-• 5 catégories, 30 produits max
-• Branding "Propulsé par Ruliz" en footer
-• 1 langue (FR)
+• Statistiques sur les 7 derniers jours
+• Max 5 catégories, 30 plats
+• Petite mention "Propulsé par Ruliz" en bas de ta carte
+• Carte uniquement en français
 
-PLAN PRO (29.90€ / mois) :
-• Tout du gratuit, sans limite
-• 7 langues IA
-• Roulette d'avis Google
-• Pop-ups événements
-• Stats 30 jours
+⭐ PRO — 29,90€ / mois
+• Tout ce qui est gratuit + en illimité
+• Carte traduite en 7 langues automatiquement
+• Roulette à avis Google (étape 11)
+• Pop-ups événements (ex: "Soirée vins ce vendredi !")
+• Statistiques sur 30 jours
 • 1 restaurant
 
-PLAN PREMIUM (44.90€ / mois) :
+💎 PREMIUM — 44,90€ / mois
 • Tout du Pro
-• SANS branding Ruliz (carte 100% à toi)
-• Multi-restaurants (gère 5 lieux depuis 1 compte)
-• Équipe : invite tes employés en lecture/édition
-• SMS marketing intégré (Brevo) :
-  → relance les clients de la roulette qui n'ont pas laissé d'avis
-  → annonce les évènements (soirée, brunch dominical…)
-  → 200 SMS/mois inclus, puis 0.06€/SMS
-• Stats ILLIMITÉES dans le temps
-• Support prioritaire (réponse < 4h ouvrées)
-• API access (à venir) pour intégrations custom
+• SANS mention Ruliz (ta carte 100% à toi)
+• Plusieurs restaurants (jusqu'à 5) gérés depuis un seul compte
+• Invite tes employés (gestion d'équipe)
+• Envoie des SMS à tes clients :
+  → relance ceux de la roulette qui n'ont pas laissé d'avis
+  → annonce tes événements (soirée, brunch dominical…)
+  → 200 SMS/mois inclus, puis 6 centimes par SMS supplémentaire
+• Statistiques sans limite dans le temps
+• Support prioritaire (réponse en moins de 4h en semaine)
 
-Comment souscrire :
-Paramètres › Facturation › "Gérer mon abonnement"
-→ Tu passes par Stripe Checkout (CB ou SEPA)
-→ Annulation en 1 clic depuis le Customer Portal Stripe
+═══════════════════════════════════════
 
-Promo lancement : -20% les 3 premiers mois si tu actives en
-moins de 7 jours après création de compte.`,
+Comment t'abonner ?
+→ Paramètres › Facturation › "Gérer mon abonnement"
+→ Paiement sécurisé par carte bancaire ou prélèvement
+→ Résiliation possible en 1 clic à tout moment
+
+🎁 Promo de lancement : -20% les 3 premiers mois
+si tu t'abonnes dans les 7 jours qui suivent ton inscription.`,
     cta: "Terminer 🎉",
     allowSkip: false,
-    placement: "bottom",
     kind: "value",
   },
 ];
