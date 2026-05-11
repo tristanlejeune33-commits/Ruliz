@@ -713,7 +713,6 @@ function StatutDropdown({
     ? (currentStatut as StatutKey)
     : "en_attente";
   const config = STATUT_CONFIG[key];
-  const Icon = config.icon;
 
   const handleChange = (newKey: StatutKey) => {
     if (newKey === key) return;
@@ -738,18 +737,13 @@ function StatutDropdown({
       disabled={pending}
     >
       <SelectTrigger
-        className="h-8 w-[180px] gap-1.5 border-2 text-xs"
+        className="h-9 w-[210px] gap-1.5 whitespace-nowrap border-2 text-xs [&>span]:flex [&>span]:items-center [&>span]:gap-1.5 [&>span]:truncate"
         style={{
           borderColor: config.border,
           backgroundColor: config.bg,
           color: config.text,
         }}
       >
-        {pending ? (
-          <Loader2 className="size-3.5 shrink-0 animate-spin" />
-        ) : (
-          <Icon className="size-3.5 shrink-0" />
-        )}
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
@@ -759,7 +753,14 @@ function StatutDropdown({
           return (
             <SelectItem key={k} value={k}>
               <span className="inline-flex items-center gap-1.5">
-                <KIcon className="size-3.5" style={{ color: c.color }} />
+                {pending && k === key ? (
+                  <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                ) : (
+                  <KIcon
+                    className="size-3.5 shrink-0"
+                    style={{ color: c.color }}
+                  />
+                )}
                 {c.label}
               </span>
             </SelectItem>

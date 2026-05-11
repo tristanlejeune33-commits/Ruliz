@@ -360,7 +360,6 @@ function CommandeRow({ commande }: { commande: ClientBoutiqueCommande }) {
   const [pending, startTransition] = useTransition();
   const statut = normalizeStatut(commande.statut);
   const config = STATUT_CONFIG[statut];
-  const Icon = config.icon;
 
   const handleStatutChange = (newKey: StatutKey) => {
     const dbValue = DB_STATUS_FROM_KEY[newKey] as
@@ -428,7 +427,9 @@ function CommandeRow({ commande }: { commande: ClientBoutiqueCommande }) {
           </p>
         </div>
 
-        {/* SELECT STATUT INLINE (admin-only) */}
+        {/* SELECT STATUT INLINE (admin-only) — SelectValue rend l'enfant
+            de SelectItem (icône + label), donc pas de duplication d'icône
+            dans le trigger. Le CSS [&>span] cible le SelectValue rendu. */}
         <div className="shrink-0">
           <Select
             value={statut}
@@ -436,18 +437,13 @@ function CommandeRow({ commande }: { commande: ClientBoutiqueCommande }) {
             disabled={pending}
           >
             <SelectTrigger
-              className="h-8 min-w-[160px] gap-1.5 border-2"
+              className="h-9 w-[210px] gap-1.5 whitespace-nowrap border-2 text-xs [&>span]:flex [&>span]:items-center [&>span]:gap-1.5 [&>span]:truncate"
               style={{
                 borderColor: config.border,
                 backgroundColor: config.bg,
                 color: config.text,
               }}
             >
-              {pending ? (
-                <Loader2 className="size-3.5 shrink-0 animate-spin" />
-              ) : (
-                <Icon className="size-3.5 shrink-0" />
-              )}
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -457,10 +453,14 @@ function CommandeRow({ commande }: { commande: ClientBoutiqueCommande }) {
                 return (
                   <SelectItem key={key} value={key}>
                     <span className="inline-flex items-center gap-1.5">
-                      <KIcon
-                        className="size-3.5"
-                        style={{ color: k.color }}
-                      />
+                      {pending && key === statut ? (
+                        <Loader2 className="size-3.5 shrink-0 animate-spin" />
+                      ) : (
+                        <KIcon
+                          className="size-3.5 shrink-0"
+                          style={{ color: k.color }}
+                        />
+                      )}
                       {k.label}
                     </span>
                   </SelectItem>
