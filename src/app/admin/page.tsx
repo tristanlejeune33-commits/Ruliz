@@ -147,7 +147,7 @@ export default async function AdminHome() {
               label={c.label}
               value={c.value}
               helper={c.helper}
-              Icon={c.icon}
+              iconNode={<c.icon className="size-4" />}
               kpi={"kpi" in c ? c.kpi : undefined}
               isMoney={
                 "isMoney" in c && typeof c.isMoney === "boolean"
@@ -171,7 +171,7 @@ export default async function AdminHome() {
               label={c.label}
               value={c.value}
               helper={c.helper}
-              Icon={c.icon}
+              iconNode={<c.icon className="size-4" />}
               kpi={"kpi" in c ? c.kpi : undefined}
               isMoney={
                 "isMoney" in c && typeof c.isMoney === "boolean"

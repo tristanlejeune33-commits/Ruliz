@@ -37,7 +37,9 @@ interface KpiTileProps {
   label: string;
   value: string;
   helper: string;
-  Icon: React.ComponentType<{ className?: string }>;
+  /** JSX pré-rendu de l'icône (Server → Client : les fonctions Lucide ne
+      sont pas sérialisables, donc on passe l'élément React déjà construit) */
+  iconNode: React.ReactNode;
   /** Si défini : tile cliquable → ouvre une modal avec graphique 3 ans */
   kpi?: TimeseriesKpi;
   /** Si true → format euros sur l'axe Y de la modal (sinon nombres bruts) */
@@ -51,7 +53,14 @@ const RANGE_OPTIONS = [
   { label: "3 ans", days: 1100 },
 ];
 
-export function KpiTile({ label, value, helper, Icon, kpi, isMoney }: KpiTileProps) {
+export function KpiTile({
+  label,
+  value,
+  helper,
+  iconNode,
+  kpi,
+  isMoney,
+}: KpiTileProps) {
   const clickable = !!kpi;
 
   const tile = (
@@ -64,7 +73,7 @@ export function KpiTile({ label, value, helper, Icon, kpi, isMoney }: KpiTilePro
     >
       <CardHeader className="flex-row items-start justify-between gap-4 space-y-0 pb-2">
         <CardDescription>{label}</CardDescription>
-        <Icon className="size-4 text-[var(--text-muted)]" />
+        <span className="text-[var(--text-muted)]">{iconNode}</span>
       </CardHeader>
       <CardContent>
         <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
