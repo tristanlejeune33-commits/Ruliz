@@ -13,7 +13,7 @@ import {
   shift,
   useFloating,
 } from "@floating-ui/react";
-import { Gift, Sparkles, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Gift, Sparkles, X } from "lucide-react";
 import { ONBOARDING_STEPS, TOTAL_STEPS } from "./steps";
 import {
   setOnboardingStep,
@@ -54,6 +54,12 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
   const [completed, setCompleted] = useState(false);
   const [pending, setPending] = useState(false);
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+
+  // Replier les détails à chaque changement d'étape
+  useEffect(() => {
+    setDetailsOpen(false);
+  }, [currentStepId]);
 
   const currentStep = useMemo(
     () => ONBOARDING_STEPS.find((s) => s.id === currentStepId) ?? null,
@@ -293,9 +299,61 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
             </h3>
 
             {/* Body */}
-            <p className="mb-4 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+            <p className="mb-3 text-[13px] leading-relaxed text-[var(--text-secondary)]">
               {currentStep.body}
             </p>
+
+            {/* Toggle "Plus de détails" — affiché seulement si details présent */}
+            {currentStep.details && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setDetailsOpen((o) => !o)}
+                  className="mb-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--text-secondary)] underline-offset-2 hover:underline"
+                  style={{
+                    color:
+                      currentStep.kind === "value"
+                        ? "#d4a017"
+                        : "var(--accent)",
+                  }}
+                >
+                  {detailsOpen ? (
+                    <>
+                      <ChevronUp className="size-3.5" strokeWidth={2} />
+                      Moins
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="size-3.5" strokeWidth={2} />
+                      Plus de détails
+                    </>
+                  )}
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {detailsOpen && (
+                    <motion.div
+                      key="details"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: "easeOut" }}
+                      className="overflow-hidden"
+                    >
+                      <div
+                        className="mb-4 max-h-[40vh] overflow-y-auto whitespace-pre-line rounded-lg border border-[var(--border-glass)] bg-[var(--bg-glass)]/40 p-3 text-[12px] leading-relaxed text-[var(--text-secondary)]"
+                        style={{
+                          // Styling des bullets dans le texte
+                          fontVariantNumeric: "tabular-nums",
+                        }}
+                      >
+                        {currentStep.details}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </>
+            )}
 
             {/* Actions */}
             <div className="flex items-center justify-between gap-2">
