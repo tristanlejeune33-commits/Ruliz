@@ -19,7 +19,7 @@ import {
 import { FacturesAdminView } from "./factures-view";
 
 export const metadata: Metadata = {
-  title: "Factures · Admin Ruliz",
+  title: "BC / Factures · Admin Ruliz",
 };
 
 export default async function AdminFacturesPage() {
@@ -41,8 +41,8 @@ export default async function AdminFacturesPage() {
             Comptabilité admin
           </HeroEyebrow>
         }
-        title="Factures & bons de commande"
-        description="Vue centralisée : toutes les factures Stripe (abonnements clients) et tous les bons de commande boutique en cours."
+        title="BC / Factures"
+        description="Vue centralisée : tous les bons de commande boutique en cours (par défaut) et toutes les factures Stripe d'abonnement clients."
         kpis={
           <>
             <HeroKpi

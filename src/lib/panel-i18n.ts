@@ -272,13 +272,13 @@ const DICT: Record<string, LangDict> = {
     zh: "日志",
   },
   "nav.admin.factures": {
-    fr: "Factures",
-    en: "Invoices",
-    es: "Facturas",
-    de: "Rechnungen",
-    it: "Fatture",
-    pt: "Faturas",
-    zh: "发票",
+    fr: "BC / Factures",
+    en: "Orders / Invoices",
+    es: "Pedidos / Facturas",
+    de: "Bestellungen / Rechnungen",
+    it: "Ordini / Fatture",
+    pt: "Pedidos / Faturas",
+    zh: "订单/发票",
   },
 
   // -----------------------------------------------------------------------

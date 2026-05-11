@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
@@ -11,11 +12,19 @@ import {
   Download,
   ExternalLink,
   ImageOff,
+  Inbox,
+  Loader2,
+  Package,
+  PackageCheck,
   Receipt,
   Search,
   ShoppingBag,
+  Truck,
   X,
+  XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
+import { updateBoutiqueCommandeStatut } from "@/server/admin/boutique/actions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -71,23 +80,84 @@ const INVOICE_STATUS_TONE: Record<string, { label: string; classes: string }> =
     },
   };
 
-const BC_STATUT_TONE: Record<string, { label: string; classes: string }> = {
+// 4 statuts BC avec couleurs distinctes + icônes — éditable inline.
+type StatutKey =
+  | "en_attente"
+  | "en_preparation"
+  | "expediee"
+  | "livree"
+  | "annulee";
+
+const STATUT_CONFIG: Record<
+  StatutKey,
+  {
+    label: string;
+    icon: typeof Inbox;
+    color: string;
+    bg: string;
+    border: string;
+    text: string;
+  }
+> = {
   en_attente: {
-    label: "En attente",
-    classes:
-      "border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]",
+    label: "Bon de commande reçu",
+    icon: Inbox,
+    color: "var(--neon-cyan)",
+    bg: "var(--neon-cyan-soft)",
+    border: "var(--neon-cyan)",
+    text: "var(--neon-cyan)",
   },
   en_preparation: {
-    label: "En préparation",
-    classes:
-      "border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] text-[var(--neon-violet)]",
+    label: "En cours de traitement",
+    icon: Package,
+    color: "#f59e0b",
+    bg: "rgba(245, 158, 11, 0.12)",
+    border: "rgba(245, 158, 11, 0.4)",
+    text: "#b45309",
   },
   expediee: {
     label: "Expédiée",
-    classes:
-      "border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] text-[var(--neon-violet)]",
+    icon: Truck,
+    color: "var(--neon-violet)",
+    bg: "var(--neon-violet-soft)",
+    border: "var(--neon-violet)",
+    text: "var(--neon-violet)",
+  },
+  livree: {
+    label: "Reçue",
+    icon: PackageCheck,
+    color: "var(--neon-success)",
+    bg: "var(--neon-success-soft)",
+    border: "var(--neon-success)",
+    text: "var(--neon-success)",
+  },
+  annulee: {
+    label: "Annulée",
+    icon: XCircle,
+    color: "var(--neon-danger)",
+    bg: "var(--neon-danger-soft)",
+    border: "var(--neon-danger)",
+    text: "var(--neon-danger)",
   },
 };
+
+const STATUT_KEYS: StatutKey[] = [
+  "en_attente",
+  "en_preparation",
+  "expediee",
+  "livree",
+  "annulee",
+];
+
+// Compat : alias pour le tag CSV/export
+const BC_STATUT_TONE: Record<string, { label: string; classes: string }> = {};
+for (const key of STATUT_KEYS) {
+  const c = STATUT_CONFIG[key];
+  BC_STATUT_TONE[key] = {
+    label: c.label,
+    classes: `border-[${c.border}]/30 bg-[${c.bg}] text-[${c.text}]`,
+  };
+}
 
 interface SerializedCommande {
   id: string;
@@ -242,20 +312,20 @@ export function FacturesAdminView({
   }, [invoices, statusFilter, query]);
 
   return (
-    <Tabs defaultValue="invoices" className="space-y-4">
+    <Tabs defaultValue="commandes" className="space-y-4">
       <TabsList>
-        <TabsTrigger value="invoices">
-          <CreditCard className="size-3.5" strokeWidth={1.75} />
-          Factures Stripe
-          <span className="ml-1 rounded-md bg-[var(--bg-glass)] px-1.5 py-0 font-mono text-[10px] font-bold tabular-nums">
-            {invoices.length}
-          </span>
-        </TabsTrigger>
         <TabsTrigger value="commandes">
           <ShoppingBag className="size-3.5" strokeWidth={1.75} />
           BC en cours
           <span className="ml-1 rounded-md bg-[var(--bg-glass)] px-1.5 py-0 font-mono text-[10px] font-bold tabular-nums">
             {commandes.length}
+          </span>
+        </TabsTrigger>
+        <TabsTrigger value="invoices">
+          <CreditCard className="size-3.5" strokeWidth={1.75} />
+          Factures Stripe
+          <span className="ml-1 rounded-md bg-[var(--bg-glass)] px-1.5 py-0 font-mono text-[10px] font-bold tabular-nums">
+            {invoices.length}
           </span>
         </TabsTrigger>
       </TabsList>
@@ -521,11 +591,6 @@ export function FacturesAdminView({
               </TableHeader>
               <TableBody>
                 {commandes.map((c) => {
-                  const tone = BC_STATUT_TONE[c.statut] ?? {
-                    label: c.statut,
-                    classes:
-                      "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
-                  };
                   const fullName =
                     [c.user.prenom, c.user.nom].filter(Boolean).join(" ") ||
                     c.user.email;
@@ -612,14 +677,7 @@ export function FacturesAdminView({
                         })}
                       </TableCell>
                       <TableCell>
-                        <span
-                          className={cn(
-                            "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium",
-                            tone.classes,
-                          )}
-                        >
-                          {tone.label}
-                        </span>
+                        <StatutDropdown commandeId={c.id} currentStatut={c.statut} />
                       </TableCell>
                       <TableCell className="hidden lg:table-cell text-xs text-[var(--text-tertiary)]">
                         {format(new Date(c.createdAt), "d MMM yyyy", {
@@ -635,5 +693,79 @@ export function FacturesAdminView({
         )}
       </TabsContent>
     </Tabs>
+  );
+}
+
+/**
+ * Dropdown éditable pour changer le statut d'un BC depuis la table admin.
+ * Au clic → toast + router.refresh.
+ */
+function StatutDropdown({
+  commandeId,
+  currentStatut,
+}: {
+  commandeId: string;
+  currentStatut: string;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const key: StatutKey = STATUT_KEYS.includes(currentStatut as StatutKey)
+    ? (currentStatut as StatutKey)
+    : "en_attente";
+  const config = STATUT_CONFIG[key];
+  const Icon = config.icon;
+
+  const handleChange = (newKey: StatutKey) => {
+    if (newKey === key) return;
+    startTransition(async () => {
+      const res = await updateBoutiqueCommandeStatut({
+        id: commandeId,
+        statut: newKey,
+      });
+      if (res.ok) {
+        toast.success(`Statut changé : ${STATUT_CONFIG[newKey].label}`);
+        router.refresh();
+      } else {
+        toast.error(res.error);
+      }
+    });
+  };
+
+  return (
+    <Select
+      value={key}
+      onValueChange={(v) => handleChange(v as StatutKey)}
+      disabled={pending}
+    >
+      <SelectTrigger
+        className="h-8 w-[180px] gap-1.5 border-2 text-xs"
+        style={{
+          borderColor: config.border,
+          backgroundColor: config.bg,
+          color: config.text,
+        }}
+      >
+        {pending ? (
+          <Loader2 className="size-3.5 shrink-0 animate-spin" />
+        ) : (
+          <Icon className="size-3.5 shrink-0" />
+        )}
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {STATUT_KEYS.map((k) => {
+          const c = STATUT_CONFIG[k];
+          const KIcon = c.icon;
+          return (
+            <SelectItem key={k} value={k}>
+              <span className="inline-flex items-center gap-1.5">
+                <KIcon className="size-3.5" style={{ color: c.color }} />
+                {c.label}
+              </span>
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
   );
 }
