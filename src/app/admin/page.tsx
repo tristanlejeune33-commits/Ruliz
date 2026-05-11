@@ -46,7 +46,7 @@ export default async function AdminHome() {
   // Chaque KPI avec `kpi:` est cliquable → ouvre modal graphique 3 ans
   const businessCards = [
     {
-      label: "MRR",
+      label: "Revenu mensuel récurrent",
       value: formatEuro(kpis.mrr),
       helper: "Hors taxes, basé sur les plans actifs",
       icon: Euro,

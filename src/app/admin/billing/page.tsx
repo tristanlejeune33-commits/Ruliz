@@ -135,7 +135,8 @@ export default async function AdminBillingPage() {
           Vue financière
         </h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          MRR, ARR, abonnements actifs, paiements en retard, CA généré.
+          Revenu mensuel récurrent, ARR, abonnements actifs, paiements en
+          retard, CA généré.
         </p>
       </header>
 
@@ -143,7 +144,7 @@ export default async function AdminBillingPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex-row items-start justify-between gap-2 space-y-0 pb-2">
-            <CardDescription>MRR</CardDescription>
+            <CardDescription>Revenu mensuel récurrent</CardDescription>
             <TrendingUp className="size-4 text-[var(--neon-success)]" />
           </CardHeader>
           <CardContent>
@@ -151,7 +152,7 @@ export default async function AdminBillingPage() {
               {formatPriceEuro(mrr)}
             </CardTitle>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
-              Revenu mensuel récurrent
+              Somme des abonnements actifs sur 1 mois
             </p>
           </CardContent>
         </Card>
@@ -166,7 +167,7 @@ export default async function AdminBillingPage() {
               {formatPriceEuro(arr)}
             </CardTitle>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
-              MRR × 12
+              Revenu mensuel × 12
             </p>
           </CardContent>
         </Card>
@@ -223,8 +224,9 @@ export default async function AdminBillingPage() {
                 {formatPriceEuro(totalGenerated)}
               </CardTitle>
               <p className="mt-2 text-xs text-[var(--text-muted)]">
-                Estimation sur la base de MRR × ancienneté des comptes. Pour le
-                CA réel facturé, consulte Stripe Dashboard → Rapports → Revenu.
+                Estimation sur la base du revenu mensuel × ancienneté des
+                comptes. Pour le CA réel facturé, consulte Stripe Dashboard
+                → Rapports → Revenu.
               </p>
             </div>
             <a
@@ -259,7 +261,7 @@ export default async function AdminBillingPage() {
                 <TableHead>Plan</TableHead>
                 <TableHead>Statut Stripe</TableHead>
                 <TableHead>Statut resto</TableHead>
-                <TableHead className="text-right">MRR</TableHead>
+                <TableHead className="text-right">Revenu mensuel</TableHead>
                 <TableHead>Renouvellement</TableHead>
               </TableRow>
             </TableHeader>
