@@ -148,6 +148,20 @@ model User {
   createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz()
   lastLoginAt      DateTime?  @map("last_login_at") @db.Timestamptz()
 
+  /// === Onboarding tour (bulle guidée première connexion) ===
+  /// Étape courante (0 = pas démarré, 1..6 = en cours, 6 = terminé).
+  onboardingStep        Int       @default(0)     @map("onboarding_step")
+  /// True si l'utilisateur a complété les 6 étapes
+  onboardingCompleted   Boolean   @default(false) @map("onboarding_completed")
+  /// True si l'utilisateur a cliqué "Passer le tour" — on ne réaffiche plus
+  onboardingSkipped     Boolean   @default(false) @map("onboarding_skipped")
+  /// Timestamp 1er affichage de la bulle
+  onboardingStartedAt   DateTime? @map("onboarding_started_at") @db.Timestamptz()
+  /// Timestamp fin du tour (étape 6 validée)
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz()
+  /// True quand l'user a scanné son propre QR depuis l'étape 6 (KPI aha moment)
+  onboardingSelfScanned Boolean   @default(false) @map("onboarding_self_scanned")
+
   authUser           AuthUser?
   restaurants        Restaurant[]
   teamOf             TeamMember[]       @relation("OwnerTeam")

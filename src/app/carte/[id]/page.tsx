@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { after } from "next/server";
 import { getPublicMenu } from "@/server/public/menu";
 import { recordScan } from "@/server/public/scan";
+import { markOnboardingSelfScanned } from "@/server/dashboard/onboarding-actions";
 import { isSupportedLang, type SupportedLang } from "@/lib/langs";
 import { CartePublic } from "./carte-public";
 
@@ -15,7 +16,14 @@ export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ lang?: string; qr?: string; preview?: string }>;
+  searchParams: Promise<{
+    lang?: string;
+    qr?: string;
+    preview?: string;
+    /** Tracking onboarding : ?ref=onboarding-self&u={userId} envoyé sur le QR de l'étape 6 */
+    ref?: string;
+    u?: string;
+  }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -44,7 +52,7 @@ const getCachedMenu = unstable_cache(
 
 export default async function CartePage({ params, searchParams }: PageProps) {
   const { id } = await params;
-  const { lang: langRaw, qr, preview } = await searchParams;
+  const { lang: langRaw, qr, preview, ref, u } = await searchParams;
   const lang: SupportedLang = isSupportedLang(langRaw) ? langRaw : "fr";
 
   const menu = await getCachedMenu(id, lang);
@@ -72,6 +80,20 @@ export default async function CartePage({ params, searchParams }: PageProps) {
         });
       } catch (e) {
         console.warn("[scan] tracking failed:", e);
+      }
+
+      // === Tracking onboarding self-scan (KPI aha moment) ===
+      // L'étape 6 du tour génère un QR avec ?ref=onboarding-self&u={userId}.
+      // Quand le user scanne avec son propre tel, on flag onboardingSelfScanned.
+      if (ref === "onboarding-self" && u) {
+        const userId = Number.parseInt(u, 10);
+        if (Number.isFinite(userId) && userId > 0) {
+          try {
+            await markOnboardingSelfScanned(userId);
+          } catch (e) {
+            console.warn("[onboarding] self-scan tracking failed:", e);
+          }
+        }
       }
     });
   }

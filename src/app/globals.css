@@ -810,3 +810,32 @@
     page-break-inside: avoid;
   }
 }
+
+/* ============================================================
+   Onboarding pulse ring
+   Classe ajoutée par OnboardingBubble sur l'élément ciblé pour
+   attirer l'œil. Léger : 1 box-shadow animée, pas de pseudo-element.
+   ============================================================ */
+.onboarding-pulse {
+  position: relative;
+  z-index: 1;
+  border-radius: 8px;
+  animation: onboarding-pulse-ring 2s ease-out infinite;
+}
+@keyframes onboarding-pulse-ring {
+  0% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklch, var(--accent) 60%, transparent),
+      0 0 0 0 color-mix(in oklch, var(--accent) 30%, transparent);
+  }
+  70% {
+    box-shadow:
+      0 0 0 6px color-mix(in oklch, var(--accent) 0%, transparent),
+      0 0 0 12px color-mix(in oklch, var(--accent) 0%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent),
+      0 0 0 0 color-mix(in oklch, var(--accent) 0%, transparent);
+  }
+}

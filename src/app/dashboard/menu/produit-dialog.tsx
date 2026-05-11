@@ -224,7 +224,7 @@ export function ProduitDialog({
             className="grid gap-6 md:grid-cols-[200px_1fr]"
           >
               {/* Image */}
-              <div>
+              <div data-onboarding-anchor="produit-photo">
                 <Label className="mb-2 block">Photo</Label>
                 <FormField
                   control={form.control}

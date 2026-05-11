@@ -23,6 +23,8 @@ import { prisma } from "@/lib/db";
 import { getActingUserId } from "@/lib/impersonation";
 import { isSupportedLang, type SupportedLang } from "@/lib/langs";
 import { requireDashboard } from "@/lib/session";
+import { OnboardingBubble } from "@/features/onboarding/onboarding-bubble";
+import { getOnboardingState } from "@/server/dashboard/onboarding-actions";
 
 export default async function DashboardLayout({
   children,
@@ -70,6 +72,20 @@ export default async function DashboardLayout({
   const cookieStore = await cookies();
   const collapsedCookie = cookieStore.get(COLLAPSED_COOKIE);
   const defaultCollapsed = collapsedCookie?.value === "1";
+
+  // === Onboarding tour ===
+  // Affiche la bulle si :
+  //  - L'user a un resto (sinon il est sur /dashboard/onboarding pour le créer)
+  //  - Le tour n'est ni complété ni skippé
+  // On la lit ici dans le layout pour qu'elle persiste à travers toutes
+  // les pages du dashboard (la bulle se gère sa propre navigation).
+  const onboardingState =
+    restaurants.length > 0 ? await getOnboardingState() : null;
+  const showOnboarding =
+    onboardingState !== null &&
+    !onboardingState.completed &&
+    !onboardingState.skipped &&
+    !acting?.isImpersonating; // pas de tour en mode SAV admin
 
   // Lang du panel — lue depuis le cookie ruliz_panel_lang. Défaut FR.
   const langCookie = cookieStore.get(PANEL_LANG_COOKIE)?.value;
@@ -131,6 +147,9 @@ export default async function DashboardLayout({
         )}
         {children}
       </AppShell>
+      {showOnboarding && (
+        <OnboardingBubble initialStep={onboardingState.step} />
+      )}
     </PanelLangProvider>
   );
 }

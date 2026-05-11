@@ -124,7 +124,7 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <Tabs defaultValue="infos">
-          <TabsList>
+          <TabsList data-onboarding-anchor="restaurant-branding">
             <TabsTrigger value="infos">Infos</TabsTrigger>
             <TabsTrigger value="theme">Thème</TabsTrigger>
             <TabsTrigger value="couleurs">Couleurs</TabsTrigger>

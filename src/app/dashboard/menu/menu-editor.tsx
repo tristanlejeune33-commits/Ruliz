@@ -587,7 +587,10 @@ export function MenuEditor({
               </Button>
             </div>
           </div>
-          <div className="aspect-[9/19] w-full max-w-[380px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-white shadow-xl">
+          <div
+            data-onboarding-anchor="preview-iframe"
+            className="aspect-[9/19] w-full max-w-[380px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-white shadow-xl"
+          >
             <iframe
               key={`mobile-${previewKey}-${previewLang}`}
               src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
@@ -633,6 +636,7 @@ export function MenuEditor({
                 onClick={() => setEditingCategorie("new")}
                 aria-label="Nouvelle catégorie"
                 className="h-7 px-2"
+                data-onboarding-anchor="add-category"
               >
                 <Plus className="size-3.5" />
                 <span className="hidden sm:inline">Ajouter</span>
