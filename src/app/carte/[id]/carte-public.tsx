@@ -65,10 +65,24 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
     return () => clearTimeout(timer);
   }, [preview, menu.jeu, menu.restaurant.id]);
 
-  const allProduits = useMemo(
-    () => menu.categories.flatMap((c) => c.produits),
-    [menu.categories],
-  );
+  // Aplatit récursivement TOUS les produits — y compris ceux des
+  // sous-catégories — sinon cliquer sur un produit nested ne pouvait pas
+  // l'ouvrir (le activeProduit restait null car le find() ne trouvait pas
+  // l'ID dans la liste flat top-level uniquement).
+  const allProduits = useMemo(() => {
+    const flat: typeof menu.categories[number]["produits"] = [];
+    const walk = (cats: typeof menu.categories) => {
+      for (const c of cats) {
+        flat.push(...c.produits);
+        if (c.subCategories && c.subCategories.length > 0) {
+          walk(c.subCategories);
+        }
+      }
+    };
+    walk(menu.categories);
+    return flat;
+  }, [menu.categories]);
+
   const activeProduit = activeProduitId
     ? allProduits.find((p) => p.id === activeProduitId) ?? null
     : null;
