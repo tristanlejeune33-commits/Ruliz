@@ -108,7 +108,10 @@ export type TimeseriesKpi =
   | "revenueBoutique"
   | "revenueSms"
   | "mrr"
-  | "uniqueVisitors";
+  | "uniqueVisitors"
+  | "restaurants"
+  | "activeRestos"
+  | "impressions";
 
 /**
  * Retourne une série temporelle sur N jours (max 1100 = 3 ans) pour un KPI
@@ -176,6 +179,37 @@ export async function getKpiTimeseries(
                 COALESCE(SUM(price_paid_centimes), 0)::int AS "value"
          FROM sms_credit_purchases
          WHERE status = 'paid' AND paid_at >= $1
+         GROUP BY 1 ORDER BY 1`,
+        since,
+        grain,
+      )) as typeof rows;
+    } else if (kpi === "restaurants") {
+      // Restaurants créés par bucket
+      rows = (await prisma.$queryRawUnsafe(
+        `SELECT date_trunc($2, created_at) AS "bucket", COUNT(*)::int AS "value"
+         FROM restaurants
+         WHERE created_at >= $1
+         GROUP BY 1 ORDER BY 1`,
+        since,
+        grain,
+      )) as typeof rows;
+    } else if (kpi === "activeRestos") {
+      // Restaurants distincts ayant reçu au moins 1 scan dans le bucket
+      rows = (await prisma.$queryRawUnsafe(
+        `SELECT date_trunc($2, scanned_at) AS "bucket",
+                COUNT(DISTINCT restaurant_id)::int AS "value"
+         FROM scans
+         WHERE scanned_at >= $1 AND restaurant_id IS NOT NULL
+         GROUP BY 1 ORDER BY 1`,
+        since,
+        grain,
+      )) as typeof rows;
+    } else if (kpi === "impressions") {
+      // Identique à scans, mais sémantique différente pour le user
+      rows = (await prisma.$queryRawUnsafe(
+        `SELECT date_trunc($2, scanned_at) AS "bucket", COUNT(*)::int AS "value"
+         FROM scans
+         WHERE scanned_at >= $1
          GROUP BY 1 ORDER BY 1`,
         since,
         grain,

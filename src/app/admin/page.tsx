@@ -81,12 +81,14 @@ export default async function AdminHome() {
       value: formatNumber(kpis.totalRestaurants),
       helper: "Tous plans confondus",
       icon: Building2,
+      kpi: "restaurants" as const,
     },
     {
       label: "Restos actifs 24h",
       value: formatNumber(kpis.activeRestos24h),
       helper: "Au moins 1 scan dans les 24h",
       icon: Sparkles,
+      kpi: "activeRestos" as const,
     },
   ];
 
@@ -118,6 +120,7 @@ export default async function AdminHome() {
       value: formatNumber(kpis.impressions),
       helper: "Total cumulé depuis le lancement",
       icon: ScanLine,
+      kpi: "impressions" as const,
     },
   ];
 

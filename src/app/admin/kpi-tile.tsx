@@ -46,7 +46,7 @@ interface KpiTileProps {
 
 const RANGE_OPTIONS = [
   { label: "30 jours", days: 30 },
-  { label: "3 mois", days: 90 },
+  { label: "6 mois", days: 180 },
   { label: "1 an", days: 365 },
   { label: "3 ans", days: 1100 },
 ];
