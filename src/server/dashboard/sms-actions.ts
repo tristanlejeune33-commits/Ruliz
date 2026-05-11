@@ -5,8 +5,9 @@ import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { isBrevoConfigured, normalizeFrenchPhone, sendSms } from "@/lib/brevo";
 import { prisma } from "@/lib/db";
-import { APP_URL, getStripe } from "@/lib/stripe";
+import { APP_URL, getOrCreateStripeCustomer, getStripe } from "@/lib/stripe";
 import { getSmsPackById } from "./sms-packs";
+import { getActingUserId } from "@/lib/impersonation";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -746,11 +747,18 @@ export async function createSmsPackCheckout(input: {
   )) as Array<{ id: bigint }>;
   const purchaseId = purchase[0]!.id;
 
-  // 2. Crée la session Stripe Checkout
+  // 2. Récupère/crée le customer Stripe (pour que la facture porte son nom)
+  const acting = await getActingUserId();
+  const customerId = acting
+    ? await getOrCreateStripeCustomer(acting.actingUserId)
+    : null;
+
+  // 3. Crée la session Stripe Checkout
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card", "sepa_debit"],
+      ...(customerId ? { customer: customerId } : {}),
       line_items: [
         {
           quantity: 1,
@@ -764,6 +772,19 @@ export async function createSmsPackCheckout(input: {
           },
         },
       ],
+      // Génère automatiquement une facture PDF téléchargeable
+      invoice_creation: {
+        enabled: true,
+        invoice_data: {
+          description: `Pack ${pack.size} crédits SMS Ruliz`,
+          metadata: {
+            ruliz_sms_purchase_id: purchaseId.toString(),
+            ruliz_sms_restaurant_id: input.restaurantId,
+            ruliz_resto_nom: restaurant.nom,
+          },
+          footer: "Ruliz — SaaS de menus digitaux pour restaurants.",
+        },
+      },
       metadata: {
         ruliz_sms_purchase_id: purchaseId.toString(),
         ruliz_sms_restaurant_id: input.restaurantId,
@@ -771,6 +792,7 @@ export async function createSmsPackCheckout(input: {
       },
       success_url: `${APP_URL}/dashboard/sms?purchase=success`,
       cancel_url: `${APP_URL}/dashboard/sms?purchase=cancel`,
+      locale: "fr",
     });
 
     if (!session.url) {

@@ -58,6 +58,10 @@ export async function listMyBoutiqueCommandes() {
   });
 }
 
+export type BoutiqueCommandeRow = Awaited<
+  ReturnType<typeof listMyBoutiqueCommandes>
+>[number];
+
 /**
  * Panier "hydraté" — pour chaque produitId du cookie, on jointure sur la DB
  * pour obtenir nom, prix, image actuels. Si un produit n'existe plus ou

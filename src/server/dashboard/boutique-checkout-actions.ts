@@ -131,6 +131,18 @@ export async function createBoutiqueCheckoutSession(
       : commande.user.email,
     success_url: `${appUrl}/dashboard/boutique/commandes/${commande.id.toString()}?checkout=success`,
     cancel_url: `${appUrl}/dashboard/boutique/commandes/${commande.id.toString()}?checkout=cancel`,
+    // Génère automatiquement une facture PDF téléchargeable côté Stripe.
+    // Le restaurateur retrouvera le PDF dans Paramètres > Mes commandes & factures.
+    invoice_creation: {
+      enabled: true,
+      invoice_data: {
+        description: `Commande boutique Ruliz #${commande.id.toString()}`,
+        metadata: {
+          ruliz_boutique_commande_id: commande.id.toString(),
+        },
+        footer: "Ruliz — SaaS de menus digitaux pour restaurants.",
+      },
+    },
     payment_intent_data: {
       // Métadonnées pour le webhook : permet de retrouver la commande Ruliz
       // depuis le PaymentIntent quand checkout.session.completed arrive.
