@@ -217,15 +217,14 @@ function DishDetail({
               return (
                 <li
                   key={a.code}
-                  // Fond blanc opaque + border jaune pour rester lisibles sur
-                  // tout thème resto (sombre, photo, fond custom). Le fond
-                  // translucide précédent disparaissait sur les fonds clairs
-                  // ou texturés.
-                  className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[12px] font-medium shadow-sm"
+                  // Fond blanc opaque + texte noir TOUJOURS — info légale
+                  // critique, doit rester 100% lisible sur N'IMPORTE quel
+                  // thème resto (sombre, photo, fond custom jaune, etc.)
+                  className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-medium shadow-sm"
                   style={{
                     backgroundColor: "#ffffff",
-                    color: "#92400e",
-                    borderColor: "rgba(245, 158, 11, 0.5)",
+                    color: "#000000",
+                    border: "1px solid rgba(0, 0, 0, 0.08)",
                   }}
                 >
                   <span aria-hidden>{emoji}</span>
@@ -237,7 +236,9 @@ function DishDetail({
         </div>
       )}
 
-      {/* Tags / vignettes pills (icône + emoji fallback) */}
+      {/* Tags / vignettes pills (icône + emoji fallback) — fond blanc + texte
+          noir TOUJOURS pour rester lisibles peu importe le thème resto
+          (cardBody dynamique pouvait donner un fond jaune/marron illisible). */}
       {produit.vignettes.length > 0 && (
         <ul className="mt-1 flex flex-wrap items-center gap-2.5">
           {produit.vignettes.map((v) => {
@@ -246,17 +247,18 @@ function DishDetail({
             return (
               <li
                 key={v.code}
-                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[14px] font-semibold"
+                className="flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[14px] font-semibold shadow-sm"
                 style={{
-                  backgroundColor: theme.cardBody,
-                  color: theme.textBody,
-                  boxShadow: theme.shadow,
+                  backgroundColor: "#ffffff",
+                  color: "#000000",
+                  border: "1px solid rgba(0, 0, 0, 0.08)",
                   fontFamily: "var(--font-display)",
                 }}
               >
                 {hasVisual ? (
-                  // Pas de bulle ici : l'icône est déjà dans une pill avec
-                  // fond `theme.cardBody`, le double cercle serait laid.
+                  // L'icône Lucide garde sa couleur sémantique (vert pour
+                  // bio/végé, rouge pour épicé, etc.). Pas de bulle blanche
+                  // car le fond du conteneur EST blanc.
                   <VignetteIcon code={v.code} size={16} wrapped={false} />
                 ) : emoji ? (
                   <span className="text-base" aria-hidden>

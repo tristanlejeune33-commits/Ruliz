@@ -40,7 +40,21 @@ export default async function PopupsPage() {
       >
         <PopupsManager
           restaurantId={restaurant.id.toString()}
-          popups={serialize(popups)}
+          // Cast nécessaire le temps que le client Prisma soit régénéré
+          // (Windows tient parfois les fichiers .dll → prisma generate échoue
+          // silencieusement). Les colonnes joursActifs/heureDebut/heureFin
+          // existent en DB et Prisma les retourne au runtime.
+          popups={
+            serialize(
+              popups as unknown as Array<
+                (typeof popups)[number] & {
+                  joursActifs: number | null;
+                  heureDebut: string | null;
+                  heureFin: string | null;
+                }
+              >,
+            )
+          }
         />
       </PlanLock>
     </div>

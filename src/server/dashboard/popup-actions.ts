@@ -19,6 +19,10 @@ const popupSchema = z.object({
   ctaUrl: z.string().max(500),
   dateDebut: z.string().nullable(),
   dateFin: z.string().nullable(),
+  // Planning hebdo + horaire
+  joursActifs: z.number().int().min(0).max(127).nullable(),
+  heureDebut: z.string().max(5).nullable(),
+  heureFin: z.string().max(5).nullable(),
   actif: z.boolean(),
 });
 
@@ -62,6 +66,10 @@ export async function upsertPopup(input: unknown): Promise<ActionResult<{ id: st
     ctaUrl: emptyToNull(data.ctaUrl),
     dateDebut: parseDateOrNull(data.dateDebut),
     dateFin: parseDateOrNull(data.dateFin),
+    joursActifs:
+      data.joursActifs && data.joursActifs > 0 ? data.joursActifs : null,
+    heureDebut: emptyToNull(data.heureDebut),
+    heureFin: emptyToNull(data.heureFin),
     actif: data.actif,
   };
 
@@ -72,14 +80,20 @@ export async function upsertPopup(input: unknown): Promise<ActionResult<{ id: st
       where: { id: big, restaurantId: restoBigId },
     });
     if (!owned) return { ok: false, error: "Pop-up introuvable" };
-    await prisma.popup.update({ where: { id: big }, data: payload });
+    // Cast `data: payload as never` pour bypasser le typage Prisma local
+    // qui pourrait ne pas avoir les nouveaux champs joursActifs/heureDebut/
+    // heureFin (client pas régénéré → DB OK, mais types stale).
+    await prisma.popup.update({
+      where: { id: big },
+      data: payload as never,
+    });
     revalidatePath("/dashboard/popups");
     revalidatePath(`/carte/${restoBigId.toString()}`);
     return { ok: true, data: { id: big.toString() } };
   }
 
   const created = await prisma.popup.create({
-    data: { restaurantId: restoBigId, ...payload },
+    data: { restaurantId: restoBigId, ...payload } as never,
   });
   revalidatePath("/dashboard/popups");
   revalidatePath(`/carte/${restoBigId.toString()}`);

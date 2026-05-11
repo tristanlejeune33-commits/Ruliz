@@ -204,7 +204,10 @@ export async function getPublicMenu(
       },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.popup.findFirst({
+    // On fetch jusqu'à 5 popups matching dates + actif puis on filtre côté
+    // JS pour le planning hebdo (bitmap jours) + plage horaire — conditions
+    // qu'il serait laborieux d'exprimer en SQL pur.
+    prisma.popup.findMany({
       where: {
         restaurantId,
         actif: true,
@@ -216,6 +219,7 @@ export async function getPublicMenu(
         ],
       },
       orderBy: { id: "desc" },
+      take: 5,
     }),
   ]);
   if (!restaurant) return null;
@@ -252,14 +256,47 @@ export async function getPublicMenu(
         }
       : null;
 
-  const popup = popupRow
+  // Filtre planning hebdo + plage horaire : on prend le PREMIER popup qui
+  // matche le jour courant + l'heure courante (parmi les dates valides).
+  // Logique :
+  //   - joursActifs null OU bit du jour courant set → jour OK
+  //   - heureDebut/heureFin null → toute la journée
+  //   - sinon heureDebut <= now-time <= heureFin (comparaison string "HH:MM")
+  const now = new Date();
+  const currentDayBit = 1 << now.getDay(); // 0=dim, 6=sam
+  const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  // Cast vers un type incluant les colonnes Stripe/schedule — le client
+  // Prisma local peut ne pas avoir été régénéré (problème Windows file lock).
+  // Les colonnes existent en DB, Prisma findMany les retourne au runtime.
+  const popupRowsTyped = popupRow as unknown as Array<
+    (typeof popupRow)[number] & {
+      joursActifs: number | null;
+      heureDebut: string | null;
+      heureFin: string | null;
+    }
+  >;
+  const activeNowPopup = popupRowsTyped.find((p) => {
+    // Jour de la semaine
+    if (p.joursActifs !== null && p.joursActifs > 0) {
+      if ((p.joursActifs & currentDayBit) !== currentDayBit) return false;
+    }
+    // Plage horaire
+    if (p.heureDebut && p.heureFin) {
+      if (currentTimeStr < p.heureDebut || currentTimeStr > p.heureFin) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  const popup = activeNowPopup
     ? {
-        id: popupRow.id.toString(),
-        titre: popupRow.titre ?? "",
-        description: popupRow.description,
-        imageUrl: popupRow.imageUrl,
-        ctaLabel: popupRow.ctaLabel,
-        ctaUrl: popupRow.ctaUrl,
+        id: activeNowPopup.id.toString(),
+        titre: activeNowPopup.titre ?? "",
+        description: activeNowPopup.description,
+        imageUrl: activeNowPopup.imageUrl,
+        ctaLabel: activeNowPopup.ctaLabel,
+        ctaUrl: activeNowPopup.ctaUrl,
       }
     : null;
 

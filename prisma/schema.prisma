@@ -497,6 +497,14 @@ model Popup {
   ctaUrl       String?   @map("cta_url")
   dateDebut    DateTime? @map("date_debut") @db.Timestamptz()
   dateFin      DateTime? @map("date_fin") @db.Timestamptz()
+  /** Planning par jour de la semaine : bitmap 7 bits, bit 0 = dimanche,
+      bit 1 = lundi, …, bit 6 = samedi. null = tous les jours.
+      Ex: mardi+jeudi = 0b0010100 = 20. mardi+vendredi = 0b0100100 = 36. */
+  joursActifs  Int?      @map("jours_actifs")
+  /** Plage horaire d'affichage dans la journée. Format "HH:MM" (24h).
+      null = toute la journée. Si défini, les 2 doivent être présents. */
+  heureDebut   String?   @map("heure_debut") @db.VarChar(5)
+  heureFin     String?   @map("heure_fin")   @db.VarChar(5)
   actif        Boolean   @default(true)
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)

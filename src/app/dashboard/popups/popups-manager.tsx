@@ -56,6 +56,9 @@ interface PopupRow {
   ctaUrl: string | null;
   dateDebut: string | null;
   dateFin: string | null;
+  joursActifs: number | null;
+  heureDebut: string | null;
+  heureFin: string | null;
   actif: boolean;
 }
 
@@ -149,6 +152,18 @@ export function PopupsManager({ restaurantId, popups }: PopupsManagerProps) {
                           ? format(parseISO(p.dateFin), "d MMM yyyy", { locale: fr })
                           : "Sans fin"}
                       </p>
+                      {(p.joursActifs || p.heureDebut) && (
+                        <p className="mt-1 text-[10px] font-medium uppercase tracking-wider text-[var(--neon-cyan)]">
+                          {p.joursActifs
+                            ? DAYS_OF_WEEK.filter(
+                                (d) => ((p.joursActifs ?? 0) & (1 << d.bit)) !== 0,
+                              )
+                                .map((d) => d.label)
+                                .join(" · ")
+                            : "Tous les jours"}
+                          {p.heureDebut && p.heureFin && ` · ${p.heureDebut}–${p.heureFin}`}
+                        </p>
+                      )}
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -207,9 +222,24 @@ const schema = z.object({
   ctaUrl: z.string().max(500),
   dateDebut: z.string(),
   dateFin: z.string(),
+  // Bitmap 7 bits (bit 0 = dimanche, bit 6 = samedi). 0 ou null = tous les jours.
+  joursActifs: z.number().int().min(0).max(127),
+  heureDebut: z.string().max(5),
+  heureFin: z.string().max(5),
   actif: z.boolean(),
 });
 type Values = z.infer<typeof schema>;
+
+/** Jours de la semaine — bit position 0=dim, 1=lun, …, 6=sam (convention JS). */
+const DAYS_OF_WEEK = [
+  { bit: 1, label: "Lun", full: "Lundi" },
+  { bit: 2, label: "Mar", full: "Mardi" },
+  { bit: 3, label: "Mer", full: "Mercredi" },
+  { bit: 4, label: "Jeu", full: "Jeudi" },
+  { bit: 5, label: "Ven", full: "Vendredi" },
+  { bit: 6, label: "Sam", full: "Samedi" },
+  { bit: 0, label: "Dim", full: "Dimanche" },
+] as const;
 
 function PopupDialog({
   restaurantId,
@@ -234,6 +264,9 @@ function PopupDialog({
       ctaUrl: popup?.ctaUrl ?? "",
       dateDebut: popup?.dateDebut ? popup.dateDebut.slice(0, 10) : "",
       dateFin: popup?.dateFin ? popup.dateFin.slice(0, 10) : "",
+      joursActifs: popup?.joursActifs ?? 0,
+      heureDebut: popup?.heureDebut ?? "",
+      heureFin: popup?.heureFin ?? "",
       actif: popup?.actif ?? true,
     },
   });
@@ -250,6 +283,9 @@ function PopupDialog({
         ctaUrl: values.ctaUrl,
         dateDebut: values.dateDebut || null,
         dateFin: values.dateFin || null,
+        joursActifs: values.joursActifs > 0 ? values.joursActifs : null,
+        heureDebut: values.heureDebut || null,
+        heureFin: values.heureFin || null,
         actif: values.actif,
       });
       if (res.ok) {
@@ -363,6 +399,77 @@ function PopupDialog({
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Planning hebdo : sélecteur de jours actifs */}
+              <FormField
+                control={form.control}
+                name="joursActifs"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Jours d&apos;affichage</FormLabel>
+                    <div className="flex flex-wrap gap-1.5">
+                      {DAYS_OF_WEEK.map((day) => {
+                        const mask = 1 << day.bit;
+                        const isOn = (field.value & mask) === mask;
+                        return (
+                          <button
+                            key={day.bit}
+                            type="button"
+                            onClick={() => {
+                              field.onChange(
+                                isOn ? field.value & ~mask : field.value | mask,
+                              );
+                            }}
+                            className={`flex h-9 min-w-11 items-center justify-center rounded-md border px-2.5 text-xs font-medium transition-colors ${
+                              isOn
+                                ? "border-[var(--neon-cyan)]/40 bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)]"
+                                : "border-[var(--border-glass)] bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:border-[var(--border-glass-hover)]"
+                            }`}
+                            aria-pressed={isOn}
+                            title={day.full}
+                          >
+                            {day.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
+                      Aucun sélectionné = tous les jours.
+                    </p>
+                  </FormItem>
+                )}
+              />
+
+              {/* Plage horaire d'affichage dans la journée */}
+              <div className="grid grid-cols-2 gap-3">
+                <FormField
+                  control={form.control}
+                  name="heureDebut"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Heure début</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="heureFin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Heure fin</FormLabel>
+                      <FormControl>
+                        <Input type="time" {...field} />
+                      </FormControl>
+                      <p className="mt-1 text-[10px] text-[var(--text-tertiary)]">
+                        Vide = toute la journée
+                      </p>
                     </FormItem>
                   )}
                 />
