@@ -186,32 +186,52 @@ function ProduitItem({
           </span>
         </div>
 
-        {/* Prix à droite */}
-        {produit.prix !== null && (
-          <div className="shrink-0 text-right">
-            <p
-              className="whitespace-nowrap text-[18px] font-semibold tabular-nums md:text-[19px] lg:text-[20px]"
-              style={{
-                color: theme.textBody,
-                fontFamily: "var(--font-display)",
-              }}
-            >
-              {formatPrice(produit.prix, produit.devise || deviseDefault)}
-            </p>
-            {produit.descriptionPrix && (
+        {/* Prix à droite — si variantes définies, affiche "dès Xmin",
+            sinon prix simple. */}
+        {(() => {
+          const hasVariantes =
+            produit.prixVariantes && produit.prixVariantes.length > 0;
+          const minPrix = hasVariantes
+            ? Math.min(...produit.prixVariantes!.map((v) => v.prix))
+            : produit.prix;
+          if (minPrix === null) return null;
+          return (
+            <div className="shrink-0 text-right">
+              {hasVariantes && (
+                <span
+                  className="block text-[9px] uppercase tracking-wider opacity-70"
+                  style={{
+                    color: theme.textBody,
+                    fontFamily: "var(--font-body)",
+                  }}
+                >
+                  dès
+                </span>
+              )}
               <p
-                className="text-[10px] italic"
+                className="whitespace-nowrap text-[18px] font-semibold tabular-nums md:text-[19px] lg:text-[20px]"
                 style={{
                   color: theme.textBody,
-                  opacity: 0.6,
-                  fontFamily: "var(--font-body)",
+                  fontFamily: "var(--font-display)",
                 }}
               >
-                {produit.descriptionPrix}
+                {formatPrice(minPrix, produit.devise || deviseDefault)}
               </p>
-            )}
-          </div>
-        )}
+              {produit.descriptionPrix && !hasVariantes && (
+                <p
+                  className="text-[10px] italic"
+                  style={{
+                    color: theme.textBody,
+                    opacity: 0.6,
+                    fontFamily: "var(--font-body)",
+                  }}
+                >
+                  {produit.descriptionPrix}
+                </p>
+              )}
+            </div>
+          );
+        })()}
       </button>
     </motion.li>
   );

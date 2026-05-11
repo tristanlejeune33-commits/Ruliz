@@ -315,6 +315,13 @@ model Produit {
   prix                Decimal? @db.Decimal(10, 2)
   devise              String?  @default("€") @db.VarChar(5)
   descriptionPrix     String?  @map("description_prix")
+  /** Variantes de prix pour les produits multi-volumes (bière demi/pinte,
+      vin verre/bouteille, planche petite/grande, etc.).
+      Format JSON : [{"label":"Demi","prix":3.50},{"label":"Pinte","prix":6.50}]
+      Si null ou tableau vide → on utilise le champ `prix` simple (rétrocompat).
+      Si non vide → le champ `prix` est masqué côté affichage public au profit
+      de la liste des variantes. */
+  prixVariantes       Json?    @map("prix_variantes")
   position            Int      @default(0)
   statut              String   @default("affiche") @db.VarChar(20)
   estNouveau          Boolean  @default(false) @map("est_nouveau")

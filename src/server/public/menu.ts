@@ -102,6 +102,9 @@ export interface MenuProduit {
   imageUrl: string | null;
   prix: number | null;
   devise: string;
+  /** Variantes de prix pour les produits multi-volumes/tailles. null si
+      pas de variante (utiliser `prix` simple alors). */
+  prixVariantes: Array<{ label: string; prix: number }> | null;
   estNouveau: boolean;
   origine: string | null;
   titreRemarque: string | null;
@@ -398,6 +401,24 @@ export async function getPublicMenu(
           imageUrl: p.imageUrl,
           prix: p.prix !== null ? Number(p.prix) : null,
           devise: p.devise ?? "€",
+          // Variantes de prix : on parse le JSON Prisma (peut être null,
+          // tableau ou autre selon stale du client). Filter strict pour
+          // exposer seulement les entrées bien formées { label, prix }.
+          prixVariantes: (() => {
+            const raw = (p as unknown as { prixVariantes?: unknown })
+              .prixVariantes;
+            if (!Array.isArray(raw)) return null;
+            const valid = raw
+              .filter(
+                (v): v is { label: string; prix: number } =>
+                  typeof v === "object" &&
+                  v !== null &&
+                  typeof (v as { label?: unknown }).label === "string" &&
+                  typeof (v as { prix?: unknown }).prix === "number",
+              )
+              .map((v) => ({ label: v.label, prix: v.prix }));
+            return valid.length > 0 ? valid : null;
+          })(),
           estNouveau: p.estNouveau,
           origine: trad?.origine ?? p.origine,
           titreRemarque: trad?.titreRemarque ?? p.titreRemarque,

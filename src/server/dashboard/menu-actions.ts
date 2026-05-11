@@ -243,6 +243,12 @@ export async function reorderCategories(input: unknown): Promise<ActionResult> {
 
 // ---------------- Produits ----------------
 
+/** Variante de prix : label (ex: "Demi", "Pinte") + prix décimal. */
+const prixVarianteSchema = z.object({
+  label: z.string().min(1, "Label requis").max(60),
+  prix: z.number().nonnegative("Prix doit être ≥ 0"),
+});
+
 const produitSchema = z.object({
   categorieId: z.string(),
   titre: z.string().min(1).max(255),
@@ -251,6 +257,8 @@ const produitSchema = z.object({
   prix: z.union([z.number().nonnegative(), z.literal("")]).optional(),
   devise: z.string().max(5).default("€"),
   descriptionPrix: z.string().max(255).optional().or(z.literal("")),
+  /** Liste de variantes (max 8). null/empty → fallback sur `prix` simple. */
+  prixVariantes: z.array(prixVarianteSchema).max(8).optional(),
   estNouveau: z.boolean(),
   origine: z.string().length(2).optional().or(z.literal("")),
   titreRemarque: z.string().max(255).optional().or(z.literal("")),
@@ -294,6 +302,13 @@ export async function createProduit(input: unknown): Promise<ActionResult<{ id: 
   });
   const position = (last?.position ?? 0) + 1;
 
+  // Nettoie les variantes : retire les lignes incomplètes (label vide).
+  // null si aucune variante → fallback sur le prix simple côté affichage.
+  const variantes =
+    data.prixVariantes && data.prixVariantes.length > 0
+      ? data.prixVariantes.filter((v) => v.label.trim().length > 0)
+      : null;
+
   const created = await prisma.produit.create({
     data: {
       categorieId: catId,
@@ -303,6 +318,9 @@ export async function createProduit(input: unknown): Promise<ActionResult<{ id: 
       prix: decimalOrNull(data.prix),
       devise: data.devise || "€",
       descriptionPrix: emptyToNull(data.descriptionPrix),
+      // Cast `as never` car client Prisma peut être stale localement
+      // (la colonne prix_variantes existe en DB via la migration).
+      prixVariantes: variantes && variantes.length > 0 ? variantes : null,
       estNouveau: data.estNouveau,
       origine: emptyToNull(data.origine),
       titreRemarque: emptyToNull(data.titreRemarque),
@@ -314,7 +332,7 @@ export async function createProduit(input: unknown): Promise<ActionResult<{ id: 
       position,
       vignettes: { create: data.vignettes.map((id) => ({ vignetteId: id })) },
       allergenes: { create: data.allergenes.map((id) => ({ allergeneId: id })) },
-    },
+    } as never,
   });
 
   await triggerProduitTranslation(created.id, cat.restaurantId);
@@ -334,6 +352,11 @@ export async function updateProduit(input: unknown): Promise<ActionResult> {
   const produit = await assertProduitOwner(id);
   if (!produit) return { ok: false, error: "Accès refusé" };
 
+  const updateVariantes =
+    data.prixVariantes && data.prixVariantes.length > 0
+      ? data.prixVariantes.filter((v) => v.label.trim().length > 0)
+      : null;
+
   await prisma.$transaction([
     prisma.produit.update({
       where: { id },
@@ -345,6 +368,8 @@ export async function updateProduit(input: unknown): Promise<ActionResult> {
         prix: decimalOrNull(data.prix),
         devise: data.devise || "€",
         descriptionPrix: emptyToNull(data.descriptionPrix),
+        prixVariantes:
+          updateVariantes && updateVariantes.length > 0 ? updateVariantes : null,
         estNouveau: data.estNouveau,
         origine: emptyToNull(data.origine),
         titreRemarque: emptyToNull(data.titreRemarque),
@@ -353,7 +378,7 @@ export async function updateProduit(input: unknown): Promise<ActionResult> {
         scheduleStart: emptyToNull(data.scheduleStart),
         scheduleEnd: emptyToNull(data.scheduleEnd),
         scheduleDays: data.scheduleDays ?? "1234567",
-      },
+      } as never,
     }),
     prisma.produitVignette.deleteMany({ where: { produitId: id } }),
     prisma.produitAllergene.deleteMany({ where: { produitId: id } }),

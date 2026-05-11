@@ -1,10 +1,10 @@
 "use client";
 
 import { useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useFieldArray, useForm, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +61,12 @@ import type {
   SerializedVignettes,
 } from "./types";
 
+/** Variante de prix : label (ex: "Demi", "Pinte") + prix décimal. */
+const variantSchema = z.object({
+  label: z.string().min(1, "Label requis").max(60),
+  prix: z.number().nonnegative("Doit être positif"),
+});
+
 const schema = z.object({
   categorieId: z.string(),
   titre: z.string().min(1, "Requis").max(255),
@@ -69,6 +75,8 @@ const schema = z.object({
   prix: z.union([z.number().nonnegative("Doit être positif"), z.literal("" as const)]),
   devise: z.string().max(5),
   descriptionPrix: z.string().max(255),
+  /** Variantes de prix (max 8). Si non-vide, le prix simple est masqué. */
+  prixVariantes: z.array(variantSchema).max(8),
   estNouveau: z.boolean(),
   origine: z.string().max(2),
   titreRemarque: z.string().max(255),
@@ -119,6 +127,20 @@ export function ProduitDialog({
       prix: produit?.prix ?? "",
       devise: produit?.devise ?? "€",
       descriptionPrix: produit?.descriptionPrix ?? "",
+      prixVariantes: (() => {
+        const raw = (produit as unknown as { prixVariantes?: unknown })
+          ?.prixVariantes;
+        if (!Array.isArray(raw)) return [];
+        return raw
+          .filter(
+            (v): v is { label: string; prix: number } =>
+              typeof v === "object" &&
+              v !== null &&
+              typeof (v as { label?: unknown }).label === "string" &&
+              typeof (v as { prix?: unknown }).prix === "number",
+          )
+          .map((v) => ({ label: v.label, prix: v.prix }));
+      })(),
       estNouveau: produit?.estNouveau ?? false,
       origine: produit?.origine ?? "",
       titreRemarque: produit?.titreRemarque ?? "",
@@ -324,6 +346,9 @@ export function ProduitDialog({
                     </FormItem>
                   )}
                 />
+
+                {/* === VARIANTES DE PRIX (multi-volumes / multi-tailles) === */}
+                <PrixVariantesField control={form.control} devise={form.watch("devise")} />
 
                 <div className="grid grid-cols-2 gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-4">
                   <FormField
@@ -561,5 +586,163 @@ export function ProduitDialog({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/**
+ * Champ liste de variantes de prix — pour les produits multi-volumes
+ * (bière demi/pinte, vin verre/bouteille, planche petite/grande).
+ *
+ * UX :
+ *   - Toggle pour activer/désactiver le mode multi-prix
+ *   - Si activé : liste de (label + prix) avec bouton "+ Ajouter une taille"
+ *   - Si > 0 variantes, le champ "Prix" simple devient indicatif (mais
+ *     reste éditable pour rétrocompat — par ex. la planche petite peut
+ *     être le prix par défaut et la grande une variante).
+ *   - 8 variantes max (largement suffisant pour tous les cas réels)
+ *
+ * Côté carte publique, si variantes définies, on affiche "dès X€" dans
+ * la liste produits et le tableau complet dans la modal détail.
+ */
+function PrixVariantesField({
+  control,
+  devise,
+}: {
+  control: Control<Values>;
+  devise: string;
+}) {
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "prixVariantes",
+  });
+  const hasVariantes = fields.length > 0;
+
+  return (
+    <div className="space-y-3 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-[var(--text-primary)]">
+            Plusieurs tailles / volumes ?
+          </p>
+          <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
+            Ex : bière (demi 3,50€ / pinte 6,50€) · planche (petite 12€ /
+            grande 24€) · vin (verre 5€ / bouteille 28€).
+          </p>
+        </div>
+        {!hasVariantes ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              append({ label: "Petite", prix: 0 });
+              append({ label: "Grande", prix: 0 });
+            }}
+          >
+            <Plus className="size-3.5" strokeWidth={1.75} />
+            Activer
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              // Retire toutes les variantes pour revenir au prix simple
+              for (let i = fields.length - 1; i >= 0; i--) remove(i);
+            }}
+            className="text-[var(--text-tertiary)]"
+          >
+            Désactiver
+          </Button>
+        )}
+      </div>
+
+      {hasVariantes && (
+        <>
+          <ul className="space-y-2">
+            {fields.map((f, i) => (
+              <li
+                key={f.id}
+                className="grid grid-cols-[1fr_110px_40px] items-end gap-2"
+              >
+                <FormField
+                  control={control}
+                  name={`prixVariantes.${i}.label`}
+                  render={({ field }) => (
+                    <FormItem>
+                      {i === 0 && (
+                        <FormLabel className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
+                          Taille / volume
+                        </FormLabel>
+                      )}
+                      <FormControl>
+                        <Input
+                          placeholder="Ex : Demi · Pinte · Petite · Grande"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={control}
+                  name={`prixVariantes.${i}.prix`}
+                  render={({ field }) => (
+                    <FormItem>
+                      {i === 0 && (
+                        <FormLabel className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">
+                          Prix ({devise})
+                        </FormLabel>
+                      )}
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          inputMode="decimal"
+                          value={field.value ?? 0}
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value) || 0)
+                          }
+                          className="font-mono text-right"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => remove(i)}
+                  aria-label="Supprimer cette variante"
+                  className="self-end"
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+          {fields.length < 8 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append({ label: "", prix: 0 })}
+            >
+              <Plus className="size-3.5" strokeWidth={1.75} />
+              Ajouter une taille
+            </Button>
+          )}
+          <p className="text-[10px] text-[var(--text-tertiary)]">
+            Côté carte publique, les clients verront « dès {devise}X » avec le
+            détail au clic.
+          </p>
+        </>
+      )}
+    </div>
   );
 }

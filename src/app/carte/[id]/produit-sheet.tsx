@@ -181,8 +181,48 @@ function DishDetail({
         )}
       </div>
 
-      {/* Prix */}
-      {produit.prix !== null && (
+      {/* Prix — tableau de variantes si défini, sinon prix simple */}
+      {produit.prixVariantes && produit.prixVariantes.length > 0 ? (
+        <div>
+          <ul className="flex flex-col gap-1.5">
+            {produit.prixVariantes.map((v, idx) => (
+              <li
+                key={`${v.label}-${idx}`}
+                className="flex items-baseline justify-between gap-3 rounded-[10px] px-3 py-2"
+                style={{
+                  backgroundColor: "#ffffff",
+                  color: "#000000",
+                  border: "1px solid rgba(0, 0, 0, 0.08)",
+                }}
+              >
+                <span
+                  className="text-[14px] font-medium"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  {v.label}
+                </span>
+                <span
+                  className="text-[18px] font-bold tabular-nums"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  {formatPrice(v.prix, produit.devise || deviseDefault)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {produit.descriptionPrix && (
+            <p
+              className="mt-2 text-xs italic opacity-70"
+              style={{
+                color: theme.textBody,
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {produit.descriptionPrix}
+            </p>
+          )}
+        </div>
+      ) : produit.prix !== null ? (
         <div>
           <p
             className="text-[20px] font-semibold tabular-nums"
@@ -205,7 +245,7 @@ function DishDetail({
             </p>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Allergènes */}
       {produit.allergenes.length > 0 && (
