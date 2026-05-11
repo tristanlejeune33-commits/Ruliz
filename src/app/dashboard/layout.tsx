@@ -23,6 +23,7 @@ import { prisma } from "@/lib/db";
 import { getActingUserId } from "@/lib/impersonation";
 import { isSupportedLang, type SupportedLang } from "@/lib/langs";
 import { requireDashboard } from "@/lib/session";
+import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { OnboardingBubble } from "@/features/onboarding/onboarding-bubble";
 import { getOnboardingState } from "@/server/dashboard/onboarding-actions";
 
@@ -31,6 +32,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Garantit que toutes les colonnes/tables ajoutées tardivement existent
+  // en DB avant que Prisma ne les sélectionne. No-op après le 1er call.
+  await ensureRuntimeSchema();
+
   const session = await requireDashboard();
 
   // Récupère l'user agissant (impersonné si admin SAV, sinon réel)

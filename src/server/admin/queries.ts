@@ -74,6 +74,11 @@ export async function listClients(filters: ClientListFilters = {}) {
  * Fiche complète d'un client avec restaurants, jeux, logs.
  */
 export async function getClientById(id: number) {
+  // Garantit que les colonnes ajoutées tardivement (sms_sender, onboarding_*)
+  // existent en DB avant que Prisma ne les sélectionne via include
+  const { ensureRuntimeSchema } = await import("@/lib/ensure-runtime-schema");
+  await ensureRuntimeSchema();
+
   const user = await prisma.user.findUnique({
     where: { id },
     include: {

@@ -4,6 +4,7 @@ import { SidebarBrand } from "@/components/shared/sidebar-brand";
 import { SidebarFooter } from "@/components/shared/sidebar-footer";
 import { SidebarNav } from "@/components/shared/sidebar-nav";
 import { requireAdmin } from "@/lib/session";
+import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 
 // Force dynamic — l'admin layout ne doit jamais être mis en cache HTML.
 export const dynamic = "force-dynamic";
@@ -13,6 +14,10 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Garantit que toutes les colonnes/tables ajoutées tardivement existent
+  // en DB avant que Prisma ne les sélectionne. No-op après le 1er call.
+  await ensureRuntimeSchema();
+
   const session = await requireAdmin();
 
   const cookieStore = await cookies();
