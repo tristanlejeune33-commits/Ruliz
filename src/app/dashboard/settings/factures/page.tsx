@@ -220,133 +220,7 @@ export default async function FacturesPage() {
         )}
       </section>
 
-      {/* === ACHATS DE PACKS SMS === */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight">
-            <Coins
-              className="size-4 text-[var(--accent)]"
-              strokeWidth={1.75}
-            />
-            Achats SMS
-            <span className="rounded-md border border-[var(--border-glass)] bg-[var(--bg-glass)] px-1.5 py-0 font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
-              {smsPurchases.length}
-            </span>
-          </h2>
-          {smsPurchases.length > 0 && (
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/sms">Recharger</Link>
-            </Button>
-          )}
-        </div>
-
-        {smsPurchases.length === 0 ? (
-          <Card className="flex flex-col items-center gap-3 p-8 text-center">
-            <Coins
-              className="size-8 text-[var(--text-tertiary)]"
-              strokeWidth={1.5}
-            />
-            <p className="text-sm font-medium text-[var(--text-primary)]">
-              Aucun achat de SMS pour l&apos;instant
-            </p>
-            <Button asChild size="sm" variant="outline" className="mt-1">
-              <Link href="/dashboard/sms">Voir les packs</Link>
-            </Button>
-          </Card>
-        ) : (
-          <ul className="space-y-2">
-            {smsPurchases.map((p) => (
-              <Card key={p.id} className="p-4">
-                <div className="flex items-center gap-4">
-                  <div
-                    className={cn(
-                      "flex size-12 shrink-0 items-center justify-center rounded-lg",
-                      p.status === "paid"
-                        ? "bg-[var(--accent)]/15 text-[var(--accent)]"
-                        : "bg-[var(--bg-glass-strong)] text-[var(--text-tertiary)]",
-                    )}
-                  >
-                    <Coins className="size-5" strokeWidth={1.75} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono text-[11px] text-[var(--text-tertiary)]">
-                        {p.invoiceNumber ?? `SMS-${p.id.slice(-8)}`}
-                      </span>
-                      <span className="font-medium text-[var(--text-primary)]">
-                        Pack {p.packSize.toLocaleString("fr-FR")} SMS
-                      </span>
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium",
-                          p.status === "paid"
-                            ? "border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] text-[var(--neon-success)]"
-                            : "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
-                        )}
-                      >
-                        {p.status === "paid"
-                          ? "Payée"
-                          : p.status === "pending"
-                            ? "En attente"
-                            : "Échec"}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
-                      {format(
-                        new Date(p.paidAt ?? p.createdAt),
-                        "d MMM yyyy à HH:mm",
-                        { locale: fr },
-                      )}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <p className="font-mono text-base font-bold tabular-nums text-[var(--text-primary)]">
-                      {(p.pricePaidCentimes / 100).toLocaleString("fr-FR", {
-                        style: "currency",
-                        currency: "EUR",
-                      })}
-                    </p>
-                    <div className="flex gap-1">
-                      {p.invoicePdfUrl && (
-                        <Button asChild variant="outline" size="sm">
-                          <a
-                            href={p.invoicePdfUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Download
-                              className="size-3.5"
-                              strokeWidth={1.75}
-                            />
-                            PDF
-                          </a>
-                        </Button>
-                      )}
-                      {p.invoiceUrl && (
-                        <Button asChild variant="ghost" size="sm">
-                          <a
-                            href={p.invoiceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label="Voir en ligne"
-                          >
-                            <ExternalLink
-                              className="size-3.5"
-                              strokeWidth={1.75}
-                            />
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* === FACTURES STRIPE ABONNEMENT === */}
+      {/* === FACTURES STRIPE ABONNEMENT === (swap : avant SMS, après BC) */}
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight">
@@ -472,6 +346,132 @@ export default async function FacturesPage() {
                 </Card>
               );
             })}
+          </ul>
+        )}
+      </section>
+
+      {/* === ACHATS DE PACKS SMS === (placé en dernier après le swap) */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="flex items-center gap-2 text-base font-semibold tracking-tight">
+            <Coins
+              className="size-4 text-[var(--accent)]"
+              strokeWidth={1.75}
+            />
+            Achats SMS
+            <span className="rounded-md border border-[var(--border-glass)] bg-[var(--bg-glass)] px-1.5 py-0 font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)]">
+              {smsPurchases.length}
+            </span>
+          </h2>
+          {smsPurchases.length > 0 && (
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/dashboard/sms">Recharger</Link>
+            </Button>
+          )}
+        </div>
+
+        {smsPurchases.length === 0 ? (
+          <Card className="flex flex-col items-center gap-3 p-8 text-center">
+            <Coins
+              className="size-8 text-[var(--text-tertiary)]"
+              strokeWidth={1.5}
+            />
+            <p className="text-sm font-medium text-[var(--text-primary)]">
+              Aucun achat de SMS pour l&apos;instant
+            </p>
+            <Button asChild size="sm" variant="outline" className="mt-1">
+              <Link href="/dashboard/sms">Voir les packs</Link>
+            </Button>
+          </Card>
+        ) : (
+          <ul className="space-y-2">
+            {smsPurchases.map((p) => (
+              <Card key={p.id} className="p-4">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={cn(
+                      "flex size-12 shrink-0 items-center justify-center rounded-lg",
+                      p.status === "paid"
+                        ? "bg-[var(--accent)]/15 text-[var(--accent)]"
+                        : "bg-[var(--bg-glass-strong)] text-[var(--text-tertiary)]",
+                    )}
+                  >
+                    <Coins className="size-5" strokeWidth={1.75} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[11px] text-[var(--text-tertiary)]">
+                        {p.invoiceNumber ?? `SMS-${p.id.slice(-8)}`}
+                      </span>
+                      <span className="font-medium text-[var(--text-primary)]">
+                        Pack {p.packSize.toLocaleString("fr-FR")} SMS
+                      </span>
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-md border px-2 py-0.5 text-[11px] font-medium",
+                          p.status === "paid"
+                            ? "border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)] text-[var(--neon-success)]"
+                            : "border-[var(--border-glass)] bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
+                        )}
+                      >
+                        {p.status === "paid"
+                          ? "Payée"
+                          : p.status === "pending"
+                            ? "En attente"
+                            : "Échec"}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
+                      {format(
+                        new Date(p.paidAt ?? p.createdAt),
+                        "d MMM yyyy à HH:mm",
+                        { locale: fr },
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <p className="font-mono text-base font-bold tabular-nums text-[var(--text-primary)]">
+                      {(p.pricePaidCentimes / 100).toLocaleString("fr-FR", {
+                        style: "currency",
+                        currency: "EUR",
+                      })}
+                    </p>
+                    <div className="flex gap-1">
+                      {p.invoicePdfUrl && (
+                        <Button asChild variant="outline" size="sm">
+                          <a
+                            href={p.invoicePdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <Download
+                              className="size-3.5"
+                              strokeWidth={1.75}
+                            />
+                            PDF
+                          </a>
+                        </Button>
+                      )}
+                      {p.invoiceUrl && (
+                        <Button asChild variant="ghost" size="sm">
+                          <a
+                            href={p.invoiceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            aria-label="Voir en ligne"
+                          >
+                            <ExternalLink
+                              className="size-3.5"
+                              strokeWidth={1.75}
+                            />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </ul>
         )}
       </section>

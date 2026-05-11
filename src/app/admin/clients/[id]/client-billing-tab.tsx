@@ -160,7 +160,97 @@ export function ClientBillingTab({
         )}
       </section>
 
-      {/* === ACHATS SMS === */}
+      {/* === FACTURES ABONNEMENT STRIPE === (swap : avant SMS, après BC) */}
+      <section>
+        <header className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+            <CreditCard className="size-3.5" />
+            Factures abonnement
+            <span className="rounded-md border border-[var(--border-glass)] bg-[var(--bg-glass)] px-1.5 py-0 font-mono text-[10px] font-bold text-[var(--text-tertiary)]">
+              {invoices.length}
+            </span>
+          </h3>
+        </header>
+
+        {invoices.length === 0 ? (
+          <Card className="p-6 text-center text-sm text-[var(--text-muted)]">
+            Aucune facture d&apos;abonnement.
+          </Card>
+        ) : (
+          <ul className="space-y-2">
+            {invoices.map((inv) => (
+              <Card key={inv.id} className="p-3">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "flex size-10 shrink-0 items-center justify-center rounded-lg",
+                      inv.status === "paid"
+                        ? "bg-[var(--neon-success-soft)] text-[var(--neon-success)]"
+                        : "bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
+                    )}
+                  >
+                    {inv.status === "paid" ? (
+                      <CheckCircle2 className="size-4" />
+                    ) : (
+                      <Receipt className="size-4" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="font-mono text-[10px] text-[var(--text-tertiary)]">
+                        {inv.number ?? `INV-${inv.id.slice(-8)}`}
+                      </span>
+                      <span className="text-sm font-medium text-[var(--text-primary)]">
+                        {inv.description}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
+                      {inv.createdAt &&
+                        format(new Date(inv.createdAt), "d MMM yyyy", {
+                          locale: fr,
+                        })}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <p className="font-mono text-sm font-bold tabular-nums">
+                      {(inv.amountPaidCentimes / 100).toLocaleString("fr-FR", {
+                        style: "currency",
+                        currency: inv.currency,
+                      })}
+                    </p>
+                    <div className="flex gap-0.5">
+                      {inv.invoicePdfUrl && (
+                        <Button asChild variant="outline" size="sm">
+                          <a
+                            href={inv.invoicePdfUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <Download className="size-3" /> PDF
+                          </a>
+                        </Button>
+                      )}
+                      {inv.hostedInvoiceUrl && (
+                        <Button asChild variant="ghost" size="sm">
+                          <a
+                            href={inv.hostedInvoiceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <ExternalLink className="size-3" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* === ACHATS SMS === (placé en dernier après le swap) */}
       <section>
         <header className="mb-3 flex items-center justify-between gap-3">
           <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
@@ -257,95 +347,6 @@ export function ClientBillingTab({
         )}
       </section>
 
-      {/* === FACTURES ABONNEMENT STRIPE === */}
-      <section>
-        <header className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
-            <CreditCard className="size-3.5" />
-            Factures abonnement
-            <span className="rounded-md border border-[var(--border-glass)] bg-[var(--bg-glass)] px-1.5 py-0 font-mono text-[10px] font-bold text-[var(--text-tertiary)]">
-              {invoices.length}
-            </span>
-          </h3>
-        </header>
-
-        {invoices.length === 0 ? (
-          <Card className="p-6 text-center text-sm text-[var(--text-muted)]">
-            Aucune facture d&apos;abonnement.
-          </Card>
-        ) : (
-          <ul className="space-y-2">
-            {invoices.map((inv) => (
-              <Card key={inv.id} className="p-3">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-lg",
-                      inv.status === "paid"
-                        ? "bg-[var(--neon-success-soft)] text-[var(--neon-success)]"
-                        : "bg-[var(--bg-glass)] text-[var(--text-tertiary)]",
-                    )}
-                  >
-                    {inv.status === "paid" ? (
-                      <CheckCircle2 className="size-4" />
-                    ) : (
-                      <Receipt className="size-4" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <span className="font-mono text-[10px] text-[var(--text-tertiary)]">
-                        {inv.number ?? `INV-${inv.id.slice(-8)}`}
-                      </span>
-                      <span className="text-sm font-medium text-[var(--text-primary)]">
-                        {inv.description}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-[11px] text-[var(--text-tertiary)]">
-                      {inv.createdAt &&
-                        format(new Date(inv.createdAt), "d MMM yyyy", {
-                          locale: fr,
-                        })}
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1">
-                    <p className="font-mono text-sm font-bold tabular-nums">
-                      {(inv.amountPaidCentimes / 100).toLocaleString("fr-FR", {
-                        style: "currency",
-                        currency: inv.currency,
-                      })}
-                    </p>
-                    <div className="flex gap-0.5">
-                      {inv.invoicePdfUrl && (
-                        <Button asChild variant="outline" size="sm">
-                          <a
-                            href={inv.invoicePdfUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <Download className="size-3" /> PDF
-                          </a>
-                        </Button>
-                      )}
-                      {inv.hostedInvoiceUrl && (
-                        <Button asChild variant="ghost" size="sm">
-                          <a
-                            href={inv.hostedInvoiceUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            <ExternalLink className="size-3" />
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </ul>
-        )}
-      </section>
     </div>
   );
 }
