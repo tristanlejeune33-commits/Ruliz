@@ -1,5 +1,10 @@
 import { cookies } from "next/headers";
 import { AppShell, COLLAPSED_COOKIE } from "@/components/shared/app-shell";
+
+// Force dynamic rendering pour éviter toute mise en cache HTML/RSC entre
+// users différents — l'auth est cookie-based donc chaque request a son
+// propre user, on doit refetch côté serveur à chaque navigation.
+export const dynamic = "force-dynamic";
 import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
 import {
   PanelLangProvider,

@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { signupClient } from "@/server/auth/actions";
+import { clearSessionCookies, signupClient } from "@/server/auth/actions";
 import {
   SIGNUP_COUNTRIES,
   languageFromCountry,
@@ -68,6 +68,10 @@ export function SignupForm() {
       toast.error(res.error);
       return;
     }
+
+    // Garde-fou anti-leak : nettoie les cookies session d'une précédente
+    // session (active restaurant, impersonation) avant de naviguer.
+    await clearSessionCookies().catch(() => null);
 
     toast.success("Compte créé. Bienvenue !");
     // Better-Auth autoSignIn ouvre la session ; on force un refresh

@@ -84,10 +84,33 @@ const DEFAULT_LOTS: Array<{
   { label: "🎁 Menu offert pour 2", probabilite: 5, imageUrl: "" },
 ];
 
+/** Liste d'emojis populaires pour les lots de roulette — quick-insert dans le label. */
+const LOT_EMOJIS = [
+  "🎁",
+  "☕",
+  "🍰",
+  "🍹",
+  "🍷",
+  "🥂",
+  "🍕",
+  "🍔",
+  "🥗",
+  "🍝",
+  "🍣",
+  "🌮",
+  "🍦",
+  "🍩",
+  "🎉",
+  "🌟",
+  "💝",
+  "💸",
+  "🎯",
+  "🏆",
+] as const;
+
 export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [showPreview, setShowPreview] = useState(false);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -500,47 +523,38 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                     </Button>
                   </div>
 
-                  {/* Logo du lot — URL ou upload */}
+                  {/* Sélecteur d'emoji rapide — insère l'emoji choisi au début
+                      du label du lot. Plus simple qu'un upload d'image et
+                      cohérent avec la roulette qui extrait l'emoji du label. */}
                   <FormField
                     control={form.control}
-                    name={`lots.${i}.imageUrl`}
+                    name={`lots.${i}.label`}
                     render={({ field }) => (
                       <FormItem className="mt-2">
-                        <div className="flex items-center gap-2">
-                          {field.value ? (
-                            <div className="relative size-10 shrink-0 overflow-hidden rounded-md border border-[var(--border-subtle)]">
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img
-                                src={field.value}
-                                alt=""
-                                className="size-full object-cover"
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50">
-                              <span className="text-xs text-[var(--text-muted)]">
-                                📷
-                              </span>
-                            </div>
-                          )}
-                          <FormControl>
-                            <Input
-                              placeholder="https://… (logo / image du lot, optionnel)"
-                              value={field.value ?? ""}
-                              onChange={field.onChange}
-                              className="text-xs"
-                            />
-                          </FormControl>
-                          {field.value && (
-                            <Button
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+                            Emoji :
+                          </span>
+                          {LOT_EMOJIS.map((emoji) => (
+                            <button
+                              key={emoji}
                               type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => field.onChange("")}
+                              onClick={() => {
+                                // Si label commence déjà par un emoji (caractère
+                                // non-ASCII en première position), on le remplace
+                                const current = field.value || "";
+                                const stripped = current.replace(
+                                  /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u,
+                                  "",
+                                );
+                                field.onChange(`${emoji} ${stripped}`.trim());
+                              }}
+                              className="flex size-8 items-center justify-center rounded-md border border-[var(--border-glass)] bg-[var(--bg-elevated)] text-lg transition-colors hover:bg-[var(--bg-glass-hover)] hover:border-[var(--border-glass-hover)]"
+                              aria-label={`Insérer ${emoji}`}
                             >
-                              ✕
-                            </Button>
-                          )}
+                              {emoji}
+                            </button>
+                          ))}
                         </div>
                       </FormItem>
                     )}
@@ -567,14 +581,6 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
             status={autoSaveStatus}
             errorMessage={autoSaveError}
           />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowPreview((s) => !s)}
-            disabled={pending}
-          >
-            {showPreview ? "Masquer la preview" : "Aperçu de la roue"}
-          </Button>
           <Button type="submit" disabled={pending}>
             {pending ? (
               <Loader2 className="size-4 animate-spin" />
@@ -585,19 +591,6 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
           </Button>
         </div>
 
-        {showPreview && (
-          <Card className="bg-[var(--bg-elevated)]/30">
-            <CardHeader>
-              <CardTitle>Aperçu</CardTitle>
-              <CardDescription>
-                Voici à quoi ressemblera la roue côté carte publique.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex justify-center py-8">
-              <RoulettePreview lots={lots} />
-            </CardContent>
-          </Card>
-        )}
       </form>
     </Form>
   );

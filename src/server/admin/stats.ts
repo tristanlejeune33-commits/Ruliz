@@ -8,19 +8,58 @@ const PLAN_PRICES = {
 } as const;
 
 export async function getAdminKpis() {
-  const [activeClients, allRestaurants, qrcodes, last30Scans] = await Promise.all([
+  const now = Date.now();
+  const since24h = new Date(now - 24 * 60 * 60 * 1000);
+  const since7d = new Date(now - 7 * 24 * 60 * 60 * 1000);
+  const since30d = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+  const [
+    activeClients,
+    newClients7d,
+    allRestaurants,
+    qrcodes,
+    scans24h,
+    scans7d,
+    scans30d,
+    uniqueRestos24h,
+    uniqueScans7dByUA,
+    uniqueScans30dByUA,
+  ] = await Promise.all([
     prisma.user.count({ where: { role: "client", statut: "actif" } }),
+    prisma.user.count({
+      where: {
+        role: "client",
+        createdAt: { gte: since7d },
+      },
+    }),
     prisma.restaurant.findMany({
       where: { statut: "actif" },
       select: { plan: true },
     }),
+    // Impressions cumulées = sum des compteurs scanTotal sur tous les QR codes
     prisma.qrcode.aggregate({
       _sum: { scanTotal: true },
     }),
-    prisma.scan.count({
+    // Scans 24h / 7j / 30j depuis la table scans (events bruts)
+    prisma.scan.count({ where: { scannedAt: { gte: since24h } } }),
+    prisma.scan.count({ where: { scannedAt: { gte: since7d } } }),
+    prisma.scan.count({ where: { scannedAt: { gte: since30d } } }),
+    // Restaurants distincts ayant reçu au moins un scan aujourd'hui
+    prisma.scan.groupBy({
+      by: ["restaurantId"],
       where: {
-        scannedAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) },
+        scannedAt: { gte: since24h },
+        restaurantId: { not: null },
       },
+    }),
+    // Approximation "scans uniques" : groupBy userAgent (proxy faute d'ipHash en DB)
+    prisma.scan.groupBy({
+      by: ["userAgent"],
+      where: { scannedAt: { gte: since7d } },
+    }),
+    prisma.scan.groupBy({
+      by: ["userAgent"],
+      where: { scannedAt: { gte: since30d } },
     }),
   ]);
 
@@ -28,10 +67,20 @@ export async function getAdminKpis() {
 
   return {
     activeClients,
+    newClients7d,
     totalRestaurants: allRestaurants.length,
     mrr,
-    scansAllTime: Number(qrcodes._sum.scanTotal ?? 0),
-    scans30d: last30Scans,
+    // Impressions = total cumulé de tous les scans depuis le début
+    impressions: Number(qrcodes._sum.scanTotal ?? 0),
+    // Scans = events bruts (table scans) par période
+    scans24h,
+    scans7d,
+    scans30d,
+    // Restaurants ayant été scannés au moins 1× dans les dernières 24h
+    activeRestos24h: uniqueRestos24h.length,
+    // Approximation visiteurs uniques (distinct userAgent par période)
+    uniqueVisitors7d: uniqueScans7dByUA.length,
+    uniqueVisitors30d: uniqueScans30dByUA.length,
   };
 }
 

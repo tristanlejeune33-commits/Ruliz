@@ -42,6 +42,11 @@ export async function clearActiveRestaurantCookie() {
  *   1. cookie value if owned by acting user
  *   2. first restaurant by createdAt
  * Throws redirect if no restaurant exists.
+ *
+ * ⚠️ Garde-fou anti-leak : si le cookie pointe sur un resto qui n'appartient
+ * PAS à l'utilisateur (cas d'une session admin SAV résiduelle qui a fui sur
+ * un autre compte), on supprime le cookie pourri immédiatement pour éviter
+ * tout affichage incorrect au prochain refresh.
  */
 export async function getCurrentRestaurant() {
   const session = await requireDashboard();
@@ -62,6 +67,13 @@ export async function getCurrentRestaurant() {
     : null;
 
   if (restaurant) return { session, restaurant };
+
+  // Cookie était présent mais ne pointait sur AUCUN resto du user actuel
+  // → cookie pollué (ex: session admin précédente). On le nettoie pour
+  // éviter une fuite potentielle au prochain render.
+  if (requestedId && !restaurant) {
+    await clearActiveRestaurantCookie().catch(() => null);
+  }
 
   const fallback = await prisma.restaurant.findFirst({
     where: { userId },

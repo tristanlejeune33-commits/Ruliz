@@ -5,6 +5,9 @@ import { SidebarFooter } from "@/components/shared/sidebar-footer";
 import { SidebarNav } from "@/components/shared/sidebar-nav";
 import { requireAdmin } from "@/lib/session";
 
+// Force dynamic — l'admin layout ne doit jamais être mis en cache HTML.
+export const dynamic = "force-dynamic";
+
 export default async function AdminLayout({
   children,
 }: {

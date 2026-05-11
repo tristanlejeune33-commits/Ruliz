@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { clearSessionCookies } from "@/server/auth/actions";
 
 const loginSchema = z.object({
   email: z.email("Email invalide"),
@@ -61,6 +62,11 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       toast.error(`Connexion impossible : ${detail}`);
       return;
     }
+
+    // Garde-fou anti-leak : si un cookie ruliz_active_restaurant ou
+    // ruliz_impersonate_user_id traîne d'une session précédente sur le
+    // même navigateur, on le supprime avant la nav vers /dashboard.
+    await clearSessionCookies().catch(() => null);
 
     toast.success("Connecté.");
     router.push(redirectTo ?? "/dashboard");
