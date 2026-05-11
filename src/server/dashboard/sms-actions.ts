@@ -6,34 +6,14 @@ import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { isBrevoConfigured, normalizeFrenchPhone, sendSms } from "@/lib/brevo";
 import { prisma } from "@/lib/db";
 import { APP_URL, getStripe } from "@/lib/stripe";
+import { SMS_PACKS, type SmsPack } from "./sms-packs";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
   | { ok: false; error: string };
 
-// ============================================================
-// PACKS DE CRÉDITS SMS
-// ============================================================
-// Tristan achète sur Brevo ~0.030€/SMS, revend avec marge.
-// 100 SMS  → 9.90€  (0.099€/SMS) → marge ×3.3
-// 500 SMS  → 39.90€ (0.080€/SMS) → marge ×2.7
-// 1000 SMS → 69.90€ (0.070€/SMS) → marge ×2.3
-// 5000 SMS → 299€   (0.060€/SMS) → marge ×2.0
-
-export interface SmsPack {
-  id: "starter" | "boost" | "growth" | "scale";
-  size: number;
-  priceCentimes: number;
-  label: string;
-  badge?: string;
-}
-
-export const SMS_PACKS: SmsPack[] = [
-  { id: "starter", size: 100, priceCentimes: 990, label: "Pack Découverte" },
-  { id: "boost", size: 500, priceCentimes: 3990, label: "Pack Boost", badge: "Populaire" },
-  { id: "growth", size: 1000, priceCentimes: 6990, label: "Pack Croissance" },
-  { id: "scale", size: 5000, priceCentimes: 29900, label: "Pack Maxi", badge: "Économie" },
-];
+// Configuration des packs SMS importée depuis ./sms-packs (fichier séparé
+// car Next.js refuse l'export de constantes depuis un fichier "use server").
 
 // ============================================================
 // AUTO-ENSURE SCHEMA

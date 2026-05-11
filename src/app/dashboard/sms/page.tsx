@@ -24,8 +24,8 @@ import {
   getSmsBalance,
   listSmsAutomations,
   listSmsCampaigns,
-  SMS_PACKS,
 } from "@/server/dashboard/sms-actions";
+import { SMS_PACKS } from "@/server/dashboard/sms-packs";
 import { SmsBalanceCard } from "./sms-balance-card";
 import { SmsPacksList } from "./sms-packs-list";
 import { SmsBlastForm } from "./sms-blast-form";
