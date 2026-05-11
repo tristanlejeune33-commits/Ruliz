@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   CreditCard,
+  GraduationCap,
   Plug,
   Receipt,
   Settings as SettingsIcon,
@@ -25,6 +26,7 @@ import {
 } from "@/components/ui/tabs";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { PlanBadge, type Plan } from "@/components/shared/status-badge";
+import { RestartTourButton } from "./restart-tour-button";
 
 export const metadata: Metadata = {
   title: "Paramètres · Ruliz",
@@ -61,7 +63,7 @@ export default async function SettingsPage() {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profil">
+        <TabsContent value="profil" className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Mon compte</CardTitle>
@@ -73,6 +75,28 @@ export default async function SettingsPage() {
             <CardContent className="grid gap-4 md:grid-cols-2">
               <Field label="Nom" value={session.user.name ?? "—"} />
               <Field label="Email" value={session.user.email} />
+            </CardContent>
+          </Card>
+
+          {/* Didacticiel / Tour guidé — relance la bulle d'onboarding */}
+          <Card className="lift-hover">
+            <CardHeader>
+              <div className="flex items-start gap-3">
+                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/15 text-[var(--accent)] ring-1 ring-[var(--accent)]/30">
+                  <GraduationCap className="size-5" strokeWidth={1.75} />
+                </span>
+                <div>
+                  <CardTitle>Didacticiel</CardTitle>
+                  <CardDescription className="mt-1">
+                    Relance le petit tour guidé qui t&apos;explique comment
+                    mettre ta carte en ligne — utile si tu as zappé la 1ère
+                    fois ou si tu veux le montrer à un collègue.
+                  </CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <RestartTourButton />
             </CardContent>
           </Card>
         </TabsContent>
