@@ -361,18 +361,52 @@ Statistiques par QR (page Analyse) :
 • Quels plats les clients de ce QR regardent le plus
   (exemple : "Les clients de la vitrine commandent surtout des desserts")
 
-Conseils pour l'impression :
+═══════════════════════════════════════════════════
+🛒 BOUTIQUE RULIZ — commande tes supports pré-imprimés
+═══════════════════════════════════════════════════
+
+Pas envie de t'embêter avec l'impression ? On le fait pour toi.
+Va dans Dashboard › Boutique QR pour commander :
+
+• 📋 SETS DE TABLE PERSONNALISÉS
+  Avec ton QR code + ton logo + ta couleur
+  Format A4, papier épais, pelliculage mat
+  100 pièces : commande livrée chez toi en 5 jours
+
+• 🪧 STICKERS QR pour tables/vitrines
+  Vinyle adhésif résistant, format carré 8×8 cm
+  Lot de 30, parfait pour équiper toutes tes tables
+
+• 🖼️ PANNEAUX VITRINE
+  Plexiglas A4 ou A3 à poser ou accrocher
+  Ton QR + "Notre carte du jour" en gros
+  Idéal pour attirer les passants
+
+• 🎨 CHEVALETS DE TABLE
+  Bois ou carton plié, élégant, format L
+  Plus durable que le sticker
+
+Tous tes designs reprennent automatiquement TES couleurs et TON logo
+(configurés à l'étape 2 du tour). Pas besoin de graphiste.
+
+Paiement sécurisé en ligne, livraison France 3-5 jours
+(+ DOM-TOM et UE possible).
+
+═══════════════════════════════════════════════════
+
+Si tu imprimes TOI-MÊME — conseils pratiques :
 • Imprime sur sticker MAT (pas brillant — sinon ça fait des reflets
   et bloque le scan)
 • Taille minimum : 4×4 cm pour un scan smartphone confortable
 • Pose à hauteur des yeux sur les tables
 • Évite les coins pliés ou les pochettes plastiques
 • Ajoute "Scannez pour voir notre carte 📱" à côté du QR
-• Tu peux commander des sets de table tout-faits sur la boutique Ruliz
 
 ASTUCE GÉNIALE : si tu changes ta carte (été → hiver),
 tu n'as PAS à ré-imprimer ton QR code. Le QR pointe toujours
-vers ta carte à jour — tu modifies côté dashboard, c'est tout.`,
+vers ta carte à jour — tu modifies côté dashboard, c'est tout.
+Donc tes sets de table commandés à la boutique restent valables
+À VIE même si tu changes 50 fois ta carte.`,
     cta: "Voir les plus 🎁",
     allowSkip: true,
     placement: "left",
@@ -485,12 +519,56 @@ LES 3 ABONNEMENTS RULIZ :
 • SANS mention Ruliz (ta carte 100% à toi)
 • Plusieurs restaurants (jusqu'à 5) gérés depuis un seul compte
 • Invite tes employés (gestion d'équipe)
-• Envoie des SMS à tes clients :
-  → relance ceux de la roulette qui n'ont pas laissé d'avis
-  → annonce tes événements (soirée, brunch dominical…)
-  → 200 SMS/mois inclus, puis 6 centimes par SMS supplémentaire
+• 📱 SMS MARKETING INTÉGRÉ — voir détail ci-dessous
 • Statistiques sans limite dans le temps
 • Support prioritaire (réponse en moins de 4h en semaine)
+
+═══════════════════════════════════════════
+📱 LE SMS MARKETING (exclu Premium) en détail
+═══════════════════════════════════════════
+
+Tu te demandes "à quoi ça sert" ? Voilà ce que tu peux faire :
+
+1. RELANCE AUTOMATIQUE après la roulette
+   Quand un client tourne la roue et laisse son téléphone,
+   tu peux lui envoyer un SMS 24h plus tard :
+   "Salut Marc 👋 Merci d'être passé hier ! Si tu n'as pas eu
+    le temps de laisser un avis Google, c'est par ici : [lien]
+    Encore merci, l'équipe du Tire-Bouchon"
+   → Récupère les avis qui auraient été oubliés.
+
+2. ANNONCE D'ÉVÉNEMENTS
+   "Soirée vins du Beaujolais ce jeudi 19h ! Réservation par
+    SMS à ce numéro 🍷"
+   → Tu envoies en 1 clic à tous tes clients récents.
+
+3. CARTE DU JOUR / OFFRE
+   "Aujourd'hui, blanquette de veau maison à 18€ + verre de vin
+    offert. Réserve avant 19h pour en profiter !"
+   → Booste tes services creux (mardi-mercredi midi par ex).
+
+4. RAPPEL D'ANNIVERSAIRE
+   Si un client a renseigné sa date de naissance dans la roulette,
+   un SMS automatique lui souhaite son anniversaire avec un cadeau
+   à venir chercher au resto.
+
+COMMENT ÇA MARCHE :
+• Tu écris ton SMS (160 caractères, comme un SMS normal)
+• Tu choisis tes destinataires (filtre : tous, derniers 30 jours,
+  ceux de la roulette, etc.)
+• Tu vois la preview, le coût estimé, et tu envoies
+• Les SMS partent dans la minute via notre partenaire Brevo
+  (numéro court "RULIZ" ou personnalisé)
+
+PRIX :
+• 200 SMS / mois INCLUS dans l'abonnement Premium (44,90€)
+• Au-delà : 6 centimes par SMS (~6€ pour 100 SMS de plus)
+• Ça coûte moins que 1 client qui revient = facile à rentabiliser
+
+CONFORME RGPD :
+• Lien de désinscription auto en bas de chaque SMS
+• Consentement coché par le client à la roulette
+• Tu peux exporter tes contacts à tout moment
 
 ═══════════════════════════════════════
 
