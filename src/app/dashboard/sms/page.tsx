@@ -21,6 +21,7 @@ import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
 import {
+  getDefaultSmsSender,
   getSmsBalance,
   listSmsAutomations,
   listSmsCampaigns,
@@ -46,24 +47,32 @@ export default async function SmsPage({ searchParams }: PageProps) {
 
   const restaurantId = restaurant.id.toString();
 
-  const [balance, baseClients, totalWithPhone, automations, campaigns, packs] =
-    await Promise.all([
-      getSmsBalance(restaurantId),
-      prisma.baseClient.findMany({
-        where: {
-          restaurantId: restaurant.id,
-          telephone: { not: null },
-        },
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      }),
-      prisma.baseClient.count({
-        where: { restaurantId: restaurant.id, telephone: { not: null } },
-      }),
-      listSmsAutomations(restaurantId),
-      listSmsCampaigns(restaurantId, 10),
-      getActiveSmsPacks(),
-    ]);
+  const [
+    balance,
+    baseClients,
+    totalWithPhone,
+    automations,
+    campaigns,
+    packs,
+    defaultSender,
+  ] = await Promise.all([
+    getSmsBalance(restaurantId),
+    prisma.baseClient.findMany({
+      where: {
+        restaurantId: restaurant.id,
+        telephone: { not: null },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
+    prisma.baseClient.count({
+      where: { restaurantId: restaurant.id, telephone: { not: null } },
+    }),
+    listSmsAutomations(restaurantId),
+    listSmsCampaigns(restaurantId, 10),
+    getActiveSmsPacks(),
+    getDefaultSmsSender(restaurantId),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -169,6 +178,7 @@ export default async function SmsPage({ searchParams }: PageProps) {
             <SmsBlastForm
               restaurantId={restaurantId}
               currentBalance={balance.balance}
+              defaultSender={defaultSender}
             />
           </CardContent>
         </Card>

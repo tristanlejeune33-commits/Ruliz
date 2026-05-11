@@ -34,6 +34,12 @@ async function ensureSmsSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "opt_in_sms" BOOLEAN NOT NULL DEFAULT TRUE;
     `);
 
+    // Colonne sms_sender sur restaurants — nom expéditeur custom par resto
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "sms_sender" VARCHAR(11);
+    `);
+
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "sms_balance" (
         "id" BIGSERIAL PRIMARY KEY,
@@ -118,6 +124,37 @@ async function ensureSmsSchema(): Promise<void> {
 // ============================================================
 
 /**
+ * Nettoie un nom d'expéditeur pour matcher la contrainte Brevo :
+ *   - Alphanumérique uniquement (a-z, A-Z, 0-9)
+ *   - Max 11 caractères
+ *   - Pas d'espace, pas d'accent
+ *
+ * Ex: "Le Tire-Bouchon" → "LeTireBouc"
+ *     "Pizzéria d'Albert" → "PizzeriadA"
+ *     "Ruliz" → "Ruliz"
+ */
+export async function cleanSmsSender(raw: string | null | undefined): Promise<string> {
+  if (!raw) return "Ruliz";
+  const cleaned = raw
+    .normalize("NFD") // décompose accents
+    .replace(/[̀-ͯ]/g, "") // retire diacritiques (range Unicode)
+    .replace(/[^a-zA-Z0-9]/g, ""); // retire tout non-alphanumérique
+  if (cleaned.length === 0) return "Ruliz";
+  return cleaned.slice(0, 11);
+}
+
+/** Version synchrone (pour validation côté serveur sans await) */
+function cleanSmsSenderSync(raw: string | null | undefined): string {
+  if (!raw) return "Ruliz";
+  const cleaned = raw
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "");
+  if (cleaned.length === 0) return "Ruliz";
+  return cleaned.slice(0, 11);
+}
+
+/**
  * Calcule le nombre de segments d'un SMS.
  * GSM 7-bit : 160 chars par segment.
  * Si caractères Unicode (emoji, accents é è ê) : 70 chars par segment.
@@ -152,6 +189,38 @@ function applyTags(
 // ============================================================
 // QUERIES
 // ============================================================
+
+/**
+ * Récupère le nom d'expéditeur SMS par défaut du restaurant.
+ * Ordre : Restaurant.smsSender en DB → nettoyage du nom du resto → "Ruliz".
+ * Utilisé par le form de campagne pour pré-remplir le champ "Expéditeur".
+ */
+export async function getDefaultSmsSender(
+  restaurantId: string,
+): Promise<string> {
+  await ensureSmsSchema();
+  let bigId: bigint;
+  try {
+    bigId = BigInt(restaurantId);
+  } catch {
+    return "Ruliz";
+  }
+  const restaurant = await assertRestaurantOwner(bigId);
+  if (!restaurant) return "Ruliz";
+
+  try {
+    const row = (await prisma.$queryRawUnsafe(
+      `SELECT sms_sender AS "smsSender", nom FROM restaurants WHERE id = $1`,
+      bigId,
+    )) as Array<{ smsSender: string | null; nom: string }>;
+    const existing = row[0]?.smsSender;
+    if (existing && existing.trim().length > 0) return existing;
+    // Pas encore de sender perso → propose le nom du resto nettoyé
+    return cleanSmsSenderSync(row[0]?.nom);
+  } catch {
+    return "Ruliz";
+  }
+}
 
 /**
  * Récupère le solde SMS d'un restaurant (crée la ligne si absente).
@@ -203,6 +272,9 @@ const blastSchema = z.object({
   title: z.string().max(255).optional(),
   message: z.string().min(1).max(640),
   filterSource: z.enum(["all", "roulette", "manual"]).default("all"),
+  /** Nom d'expéditeur custom (max 11 chars alphanumériques). Si absent →
+      Restaurant.smsSender (DB) → BREVO_SMS_SENDER (env) → "Ruliz" */
+  sender: z.string().max(11).optional(),
 });
 
 /**
@@ -250,6 +322,40 @@ export async function sendSmsBlast(input: unknown): Promise<
       ok: false,
       error: "Service SMS temporairement indisponible. Réessaie dans quelques minutes.",
     };
+  }
+
+  // === Détermine le nom d'expéditeur (sender) ===
+  // Ordre de priorité :
+  //   1. sender passé en argument (form de campagne)
+  //   2. restaurant.smsSender (DB — dernier choix mémorisé)
+  //   3. fallback "Ruliz" (via env BREVO_SMS_SENDER)
+  // Nettoyage automatique : alphanumérique uniquement, 11 chars max.
+  let resolvedSender: string = "";
+  if (parsed.data.sender) {
+    resolvedSender = cleanSmsSenderSync(parsed.data.sender);
+  } else {
+    // Lit smsSender en DB (peut être stale → cast as never)
+    try {
+      const restoRow = (await prisma.$queryRawUnsafe(
+        `SELECT sms_sender AS "smsSender" FROM restaurants WHERE id = $1`,
+        restoBigId,
+      )) as Array<{ smsSender: string | null }>;
+      resolvedSender = restoRow[0]?.smsSender ?? "";
+    } catch {
+      resolvedSender = "";
+    }
+  }
+  // Si le user a fourni un sender custom, on le persiste comme nouveau défaut
+  if (parsed.data.sender && resolvedSender !== "") {
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE restaurants SET sms_sender = $2 WHERE id = $1`,
+        restoBigId,
+        resolvedSender,
+      );
+    } catch (err) {
+      console.warn("[sms] persist smsSender failed:", err);
+    }
   }
 
   // Récupère les destinataires (avec opt-in OK et téléphone non null)
@@ -354,6 +460,7 @@ export async function sendSmsBlast(input: unknown): Promise<
     const res = await sendSms({
       recipient: normalized,
       content: personalized,
+      ...(resolvedSender ? { sender: resolvedSender } : {}),
     });
 
     if (res.ok) {

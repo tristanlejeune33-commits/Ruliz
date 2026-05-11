@@ -230,6 +230,13 @@ model Restaurant {
   dinnerEnd                String?   @default("23:00") @map("dinner_end") @db.VarChar(5)
   happyHourStart           String?   @default("18:00") @map("happy_hour_start") @db.VarChar(5)
   happyHourEnd             String?   @default("19:00") @map("happy_hour_end") @db.VarChar(5)
+  /**
+   * Nom de l'expéditeur affiché sur les SMS envoyés par ce restaurant.
+   * Brevo : max 11 caractères alphanumériques (pas d'espace, pas d'accent).
+   * Si null → fallback sur BREVO_SMS_SENDER global (Ruliz).
+   * Le restaurateur peut le personnaliser depuis le form de campagne SMS.
+   */
+  smsSender                String?   @map("sms_sender") @db.VarChar(11)
   // ----- Personnalisation visuelle de la carte publique -----
   theme                    String?   @default("light") @db.VarChar(10) // light | dark
   fontStyle                String?   @default("editorial") @map("font_style") @db.VarChar(20) // modern | editorial | elegant

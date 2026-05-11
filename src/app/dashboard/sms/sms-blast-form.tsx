@@ -36,16 +36,32 @@ import {
   sendSmsBlast,
 } from "@/server/dashboard/sms-actions";
 
+// Nettoie le sender côté client : alphanumérique seulement, max 11 chars,
+// sans accent ni espace. Mêmes règles que le serveur.
+function cleanSenderInput(raw: string): string {
+  return raw
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(0, 11);
+}
+
 const schema = z.object({
   title: z.string().max(255).optional(),
   message: z.string().min(1, "Requis").max(640),
   filterSource: z.enum(["all", "roulette", "manual"]),
+  sender: z
+    .string()
+    .min(1, "Indique un nom")
+    .max(11, "11 caractères max")
+    .regex(/^[a-zA-Z0-9]+$/, "Lettres et chiffres uniquement"),
 });
 type Values = z.infer<typeof schema>;
 
 interface SmsBlastFormProps {
   restaurantId: string;
   currentBalance: number;
+  defaultSender: string;
 }
 
 const TAGS = [
@@ -57,6 +73,7 @@ const TAGS = [
 export function SmsBlastForm({
   restaurantId,
   currentBalance,
+  defaultSender,
 }: SmsBlastFormProps) {
   const [pending, startTransition] = useTransition();
   const [estimate, setEstimate] = useState<{
@@ -70,11 +87,17 @@ export function SmsBlastForm({
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { title: "", message: "", filterSource: "all" },
+    defaultValues: {
+      title: "",
+      message: "",
+      filterSource: "all",
+      sender: defaultSender || "Ruliz",
+    },
   });
 
   const message = form.watch("message");
   const filterSource = form.watch("filterSource");
+  const sender = form.watch("sender");
 
   // Estimation côté serveur (debounce 500 ms)
   useEffect(() => {
@@ -148,6 +171,51 @@ export function SmsBlastForm({
                       {...field}
                     />
                   </FormControl>
+                </FormItem>
+              )}
+            />
+
+            {/* Nom expéditeur — affiché sur le téléphone du client */}
+            <FormField
+              control={form.control}
+              name="sender"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between">
+                    <FormLabel>Nom de l&apos;expéditeur</FormLabel>
+                    <span
+                      className={cn(
+                        "font-mono text-[11px] tabular-nums",
+                        sender.length >= 11
+                          ? "text-[var(--neon-violet)]"
+                          : "text-[var(--text-tertiary)]",
+                      )}
+                    >
+                      {sender.length}/11
+                    </span>
+                  </div>
+                  <FormControl>
+                    <Input
+                      placeholder="LeBistrot"
+                      maxLength={11}
+                      value={field.value}
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      onChange={(e) => {
+                        // Nettoie automatiquement (alphanumérique + 11 chars)
+                        field.onChange(cleanSenderInput(e.target.value));
+                      }}
+                      className="font-mono"
+                    />
+                  </FormControl>
+                  <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+                    Ce nom apparaîtra sur le téléphone de tes clients à la
+                    place de ton numéro. 11 caractères max, lettres et
+                    chiffres uniquement (pas d&apos;espace ni d&apos;accent).
+                    Ton choix est mémorisé pour la prochaine fois.
+                  </p>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -249,7 +317,7 @@ export function SmsBlastForm({
           </div>
 
           {/* === PREVIEW SMS === */}
-          <SmsPreview message={message || ""} />
+          <SmsPreview message={message || ""} sender={sender || "Ruliz"} />
         </div>
 
         <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
@@ -386,7 +454,7 @@ function EstimateBox({
   );
 }
 
-function SmsPreview({ message }: { message: string }) {
+function SmsPreview({ message, sender }: { message: string; sender: string }) {
   // Remplacement des tags pour la preview (avec valeurs fictives)
   const previewText = message
     .replace(/\{prenom\}/gi, "Marc")
@@ -411,11 +479,13 @@ function SmsPreview({ message }: { message: string }) {
         </div>
         <div className="flex items-center gap-2 border-b border-[var(--border-glass)] px-3 py-2">
           <div className="flex size-7 items-center justify-center rounded-full bg-[var(--neon-cyan)] text-[var(--bg-primary)]">
-            <span className="text-xs font-bold">R</span>
+            <span className="text-xs font-bold">
+              {(sender || "R").slice(0, 1).toUpperCase()}
+            </span>
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-semibold text-[var(--text-primary)]">
-              Restaurant
+            <div className="truncate text-xs font-semibold text-[var(--text-primary)]">
+              {sender || "Restaurant"}
             </div>
             <div className="text-[10px] text-[var(--text-tertiary)]">
               SMS · maintenant
