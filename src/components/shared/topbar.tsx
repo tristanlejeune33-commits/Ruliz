@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { BreadcrumbNav } from "@/components/shared/breadcrumb-nav";
+import { CartIconButton } from "@/components/shared/cart-icon-button";
 import { PreviewLangPicker } from "@/components/shared/preview-lang-picker";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
@@ -64,21 +65,25 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
           <BreadcrumbNav />
         </div>
 
-        <button
-          type="button"
-          onClick={onOpenCommand}
-          className={cn(
-            "group relative ml-auto hidden h-9 min-w-[200px] items-center gap-2 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-3 text-xs text-[var(--text-tertiary)] transition-all duration-200 hover:border-[var(--neon-cyan)]/30 hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)] md:inline-flex lg:min-w-[260px]",
-          )}
-          aria-label={t("topbar.search.aria")}
-        >
-          <Search
-            className="size-3.5 transition-colors group-hover:text-[var(--neon-cyan)]"
-            strokeWidth={1.75}
-          />
-          <span className="flex-1 text-left">{t("topbar.search.placeholder")}</span>
-          <Kbd>⌘K</Kbd>
-        </button>
+        <div className="ml-auto flex items-center gap-1">
+          <CartIconButton />
+
+          <button
+            type="button"
+            onClick={onOpenCommand}
+            className={cn(
+              "group relative hidden h-9 min-w-[200px] items-center gap-2 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] px-3 text-xs text-[var(--text-tertiary)] transition-all duration-200 hover:border-[var(--neon-cyan)]/30 hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)] md:inline-flex lg:min-w-[260px]",
+            )}
+            aria-label={t("topbar.search.aria")}
+          >
+            <Search
+              className="size-3.5 transition-colors group-hover:text-[var(--neon-cyan)]"
+              strokeWidth={1.75}
+            />
+            <span className="flex-1 text-left">{t("topbar.search.placeholder")}</span>
+            <Kbd>⌘K</Kbd>
+          </button>
+        </div>
 
         <Tooltip>
           <TooltipTrigger asChild>

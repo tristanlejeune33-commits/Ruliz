@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { Activity, ImageOff, Package, QrCode, ScanLine, ShoppingBag } from "lucide-react";
+import {
+  Activity,
+  ImageOff,
+  Package,
+  QrCode,
+  ScanLine,
+  Sparkles,
+  Truck,
+  ShoppingBag,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -95,49 +104,113 @@ export default async function QrcodesPage() {
         )}
       />
 
-      {/* === SECTION BOUTIQUE QR — supports physiques commandables ===
-          Fusionne l'ancienne page /dashboard/boutique ici pour offrir une
-          expérience unifiée "gérer mes QR + commander des supports". */}
+      {/* === CTA BRILLANT — BOUTIQUE QR CODE MADE IN FRANCE ===
+          Bannière premium pleine largeur avec gradient drapeau tricolore,
+          ombres, glow et badge animé. Conduit vers la boutique pour
+          commander des supports physiques pré-imprimés. */}
+      <Link
+        href="/dashboard/boutique"
+        className="group relative block overflow-hidden rounded-2xl"
+      >
+        {/* Background : gradient bleu → blanc → rouge (drapeau FR subtil) */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(110deg, #0055A4 0%, #0055A4 25%, #ffffff 50%, #EF4135 75%, #EF4135 100%)",
+            opacity: 0.92,
+          }}
+          aria-hidden
+        />
+        {/* Overlay sombre pour lisibilité du texte */}
+        <div
+          className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/40"
+          aria-hidden
+        />
+        {/* Effet shine animé qui passe au hover */}
+        <div
+          className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+          style={{
+            background:
+              "linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.25) 50%, transparent 70%)",
+            transform: "translateX(-100%)",
+            animation: "none",
+          }}
+          aria-hidden
+        />
+
+        <div className="relative flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+          <div className="flex-1">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+              <Sparkles className="size-3" strokeWidth={2} />
+              🇫🇷 Made in France
+            </div>
+
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              Commande tes supports QR
+              <span className="block bg-gradient-to-r from-yellow-200 via-white to-yellow-100 bg-clip-text text-transparent">
+                imprimés en France 🥖
+              </span>
+            </h2>
+
+            <p className="mt-2 max-w-xl text-sm text-white/90 sm:text-base">
+              Sets de table, stickers vitrine, présentoirs, chevalets… ton QR
+              code pré-imprimé sur du matériel pro, livré chez toi en 5 jours.
+            </p>
+
+            {/* Garanties / arguments */}
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-medium text-white/95">
+              <span className="inline-flex items-center gap-1.5">
+                <Truck className="size-3.5" strokeWidth={2} />
+                Livraison 5 jours
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Sparkles className="size-3.5" strokeWidth={2} />
+                Pelliculage mat pro
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <Package className="size-3.5" strokeWidth={2} />
+                Ton logo + couleurs
+              </span>
+            </div>
+          </div>
+
+          {/* Bouton CTA glowing */}
+          <div className="relative shrink-0">
+            <div
+              className="absolute inset-0 rounded-xl bg-white blur-xl opacity-50 transition-opacity duration-300 group-hover:opacity-80"
+              aria-hidden
+            />
+            <span className="relative inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-bold uppercase tracking-wider text-[#0055A4] shadow-2xl ring-1 ring-white/50 transition-transform duration-200 group-hover:scale-105">
+              Voir la boutique
+              <span aria-hidden className="transition-transform group-hover:translate-x-1">
+                →
+              </span>
+            </span>
+          </div>
+        </div>
+      </Link>
+
+      {/* Mini-catalogue : 3 ou 6 produits, lien voir plus */}
       {boutiqueProduits.length > 0 && (
         <section className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <div>
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--neon-violet)]/30 bg-[var(--neon-violet-soft)] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--neon-violet)]">
-                <Package className="size-3" strokeWidth={1.75} />
-                Boutique QR
-              </div>
-              <h2 className="mt-2 text-xl font-semibold tracking-tight">
-                Commande tes supports physiques
-              </h2>
-              <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                Sets de table, stickers vitrine, présentoirs A6, cartes
-                imprimées : ton QR pré-imprimé, livré chez toi.
-              </p>
-            </div>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/dashboard/boutique/panier">
-                <ShoppingBag className="size-3.5" strokeWidth={1.75} />
-                Voir mon panier
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
+              Aperçu du catalogue
+            </h2>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/dashboard/boutique">
+                Voir tout ({boutiqueProduits.length}) →
               </Link>
             </Button>
           </div>
 
-          {/* Mini-catalogue — 3 ou 6 produits selon écran, le reste via lien */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {boutiqueProduits.slice(0, 6).map((p) => (
+            {boutiqueProduits.slice(0, 3).map((p) => (
               <BoutiqueProductTile key={p.id.toString()} produit={p} />
             ))}
           </div>
-
-          {boutiqueProduits.length > 6 && (
-            <div className="text-center">
-              <Button asChild variant="ghost" size="sm">
-                <Link href="/dashboard/boutique">
-                  Voir les {boutiqueProduits.length - 6} autres produits →
-                </Link>
-              </Button>
-            </div>
-          )}
         </section>
       )}
     </div>

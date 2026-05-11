@@ -6,6 +6,7 @@ import {
   CART_COOKIE,
   CART_TTL_DAYS,
   addToCart,
+  cartCount,
   parseCart,
   removeFromCart,
   serializeCart,
@@ -116,4 +117,18 @@ export async function clearCartAction() {
   await writeCart([]);
   revalidatePath("/dashboard/boutique", "layout");
   return { ok: true as const };
+}
+
+/**
+ * Retourne le nombre total d'articles dans le panier (somme des quantités).
+ * Utilisé par le bouton panier de la topbar (CartIconButton).
+ * 0 si panier vide ou cookie inexistant.
+ */
+export async function getCartCount(): Promise<number> {
+  try {
+    const cart = await readCart();
+    return cartCount(cart);
+  } catch {
+    return 0;
+  }
 }

@@ -6,6 +6,7 @@ import { AlertTriangle, Loader2, Minus, Plus, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { addToCartAction } from "@/server/dashboard/boutique-cart-actions";
 
 interface AddToCartButtonProps {
@@ -86,32 +87,88 @@ export function AddToCartButton({
           Plus que {stockRestant} en stock
         </p>
       )}
-      <div className="flex items-center justify-between gap-4">
-        {/* Sélecteur quantité */}
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            onClick={() => setQuantite((q) => Math.max(1, q - 1))}
-            disabled={pending || quantite <= 1}
-            aria-label="Diminuer"
-          >
-            <Minus className="size-3" strokeWidth={2} />
-          </Button>
-          <span className="w-12 text-center font-mono text-base font-bold tabular-nums">
-            {quantite}
-          </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="icon-sm"
-            onClick={() => setQuantite((q) => Math.min(maxAllowed, q + 1))}
-            disabled={pending || quantite >= maxAllowed}
-            aria-label="Augmenter"
-          >
-            <Plus className="size-3" strokeWidth={2} />
-          </Button>
+      <div className="space-y-3">
+        {/* Sélecteur quantité — input éditable + boutons +/− */}
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+            Quantité
+          </label>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              onClick={() => setQuantite((q) => Math.max(1, q - 1))}
+              disabled={pending || quantite <= 1}
+              aria-label="Diminuer"
+            >
+              <Minus className="size-3" strokeWidth={2} />
+            </Button>
+            <Input
+              type="number"
+              min={1}
+              max={maxAllowed}
+              value={quantite}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (!Number.isFinite(v) || v < 1) {
+                  setQuantite(1);
+                } else {
+                  setQuantite(Math.min(maxAllowed, v));
+                }
+              }}
+              onBlur={(e) => {
+                // Si vide ou invalide au blur → reset à 1
+                if (!e.target.value || parseInt(e.target.value, 10) < 1) {
+                  setQuantite(1);
+                }
+              }}
+              disabled={pending}
+              className="h-9 w-20 text-center font-mono text-base font-bold tabular-nums"
+              aria-label="Quantité"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              onClick={() =>
+                setQuantite((q) => Math.min(maxAllowed, q + 1))
+              }
+              disabled={pending || quantite >= maxAllowed}
+              aria-label="Augmenter"
+            >
+              <Plus className="size-3" strokeWidth={2} />
+            </Button>
+
+            {/* Raccourcis quantité courants */}
+            <div className="ml-2 hidden flex-wrap gap-1 sm:flex">
+              {[10, 50, 100].map((preset) => {
+                if (preset > maxAllowed) return null;
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => setQuantite(preset)}
+                    disabled={pending}
+                    className={`rounded-md px-2 py-1 text-xs font-medium transition-colors ${
+                      quantite === preset
+                        ? "bg-[var(--accent)]/15 text-[var(--accent)]"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-glass-hover)]"
+                    }`}
+                  >
+                    {preset}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {stockRestant !== null &&
+            stockRestant !== undefined &&
+            stockRestant > 10 && (
+              <p className="mt-1.5 text-[11px] text-[var(--text-muted)]">
+                Maximum {maxAllowed} en stock
+              </p>
+            )}
         </div>
 
         <Button
@@ -120,14 +177,14 @@ export function AddToCartButton({
           size="lg"
           onClick={handleAdd}
           disabled={pending}
-          className="flex-1"
+          className="w-full"
         >
           {pending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (
             <ShoppingBag className="size-4" strokeWidth={1.75} />
           )}
-          Ajouter au panier
+          Ajouter au panier ({quantite}× article{quantite > 1 ? "s" : ""})
         </Button>
       </div>
     </Card>
