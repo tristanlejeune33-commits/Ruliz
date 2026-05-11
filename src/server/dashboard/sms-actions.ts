@@ -278,6 +278,9 @@ const blastSchema = z.object({
   /** Si fourni : on n'envoie qu'aux clients dont l'id est dans cette liste,
       indépendamment de filterSource. Utilisé pour la sélection manuelle. */
   selectedClientIds: z.array(z.string()).optional(),
+  /** Si fourni et futur : la campagne est créée en status "scheduled" et
+      sera dispatchée par un cron Inngest. Format ISO 8601. */
+  scheduledAt: z.string().optional(),
 });
 
 /**
@@ -325,6 +328,23 @@ export async function sendSmsBlast(input: unknown): Promise<
       ok: false,
       error: "Service SMS temporairement indisponible. Réessaie dans quelques minutes.",
     };
+  }
+
+  // === Parse scheduledAt si fourni ===
+  // Si dans le futur (> +2min pour tolérer un peu de lag) → campagne
+  // créée en status "scheduled" et dispatchée plus tard par le cron Inngest.
+  // Si null ou passé → envoi immédiat.
+  let scheduledDate: Date | null = null;
+  if (parsed.data.scheduledAt) {
+    const d = new Date(parsed.data.scheduledAt);
+    if (Number.isNaN(d.getTime())) {
+      return { ok: false, error: "Date de programmation invalide" };
+    }
+    const minFutureMs = Date.now() + 2 * 60 * 1000; // +2 min minimum
+    if (d.getTime() > minFutureMs) {
+      scheduledDate = d;
+    }
+    // Sinon l'heure programmée est trop proche → envoi immédiat
   }
 
   // === Détermine le nom d'expéditeur (sender) ===
@@ -435,17 +455,45 @@ export async function sendSmsBlast(input: unknown): Promise<
   }
 
   // Crée la campagne
+  // Si scheduledDate est défini → status "scheduled" + scheduled_at, on
+  // ne fait PAS l'envoi maintenant (le cron Inngest s'en chargera).
+  // Sinon → status "sending" et on continue avec l'envoi immédiat ci-dessous.
+  const campaignStatus = scheduledDate ? "scheduled" : "sending";
+  const targetIdsJson =
+    parsed.data.selectedClientIds && parsed.data.selectedClientIds.length > 0
+      ? JSON.stringify(parsed.data.selectedClientIds)
+      : null;
+
   const campaign = (await prisma.$queryRawUnsafe(
     `INSERT INTO sms_campaigns
-       (restaurant_id, title, message_template, target_filter, status)
-     VALUES ($1, $2, $3, $4, 'sending')
+       (restaurant_id, title, message_template, target_filter,
+        target_client_ids, sender_name, status, scheduled_at)
+     VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8)
      RETURNING id`,
     restoBigId,
     parsed.data.title ?? `Campagne ${new Date().toLocaleDateString("fr-FR")}`,
     parsed.data.message,
     parsed.data.filterSource,
+    targetIdsJson,
+    resolvedSender || null,
+    campaignStatus,
+    scheduledDate,
   )) as Array<{ id: bigint }>;
   const campaignId = campaign[0]!.id;
+
+  // === Cas "scheduled" : on s'arrête là, le cron Inngest dispatchera plus tard ===
+  if (scheduledDate) {
+    revalidatePath("/dashboard/sms");
+    return {
+      ok: true,
+      data: {
+        sent: 0,
+        failed: 0,
+        skipped: 0,
+        tokensSpent: 0,
+      },
+    };
+  }
 
   let sent = 0;
   let failed = 0;
@@ -538,6 +586,237 @@ export async function sendSmsBlast(input: unknown): Promise<
   revalidatePath("/dashboard/sms");
 
   return { ok: true, data: { sent, failed, skipped, tokensSpent } };
+}
+
+// ============================================================
+// CAMPAGNES PROGRAMMÉES — dispatch par le cron Inngest
+// ============================================================
+
+/**
+ * Dispatch une campagne programmée arrivée à échéance.
+ * Appelée UNIQUEMENT par le cron Inngest `processScheduledSmsCampaigns`.
+ * Lit toutes les infos depuis la DB (message_template, target_filter,
+ * target_client_ids, sender_name) et envoie les SMS.
+ *
+ * Sécurité : marque la campagne en status "sending" AVANT d'envoyer pour
+ * éviter qu'un autre run du cron la prenne en parallèle.
+ */
+export async function dispatchScheduledCampaign(
+  campaignIdStr: string,
+): Promise<{ sent: number; failed: number; skipped: number }> {
+  await ensureSmsSchema();
+
+  let campaignId: bigint;
+  try {
+    campaignId = BigInt(campaignIdStr);
+  } catch {
+    return { sent: 0, failed: 0, skipped: 0 };
+  }
+
+  // 1. Marque "sending" atomique (refuse si déjà pris)
+  const claimResult = (await prisma.$queryRawUnsafe(
+    `UPDATE sms_campaigns
+     SET status = 'sending'
+     WHERE id = $1 AND status = 'scheduled'
+     RETURNING id, restaurant_id AS "restaurantId", message_template AS "messageTemplate",
+               target_filter AS "targetFilter", target_client_ids AS "targetClientIds",
+               sender_name AS "senderName"`,
+    campaignId,
+  )) as Array<{
+    id: bigint;
+    restaurantId: bigint;
+    messageTemplate: string;
+    targetFilter: string;
+    targetClientIds: string[] | null;
+    senderName: string | null;
+  }>;
+
+  if (claimResult.length === 0) {
+    console.warn(
+      "[sms] dispatchScheduledCampaign: campaign already processed or not found",
+      campaignIdStr,
+    );
+    return { sent: 0, failed: 0, skipped: 0 };
+  }
+
+  const campaign = claimResult[0]!;
+
+  // 2. Lit le nom du resto pour les tags
+  const restoRow = (await prisma.$queryRawUnsafe(
+    `SELECT nom FROM restaurants WHERE id = $1`,
+    campaign.restaurantId,
+  )) as Array<{ nom: string }>;
+  const restoNom = restoRow[0]?.nom ?? "Restaurant";
+
+  // 3. Récupère les destinataires
+  const where: Record<string, unknown> = {
+    restaurantId: campaign.restaurantId,
+    telephone: { not: null },
+  };
+  if (campaign.targetClientIds && campaign.targetClientIds.length > 0) {
+    const bigIds = campaign.targetClientIds
+      .map((id) => {
+        try {
+          return BigInt(id);
+        } catch {
+          return null;
+        }
+      })
+      .filter((x): x is bigint => x !== null);
+    where.id = { in: bigIds };
+  } else if (campaign.targetFilter !== "all") {
+    where.source = campaign.targetFilter;
+  }
+  (where as { optInSms?: boolean }).optInSms = true;
+
+  const recipients = (await prisma.baseClient.findMany({
+    where: where as never,
+    select: { id: true, telephone: true, prenom: true, nom: true } as never,
+  })) as unknown as Array<{
+    id: bigint;
+    telephone: string | null;
+    prenom: string | null;
+    nom?: string | null;
+  }>;
+
+  let sent = 0;
+  let failed = 0;
+  let skipped = 0;
+  let tokensSpent = 0;
+
+  // 4. Envoie chaque SMS
+  for (const r of recipients) {
+    if (!r.telephone) {
+      skipped++;
+      continue;
+    }
+    const normalized = normalizeFrenchPhone(r.telephone);
+    if (!normalized) {
+      skipped++;
+      continue;
+    }
+    const personalized = applyTags(campaign.messageTemplate, {
+      prenom: r.prenom,
+      nom: r.nom,
+      resto: restoNom,
+    });
+    const segments = calcSegments(personalized);
+
+    // Vérifie solde en temps réel
+    const balanceRows = (await prisma.$queryRawUnsafe(
+      `SELECT balance FROM sms_balance WHERE restaurant_id = $1`,
+      campaign.restaurantId,
+    )) as Array<{ balance: number }>;
+    const balance = balanceRows[0]?.balance ?? 0;
+    if (balance < segments) {
+      skipped++;
+      continue;
+    }
+
+    const res = await sendSms({
+      recipient: normalized,
+      content: personalized,
+      ...(campaign.senderName ? { sender: campaign.senderName } : {}),
+    });
+
+    if (res.ok) {
+      sent++;
+      tokensSpent += segments;
+      await prisma.$executeRawUnsafe(
+        `UPDATE sms_balance
+         SET balance = balance - $2, total_spent = total_spent + $2, updated_at = NOW()
+         WHERE restaurant_id = $1`,
+        campaign.restaurantId,
+        segments,
+      );
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO sms_messages
+           (restaurant_id, recipient, content, segments, status, brevo_ref, campaign_id)
+         VALUES ($1, $2, $3, $4, 'sent', $5, $6)`,
+        campaign.restaurantId,
+        normalized,
+        personalized,
+        segments,
+        res.reference ?? null,
+        campaignId,
+      );
+    } else {
+      failed++;
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO sms_messages
+           (restaurant_id, recipient, content, segments, status, error_message, campaign_id)
+         VALUES ($1, $2, $3, $4, 'failed', $5, $6)`,
+        campaign.restaurantId,
+        normalized,
+        personalized,
+        segments,
+        res.error.slice(0, 500),
+        campaignId,
+      );
+    }
+  }
+
+  // 5. Update finaux
+  await prisma.$executeRawUnsafe(
+    `UPDATE sms_campaigns
+     SET total_sent = $2, total_failed = $3, total_skipped = $4,
+         tokens_spent = $5, status = 'sent', sent_at = NOW()
+     WHERE id = $1`,
+    campaignId,
+    sent,
+    failed,
+    skipped,
+    tokensSpent,
+  );
+
+  revalidatePath("/dashboard/sms");
+  return { sent, failed, skipped };
+}
+
+// ============================================================
+// CAMPAGNES PROGRAMMÉES — annulation
+// ============================================================
+
+/**
+ * Annule une campagne dont l'envoi est programmé pour plus tard.
+ * Refuse si la campagne est déjà partie (status !== "scheduled").
+ */
+export async function cancelScheduledSmsCampaign(
+  campaignId: string,
+): Promise<ActionResult> {
+  await ensureSmsSchema();
+  let bigId: bigint;
+  try {
+    bigId = BigInt(campaignId);
+  } catch {
+    return { ok: false, error: "Identifiant invalide" };
+  }
+
+  // Vérifie propriété + statut scheduled
+  const rows = (await prisma.$queryRawUnsafe(
+    `SELECT restaurant_id AS "restaurantId", status
+     FROM sms_campaigns WHERE id = $1`,
+    bigId,
+  )) as Array<{ restaurantId: bigint; status: string }>;
+  if (rows.length === 0) return { ok: false, error: "Campagne introuvable" };
+
+  const owned = await assertRestaurantOwner(rows[0]!.restaurantId);
+  if (!owned) return { ok: false, error: "Accès refusé" };
+
+  if (rows[0]!.status !== "scheduled") {
+    return {
+      ok: false,
+      error: "Cette campagne est déjà envoyée ou en cours, impossible d'annuler.",
+    };
+  }
+
+  await prisma.$executeRawUnsafe(
+    `UPDATE sms_campaigns SET status = 'cancelled' WHERE id = $1`,
+    bigId,
+  );
+
+  revalidatePath("/dashboard/sms");
+  return { ok: true };
 }
 
 // ============================================================
@@ -789,6 +1068,7 @@ export async function listSmsCampaigns(
     tokensSpent: number;
     status: string;
     sentAt: string | null;
+    scheduledAt: string | null;
     createdAt: string;
   }>
 > {
@@ -807,10 +1087,13 @@ export async function listSmsCampaigns(
     `SELECT id, title, message_template AS "messageTemplate",
             total_sent AS "totalSent", total_failed AS "totalFailed",
             total_skipped AS "totalSkipped", tokens_spent AS "tokensSpent",
-            status, sent_at AS "sentAt", created_at AS "createdAt"
+            status, sent_at AS "sentAt", scheduled_at AS "scheduledAt",
+            created_at AS "createdAt"
      FROM sms_campaigns
      WHERE restaurant_id = $1
-     ORDER BY created_at DESC
+     ORDER BY
+       CASE WHEN status = 'scheduled' THEN 0 ELSE 1 END,
+       COALESCE(scheduled_at, created_at) DESC
      LIMIT $2`,
     bigId,
     limit,
@@ -823,6 +1106,7 @@ export async function listSmsCampaigns(
     totalSkipped: number;
     tokensSpent: number;
     status: string;
+    scheduledAt: Date | null;
     sentAt: Date | null;
     createdAt: Date;
   }>;
@@ -831,6 +1115,7 @@ export async function listSmsCampaigns(
     ...r,
     id: r.id.toString(),
     sentAt: r.sentAt ? r.sentAt.toISOString() : null,
+    scheduledAt: r.scheduledAt ? r.scheduledAt.toISOString() : null,
     createdAt: r.createdAt.toISOString(),
   }));
 }

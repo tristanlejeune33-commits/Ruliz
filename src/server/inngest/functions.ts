@@ -282,10 +282,66 @@ export const dailySmsBirthdayAutomation = inngest.createFunction(
   },
 );
 
+/**
+ * Cron toutes les minutes : dispatche les campagnes SMS programmées
+ * dont l'heure d'envoi (scheduled_at) est arrivée.
+ *
+ * Logique :
+ *   1. Liste les campagnes WHERE status='scheduled' AND scheduled_at <= NOW()
+ *   2. Pour chaque : await dispatchScheduledCampaign(id) qui claim atomique
+ *      le statut → envoie → update finaux
+ *
+ * Idempotent : si une campagne est claim par un autre run (race condition),
+ * dispatchScheduledCampaign retourne sans rien faire (UPDATE WHERE status=
+ * 'scheduled' renvoie 0 lignes affectées la 2e fois).
+ */
+export const processScheduledSmsCampaigns = inngest.createFunction(
+  {
+    id: "process-scheduled-sms-campaigns",
+    retries: 1,
+    // Toutes les minutes — granularité fine pour les SMS programmés
+    triggers: [{ cron: "* * * * *" }],
+  },
+  async ({ step }: { step: { run: <T>(name: string, fn: () => Promise<T>) => Promise<T> } }) => {
+    const { prisma } = await import("@/lib/db");
+    const { dispatchScheduledCampaign } = await import(
+      "@/server/dashboard/sms-actions"
+    );
+
+    const dueCampaigns = (await prisma.$queryRawUnsafe(`
+      SELECT id FROM sms_campaigns
+      WHERE status = 'scheduled' AND scheduled_at <= NOW()
+      ORDER BY scheduled_at ASC
+      LIMIT 50
+    `)) as Array<{ id: bigint }>;
+
+    if (dueCampaigns.length === 0) {
+      return { processed: 0 };
+    }
+
+    let totalSent = 0;
+    let totalFailed = 0;
+    for (const c of dueCampaigns) {
+      const result = await step.run(`dispatch-${c.id}`, async () => {
+        return dispatchScheduledCampaign(c.id.toString());
+      });
+      totalSent += result.sent;
+      totalFailed += result.failed;
+    }
+
+    return {
+      processed: dueCampaigns.length,
+      totalSent,
+      totalFailed,
+    };
+  },
+);
+
 export const allFunctions = [
   onProduitUpdated,
   onCategorieUpdated,
   onMenuTranslate,
   onCacheInvalidate,
   dailySmsBirthdayAutomation,
+  processScheduledSmsCampaigns,
 ];

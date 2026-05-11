@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   AlertTriangle,
+  CalendarClock,
   Loader2,
   MessageSquare,
   Send,
@@ -22,6 +23,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -29,12 +31,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   estimateSmsBlast,
   sendSmsBlast,
 } from "@/server/dashboard/sms-actions";
+
+// Formate une date en format datetime-local "YYYY-MM-DDTHH:mm"
+// (format accepté par <input type="datetime-local">).
+function formatDatetimeLocal(d: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 // Nettoie le sender côté client : alphanumérique seulement, max 11 chars,
 // sans accent ni espace. Mêmes règles que le serveur.
@@ -98,6 +108,16 @@ export function SmsBlastForm({
     () => new Set(manualClients.map((c) => c.id)), // tous cochés par défaut
   );
 
+  // Planification : toggle + date/heure (format datetime-local "YYYY-MM-DDTHH:mm")
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduledAtLocal, setScheduledAtLocal] = useState(() => {
+    // Défaut : demain à 10h00 locale
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(10, 0, 0, 0);
+    return formatDatetimeLocal(d);
+  });
+
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -145,6 +165,15 @@ export function SmsBlastForm({
   };
 
   const onSubmit = (values: Values) => {
+    // Si planification active, convertit le datetime-local en ISO UTC
+    let scheduledAtISO: string | undefined = undefined;
+    if (scheduleEnabled && scheduledAtLocal) {
+      const d = new Date(scheduledAtLocal);
+      if (!Number.isNaN(d.getTime())) {
+        scheduledAtISO = d.toISOString();
+      }
+    }
+
     startTransition(async () => {
       const res = await sendSmsBlast({
         restaurantId,
@@ -153,17 +182,25 @@ export function SmsBlastForm({
           values.filterSource === "manual"
             ? Array.from(selectedClientIds)
             : undefined,
+        scheduledAt: scheduledAtISO,
       });
       if (res.ok && res.data) {
-        toast.success(
-          `✅ Envoyés : ${res.data.sent} · ${res.data.tokensSpent} SMS utilisés`,
-        );
+        if (scheduledAtISO) {
+          toast.success(
+            `📅 Campagne programmée pour le ${new Date(scheduledAtISO).toLocaleString("fr-FR", { dateStyle: "medium", timeStyle: "short" })}`,
+          );
+        } else {
+          toast.success(
+            `✅ Envoyés : ${res.data.sent} · ${res.data.tokensSpent} SMS utilisés`,
+          );
+        }
         form.reset({
           title: "",
           message: "",
           filterSource: values.filterSource,
           sender: values.sender,
         });
+        setScheduleEnabled(false);
         setEstimate(null);
       } else if (!res.ok) {
         toast.error(res.error);
@@ -352,6 +389,49 @@ export function SmsBlastForm({
                 currentBalance={currentBalance}
               />
             )}
+
+            {/* === PROGRAMMATION D'ENVOI === */}
+            <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <CalendarClock
+                    className="size-4 text-[var(--accent)]"
+                    strokeWidth={1.75}
+                  />
+                  <div>
+                    <Label className="text-sm font-medium">
+                      Programmer l&apos;envoi
+                    </Label>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      Le SMS partira automatiquement à l&apos;heure choisie
+                      (idéal pour les soirées, brunch dominical, etc.).
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={scheduleEnabled}
+                  onCheckedChange={setScheduleEnabled}
+                />
+              </div>
+              {scheduleEnabled && (
+                <div className="mt-3">
+                  <Label className="text-xs">Date et heure d&apos;envoi</Label>
+                  <Input
+                    type="datetime-local"
+                    value={scheduledAtLocal}
+                    onChange={(e) => setScheduledAtLocal(e.target.value)}
+                    min={formatDatetimeLocal(
+                      new Date(Date.now() + 5 * 60 * 1000),
+                    )}
+                    className="mt-1 font-mono"
+                  />
+                  <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                    Minimum 5 min dans le futur. Tu peux annuler depuis
+                    l&apos;historique tant que l&apos;envoi n&apos;a pas commencé.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* === PREVIEW SMS === */}
@@ -368,12 +448,16 @@ export function SmsBlastForm({
           >
             {pending ? (
               <Loader2 className="size-4 animate-spin" />
+            ) : scheduleEnabled ? (
+              <CalendarClock className="size-4" />
             ) : (
               <Send className="size-4" />
             )}
-            {estimate && estimate.estimatedTokens > 0
-              ? `Envoyer (${estimate.estimatedTokens} SMS)`
-              : "Envoyer"}
+            {scheduleEnabled
+              ? `Programmer (${estimate?.estimatedTokens ?? 0} SMS)`
+              : estimate && estimate.estimatedTokens > 0
+                ? `Envoyer (${estimate.estimatedTokens} SMS)`
+                : "Envoyer"}
           </Button>
         </div>
       </form>

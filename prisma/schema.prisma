@@ -797,17 +797,25 @@ model SmsCampaign {
   messageTemplate String   @map("message_template") @db.Text
   /** Filtre destinataires : "all", "roulette", "manual", ou JSON custom */
   targetFilter    String   @default("all") @map("target_filter") @db.VarChar(100)
+  /** Si sélection manuelle : IDs des clients ciblés (JSON array de strings) */
+  targetClientIds Json?    @map("target_client_ids")
+  /** Nom d'expéditeur custom utilisé pour cette campagne (snapshot) */
+  senderName      String?  @map("sender_name") @db.VarChar(11)
   /** Compteurs finaux après envoi */
   totalSent       Int      @default(0) @map("total_sent")
   totalFailed     Int      @default(0) @map("total_failed")
   totalSkipped    Int      @default(0) @map("total_skipped")
   /** Tokens dépensés (= total_sent × segments_moyens) */
   tokensSpent     Int      @default(0) @map("tokens_spent")
+  /** "draft" / "scheduled" / "sending" / "sent" / "cancelled" / "failed" */
   status          String   @default("draft") @db.VarChar(20)
   createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  /** Date/heure programmée pour l'envoi. null = envoi immédiat. */
+  scheduledAt     DateTime? @map("scheduled_at") @db.Timestamptz()
   sentAt          DateTime? @map("sent_at") @db.Timestamptz()
 
   @@index([restaurantId], map: "idx_sms_campaign_resto")
+  @@index([status, scheduledAt], map: "idx_sms_campaign_scheduled")
   @@map("sms_campaigns")
 }
 

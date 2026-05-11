@@ -106,6 +106,18 @@ export async function ensureRuntimeSchema(): Promise<void> {
       );
     `);
 
+    // Colonnes ajoutées par migration 20260513090000_sms_campaign_scheduling
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "sms_campaigns"
+        ADD COLUMN IF NOT EXISTS "scheduled_at" TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS "target_client_ids" JSONB,
+        ADD COLUMN IF NOT EXISTS "sender_name" VARCHAR(11);
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "idx_sms_campaign_scheduled"
+        ON "sms_campaigns" ("status", "scheduled_at");
+    `);
+
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "sms_automations" (
         "id" BIGSERIAL PRIMARY KEY,
