@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import {
   Activity,
   Building2,
+  Coins,
   Eye,
   Euro,
   ScanLine,
+  ShoppingBag,
   Sparkles,
   TrendingUp,
   Users,
-  UserPlus,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getAdminKpis, getSignupTimeseries } from "@/server/admin/stats";
+import { KpiTile } from "./kpi-tile";
 import { SignupsChart } from "./signups-chart";
 
 export const metadata: Metadata = {
@@ -41,18 +43,38 @@ export default async function AdminHome() {
   ]);
 
   // KPIs business (en haut) — finance + base utilisateurs
+  // Chaque KPI avec `kpi:` est cliquable → ouvre modal graphique 3 ans
   const businessCards = [
     {
       label: "MRR",
       value: formatEuro(kpis.mrr),
       helper: "Hors taxes, basé sur les plans actifs",
       icon: Euro,
+      kpi: "mrr" as const,
+      isMoney: true,
+    },
+    {
+      label: "Revenus Boutique",
+      value: formatEuro(kpis.revenueBoutiqueCentimes / 100),
+      helper: "Cumulé · sets de table, stickers, QR pré-imprimés",
+      icon: ShoppingBag,
+      kpi: "revenueBoutique" as const,
+      isMoney: true,
+    },
+    {
+      label: "Revenus SMS",
+      value: formatEuro(kpis.revenueSmsCentimes / 100),
+      helper: "Cumulé · packs SMS vendus aux restaurateurs",
+      icon: Coins,
+      kpi: "revenueSms" as const,
+      isMoney: true,
     },
     {
       label: "Clients actifs",
       value: formatNumber(kpis.activeClients),
       helper: `${formatNumber(kpis.newClients7d)} nouveaux 7j`,
       icon: Users,
+      kpi: "signups" as const,
     },
     {
       label: "Restaurants",
@@ -75,24 +97,27 @@ export default async function AdminHome() {
       value: formatNumber(kpis.scans24h),
       helper: "Aujourd'hui",
       icon: Activity,
+      kpi: "scans" as const,
     },
     {
       label: "Scans 7j",
       value: formatNumber(kpis.scans7d),
       helper: `${formatNumber(kpis.uniqueVisitors7d)} visiteurs uniques`,
       icon: TrendingUp,
+      kpi: "scans" as const,
     },
     {
-      label: "Scans 30j",
-      value: formatNumber(kpis.scans30d),
-      helper: `${formatNumber(kpis.uniqueVisitors30d)} visiteurs uniques`,
-      icon: ScanLine,
+      label: "Visiteurs uniques",
+      value: formatNumber(kpis.uniqueVisitors30d),
+      helper: "Sur les 30 derniers jours",
+      icon: Eye,
+      kpi: "uniqueVisitors" as const,
     },
     {
       label: "Impressions",
       value: formatNumber(kpis.impressions),
       helper: "Total cumulé depuis le lancement",
-      icon: Eye,
+      icon: ScanLine,
     },
   ];
 
@@ -120,6 +145,12 @@ export default async function AdminHome() {
               value={c.value}
               helper={c.helper}
               Icon={c.icon}
+              kpi={"kpi" in c ? c.kpi : undefined}
+              isMoney={
+                "isMoney" in c && typeof c.isMoney === "boolean"
+                  ? c.isMoney
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -138,6 +169,12 @@ export default async function AdminHome() {
               value={c.value}
               helper={c.helper}
               Icon={c.icon}
+              kpi={"kpi" in c ? c.kpi : undefined}
+              isMoney={
+                "isMoney" in c && typeof c.isMoney === "boolean"
+                  ? c.isMoney
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -158,27 +195,5 @@ export default async function AdminHome() {
   );
 }
 
-function KpiTile({
-  label,
-  value,
-  helper,
-  Icon,
-}: {
-  label: string;
-  value: string;
-  helper: string;
-  Icon: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <Card>
-      <CardHeader className="flex-row items-start justify-between gap-4 space-y-0 pb-2">
-        <CardDescription>{label}</CardDescription>
-        <Icon className="size-4 text-[var(--text-muted)]" />
-      </CardHeader>
-      <CardContent>
-        <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
-        <p className="mt-1 text-xs text-[var(--text-muted)]">{helper}</p>
-      </CardContent>
-    </Card>
-  );
-}
+// KpiTile (cliquable + modal graphique 3 ans) déplacé dans ./kpi-tile.tsx
+// pour pouvoir être un Client Component avec Dialog Radix.

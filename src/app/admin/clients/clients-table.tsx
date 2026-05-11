@@ -8,8 +8,10 @@ import { fr } from "date-fns/locale";
 import {
   ArrowUpDown,
   Download,
+  Eye,
   KeyRound,
   MoreHorizontal,
+  ScanLine,
   Search,
   ShieldOff,
   Sparkles,
@@ -223,24 +225,40 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[26%]">Client</TableHead>
-            <TableHead className="w-[22%]">Restaurants</TableHead>
-            <TableHead className="w-[14%]">Statut</TableHead>
-            <TableHead className="w-[10%]">Démo</TableHead>
-            <TableHead className="w-[16%]">
+            <TableHead className="w-[20%]">Client</TableHead>
+            <TableHead className="w-[18%]">Restaurants</TableHead>
+            <TableHead className="w-[10%] text-right">
+              <span className="inline-flex items-center justify-end gap-1.5">
+                Revenus
+              </span>
+            </TableHead>
+            <TableHead className="w-[10%] text-right">
+              <span className="inline-flex items-center justify-end gap-1.5">
+                <Eye className="size-3" />
+                Vues uniques
+              </span>
+            </TableHead>
+            <TableHead className="w-[10%] text-right">
+              <span className="inline-flex items-center justify-end gap-1.5">
+                <ScanLine className="size-3" />
+                Scans
+              </span>
+            </TableHead>
+            <TableHead className="w-[10%]">Statut</TableHead>
+            <TableHead className="w-[8%]">Démo</TableHead>
+            <TableHead className="w-[10%]">
               <span className="inline-flex items-center gap-1.5">
                 Inscrit
                 <ArrowUpDown className="size-3" />
               </span>
             </TableHead>
-            <TableHead className="w-[8%]">Connexion</TableHead>
             <TableHead className="w-[4%] sr-only">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {sortedClients.length === 0 && (
             <TableRow>
-              <TableCell colSpan={7} className="py-12 text-center text-sm text-[var(--text-muted)]">
+              <TableCell colSpan={9} className="py-12 text-center text-sm text-[var(--text-muted)]">
                 Aucun client trouvé.
               </TableCell>
             </TableRow>
@@ -279,6 +297,45 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
                   )}
                 </div>
               </TableCell>
+              <TableCell className="text-right">
+                <span
+                  className={`font-mono text-sm tabular-nums ${
+                    (client.revenueCentimes ?? 0) > 0
+                      ? "font-semibold text-[var(--neon-success)]"
+                      : "text-[var(--text-muted)]"
+                  }`}
+                >
+                  {(client.revenueCentimes ?? 0) > 0
+                    ? `${((client.revenueCentimes ?? 0) / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}`
+                    : "—"}
+                </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <span
+                  className={`font-mono text-sm tabular-nums ${
+                    (client.scansUniques ?? 0) > 0
+                      ? "text-[var(--neon-cyan)]"
+                      : "text-[var(--text-muted)]"
+                  }`}
+                >
+                  {(client.scansUniques ?? 0) > 0
+                    ? (client.scansUniques ?? 0).toLocaleString("fr-FR")
+                    : "—"}
+                </span>
+              </TableCell>
+              <TableCell className="text-right">
+                <span
+                  className={`font-mono text-sm tabular-nums ${
+                    (client.scansTotal ?? 0) > 0
+                      ? "text-[var(--text-primary)]"
+                      : "text-[var(--text-muted)]"
+                  }`}
+                >
+                  {(client.scansTotal ?? 0) > 0
+                    ? (client.scansTotal ?? 0).toLocaleString("fr-FR")
+                    : "—"}
+                </span>
+              </TableCell>
               <TableCell>
                 <StatusBadge statut={client.statut as Statut} />
               </TableCell>
@@ -294,16 +351,6 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
               <TableCell>
                 <span className="text-sm text-[var(--text-secondary)]">
                   {format(new Date(client.createdAt), "d MMM yyyy", { locale: fr })}
-                </span>
-              </TableCell>
-              <TableCell>
-                <span className="text-xs text-[var(--text-muted)]">
-                  {client.lastLoginAt
-                    ? formatDistanceToNow(new Date(client.lastLoginAt), {
-                        addSuffix: true,
-                        locale: fr,
-                      })
-                    : "Jamais"}
                 </span>
               </TableCell>
               <TableCell>
