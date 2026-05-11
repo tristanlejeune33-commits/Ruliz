@@ -426,24 +426,6 @@ export function ProduitDialog({
                       />
                     </div>
                   )}
-                  <FormField
-                    control={form.control}
-                    name="origine"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs">Origine (ISO 2)</FormLabel>
-                        <FormControl>
-                          <Input
-                            maxLength={2}
-                            placeholder="FR"
-                            className="uppercase"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
-                          />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
                 </div>
 
                 {/* Vignettes */}

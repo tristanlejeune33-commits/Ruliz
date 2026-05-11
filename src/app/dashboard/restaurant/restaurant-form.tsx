@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useRef, useTransition } from "react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -693,21 +693,14 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
           </TabsContent>
         </Tabs>
 
-        {/* Indicateur auto-save discret en bas — pas de bouton "Enregistrer
-            maintenant" car la sauvegarde se déclenche automatiquement 1.5s
-            après chaque modification. L'indicateur montre l'état : idle /
-            saving / saved / error. */}
-        <div
-          className="sticky z-10 flex justify-end rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)]/85 p-3 backdrop-blur-md lg:bottom-4"
-          style={{
-            bottom: "calc(64px + env(safe-area-inset-bottom) + 12px)",
-          }}
-        >
-          <AutoSaveIndicator
-            status={autoSaveStatus}
-            errorMessage={autoSaveError}
-          />
-        </div>
+        {/* Auto-save 100% silencieux — la sauvegarde se déclenche 1.5s
+            après chaque modification. La bar visuelle a été retirée car
+            elle était quasi-vide (juste un statut idle invisible). En cas
+            d'erreur, l'AutoSaveErrorToast affiche un toast Sonner rouge. */}
+        <AutoSaveErrorToast
+          status={autoSaveStatus}
+          errorMessage={autoSaveError}
+        />
       </form>
     </Form>
   );
@@ -871,4 +864,31 @@ function ColorField({
       }}
     />
   );
+}
+
+/**
+ * Toast silencieux qui apparaît uniquement quand l'auto-save échoue.
+ * Évite d'afficher en permanence une barre visuelle "auto-save status"
+ * qui prenait de la place pour rien quand tout va bien (cas le plus
+ * fréquent).
+ */
+function AutoSaveErrorToast({
+  status,
+  errorMessage,
+}: {
+  status: import("@/lib/use-auto-save").AutoSaveStatus;
+  errorMessage: string;
+}) {
+  const lastShownRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (status === "error" && errorMessage && lastShownRef.current !== errorMessage) {
+      toast.error(`Auto-save échouée : ${errorMessage}`);
+      lastShownRef.current = errorMessage;
+    }
+    if (status === "saved") {
+      // Reset pour permettre au prochain message d'erreur de s'afficher
+      lastShownRef.current = null;
+    }
+  }, [status, errorMessage]);
+  return null;
 }
