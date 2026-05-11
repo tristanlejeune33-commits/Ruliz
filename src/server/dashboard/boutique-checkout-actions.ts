@@ -98,7 +98,15 @@ export async function createBoutiqueCheckoutSession(
   // Construit les line_items : préfère le priceId synchronisé, fallback
   // sur price_data dynamique pour les produits non encore synchronisés
   // (compatibilité avec les anciens produits ou si Stripe vient d'être configuré).
-  const lineItems = commande.items.map((item) => {
+  const lineItems: Array<{
+    price?: string;
+    price_data?: {
+      currency: string;
+      product_data: { name: string; images?: string[]; metadata?: Record<string, string> };
+      unit_amount: number;
+    };
+    quantity: number;
+  }> = commande.items.map((item) => {
     if (item.produit.stripePriceId) {
       return {
         price: item.produit.stripePriceId,
@@ -120,6 +128,29 @@ export async function createBoutiqueCheckoutSession(
       quantity: item.quantite,
     };
   });
+
+  // Ajoute une ligne "Frais de port" si la commande en a (snapshot au moment
+  // de la création). On lit shipping_centimes via SQL brut car le client
+  // Prisma peut ne pas avoir le champ régénéré.
+  const shippingRows = (await prisma.$queryRawUnsafe(
+    `SELECT shipping_centimes AS "shippingCentimes" FROM boutique_commandes WHERE id = $1`,
+    bigId,
+  ).catch(() => [])) as Array<{ shippingCentimes: number }>;
+  const shippingCentimes = shippingRows[0]?.shippingCentimes ?? 0;
+  if (shippingCentimes > 0) {
+    const devise = commande.items[0]?.produit.devise ?? "EUR";
+    lineItems.push({
+      price_data: {
+        currency: devise.toLowerCase(),
+        product_data: {
+          name: "Frais de port",
+          metadata: { ruliz_shipping: "true" },
+        },
+        unit_amount: shippingCentimes,
+      },
+      quantity: 1,
+    });
+  }
 
   const appUrl = getAppUrl();
   const session = await stripe.checkout.sessions.create({

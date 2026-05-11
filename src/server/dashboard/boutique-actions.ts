@@ -154,8 +154,18 @@ export async function createBoutiqueCommande(
     };
   });
 
-  const totalCentimes = itemsData.reduce((s, i) => s + i.totalCentimes, 0);
+  const subtotalCentimes = itemsData.reduce((s, i) => s + i.totalCentimes, 0);
   const devise = produits[0]?.devise ?? "EUR";
+
+  // Calcule les frais de port selon la config admin (0 si désactivé ou si
+  // sous-total >= seuil "livraison offerte"). Le montant est snapshoté sur
+  // la commande pour cohérence (ne change pas si l'admin modifie le tarif
+  // après la création).
+  const { calcShippingCentimes } = await import(
+    "@/server/admin/boutique/shipping-actions"
+  );
+  const shippingCentimes = await calcShippingCentimes(subtotalCentimes);
+  const totalCentimes = subtotalCentimes + shippingCentimes;
 
   const created = await prisma.boutiqueCommande.create({
     data: {
@@ -174,8 +184,23 @@ export async function createBoutiqueCommande(
       items: {
         create: itemsData,
       },
-    },
+    } as never,
   });
+
+  // shipping_centimes ajouté en post-create via SQL brut car le client
+  // Prisma local n'a pas régénéré le champ (lock Windows EPERM bloque
+  // prisma generate). Idempotent : update no-op si la colonne n'existe pas.
+  if (shippingCentimes > 0) {
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE boutique_commandes SET shipping_centimes = $1 WHERE id = $2`,
+        shippingCentimes,
+        created.id,
+      );
+    } catch (err) {
+      console.warn("[boutique] persist shipping_centimes failed:", err);
+    }
+  }
 
   // Vide le panier
   await clearCartAction().catch((e) =>

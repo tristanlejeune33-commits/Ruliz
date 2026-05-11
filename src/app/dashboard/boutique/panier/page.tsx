@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import { getActingUserId } from "@/lib/impersonation";
 import { serialize } from "@/lib/serialize";
 import { getHydratedCart } from "@/server/dashboard/boutique-queries";
+import { getShippingSettings } from "@/server/admin/boutique/shipping-actions";
 import { CartView } from "./cart-view";
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export const metadata: Metadata = {
 
 export default async function PanierPage() {
   const cart = await getHydratedCart();
+  const shipping = await getShippingSettings();
 
   // Restaurants + adresse user pour le checkout
   const acting = await getActingUserId();
@@ -104,6 +106,7 @@ export default async function PanierPage() {
             pays: userProfile?.pays ?? "France",
             telephone: userProfile?.telephone ?? "",
           }}
+          shipping={shipping}
         />
       )}
     </div>

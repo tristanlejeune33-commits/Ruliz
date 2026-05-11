@@ -144,6 +144,31 @@ export async function ensureRuntimeSchema(): Promise<void> {
       );
     `);
 
+    // === Boutique : frais de port (config globale, 1 seule ligne id=1) ===
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "boutique_shipping_settings" (
+        "id" INTEGER PRIMARY KEY DEFAULT 1,
+        "fee_centimes" INTEGER NOT NULL DEFAULT 590,
+        "free_threshold_centimes" INTEGER NOT NULL DEFAULT 0,
+        "label" VARCHAR(100) NOT NULL DEFAULT 'Frais de port France métropolitaine',
+        "active" BOOLEAN NOT NULL DEFAULT TRUE,
+        "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        CHECK ("id" = 1)
+      );
+    `);
+    // Seed la ligne par défaut si vide
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "boutique_shipping_settings" (id, fee_centimes, free_threshold_centimes, label, active)
+      VALUES (1, 590, 0, 'Frais de port France métropolitaine', TRUE)
+      ON CONFLICT (id) DO NOTHING;
+    `);
+
+    // Ajout colonne frais_port_centimes sur boutique_commandes (snapshot au moment de la création)
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "boutique_commandes"
+        ADD COLUMN IF NOT EXISTS "shipping_centimes" INTEGER NOT NULL DEFAULT 0;
+    `);
+
     runtimeSchemaEnsured = true;
   } catch (err) {
     console.warn(

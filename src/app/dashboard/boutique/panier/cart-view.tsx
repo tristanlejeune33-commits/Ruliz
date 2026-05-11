@@ -67,6 +67,12 @@ interface CartViewProps {
     pays: string;
     telephone: string;
   };
+  shipping: {
+    feeCentimes: number;
+    freeThresholdCentimes: number;
+    label: string;
+    active: boolean;
+  };
 }
 
 const NONE = "__none__";
@@ -88,16 +94,30 @@ export function CartView({
   items,
   restaurants,
   defaultLivraison,
+  shipping,
 }: CartViewProps) {
   const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const [submitting, setSubmitting] = useState(false);
 
-  const totalCentimes = useMemo(
+  const subtotalCentimes = useMemo(
     () => items.reduce((s, i) => s + i.totalCentimes, 0),
     [items],
   );
+  // Calcul shipping côté client (mirror du calcShippingCentimes serveur).
+  // Si le seuil "livraison offerte" est atteint OU shipping désactivé → 0€.
+  const shippingCentimes = useMemo(() => {
+    if (!shipping.active) return 0;
+    if (
+      shipping.freeThresholdCentimes > 0 &&
+      subtotalCentimes >= shipping.freeThresholdCentimes
+    ) {
+      return 0;
+    }
+    return shipping.feeCentimes;
+  }, [shipping, subtotalCentimes]);
+  const totalCentimes = subtotalCentimes + shippingCentimes;
   const devise = items[0]?.produit.devise ?? "EUR";
 
   const updateQty = (produitId: string, newQty: number) => {
@@ -390,6 +410,59 @@ export function CartView({
                 </FormItem>
               )}
             />
+
+            {/* Récap chiffré : sous-total + frais de port + total */}
+            <div className="space-y-1.5 border-t border-[var(--border-glass)] pt-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-[var(--text-secondary)]">Sous-total</span>
+                <span className="font-mono tabular-nums text-[var(--text-primary)]">
+                  {(subtotalCentimes / 100).toLocaleString("fr-FR", {
+                    style: "currency",
+                    currency: devise,
+                  })}
+                </span>
+              </div>
+              {shipping.active && (
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[var(--text-secondary)]">
+                    {shipping.label}
+                  </span>
+                  {shippingCentimes === 0 ? (
+                    <span className="font-mono tabular-nums font-semibold text-[var(--neon-success)]">
+                      Offerts ✓
+                    </span>
+                  ) : (
+                    <span className="font-mono tabular-nums text-[var(--text-primary)]">
+                      +{" "}
+                      {(shippingCentimes / 100).toLocaleString("fr-FR", {
+                        style: "currency",
+                        currency: devise,
+                      })}
+                    </span>
+                  )}
+                </div>
+              )}
+              {shipping.active &&
+                shipping.freeThresholdCentimes > 0 &&
+                shippingCentimes > 0 && (
+                  <p className="text-[10px] text-[var(--text-tertiary)]">
+                    💡 Livraison offerte à partir de{" "}
+                    {(shipping.freeThresholdCentimes / 100).toLocaleString(
+                      "fr-FR",
+                      { style: "currency", currency: devise },
+                    )}{" "}
+                    (encore{" "}
+                    {(
+                      (shipping.freeThresholdCentimes - subtotalCentimes) /
+                      100
+                    ).toLocaleString("fr-FR", {
+                      style: "currency",
+                      currency: devise,
+                    })}
+                    )
+                  </p>
+                )}
+            </div>
 
             <div className="flex items-center justify-between border-t border-[var(--border-glass)] pt-3">
               <div>

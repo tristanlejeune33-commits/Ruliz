@@ -12,16 +12,19 @@ import {
   getBoutiqueAdminStats,
   listBoutiqueProduitsAdmin,
 } from "@/server/admin/boutique/queries";
+import { getShippingSettings } from "@/server/admin/boutique/shipping-actions";
 import { BoutiqueAdminView } from "./boutique-admin-view";
+import { ShippingEditor } from "./shipping-editor";
 
 export const metadata: Metadata = {
   title: "Boutique QR · Admin Ruliz",
 };
 
 export default async function AdminBoutiquePage() {
-  const [produits, stats] = await Promise.all([
+  const [produits, stats, shipping] = await Promise.all([
     listBoutiqueProduitsAdmin(),
     getBoutiqueAdminStats(),
+    getShippingSettings(),
   ]);
 
   return (
@@ -86,6 +89,9 @@ export default async function AdminBoutiquePage() {
       />
 
       <BoutiqueAdminView produits={serialize(produits)} />
+
+      {/* === Paramètres frais de port === */}
+      <ShippingEditor initial={shipping} />
     </div>
   );
 }
