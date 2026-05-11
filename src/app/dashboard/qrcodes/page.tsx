@@ -8,6 +8,7 @@ import {
   Sparkles,
   Truck,
 } from "lucide-react";
+import { Logo } from "@/components/shared/logo";
 import {
   HeroEyebrow,
   HeroKpi,
@@ -91,33 +92,38 @@ export default async function QrcodesPage() {
             </linearGradient>
           </defs>
 
-          {/* Bande BLEUE — wave en cubic bezier (vague vers la droite haut, gauche bas) */}
+          {/* Bande BLEUE — wave bleu/blanc descend de (410,0) à (420,400)
+              avec CPs (460,100) et (360,280) */}
           <path
             d="M 0,0 L 410,0 C 460,100 360,280 420,400 L 0,400 Z"
             fill="url(#cta-bleu)"
             filter="url(#flag-shadow)"
           />
-          {/* Bande BLANCHE — fit entre les 2 waves */}
+          {/* Bande BLANCHE — bord gauche = même courbe que bord droit du
+              bleu (matchent). Bord droit = REVERSE de la courbe blanc/rouge
+              du rouge → CPs swapés (750,280) puis (850,100) pour remonter
+              de (790,400) à (800,0). Sans ce swap, les courbes ne fittent
+              pas et un trou apparaît visuellement entre blanc et rouge. */}
           <path
-            d="M 410,0 C 460,100 360,280 420,400 L 790,400 C 850,280 750,100 800,0 Z"
+            d="M 410,0 C 460,100 360,280 420,400 L 790,400 C 750,280 850,100 800,0 Z"
             fill="url(#cta-blanc)"
             filter="url(#flag-shadow)"
           />
-          {/* Bande ROUGE — wave miroir */}
+          {/* Bande ROUGE — bord gauche descend de (800,0) à (790,400) avec
+              CPs (850,100) et (750,280) */}
           <path
             d="M 800,0 C 850,100 750,280 790,400 L 1200,400 L 1200,0 Z"
             fill="url(#cta-rouge)"
             filter="url(#flag-shadow)"
           />
 
-          {/* Reflets subtils sur les courbes : highlight sur la transition bleu/blanc */}
+          {/* Reflets subtils sur les courbes */}
           <path
             d="M 410,0 C 460,100 360,280 420,400"
             stroke="rgba(255,255,255,0.35)"
             strokeWidth="2"
             fill="none"
           />
-          {/* Ombre douce sur la transition blanc/rouge (côté blanc) */}
           <path
             d="M 800,0 C 850,100 750,280 790,400"
             stroke="rgba(0,0,0,0.15)"
@@ -145,9 +151,15 @@ export default async function QrcodesPage() {
 
         <div className="relative flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-8">
           <div className="flex-1">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
-              <Sparkles className="size-3" strokeWidth={2} />
-              🇫🇷 Made in France
+            {/* Logo Ruliz + badge Made in France sur la même ligne */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex size-11 items-center justify-center rounded-xl bg-white/15 p-1.5 ring-1 ring-white/30 backdrop-blur-sm">
+                <Logo variant="mark" inverted className="size-7" />
+              </div>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-white/40 bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white backdrop-blur-sm">
+                <Sparkles className="size-3" strokeWidth={2} />
+                🇫🇷 Made in France
+              </div>
             </div>
 
             <h2 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
