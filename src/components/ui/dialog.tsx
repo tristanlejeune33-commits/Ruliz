@@ -45,14 +45,16 @@ const DialogContent = React.forwardRef<
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed z-50 flex flex-col border border-[var(--border-subtle)] bg-[var(--bg-card)] shadow-2xl outline-none",
-        // === Mobile : bottom sheet ===
-        "inset-x-0 bottom-0 max-h-[92dvh] w-full rounded-t-2xl pt-5",
+        // Fond solide --bg-popover-solid (opaque dans les 2 thèmes) pour
+        // garantir l'opacité, peu importe le fond du body.
+        "fixed z-50 flex flex-col border border-[var(--border-glass-hover)] bg-[var(--bg-popover-solid)] shadow-2xl outline-none",
+        // === Mobile : bottom sheet plein-écran ===
+        "inset-x-0 bottom-0 max-h-[95dvh] w-full rounded-t-2xl pt-5",
         "safe-bottom-min-5",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         // === Desktop ≥ lg : modale centrée ===
-        "lg:inset-x-auto lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:max-h-[85vh] lg:max-w-lg lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-xl lg:p-6 lg:pt-6 lg:pb-6",
+        "lg:inset-x-auto lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:max-h-[90vh] lg:max-w-lg lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-xl lg:p-6 lg:pt-6 lg:pb-6",
         "lg:data-[state=closed]:slide-out-to-left-1/2 lg:data-[state=closed]:slide-out-to-top-[48%] lg:data-[state=open]:slide-in-from-left-1/2 lg:data-[state=open]:slide-in-from-top-[48%]",
         "lg:data-[state=open]:zoom-in-95 lg:data-[state=closed]:zoom-out-95",
         // Animations communes

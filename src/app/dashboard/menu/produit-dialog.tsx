@@ -186,22 +186,21 @@ export function ProduitDialog({
     flatCategories.find((c) => c.id === id);
 
   return (
+    // DialogContent gère déjà : scroll interne, sticky header/footer,
+    // bottom sheet mobile / modale desktop, bg opaque. On retire le
+    // ScrollArea custom et on laisse le wrapper interne du DialogContent
+    // (overflow-y-auto + px-5 mobile / px-0 lg) gérer le scroll.
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl gap-0 p-0">
-        <DialogHeader className="border-b border-[var(--border-subtle)] p-6">
+      <DialogContent className="lg:max-w-3xl">
+        <DialogHeader>
           <DialogTitle>{isEdit ? produit.titre : "Nouveau produit"}</DialogTitle>
-          <DialogDescription>
-            Toute modification supprime les traductions cachées — elles seront
-            re-générées par Anthropic à la prochaine consultation.
-          </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[70vh]">
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(onSubmit)}
-              className="grid gap-6 p-6 md:grid-cols-[200px_1fr]"
-            >
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid gap-6 md:grid-cols-[200px_1fr]"
+          >
               {/* Image */}
               <div>
                 <Label className="mb-2 block">Photo</Label>
@@ -538,11 +537,10 @@ export function ProduitDialog({
                   </div>
                 </details>
               </div>
-            </form>
-          </Form>
-        </ScrollArea>
+          </form>
+        </Form>
 
-        <div className="flex items-center justify-between gap-3 border-t border-[var(--border-subtle)] p-4">
+        <div className="flex items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-4">
           {isEdit ? (
             <AlertDialog>
               <AlertDialogTrigger asChild>

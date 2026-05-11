@@ -76,40 +76,51 @@ export function ProduitSheet({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative flex max-h-[85vh] w-full max-w-md flex-col overflow-y-auto rounded-[10px] p-[15px] md:max-w-2xl"
+            className="relative flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-[10px] md:max-w-2xl"
             style={{
               backgroundColor: theme.cardBody,
               boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
               color: theme.textBody,
             }}
           >
+            {/* Bouton X fixe en haut-droit, hors du scroll → reste cliquable
+                même quand on scrolle le contenu. Touch target 44×44 (Apple HIG)
+                + fond blanc opaque obligatoire pour rester visible sur tous
+                les thèmes resto. */}
             <button
               type="button"
               onClick={onClose}
-              className="absolute right-2.5 top-2.5 z-10 rounded-full p-1.5 transition-colors hover:bg-black/10"
-              style={{ color: theme.textBody }}
+              className="absolute right-3 top-3 z-[10] flex size-11 items-center justify-center rounded-full shadow-md transition-transform active:scale-95"
+              style={{
+                backgroundColor: "#ffffff",
+                color: "#000000",
+              }}
               aria-label="Fermer"
             >
-              <X className="size-6" />
+              <X className="size-5" strokeWidth={2} />
             </button>
 
-            <DishDetail
-              produit={produit}
-              theme={theme}
-              deviseDefault={deviseDefault}
-              lang={lang}
-            />
-
-            {/* À marier avec : suggestions */}
-            {suggestions.length > 0 && (
-              <Suggestions
-                suggestions={suggestions}
-                onOpenSuggestion={onOpenSuggestion}
+            {/* Zone scrollable interne — séparée du button X pour qu'il
+                reste visible et cliquable en permanence. */}
+            <div className="flex-1 overflow-y-auto p-[15px]">
+              <DishDetail
+                produit={produit}
                 theme={theme}
                 deviseDefault={deviseDefault}
                 lang={lang}
               />
-            )}
+
+              {/* À marier avec : suggestions */}
+              {suggestions.length > 0 && (
+                <Suggestions
+                  suggestions={suggestions}
+                  onOpenSuggestion={onOpenSuggestion}
+                  theme={theme}
+                  deviseDefault={deviseDefault}
+                  lang={lang}
+                />
+              )}
+            </div>
           </motion.div>
         </motion.div>
       )}

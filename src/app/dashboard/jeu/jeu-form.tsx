@@ -84,29 +84,20 @@ const DEFAULT_LOTS: Array<{
   { label: "🎁 Menu offert pour 2", probabilite: 5, imageUrl: "" },
 ];
 
-/** Liste d'emojis populaires pour les lots de roulette — quick-insert dans le label. */
-const LOT_EMOJIS = [
-  "🎁",
-  "☕",
-  "🍰",
-  "🍹",
-  "🍷",
-  "🥂",
-  "🍕",
-  "🍔",
-  "🥗",
-  "🍝",
-  "🍣",
-  "🌮",
-  "🍦",
-  "🍩",
-  "🎉",
-  "🌟",
-  "💝",
-  "💸",
-  "🎯",
-  "🏆",
-] as const;
+/**
+ * Extrait le premier emoji présent au début d'un label.
+ * Ex: "🎁 Café offert" → "🎁"
+ * Ex: "Bon d'achat" → ""
+ *
+ * Utilisé par le picker emoji natif pour afficher l'emoji actuel dans l'input
+ * sans afficher le reste du texte du label.
+ */
+function extractEmojiFromLabel(label: string): string {
+  const match = label.match(
+    /^([\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+)/u,
+  );
+  return match ? match[1] ?? "" : "";
+}
 
 export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
   const router = useRouter();
@@ -523,38 +514,53 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                     </Button>
                   </div>
 
-                  {/* Sélecteur d'emoji rapide — insère l'emoji choisi au début
-                      du label du lot. Plus simple qu'un upload d'image et
-                      cohérent avec la roulette qui extrait l'emoji du label. */}
+                  {/* Sélecteur d'emoji NATIF — utilise le picker système
+                      (Windows Win+. / macOS Cmd+Ctrl+Space / iOS et Android
+                      affichent automatiquement leur clavier emoji quand le
+                      focus tombe sur un input avec inputMode="text" qui
+                      contient déjà un emoji).
+                      L'utilisateur tape un emoji directement → injecté au
+                      début du label. Accès à toute la palette système, pas
+                      besoin de hardcoder une liste limitée. */}
                   <FormField
                     control={form.control}
                     name={`lots.${i}.label`}
                     render={({ field }) => (
                       <FormItem className="mt-2">
-                        <div className="flex flex-wrap items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                             Emoji :
                           </span>
-                          {LOT_EMOJIS.map((emoji) => (
-                            <button
-                              key={emoji}
-                              type="button"
-                              onClick={() => {
-                                // Si label commence déjà par un emoji (caractère
-                                // non-ASCII en première position), on le remplace
-                                const current = field.value || "";
-                                const stripped = current.replace(
-                                  /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u,
-                                  "",
-                                );
-                                field.onChange(`${emoji} ${stripped}`.trim());
-                              }}
-                              className="flex size-8 items-center justify-center rounded-md border border-[var(--border-glass)] bg-[var(--bg-elevated)] text-lg transition-colors hover:bg-[var(--bg-glass-hover)] hover:border-[var(--border-glass-hover)]"
-                              aria-label={`Insérer ${emoji}`}
-                            >
-                              {emoji}
-                            </button>
-                          ))}
+                          <input
+                            type="text"
+                            value={extractEmojiFromLabel(field.value || "")}
+                            onChange={(e) => {
+                              const v = e.target.value;
+                              // Garde le premier emoji uniquement
+                              const match = v.match(
+                                /[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u,
+                              );
+                              const newEmoji = match ? match[0] : "";
+                              const current = field.value || "";
+                              const stripped = current.replace(
+                                /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u,
+                                "",
+                              );
+                              field.onChange(
+                                newEmoji ? `${newEmoji} ${stripped}`.trim() : stripped,
+                              );
+                            }}
+                            placeholder="🎁"
+                            maxLength={4}
+                            className="flex h-9 w-14 items-center justify-center rounded-md border border-[var(--border-glass-hover)] bg-[var(--bg-elevated)] text-center text-lg outline-none focus:border-[var(--accent)]"
+                            aria-label="Emoji du lot — utilise le clavier emoji système"
+                          />
+                          <p className="text-[10px] text-[var(--text-tertiary)]">
+                            {/* Hint contextuel pour l'utilisateur */}
+                            <kbd className="font-mono">Win+.</kbd> ou{" "}
+                            <kbd className="font-mono">⌘⌃␣</kbd> pour ouvrir le
+                            picker
+                          </p>
                         </div>
                       </FormItem>
                     )}
