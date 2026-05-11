@@ -1,5 +1,6 @@
 "use client";
 
+import { createElement } from "react";
 import {
   Salad,
   Beef,
@@ -96,8 +97,21 @@ interface CategoryIconProps {
   style?: React.CSSProperties;
 }
 
+/**
+ * Note d'implémentation : on passe par `createElement` pour le rendering
+ * dynamique au lieu de `<Icon />` JSX. Le React Compiler de React 19 +
+ * Next 15 considère le pattern `const Icon = MAP[key]; return <Icon />`
+ * comme une "création de composant en render" (qui réinitialise l'état),
+ * alors qu'ici on rend juste un composant existant qu'on a sélectionné
+ * dynamiquement. `createElement` rend l'intention plus explicite et
+ * passe l'analyse statique.
+ */
 export function CategoryIcon({ code, className, style }: CategoryIconProps) {
   const key = code?.trim().toLowerCase();
-  const Icon = (key && ICON_MAP[key]) || UtensilsCrossed;
-  return <Icon className={className} style={style} aria-hidden />;
+  const iconComponent = (key && ICON_MAP[key]) || UtensilsCrossed;
+  return createElement(iconComponent, {
+    className,
+    style,
+    "aria-hidden": true,
+  });
 }

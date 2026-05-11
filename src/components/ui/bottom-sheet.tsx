@@ -26,8 +26,11 @@ import { cn } from "@/lib/utils";
  * gérer manuellement.
  */
 
-interface BottomSheetProps
-  extends React.ComponentProps<typeof Vaul.Root> {
+interface BottomSheetProps {
+  /** État ouvert/fermé. Sheet controlled. */
+  open?: boolean;
+  /** Callback de changement d'état (ouverture/fermeture). */
+  onOpenChange?: (open: boolean) => void;
   /** Snap points fractionnels (0 → 1 = % de la hauteur viewport). Défaut : full. */
   snapPoints?: (string | number)[];
   /** Snap initial (index dans `snapPoints`). */
@@ -36,6 +39,10 @@ interface BottomSheetProps
   hideHandle?: boolean;
   /** Désactive le clic backdrop pour fermer. */
   dismissible?: boolean;
+  /** Mode modal (lock body scroll, focus trap). */
+  modal?: boolean;
+  /** Direction d'ouverture du sheet. Défaut : bottom. */
+  direction?: "top" | "bottom" | "left" | "right";
   children: React.ReactNode;
 }
 
