@@ -146,7 +146,7 @@ export function PopupsManager({ restaurantId, popups }: PopupsManagerProps) {
                       <p className="mt-2 text-xs text-[var(--text-muted)]">
                         {p.dateDebut
                           ? format(parseISO(p.dateDebut), "d MMM yyyy", { locale: fr })
-                          : "—"}
+                          : "Sans début"}
                         {" → "}
                         {p.dateFin
                           ? format(parseISO(p.dateFin), "d MMM yyyy", { locale: fr })

@@ -18,18 +18,18 @@ const features = [
   },
   {
     icon: Globe2,
-    title: "7 langues, traduites par IA",
-    body: "Anthropic Claude traduit ton menu en EN, ES, DE, IT, PT, ZH. Mis en cache à vie : zéro latence pour tes clients.",
+    title: "7 langues, traduites automatiquement",
+    body: "Ton menu est traduit en EN, ES, DE, IT, PT, ZH. Mis en mémoire à vie : tes clients voient la carte instantanément.",
   },
   {
     icon: UtensilsCrossed,
-    title: "Éditeur drag & drop",
-    body: "Catégories, plats, allergènes, vignettes, suggestions cross-sell — réorganise comme un Notion.",
+    title: "Éditeur ultra simple",
+    body: "Catégories, plats, allergènes, vignettes, suggestions de plats. Tu glisses, tu déposes, c'est rangé.",
   },
   {
     icon: Sparkles,
     title: "Roulette d'avis Google",
-    body: "Le client laisse un avis Google, gagne un café, un dessert. Tu remontes dans le ranking local.",
+    body: "Le client laisse un avis Google, gagne un café, un dessert. Tu remontes dans les recherches Google.",
   },
 ];
 
@@ -56,8 +56,8 @@ export default function HomePage() {
             </span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-[var(--text-secondary)] md:text-xl">
-            QR code, traduction IA en 7 langues, éditeur drag-and-drop, jeu d&apos;avis Google.
-            Tout ce dont ton restaurant a besoin pour scaler le service à table.
+            QR code, traduction automatique en 7 langues, éditeur tout simple, jeu d&apos;avis Google.
+            Tout ce dont ton restaurant a besoin pour fluidifier le service à table.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Button size="lg" asChild>

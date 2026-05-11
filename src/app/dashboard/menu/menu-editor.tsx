@@ -590,7 +590,7 @@ export function MenuEditor({
           </div>
           <PhoneFrame
             src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
-            title="Preview carte publique"
+            title="Aperçu de la carte publique"
             reloadKey={`mobile-${previewKey}-${previewLang}`}
             maxWidth={380}
             dataAttrs={{ "data-onboarding-anchor": "preview-iframe" }}
@@ -716,8 +716,8 @@ export function MenuEditor({
                     variant="ghost"
                     onClick={() => setShowPreview((s) => !s)}
                     className="hidden lg:inline-flex"
-                    aria-label="Toggle preview"
-                    title={showPreview ? "Masquer la preview" : "Afficher la preview"}
+                    aria-label="Afficher ou masquer l'aperçu"
+                    title={showPreview ? "Masquer l'aperçu" : "Afficher l'aperçu"}
                   >
                     {showPreview ? (
                       <EyeOff className="size-3.5" />
@@ -725,7 +725,7 @@ export function MenuEditor({
                       <Eye className="size-3.5" />
                     )}
                     <span className="hidden xl:inline">
-                      {showPreview ? "Masquer" : "Preview"}
+                      {showPreview ? "Masquer" : "Aperçu"}
                     </span>
                   </Button>
                   <Button
@@ -811,7 +811,7 @@ export function MenuEditor({
           <div className="flex flex-1 items-start justify-center overflow-hidden p-4">
             <PhoneFrame
               src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
-              title="Preview carte publique"
+              title="Aperçu de la carte publique"
               reloadKey={`${previewKey}-${previewLang}`}
               maxWidth={320}
             />

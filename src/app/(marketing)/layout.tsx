@@ -51,7 +51,7 @@ export default function MarketingLayout({
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
           <div className="flex items-center gap-3 text-xs text-[var(--text-tertiary)]">
             <Logo variant="mark" className="size-6" />
-            <span>© {new Date().getFullYear()} Ruliz — Made in Bordeaux</span>
+            <span>© {new Date().getFullYear()} Ruliz · Made in Bordeaux</span>
           </div>
           <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-[var(--text-tertiary)]">
             <Link href="/legal/cgv" className="hover:text-[var(--text-primary)]">

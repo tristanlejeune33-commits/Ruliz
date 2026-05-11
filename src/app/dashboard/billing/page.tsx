@@ -179,7 +179,7 @@ function PlanCard({ plan, isCurrent, isUpgrade, restaurantId }: PlanCardProps) {
     { key: "maxRestaurants", label: "Restaurants" },
     { key: "maxQrcodes", label: "QR codes" },
     { key: "maxProduits", label: "Produits" },
-    { key: "iaTranslation", label: "Traduction IA (7 langues)" },
+    { key: "iaTranslation", label: "Traduction automatique (7 langues)" },
     { key: "advancedStats", label: "Stats avancées" },
     { key: "rouletteGame", label: "Jeu roulette d'avis" },
     { key: "popups", label: "Pop-ups événements" },

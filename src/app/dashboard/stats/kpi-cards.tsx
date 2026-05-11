@@ -30,7 +30,7 @@ export function KpiCards({ kpis }: KpiCardsProps) {
         label="Visiteurs uniques"
         value={kpis.uniqueScans}
         evolution={kpis.uniqueScansEvol}
-        helper="approx. par fingerprint"
+        helper="estimation par appareil"
         icon={Users}
       />
       <Kpi
@@ -46,23 +46,23 @@ export function KpiCards({ kpis }: KpiCardsProps) {
         icon={UserCheck}
       />
       <Kpi
-        label="DAU"
+        label="Visiteurs du jour"
         value={kpis.dau}
         helper="aujourd'hui"
         icon={Eye}
       />
-      <Kpi label="WAU" value={kpis.wau} helper="7 jours glissants" icon={Eye} />
+      <Kpi label="Visiteurs / semaine" value={kpis.wau} helper="7 derniers jours" icon={Eye} />
       <Kpi
-        label="MAU"
+        label="Visiteurs / mois"
         value={kpis.mau}
-        helper="30 jours glissants"
+        helper="30 derniers jours"
         icon={TrendingUp}
       />
       <Kpi
         label="Scans / visiteur"
         value={kpis.avgScansPerUser}
         decimal
-        helper={`pic ${String(kpis.busiestHour).padStart(2, "0")}h · ${DAY_LABELS[kpis.busiestDayOfWeek] ?? "—"}`}
+        helper={`pic ${String(kpis.busiestHour).padStart(2, "0")}h · ${DAY_LABELS[kpis.busiestDayOfWeek] ?? "?"}`}
         icon={Clock}
       />
     </div>

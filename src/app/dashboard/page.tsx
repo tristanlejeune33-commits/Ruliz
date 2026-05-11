@@ -62,7 +62,7 @@ export default async function DashboardHome() {
   const quickActions = [
     {
       label: "Éditer ma carte",
-      description: "Drag & drop catégories + produits",
+      description: "Glisse-dépose catégories et plats",
       href: "/dashboard/menu",
       iconKey: "utensils" as const,
       tone: "cyan" as const,
@@ -83,7 +83,7 @@ export default async function DashboardHome() {
     },
     {
       label: "Roulette d'avis",
-      description: "Capte les coordonnées clients",
+      description: "Récupère les contacts de tes clients",
       href: "/dashboard/jeu",
       iconKey: "gift" as const,
       tone: "violet" as const,
@@ -97,7 +97,7 @@ export default async function DashboardHome() {
     },
     {
       label: "SMS marketing",
-      description: "Relance ta base clients",
+      description: "Relance tes clients",
       href: "/dashboard/sms",
       iconKey: "message" as const,
       tone: "cyan" as const,
@@ -148,7 +148,7 @@ export default async function DashboardHome() {
         <KpiCard
           label="Participations jeu"
           value={jeuParticipations}
-          hint="leads captés"
+          hint="contacts récupérés"
           iconKey="gift"
           tone="violet"
           delay={0.12}
@@ -173,7 +173,7 @@ export default async function DashboardHome() {
           <Button asChild variant="ghost" size="sm">
             <Link href="/dashboard/stats">
               <ChartLine className="size-3.5" strokeWidth={1.75} />
-              Voir analytics
+              Voir les statistiques
             </Link>
           </Button>
         </CardHeader>
@@ -254,8 +254,8 @@ export default async function DashboardHome() {
           <div>
             <CardTitle>Édite ta carte</CardTitle>
             <CardDescription className="mt-1">
-              Drag & drop des catégories, modal d&apos;édition produit, preview
-              live à droite. Auto-save activé sur les modifs.
+              Glisse-dépose tes catégories, modifie tes plats, aperçu en direct
+              à droite. Tes modifications sont sauvegardées toutes seules.
             </CardDescription>
           </div>
           <Button asChild className="w-full md:w-auto">

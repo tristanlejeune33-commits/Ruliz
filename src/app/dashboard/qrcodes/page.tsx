@@ -44,7 +44,7 @@ export default async function QrcodesPage() {
           </HeroEyebrow>
         }
         title="Tes QR codes"
-        description="Génère et imprime un QR code par table, vitrine ou set de table — un clic suffit pour démarrer."
+        description="Génère et imprime un QR code par table, vitrine ou set de table. Un clic suffit pour démarrer."
         kpis={
           <>
             <HeroKpi
@@ -111,7 +111,7 @@ export default async function QrcodesPage() {
               </h2>
               <p className="mt-1 text-sm text-[var(--text-secondary)]">
                 Sets de table, stickers vitrine, présentoirs A6, cartes
-                imprimées — ton QR pré-imprimé, livré chez toi.
+                imprimées : ton QR pré-imprimé, livré chez toi.
               </p>
             </div>
             <Button asChild variant="outline" size="sm">

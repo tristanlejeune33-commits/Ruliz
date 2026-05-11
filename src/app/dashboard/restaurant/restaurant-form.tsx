@@ -560,7 +560,7 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                   name="couleurSecondaire"
                   label="Secondaire (réservé)"
                   helper="Pour future utilisation"
-                  defaultPreview="—"
+                  defaultPreview=""
                 />
               </CardContent>
             </Card>

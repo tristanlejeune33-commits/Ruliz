@@ -163,11 +163,11 @@ function ImportColdStartBanner() {
               </h2>
               <span className="inline-flex items-center gap-1 rounded-md border border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--neon-cyan)]">
                 <Sparkles className="size-3" strokeWidth={2} />
-                IA
+                Magique
               </span>
             </div>
             <p className="mt-0.5 text-[13px] text-[var(--text-secondary)] lg:text-sm">
-              Prends ta carte papier en photo · l&apos;IA détecte catégories,
+              Prends ta carte papier en photo · le système détecte tout seul catégories,
               plats, prix et allergènes en{" "}
               <strong className="font-semibold text-[var(--text-primary)]">
                 30 secondes

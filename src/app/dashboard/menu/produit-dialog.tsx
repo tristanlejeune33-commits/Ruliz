@@ -266,7 +266,7 @@ export function ProduitDialog({
                         <Textarea rows={3} {...field} />
                       </FormControl>
                       <FormDescription>
-                        Concise, appétissante. La traduction IA conservera ton ton.
+                        Concise, appétissante. La traduction automatique conservera ton ton.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

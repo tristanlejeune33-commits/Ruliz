@@ -69,7 +69,7 @@ export default async function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">
-              <Field label="Nom" value={session.user.name ?? "—"} />
+              <Field label="Nom" value={session.user.name ?? "Non renseigné"} />
               <Field label="Email" value={session.user.email} />
             </CardContent>
           </Card>
@@ -85,7 +85,7 @@ export default async function SettingsPage() {
                   <CardTitle>Didacticiel</CardTitle>
                   <CardDescription className="mt-1">
                     Relance le petit tour guidé qui t&apos;explique comment
-                    mettre ta carte en ligne — utile si tu as zappé la 1ère
+                    mettre ta carte en ligne. Utile si tu as zappé la 1ère
                     fois ou si tu veux le montrer à un collègue.
                   </CardDescription>
                 </div>
@@ -125,7 +125,7 @@ export default async function SettingsPage() {
                 <div>
                   <CardTitle>Plan actuel</CardTitle>
                   <CardDescription>
-                    Géré par Stripe — résiliation et upgrade à tout moment.
+                    Géré par Stripe. Résiliation et changement de plan à tout moment.
                   </CardDescription>
                 </div>
                 <PlanBadge plan={restaurant.plan as Plan} />

@@ -47,7 +47,7 @@ export default async function SmsPage() {
           </HeroEyebrow>
         }
         title="Relance ta base client"
-        description="Annonce un événement, une fermeture, une promo. Conforme RGPD : la base est constituée d'opt-ins via la roulette d'avis."
+        description="Annonce un événement, une fermeture, une promo. Conforme RGPD : seuls les clients qui ont accepté via la roulette d'avis sont contactés."
         kpis={
           <HeroKpi
             label="Contacts SMS"
@@ -60,7 +60,7 @@ export default async function SmsPage() {
         currentPlan={restaurant.plan}
         requiredPlan="premium"
         title="Le SMS marketing est inclus dans Premium"
-        description="Capte les coordonnées via la roulette puis envoie un SMS à toute ta base. Idéal pour booster ton remplissage."
+        description="Récupère les coordonnées via la roulette puis envoie un SMS à toute ta liste de clients. Idéal pour remplir ton resto."
       >
         <div className="grid gap-4 md:grid-cols-3">
           <Card>
@@ -87,7 +87,7 @@ export default async function SmsPage() {
                 )}
               </div>
               <CardDescription>
-                Setup : créer un compte sur brevo.com → API keys → ajouter{" "}
+                Mise en place : créer un compte sur brevo.com, récupérer les clés, ajouter{" "}
                 <code className="font-mono">BREVO_API_KEY</code> et{" "}
                 <code className="font-mono">BREVO_SMS_SENDER</code> en env.
               </CardDescription>
@@ -126,7 +126,7 @@ export default async function SmsPage() {
                   <li key={c.id.toString()} className="flex items-center gap-3 py-2.5">
                     <Phone className="size-3.5 text-[var(--text-muted)]" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{c.prenom ?? "—"}</p>
+                      <p className="text-sm font-medium">{c.prenom ?? "Sans prénom"}</p>
                       <p className="font-mono text-xs text-[var(--text-muted)]">
                         {c.telephone}
                       </p>
@@ -135,7 +135,7 @@ export default async function SmsPage() {
                       {format(c.createdAt, "d MMM yyyy", { locale: fr })}
                     </span>
                     <span className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] uppercase text-[var(--text-muted)]">
-                      {c.source ?? "—"}
+                      {c.source ?? "Inconnu"}
                     </span>
                   </li>
                 ))}

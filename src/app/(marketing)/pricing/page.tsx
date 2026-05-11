@@ -18,7 +18,7 @@ const FEATURE_ROWS: Array<{
   { key: "maxRestaurants", label: "Nombre de restaurants" },
   { key: "maxQrcodes", label: "QR codes" },
   { key: "maxProduits", label: "Produits par carte" },
-  { key: "iaTranslation", label: "Traduction IA en 7 langues" },
+  { key: "iaTranslation", label: "Traduction automatique en 7 langues" },
   { key: "advancedStats", label: "Statistiques avancées" },
   { key: "rouletteGame", label: "Jeu roulette d'avis Google" },
   { key: "popups", label: "Pop-ups événements" },
@@ -212,7 +212,7 @@ function bulletPoints(plan: PlanConfig): string[] {
       ? "Produits illimités"
       : `${f.maxProduits} produits par carte`,
   );
-  if (f.iaTranslation) pts.push("Traduction IA en 7 langues");
+  if (f.iaTranslation) pts.push("Traduction automatique en 7 langues");
   if (f.advancedStats) pts.push("Statistiques avancées");
   if (f.rouletteGame) pts.push("Jeu roulette d'avis Google");
   if (f.popups) pts.push("Pop-ups événements");

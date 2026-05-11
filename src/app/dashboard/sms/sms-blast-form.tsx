@@ -100,7 +100,7 @@ export function SmsBlastForm({ restaurantId, configured }: SmsBlastFormProps) {
                       rows={4}
                       maxLength={320}
                       inputMode="text"
-                      placeholder="Salut {{prenom}}, ce soir on lance la nouvelle carte d'hiver — réserve vite !"
+                      placeholder="Salut {{prenom}}, ce soir on lance la nouvelle carte d'hiver. Réserve vite !"
                       {...field}
                     />
                   </FormControl>

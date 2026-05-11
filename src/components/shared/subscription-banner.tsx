@@ -39,7 +39,7 @@ export function SubscriptionBanner({
         <XCircle className="size-5 shrink-0" />
         <div className="flex-1">
           <p className="font-semibold">
-            🚫 Service suspendu — paiement échoué
+            🚫 Service suspendu : paiement échoué
           </p>
           <p className="mt-0.5">
             Ton abonnement n&apos;a pas pu être prélevé. Ta carte publique
@@ -122,7 +122,7 @@ export function SubscriptionBanner({
           />
           <div className="flex-1">
             <p className="font-semibold">
-              🎁 Essai {isPremium ? "Premium" : "Pro"} offert —{" "}
+              🎁 Essai {isPremium ? "Premium" : "Pro"} offert :{" "}
               {daysLeft > 1 ? `${daysLeft} jours restants` : "dernier jour !"}
             </p>
             <p className="mt-0.5 opacity-80">

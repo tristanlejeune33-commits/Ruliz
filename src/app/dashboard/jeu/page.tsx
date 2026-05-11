@@ -57,15 +57,15 @@ export default async function JeuPage() {
             Roulette d&apos;avis
           </HeroEyebrow>
         }
-        title="Capte des avis Google · gagne des étoiles"
-        description="Tes clients laissent un avis 5 étoiles et tentent de gagner un lot. Boost direct du ranking local + lead capture en simultané."
+        title="Récupère des avis Google · gagne des étoiles"
+        description="Tes clients laissent un avis 5 étoiles et tentent de gagner un lot. Tu remontes dans les recherches Google et tu récupères leurs contacts en même temps."
       />
 
       <PlanLock
         currentPlan={restaurant.plan}
         requiredPlan="pro"
         title="Le jeu roulette est inclus dans le plan Pro"
-        description="Capte les coordonnées de tes clients pendant qu'ils laissent un avis 5 étoiles. Boostez votre ranking local en quelques scans."
+        description="Récupère les coordonnées de tes clients pendant qu'ils laissent un avis 5 étoiles. Tu remontes dans les recherches Google en quelques scans."
       >
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div>
@@ -132,7 +132,7 @@ export default async function JeuPage() {
                               {fullName}
                             </p>
                             <p className="truncate text-xs text-[var(--text-muted)]">
-                              {p.lotGagne ?? "—"}
+                              {p.lotGagne ?? "Pas de lot"}
                               {p.actionSociale && (
                                 <span className="ml-1 opacity-70">
                                   · via {p.actionSociale.replace("_", " ")}
