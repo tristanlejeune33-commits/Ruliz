@@ -13,7 +13,14 @@ import {
   shift,
   useFloating,
 } from "@floating-ui/react";
-import { ChevronDown, ChevronUp, Gift, Sparkles, X } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronUp,
+  Gift,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { ONBOARDING_STEPS, TOTAL_STEPS } from "./steps";
 import {
   setOnboardingStep,
@@ -154,6 +161,24 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
       router.push(nextStep.path);
     }
     setCurrentStepId(nextId);
+    setPending(false);
+  }, [currentStep, pathname, pending, router]);
+
+  const handlePrev = useCallback(async () => {
+    if (!currentStep || pending) return;
+    const prevId = currentStep.id - 1;
+    if (prevId < 1) return; // déjà à l'étape 1
+    const prevStep = ONBOARDING_STEPS.find((s) => s.id === prevId);
+    if (!prevStep) return;
+
+    setPending(true);
+    // Persiste l'étape en arrière (utile si l'user ferme et revient)
+    await setOnboardingStep(prevId);
+
+    if (prevStep.path !== pathname) {
+      router.push(prevStep.path);
+    }
+    setCurrentStepId(prevId);
     setPending(false);
   }, [currentStep, pathname, pending, router]);
 
@@ -355,7 +380,7 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
               </>
             )}
 
-            {/* Actions */}
+            {/* Actions — 3 zones : skip (gauche) · retour (centre) · suivant (droite) */}
             <div className="flex items-center justify-between gap-2">
               {currentStep.allowSkip ? (
                 <button
@@ -364,23 +389,42 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
                   disabled={pending}
                   className="text-[12px] font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
                 >
-                  Passer le tour
+                  Passer
                 </button>
               ) : (
                 <span />
               )}
-              <button
-                type="button"
-                onClick={handleNext}
-                disabled={pending}
-                className="rounded-md px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
-                style={{
-                  background:
-                    currentStep.kind === "value" ? "#d4a017" : "var(--accent)",
-                }}
-              >
-                {currentStep.cta}
-              </button>
+
+              <div className="flex items-center gap-1.5">
+                {/* Bouton retour — affiché à partir de la slide 2 */}
+                {currentStep.id > 1 && (
+                  <button
+                    type="button"
+                    onClick={handlePrev}
+                    disabled={pending}
+                    className="inline-flex items-center gap-1 rounded-md border border-[var(--border-glass)] bg-[var(--bg-glass)] px-2.5 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)] disabled:opacity-60"
+                    aria-label="Étape précédente"
+                  >
+                    <ArrowLeft className="size-3" strokeWidth={2} />
+                    Retour
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  disabled={pending}
+                  className="rounded-md px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition-opacity hover:opacity-90 disabled:opacity-60"
+                  style={{
+                    background:
+                      currentStep.kind === "value"
+                        ? "#d4a017"
+                        : "var(--accent)",
+                  }}
+                >
+                  {currentStep.cta}
+                </button>
+              </div>
             </div>
 
             {/* Flèche d'ancrage (visible seulement si ancré) */}
