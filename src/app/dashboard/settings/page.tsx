@@ -4,7 +4,6 @@ import {
   ArrowRight,
   CreditCard,
   GraduationCap,
-  Plug,
   Receipt,
   Settings as SettingsIcon,
   Users,
@@ -57,9 +56,6 @@ export default async function SettingsPage() {
           </TabsTrigger>
           <TabsTrigger value="billing">
             <CreditCard className="size-3.5" /> Facturation
-          </TabsTrigger>
-          <TabsTrigger value="integrations">
-            <Plug className="size-3.5" /> Intégrations
           </TabsTrigger>
         </TabsList>
 
@@ -174,56 +170,6 @@ export default async function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="integrations">
-          <div className="grid gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Google Reviews</CardTitle>
-                <CardDescription>
-                  Lien Google utilisé par le jeu roulette. À configurer dans la
-                  fiche restaurant.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild variant="outline">
-                  <Link href="/dashboard/restaurant">
-                    Configurer dans le restaurant
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Anthropic Claude (traduction IA)</CardTitle>
-                <CardDescription>
-                  Géré côté plateforme. La carte est traduite en arrière-plan
-                  dans 7 langues.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-[var(--text-secondary)]">
-                  Aucune action requise.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>SMS marketing</CardTitle>
-                <CardDescription>
-                  Envoie des SMS à tes clients qui ont laissé leurs coordonnées
-                  via le jeu.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild variant="outline">
-                  <Link href="/dashboard/sms">Configurer SMS</Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );
