@@ -150,6 +150,15 @@ const DICT: Record<string, LangDict> = {
     pt: "SMS marketing",
     zh: "短信营销",
   },
+  "nav.clients": {
+    fr: "Clients",
+    en: "Customers",
+    es: "Clientes",
+    de: "Kunden",
+    it: "Clienti",
+    pt: "Clientes",
+    zh: "客户",
+  },
   "nav.team": {
     fr: "Équipe",
     en: "Team",

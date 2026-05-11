@@ -275,6 +275,9 @@ const blastSchema = z.object({
   /** Nom d'expéditeur custom (max 11 chars alphanumériques). Si absent →
       Restaurant.smsSender (DB) → BREVO_SMS_SENDER (env) → "Ruliz" */
   sender: z.string().max(11).optional(),
+  /** Si fourni : on n'envoie qu'aux clients dont l'id est dans cette liste,
+      indépendamment de filterSource. Utilisé pour la sélection manuelle. */
+  selectedClientIds: z.array(z.string()).optional(),
 });
 
 /**
@@ -363,7 +366,24 @@ export async function sendSmsBlast(input: unknown): Promise<
     restaurantId: restoBigId,
     telephone: { not: null },
   };
-  if (parsed.data.filterSource !== "all") {
+
+  // Si une sélection manuelle de clientIds est fournie, on l'applique
+  // directement (override le filterSource).
+  if (
+    parsed.data.selectedClientIds &&
+    parsed.data.selectedClientIds.length > 0
+  ) {
+    const bigIds = parsed.data.selectedClientIds
+      .map((id) => {
+        try {
+          return BigInt(id);
+        } catch {
+          return null;
+        }
+      })
+      .filter((x): x is bigint => x !== null);
+    where.id = { in: bigIds };
+  } else if (parsed.data.filterSource !== "all") {
     where.source = parsed.data.filterSource;
   }
   // Filtre opt-in (cast as never car schema potentiellement stale)
@@ -679,6 +699,7 @@ export async function estimateSmsBlast(input: {
   restaurantId: string;
   message: string;
   filterSource: "all" | "roulette" | "manual";
+  selectedClientIds?: string[];
 }): Promise<{
   recipientCount: number;
   segmentsPerSms: number;
@@ -715,7 +736,18 @@ export async function estimateSmsBlast(input: {
     restaurantId: bigId,
     telephone: { not: null },
   };
-  if (input.filterSource !== "all") {
+  if (input.selectedClientIds && input.selectedClientIds.length > 0) {
+    const bigIds = input.selectedClientIds
+      .map((id) => {
+        try {
+          return BigInt(id);
+        } catch {
+          return null;
+        }
+      })
+      .filter((x): x is bigint => x !== null);
+    where.id = { in: bigIds };
+  } else if (input.filterSource !== "all") {
     where.source = input.filterSource;
   }
   (where as { optInSms?: boolean }).optInSms = true;

@@ -59,7 +59,7 @@ export async function sendSms(
 }
 
 /**
- * Normalise un numéro français en format international.
+ * Normalise un numéro français en format international E.164.
  * "06 12 34 56 78" → "33612345678"
  */
 export function normalizeFrenchPhone(input: string): string | null {
@@ -69,4 +69,61 @@ export function normalizeFrenchPhone(input: string): string | null {
   if (digits.startsWith("0") && digits.length === 10) return "33" + digits.slice(1);
   if (digits.length === 9) return "33" + digits;
   return digits;
+}
+
+/**
+ * Normalise un numéro international E.164 pour Brevo.
+ *
+ * Accepte :
+ *  - "+33 6 12 34 56 78" → "33612345678"
+ *  - "06 12 34 56 78" → "33612345678" (par défaut pays FR)
+ *  - "0032 470 12 34 56" → "32470123456" (Belgique)
+ *  - "00 41 79 123 45 67" → "41791234567" (Suisse)
+ *  - "+1 555 123 4567" → "15551234567"
+ *
+ * Si pas de préfixe international détecté et que défaut FR est demandé,
+ * traite le numéro comme français (10 chiffres commençant par 0).
+ */
+export function normalizeInternationalPhone(
+  input: string,
+  defaultCountryCode: string = "33",
+): { ok: true; value: string } | { ok: false; error: string } {
+  const cleaned = input.trim();
+  if (!cleaned) return { ok: false, error: "Numéro vide" };
+
+  // Supprime espaces, tirets, parenthèses, points
+  const digits = cleaned.replace(/[^\d+]/g, "");
+
+  // Cas "+CCxxxxx" (format international avec +)
+  if (digits.startsWith("+")) {
+    const numbers = digits.slice(1);
+    if (numbers.length < 8 || numbers.length > 15) {
+      return { ok: false, error: "Numéro international invalide (8-15 chiffres)" };
+    }
+    return { ok: true, value: numbers };
+  }
+
+  // Cas "00CCxxxxx" (format international avec 00)
+  if (digits.startsWith("00")) {
+    const numbers = digits.slice(2);
+    if (numbers.length < 8 || numbers.length > 15) {
+      return { ok: false, error: "Numéro international invalide" };
+    }
+    return { ok: true, value: numbers };
+  }
+
+  // Cas FR par défaut : 10 chiffres commençant par 0
+  if (digits.startsWith("0") && digits.length === 10) {
+    return { ok: true, value: defaultCountryCode + digits.slice(1) };
+  }
+
+  // Déjà au format E.164 sans +
+  if (digits.length >= 10 && digits.length <= 15) {
+    return { ok: true, value: digits };
+  }
+
+  return {
+    ok: false,
+    error: "Format de numéro non reconnu (utilise +33 6 12 34 56 78 ou 06 12 34 56 78)",
+  };
 }

@@ -58,10 +58,18 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
+export interface ManualClient {
+  id: string;
+  prenom: string | null;
+  nom: string | null;
+  telephone: string | null;
+}
+
 interface SmsBlastFormProps {
   restaurantId: string;
   currentBalance: number;
   defaultSender: string;
+  manualClients: ManualClient[];
 }
 
 const TAGS = [
@@ -74,6 +82,7 @@ export function SmsBlastForm({
   restaurantId,
   currentBalance,
   defaultSender,
+  manualClients,
 }: SmsBlastFormProps) {
   const [pending, startTransition] = useTransition();
   const [estimate, setEstimate] = useState<{
@@ -84,6 +93,10 @@ export function SmsBlastForm({
     enough: boolean;
   } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // Sélection des clients en mode manual (Set d'IDs)
+  const [selectedClientIds, setSelectedClientIds] = useState<Set<string>>(
+    () => new Set(manualClients.map((c) => c.id)), // tous cochés par défaut
+  );
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -110,10 +123,12 @@ export function SmsBlastForm({
         restaurantId,
         message,
         filterSource,
+        selectedClientIds:
+          filterSource === "manual" ? Array.from(selectedClientIds) : undefined,
       }).then(setEstimate);
     }, 500);
     return () => clearTimeout(timer);
-  }, [message, filterSource, restaurantId]);
+  }, [message, filterSource, restaurantId, selectedClientIds]);
 
   const insertTag = (tag: string) => {
     const ta = textareaRef.current;
@@ -131,12 +146,24 @@ export function SmsBlastForm({
 
   const onSubmit = (values: Values) => {
     startTransition(async () => {
-      const res = await sendSmsBlast({ restaurantId, ...values });
+      const res = await sendSmsBlast({
+        restaurantId,
+        ...values,
+        selectedClientIds:
+          values.filterSource === "manual"
+            ? Array.from(selectedClientIds)
+            : undefined,
+      });
       if (res.ok && res.data) {
         toast.success(
           `✅ Envoyés : ${res.data.sent} · ${res.data.tokensSpent} SMS utilisés`,
         );
-        form.reset({ title: "", message: "", filterSource: values.filterSource });
+        form.reset({
+          title: "",
+          message: "",
+          filterSource: values.filterSource,
+          sender: values.sender,
+        });
         setEstimate(null);
       } else if (!res.ok) {
         toast.error(res.error);
@@ -296,12 +323,23 @@ export function SmsBlastForm({
                       <SelectItem value="roulette">
                         Issus de la roulette d&apos;avis
                       </SelectItem>
-                      <SelectItem value="manual">Ajouts manuels</SelectItem>
+                      <SelectItem value="manual">
+                        Clients ajoutés manuellement (sélection)
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </FormItem>
               )}
             />
+
+            {/* === SÉLECTION MANUELLE DES CLIENTS === */}
+            {filterSource === "manual" && (
+              <ManualClientsPicker
+                clients={manualClients}
+                selected={selectedClientIds}
+                onChange={setSelectedClientIds}
+              />
+            )}
 
             {/* === ESTIMATION DU COÛT === */}
             {estimate && (
@@ -450,6 +488,99 @@ function EstimateBox({
           de plus. Achète un pack ci-dessous pour continuer.
         </p>
       )}
+    </div>
+  );
+}
+
+/**
+ * Picker multi-select pour choisir précisément quels clients ajoutés
+ * manuellement vont recevoir le SMS. Affiché uniquement quand
+ * filterSource === "manual". Cocher = inclus, décocher = exclu.
+ */
+function ManualClientsPicker({
+  clients,
+  selected,
+  onChange,
+}: {
+  clients: ManualClient[];
+  selected: Set<string>;
+  onChange: (next: Set<string>) => void;
+}) {
+  if (clients.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-4 text-center text-xs text-[var(--text-muted)]">
+        Aucun client ajouté manuellement pour l&apos;instant.{" "}
+        <a
+          href="/dashboard/clients"
+          className="font-semibold text-[var(--accent)] hover:underline"
+        >
+          Ajoute des clients ici
+        </a>{" "}
+        pour pouvoir les sélectionner.
+      </div>
+    );
+  }
+
+  const toggle = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onChange(next);
+  };
+
+  const toggleAll = () => {
+    if (selected.size === clients.length) {
+      onChange(new Set());
+    } else {
+      onChange(new Set(clients.map((c) => c.id)));
+    }
+  };
+
+  const allChecked = selected.size === clients.length && clients.length > 0;
+
+  return (
+    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
+          Sélectionne tes destinataires ({selected.size}/{clients.length})
+        </p>
+        <button
+          type="button"
+          onClick={toggleAll}
+          className="text-[11px] font-medium text-[var(--accent)] hover:underline"
+        >
+          {allChecked ? "Tout décocher" : "Tout cocher"}
+        </button>
+      </div>
+      <div className="max-h-[280px] overflow-y-auto rounded-md border border-[var(--border-subtle)] bg-[var(--bg-popover-solid,var(--bg-elevated))]">
+        <ul className="divide-y divide-[var(--border-subtle)]">
+          {clients.map((c) => {
+            const isChecked = selected.has(c.id);
+            const fullName =
+              [c.prenom, c.nom].filter(Boolean).join(" ") || "Sans nom";
+            return (
+              <li key={c.id}>
+                <label className="flex cursor-pointer items-center gap-3 p-2 hover:bg-[var(--bg-glass)]">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggle(c.id)}
+                    className="size-4 shrink-0 accent-[var(--accent)]"
+                  />
+                  <span className="flex-1 truncate text-sm font-medium text-[var(--text-primary)]">
+                    {fullName}
+                  </span>
+                  {c.telephone && (
+                    <span className="shrink-0 font-mono text-[11px] text-[var(--text-tertiary)]">
+                      +{c.telephone}
+                    </span>
+                  )}
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }

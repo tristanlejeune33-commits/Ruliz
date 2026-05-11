@@ -62,6 +62,7 @@ const DASHBOARD_NAV: SidebarNavSection[] = [
       { labelKey: "nav.stats", href: "/dashboard/stats", icon: Gauge },
       { labelKey: "nav.jeu", href: "/dashboard/jeu", icon: Sparkles },
       { labelKey: "nav.popups", href: "/dashboard/popups", icon: Megaphone },
+      { labelKey: "nav.clients", href: "/dashboard/clients", icon: Users },
       { labelKey: "nav.sms", href: "/dashboard/sms", icon: MessageSquare },
     ],
   },
