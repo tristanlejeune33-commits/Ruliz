@@ -234,6 +234,44 @@ export async function updateBoutiqueCommande(
   });
 
   revalidatePath("/admin/boutique/commandes");
+  revalidatePath("/admin/clients");
   revalidatePath("/dashboard/boutique/commandes");
+  revalidatePath("/dashboard/settings/factures");
+  return { ok: true };
+}
+
+/**
+ * Changement de statut rapide (sans notes admin) — utilisé inline depuis
+ * /admin/clients/[id] pour faire avancer une BC d'un statut à l'autre en
+ * 1 clic. Idempotent (replay safe).
+ */
+export async function updateBoutiqueCommandeStatut(input: {
+  id: string;
+  statut: "en_attente" | "en_preparation" | "expediee" | "livree" | "annulee";
+}): Promise<ActionResult> {
+  await requireAdmin();
+  const id = bigOrNull(input.id);
+  if (!id) return { ok: false, error: "Identifiant invalide" };
+
+  const allowed = [
+    "en_attente",
+    "en_preparation",
+    "expediee",
+    "livree",
+    "annulee",
+  ];
+  if (!allowed.includes(input.statut)) {
+    return { ok: false, error: "Statut invalide" };
+  }
+
+  await prisma.boutiqueCommande.update({
+    where: { id },
+    data: { statut: input.statut },
+  });
+
+  revalidatePath("/admin/boutique/commandes");
+  revalidatePath("/admin/clients");
+  revalidatePath("/dashboard/boutique/commandes");
+  revalidatePath("/dashboard/settings/factures");
   return { ok: true };
 }

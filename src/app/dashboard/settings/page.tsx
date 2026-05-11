@@ -141,7 +141,7 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Mes commandes & factures — nouveau lien voyant */}
+          {/* BC / Factures — bons de commande + factures d'abonnement */}
           <Card className="lift-hover">
             <CardHeader>
               <div className="flex items-start justify-between gap-3">
@@ -150,10 +150,10 @@ export default async function SettingsPage() {
                     <Receipt className="size-5" strokeWidth={1.75} />
                   </span>
                   <div>
-                    <CardTitle>Mes commandes & factures</CardTitle>
+                    <CardTitle>BC / Factures</CardTitle>
                     <CardDescription className="mt-1">
-                      Historique complet : bons de commande boutique
-                      téléchargeables + factures Stripe d&apos;abonnement.
+                      Suis tes bons de commande boutique en direct + télécharge
+                      toutes tes factures (abonnement et achats de SMS).
                     </CardDescription>
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export default async function SettingsPage() {
             <CardContent>
               <Button asChild variant="primary">
                 <Link href="/dashboard/settings/factures">
-                  Voir mes commandes & factures
+                  Voir mes BC / factures
                   <ArrowRight className="size-3.5" strokeWidth={2} />
                 </Link>
               </Button>

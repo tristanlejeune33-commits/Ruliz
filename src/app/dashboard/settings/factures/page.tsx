@@ -35,7 +35,7 @@ import {
 } from "@/server/dashboard/factures-queries";
 
 export const metadata: Metadata = {
-  title: "Mes commandes & factures · Ruliz",
+  title: "BC / Factures · Ruliz",
 };
 
 // ============================================================
@@ -174,8 +174,8 @@ export default async function FacturesPage() {
             Comptabilité
           </HeroEyebrow>
         }
-        title="Mes commandes & factures"
-        description="Suis l'avancement de tes commandes boutique, télécharge tes factures et retrouve l'historique de tes achats."
+        title="BC / Factures"
+        description="Suis l'avancement de tes bons de commande boutique, télécharge tes factures et retrouve l'historique de tes achats SMS."
       />
 
       {/* === COMMANDES BOUTIQUE avec stepper visuel === */}

@@ -8,6 +8,7 @@ import {
   Building2,
   History,
   Monitor,
+  Receipt,
   ScrollText,
   ShieldCheck,
   Sparkles,
@@ -30,10 +31,16 @@ import {
 } from "@/components/ui/tabs";
 import { PlanBadge, StatusBadge, type Plan, type Statut } from "@/components/shared/status-badge";
 import { getClientById } from "@/server/admin/queries";
+import {
+  listClientBoutiqueCommandesAdmin,
+  listClientSmsPurchasesAdmin,
+  listClientStripeInvoicesAdmin,
+} from "@/server/admin/client-billing-queries";
 import { serialize } from "@/lib/serialize";
 import { ClientForm } from "./client-form";
 import { ClientActions } from "./client-actions";
 import { ClientPermissions } from "./client-permissions";
+import { ClientBillingTab } from "./client-billing-tab";
 import { ImpersonateButton } from "./impersonate-button";
 
 interface PageProps {
@@ -54,6 +61,14 @@ export default async function ClientDetailPage({ params }: PageProps) {
   if (!client) notFound();
 
   const data = serialize(client);
+
+  // === Fetch BC + Factures + SMS purchases pour le tab "BC / Factures" ===
+  // En parallèle pour limiter la latence (3 round-trips Stripe possibles)
+  const [boutiqueCommandes, smsPurchases, stripeInvoices] = await Promise.all([
+    listClientBoutiqueCommandesAdmin(numericId),
+    listClientSmsPurchasesAdmin(numericId),
+    listClientStripeInvoicesAdmin(numericId),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -113,6 +128,13 @@ export default async function ClientDetailPage({ params }: PageProps) {
           </TabsTrigger>
           <TabsTrigger value="jeux">
             <Sparkles className="size-3.5" /> Jeux
+          </TabsTrigger>
+          <TabsTrigger value="billing">
+            <Receipt className="size-3.5" /> BC / Factures (
+            {boutiqueCommandes.length +
+              smsPurchases.length +
+              stripeInvoices.length}
+            )
           </TabsTrigger>
           <TabsTrigger value="logs">
             <ScrollText className="size-3.5" /> Logs ({data.logs.length})
@@ -281,6 +303,30 @@ export default async function ClientDetailPage({ params }: PageProps) {
                   )}
                 </ul>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Receipt className="size-4 text-[var(--accent)]" />
+                BC / Factures du client
+              </CardTitle>
+              <CardDescription>
+                Tous les bons de commande boutique, achats de packs SMS et
+                factures d&apos;abonnement de ce client. Tu peux changer le
+                statut d&apos;un BC directement depuis cette page : clic sur le
+                statut → choisis le nouveau → enregistré instantanément.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ClientBillingTab
+                commandes={boutiqueCommandes}
+                smsPurchases={smsPurchases}
+                invoices={stripeInvoices}
+              />
             </CardContent>
           </Card>
         </TabsContent>
