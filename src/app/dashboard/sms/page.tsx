@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { MessageSquare, Phone, Users } from "lucide-react";
+import {
+  MessageSquare,
+  Phone,
+  Users,
+  Coins,
+  History,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -12,30 +18,51 @@ import {
 } from "@/components/ui/card";
 import { HeroEyebrow, HeroKpi, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
-import { isBrevoConfigured } from "@/lib/brevo";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import {
+  getSmsBalance,
+  listSmsAutomations,
+  listSmsCampaigns,
+  SMS_PACKS,
+} from "@/server/dashboard/sms-actions";
+import { SmsBalanceCard } from "./sms-balance-card";
+import { SmsPacksList } from "./sms-packs-list";
 import { SmsBlastForm } from "./sms-blast-form";
+import { SmsAutomationsList } from "./sms-automations-list";
+import { SmsHistoryList } from "./sms-history-list";
 
 export const metadata: Metadata = {
   title: "SMS marketing · Ruliz",
 };
 
-export default async function SmsPage() {
+interface PageProps {
+  searchParams: Promise<{ purchase?: string }>;
+}
+
+export default async function SmsPage({ searchParams }: PageProps) {
   const { restaurant } = await getCurrentRestaurant();
+  const { purchase } = await searchParams;
 
-  const baseClients = await prisma.baseClient.findMany({
-    where: {
-      restaurantId: restaurant.id,
-      telephone: { not: null },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
+  const restaurantId = restaurant.id.toString();
 
-  const totalWithPhone = await prisma.baseClient.count({
-    where: { restaurantId: restaurant.id, telephone: { not: null } },
-  });
+  const [balance, baseClients, totalWithPhone, automations, campaigns] =
+    await Promise.all([
+      getSmsBalance(restaurantId),
+      prisma.baseClient.findMany({
+        where: {
+          restaurantId: restaurant.id,
+          telephone: { not: null },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      prisma.baseClient.count({
+        where: { restaurantId: restaurant.id, telephone: { not: null } },
+      }),
+      listSmsAutomations(restaurantId),
+      listSmsCampaigns(restaurantId, 10),
+    ]);
 
   return (
     <div className="space-y-6">
@@ -46,13 +73,21 @@ export default async function SmsPage() {
             SMS marketing
           </HeroEyebrow>
         }
-        title="Relance ta base client"
-        description="Annonce un événement, une fermeture, une promo. Conforme RGPD : seuls les clients qui ont accepté via la roulette d'avis sont contactés."
+        title="Envoie des SMS à tes clients"
+        description="Annonce un événement, une fermeture, une promo. Personnalise avec {prenom}, {nom}. Conforme RGPD : seuls les clients qui ont accepté reçoivent."
         kpis={
-          <HeroKpi
-            label="Contacts SMS"
-            value={<span className="tabular-nums">{totalWithPhone}</span>}
-          />
+          <>
+            <HeroKpi
+              label="Contacts SMS"
+              value={<span className="tabular-nums">{totalWithPhone}</span>}
+            />
+            <HeroKpi
+              label="Crédit SMS"
+              value={
+                <span className="tabular-nums">{balance.balance}</span>
+              }
+            />
+          </>
         }
       />
 
@@ -60,73 +95,144 @@ export default async function SmsPage() {
         currentPlan={restaurant.plan}
         requiredPlan="premium"
         title="Le SMS marketing est inclus dans Premium"
-        description="Récupère les coordonnées via la roulette puis envoie un SMS à toute ta liste de clients. Idéal pour remplir ton resto."
+        description="Récupère les coordonnées de tes clients via la roulette, puis envoie-leur un SMS pour les faire revenir. Idéal pour remplir tes services creux."
       >
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardHeader className="flex-row items-start justify-between gap-4 space-y-0 pb-2">
-              <CardDescription>Contacts SMS</CardDescription>
-              <Users className="size-4 text-[var(--text-muted)]" />
-            </CardHeader>
-            <CardContent>
-              <CardTitle className="text-3xl tabular-nums">{totalWithPhone}</CardTitle>
-              <p className="mt-1 text-xs text-[var(--text-muted)]">
-                Clients avec téléphone
-              </p>
+        {/* Toast de succès post-achat (afficher juste un texte simple) */}
+        {purchase === "success" && (
+          <Card className="border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)]/30">
+            <CardContent className="flex items-center gap-3 py-3">
+              <Coins className="size-5 text-[var(--neon-success)]" />
+              <div>
+                <p className="font-semibold">Paiement reçu ! Tes SMS sont créditées.</p>
+                <p className="text-sm text-[var(--text-secondary)]">
+                  Si ton solde n&apos;a pas encore bougé, rafraîchis la page dans
+                  quelques secondes.
+                </p>
+              </div>
             </CardContent>
           </Card>
+        )}
 
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Brevo</CardTitle>
-                {isBrevoConfigured() ? (
-                  <Badge variant="success">Connecté</Badge>
-                ) : (
-                  <Badge variant="destructive">Non configuré</Badge>
-                )}
-              </div>
-              <CardDescription>
-                Mise en place : créer un compte sur brevo.com, récupérer les clés, ajouter{" "}
-                <code className="font-mono">BREVO_API_KEY</code> et{" "}
-                <code className="font-mono">BREVO_SMS_SENDER</code> en env.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
+        {/* ============ SOLDE ============ */}
+        <SmsBalanceCard
+          balance={balance.balance}
+          totalAcquired={balance.totalAcquired}
+          totalSpent={balance.totalSpent}
+        />
 
+        {/* ============ ACHAT DE PACKS ============ */}
         <Card>
           <CardHeader>
-            <CardTitle>Composer un envoi</CardTitle>
+            <CardTitle>Acheter un pack de SMS</CardTitle>
             <CardDescription>
-              Variable disponible : <code className="font-mono">{"{{prenom}}"}</code>
+              Plus tu achètes en gros, moins c&apos;est cher. Crédits non
+              expirables, paiement sécurisé.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <SmsBlastForm
-              restaurantId={restaurant.id.toString()}
-              configured={isBrevoConfigured()}
+            <SmsPacksList
+              restaurantId={restaurantId}
+              packs={SMS_PACKS.map((p) => ({
+                id: p.id,
+                size: p.size,
+                priceCentimes: p.priceCentimes,
+                label: p.label,
+                badge: p.badge,
+              }))}
             />
           </CardContent>
         </Card>
 
+        {/* ============ COMPOSER UN ENVOI ============ */}
         <Card>
           <CardHeader>
-            <CardTitle>Derniers contacts</CardTitle>
-            <CardDescription>10 plus récents avec téléphone</CardDescription>
+            <CardTitle>Envoyer un SMS</CardTitle>
+            <CardDescription>
+              Tape ton message. Utilise{" "}
+              <code className="rounded bg-[var(--bg-elevated)] px-1 font-mono text-xs">
+                {"{prenom}"}
+              </code>
+              ,{" "}
+              <code className="rounded bg-[var(--bg-elevated)] px-1 font-mono text-xs">
+                {"{nom}"}
+              </code>{" "}
+              ou{" "}
+              <code className="rounded bg-[var(--bg-elevated)] px-1 font-mono text-xs">
+                {"{resto}"}
+              </code>{" "}
+              pour personnaliser. L&apos;estimation du coût s&apos;affiche en
+              direct.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SmsBlastForm
+              restaurantId={restaurantId}
+              currentBalance={balance.balance}
+            />
+          </CardContent>
+        </Card>
+
+        {/* ============ AUTOMATISATIONS ============ */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Automatisations</CardTitle>
+            <CardDescription>
+              Envois automatiques qui tournent tous seuls. Idéal pour les
+              anniversaires et les relances d&apos;avis Google.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SmsAutomationsList
+              restaurantId={restaurantId}
+              automations={automations}
+            />
+          </CardContent>
+        </Card>
+
+        {/* ============ HISTORIQUE ============ */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Historique des envois</CardTitle>
+                <CardDescription>
+                  10 dernières campagnes envoyées.
+                </CardDescription>
+              </div>
+              <History className="size-4 text-[var(--text-muted)]" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <SmsHistoryList campaigns={campaigns} />
+          </CardContent>
+        </Card>
+
+        {/* ============ DERNIERS CONTACTS ============ */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Derniers contacts collectés</CardTitle>
+            <CardDescription>
+              10 contacts les plus récents avec téléphone.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {baseClients.length === 0 ? (
               <p className="py-8 text-center text-sm text-[var(--text-muted)]">
-                Aucun contact SMS pour l&apos;instant. Active la roulette pour en collecter.
+                Aucun contact pour l&apos;instant. Active la roulette d&apos;avis
+                pour en collecter.
               </p>
             ) : (
               <ul className="divide-y divide-[var(--border-subtle)]">
                 {baseClients.map((c) => (
-                  <li key={c.id.toString()} className="flex items-center gap-3 py-2.5">
+                  <li
+                    key={c.id.toString()}
+                    className="flex items-center gap-3 py-2.5"
+                  >
                     <Phone className="size-3.5 text-[var(--text-muted)]" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{c.prenom ?? "Sans prénom"}</p>
+                      <p className="text-sm font-medium">
+                        {c.prenom ?? "Sans prénom"}
+                      </p>
                       <p className="font-mono text-xs text-[var(--text-muted)]">
                         {c.telephone}
                       </p>
@@ -134,9 +240,10 @@ export default async function SmsPage() {
                     <span className="text-xs text-[var(--text-muted)]">
                       {format(c.createdAt, "d MMM yyyy", { locale: fr })}
                     </span>
-                    <span className="rounded bg-[var(--bg-elevated)] px-1.5 py-0.5 text-[10px] uppercase text-[var(--text-muted)]">
+                    <Badge variant="secondary">
+                      <Users className="size-2.5" />
                       {c.source ?? "Inconnu"}
-                    </span>
+                    </Badge>
                   </li>
                 ))}
               </ul>

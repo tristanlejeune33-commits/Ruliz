@@ -81,6 +81,51 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     return;
   }
 
+  // === Mode "payment" : achat de pack SMS (one-shot) ===
+  const smsPurchaseId = session.metadata?.ruliz_sms_purchase_id;
+  const smsRestaurantId = session.metadata?.ruliz_sms_restaurant_id;
+  const smsPackSize = session.metadata?.ruliz_sms_pack_size;
+  if (smsPurchaseId && smsRestaurantId && smsPackSize && session.mode === "payment") {
+    try {
+      const purchaseBigId = BigInt(smsPurchaseId);
+      const restoBigId = BigInt(smsRestaurantId);
+      const size = parseInt(smsPackSize, 10);
+      if (!Number.isFinite(size) || size <= 0) {
+        console.warn("[stripe.webhook] invalid sms_pack_size:", smsPackSize);
+        return;
+      }
+
+      // 1. Marque l'achat comme payé (idempotent via UNIQUE stripe_session_id)
+      await prisma.$executeRawUnsafe(
+        `UPDATE sms_credit_purchases
+         SET status = 'paid', paid_at = NOW(), stripe_session_id = $2
+         WHERE id = $1 AND status != 'paid'`,
+        purchaseBigId,
+        session.id,
+      );
+
+      // 2. Crédite le solde du restaurant (atomique, crée la ligne si absente)
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO sms_balance (restaurant_id, balance, total_acquired, total_spent)
+         VALUES ($1, $2, $2, 0)
+         ON CONFLICT (restaurant_id)
+         DO UPDATE SET
+           balance = sms_balance.balance + EXCLUDED.balance,
+           total_acquired = sms_balance.total_acquired + EXCLUDED.total_acquired,
+           updated_at = NOW()`,
+        restoBigId,
+        size,
+      );
+
+      console.log(
+        `[stripe.webhook] SMS pack credited : restaurant ${smsRestaurantId} +${size} SMS`,
+      );
+    } catch (err) {
+      console.error("[stripe.webhook] SMS pack crediting failed:", err);
+    }
+    return;
+  }
+
   // === Mode "payment" : commande boutique QR (one-shot) ===
   const commandeId = session.metadata?.ruliz_boutique_commande_id;
   if (commandeId && session.mode === "payment") {

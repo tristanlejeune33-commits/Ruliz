@@ -1,10 +1,16 @@
 "use client";
 
-import { useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, MessageSquare, Send } from "lucide-react";
+import {
+  AlertTriangle,
+  Loader2,
+  MessageSquare,
+  Send,
+  Tag,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -24,63 +31,127 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { sendSmsBlast } from "@/server/dashboard/sms-actions";
+import {
+  estimateSmsBlast,
+  sendSmsBlast,
+} from "@/server/dashboard/sms-actions";
 
 const schema = z.object({
-  message: z.string().min(1, "Requis").max(320),
+  title: z.string().max(255).optional(),
+  message: z.string().min(1, "Requis").max(640),
   filterSource: z.enum(["all", "roulette", "manual"]),
 });
 type Values = z.infer<typeof schema>;
 
 interface SmsBlastFormProps {
   restaurantId: string;
-  configured: boolean;
+  currentBalance: number;
 }
 
-export function SmsBlastForm({ restaurantId, configured }: SmsBlastFormProps) {
+const TAGS = [
+  { label: "{prenom}", desc: "Prénom du client" },
+  { label: "{nom}", desc: "Nom de famille" },
+  { label: "{resto}", desc: "Nom de ton restaurant" },
+];
+
+export function SmsBlastForm({
+  restaurantId,
+  currentBalance,
+}: SmsBlastFormProps) {
   const [pending, startTransition] = useTransition();
+  const [estimate, setEstimate] = useState<{
+    recipientCount: number;
+    segmentsPerSms: number;
+    estimatedTokens: number;
+    balanceAfter: number;
+    enough: boolean;
+  } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { message: "", filterSource: "all" },
+    defaultValues: { title: "", message: "", filterSource: "all" },
   });
 
   const message = form.watch("message");
-  const segments = Math.ceil(message.length / 160) || 1;
+  const filterSource = form.watch("filterSource");
+
+  // Estimation côté serveur (debounce 500 ms)
+  useEffect(() => {
+    if (!message.trim()) {
+      setEstimate(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      void estimateSmsBlast({
+        restaurantId,
+        message,
+        filterSource,
+      }).then(setEstimate);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [message, filterSource, restaurantId]);
+
+  const insertTag = (tag: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const next = message.slice(0, start) + tag + message.slice(end);
+    form.setValue("message", next, { shouldDirty: true });
+    // Replace cursor after the tag
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + tag.length, start + tag.length);
+    });
+  };
 
   const onSubmit = (values: Values) => {
     startTransition(async () => {
       const res = await sendSmsBlast({ restaurantId, ...values });
       if (res.ok && res.data) {
         toast.success(
-          `Envoyés : ${res.data.sent} · échecs : ${res.data.failed} · ignorés : ${res.data.skipped}`,
+          `✅ Envoyés : ${res.data.sent} · ${res.data.tokensSpent} SMS utilisés`,
         );
-        form.reset({ message: "", filterSource: values.filterSource });
-      } else if (!res.ok) toast.error(res.error);
+        form.reset({ title: "", message: "", filterSource: values.filterSource });
+        setEstimate(null);
+      } else if (!res.ok) {
+        toast.error(res.error);
+      }
     });
   };
 
-  // Compteur de caractères avec coloration palière :
-  // - 0–140  : neutre
-  // - 141–160 : warning (jaune) → on approche du 1er segment
-  // - 161+    : danger (rouge) → multi-segments, coût ×N
-  const charCount = message.length;
-  const charTone =
-    charCount === 0
-      ? "neutral"
-      : charCount > 160
-        ? "danger"
-        : charCount > 140
-          ? "warning"
-          : "neutral";
+  const canSend =
+    estimate &&
+    estimate.enough &&
+    estimate.recipientCount > 0 &&
+    message.trim().length > 0;
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Layout responsive : édition empilée mobile, split édition / preview desktop */}
         <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
           {/* === ÉDITION === */}
           <div className="space-y-4">
+            {/* Titre interne (pour l'historique) */}
+            <FormField
+              control={form.control}
+              name="title"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">
+                    Nom de la campagne (interne, pour retrouver dans l&apos;historique)
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Soirée vins du jeudi"
+                      {...field}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="message"
@@ -89,31 +160,63 @@ export function SmsBlastForm({ restaurantId, configured }: SmsBlastFormProps) {
                   <div className="flex items-center justify-between">
                     <FormLabel>Message</FormLabel>
                     <CharCounter
-                      count={charCount}
-                      max={320}
-                      segments={segments}
-                      tone={charTone}
+                      count={message.length}
+                      tone={
+                        message.length === 0
+                          ? "neutral"
+                          : message.length > 160
+                            ? "warning"
+                            : "neutral"
+                      }
                     />
                   </div>
                   <FormControl>
                     <Textarea
-                      rows={4}
-                      maxLength={320}
-                      inputMode="text"
-                      placeholder="Salut {{prenom}}, ce soir on lance la nouvelle carte d'hiver. Réserve vite !"
-                      {...field}
+                      rows={5}
+                      maxLength={640}
+                      ref={(e) => {
+                        field.ref(e);
+                        textareaRef.current = e;
+                      }}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      name={field.name}
+                      placeholder="Salut {prenom} ! Soirée vins du Beaujolais ce jeudi 19h au {resto}. Réserve par SMS 🍷"
                     />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Boutons d'insertion de tags */}
+            <div>
+              <p className="mb-2 text-xs text-[var(--text-muted)]">
+                Clic pour insérer un tag personnalisé :
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {TAGS.map((t) => (
+                  <button
+                    key={t.label}
+                    type="button"
+                    onClick={() => insertTag(t.label)}
+                    className="inline-flex items-center gap-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1 text-xs font-mono text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--text-primary)]"
+                    title={t.desc}
+                  >
+                    <Tag className="size-2.5" />
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <FormField
               control={form.control}
               name="filterSource"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cible</FormLabel>
+                  <FormLabel>À qui envoyer</FormLabel>
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
@@ -123,7 +226,7 @@ export function SmsBlastForm({ restaurantId, configured }: SmsBlastFormProps) {
                     <SelectContent>
                       <SelectItem value="all">Tous les contacts</SelectItem>
                       <SelectItem value="roulette">
-                        Issus de la roulette
+                        Issus de la roulette d&apos;avis
                       </SelectItem>
                       <SelectItem value="manual">Ajouts manuels</SelectItem>
                     </SelectContent>
@@ -131,98 +234,181 @@ export function SmsBlastForm({ restaurantId, configured }: SmsBlastFormProps) {
                 </FormItem>
               )}
             />
+
+            {/* === ESTIMATION DU COÛT === */}
+            {estimate && (
+              <EstimateBox
+                recipientCount={estimate.recipientCount}
+                segmentsPerSms={estimate.segmentsPerSms}
+                estimatedTokens={estimate.estimatedTokens}
+                balanceAfter={estimate.balanceAfter}
+                enough={estimate.enough}
+                currentBalance={currentBalance}
+              />
+            )}
           </div>
 
-          {/* === PREVIEW IPHONE-LIKE === */}
+          {/* === PREVIEW SMS === */}
           <SmsPreview message={message || ""} />
         </div>
 
         <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
           <Button
             type="submit"
-            disabled={pending || !configured}
+            disabled={pending || !canSend}
             className="w-full sm:w-auto"
             size="lg"
+            variant="primary"
           >
             {pending ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <Send className="size-4" />
             )}
-            Envoyer le SMS
+            {estimate && estimate.estimatedTokens > 0
+              ? `Envoyer (${estimate.estimatedTokens} SMS)`
+              : "Envoyer"}
           </Button>
         </div>
-        {!configured && (
-          <p className="text-xs text-[var(--text-muted)]">
-            Configure Brevo (BREVO_API_KEY) pour activer l&apos;envoi.
-          </p>
-        )}
       </form>
     </Form>
   );
 }
 
-/** Compteur de caractères avec coloration palière + nb de segments SMS. */
 function CharCounter({
   count,
-  max,
-  segments,
   tone,
 }: {
   count: number;
-  max: number;
-  segments: number;
-  tone: "neutral" | "warning" | "danger";
+  tone: "neutral" | "warning";
 }) {
-  const TONE_CLASSES = {
-    neutral: "text-[var(--text-tertiary)]",
-    warning: "text-[var(--neon-violet)]",
-    danger: "text-[var(--neon-danger)]",
-  };
+  const segments = count === 0 ? 0 : Math.ceil(count / 160);
   return (
     <span
       className={cn(
         "flex items-center gap-2 font-mono text-[11px] tabular-nums",
-        TONE_CLASSES[tone],
+        tone === "warning"
+          ? "text-[var(--neon-violet)]"
+          : "text-[var(--text-tertiary)]",
       )}
     >
-      <span>
-        {count}/{max}
-      </span>
-      <span aria-hidden className="opacity-50">
-        ·
-      </span>
-      <span>
-        {segments} SMS{segments > 1 ? "s" : ""}
-      </span>
+      <span>{count} caractères</span>
+      {segments > 1 && (
+        <>
+          <span aria-hidden className="opacity-50">
+            ·
+          </span>
+          <span>{segments} SMS chacun</span>
+        </>
+      )}
     </span>
   );
 }
 
-/**
- * Preview iPhone-like du message — bulle iMessage style à gauche du screen.
- * Sur mobile, prend toute la largeur sous le formulaire.
- */
+function EstimateBox({
+  recipientCount,
+  segmentsPerSms,
+  estimatedTokens,
+  balanceAfter,
+  enough,
+  currentBalance,
+}: {
+  recipientCount: number;
+  segmentsPerSms: number;
+  estimatedTokens: number;
+  balanceAfter: number;
+  enough: boolean;
+  currentBalance: number;
+}) {
+  if (recipientCount === 0) {
+    return (
+      <div className="flex items-start gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-glass)] p-3 text-xs text-[var(--text-secondary)]">
+        <AlertTriangle className="size-4 shrink-0 text-[var(--neon-violet)]" />
+        <p>
+          Aucun destinataire trouvé avec ce filtre. Vérifie que tes clients ont
+          bien laissé leur téléphone via la roulette.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={cn(
+        "rounded-lg border p-3 text-sm",
+        enough
+          ? "border-[var(--accent)]/30 bg-[var(--accent)]/8"
+          : "border-[rgb(217,119,6)]/40 bg-[rgba(245,158,11,0.08)] text-[rgb(146,64,14)]",
+      )}
+    >
+      <div className="grid gap-2 sm:grid-cols-3">
+        <div>
+          <p className="text-xs uppercase tracking-wider opacity-70">
+            Destinataires
+          </p>
+          <p className="text-lg font-semibold tabular-nums">{recipientCount}</p>
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wider opacity-70">
+            Coût estimé
+          </p>
+          <p className="text-lg font-semibold tabular-nums">
+            {estimatedTokens} SMS
+          </p>
+          {segmentsPerSms > 1 && (
+            <p className="text-[10px] opacity-70">
+              ({segmentsPerSms} SMS par destinataire car message long)
+            </p>
+          )}
+        </div>
+        <div>
+          <p className="text-xs uppercase tracking-wider opacity-70">
+            Solde après envoi
+          </p>
+          <p
+            className={cn(
+              "text-lg font-semibold tabular-nums",
+              !enough && "text-[rgb(146,64,14)]",
+            )}
+          >
+            {balanceAfter}
+          </p>
+        </div>
+      </div>
+      {!enough && (
+        <p className="mt-2 flex items-start gap-2 border-t border-current/20 pt-2 text-xs font-medium">
+          <AlertTriangle className="size-3.5 shrink-0" />
+          Solde insuffisant. Il te faut {estimatedTokens - currentBalance} SMS
+          de plus. Achète un pack ci-dessous pour continuer.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function SmsPreview({ message }: { message: string }) {
+  // Remplacement des tags pour la preview (avec valeurs fictives)
+  const previewText = message
+    .replace(/\{prenom\}/gi, "Marc")
+    .replace(/\{nom\}/gi, "Dupont")
+    .replace(/\{resto\}/gi, "Le Tire-Bouchon");
+
   const placeholder = "Ton message s'affichera ici…";
-  const text = message.trim() || placeholder;
-  const isPlaceholder = !message.trim();
+  const text = previewText.trim() || placeholder;
+  const isPlaceholder = !previewText.trim();
 
   return (
     <div className="rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-glass)] p-4 lg:sticky lg:top-24">
       <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
         <MessageSquare className="size-3" strokeWidth={1.75} />
-        Aperçu SMS
+        Aperçu (valeurs d&apos;exemple : Marc / Dupont / Le Tire-Bouchon)
       </div>
 
-      {/* Frame iPhone simplifiée : header + bulle */}
       <div className="overflow-hidden rounded-2xl border border-[var(--border-glass)] bg-[var(--bg-elevated)]">
-        {/* Status bar mock */}
         <div className="flex items-center justify-between border-b border-[var(--border-glass)] px-3 py-2 text-[10px] font-semibold tabular-nums text-[var(--text-secondary)]">
           <span>9:41</span>
           <span className="text-[var(--text-tertiary)]">●●● 5G ▮</span>
         </div>
-        {/* Header conversation */}
         <div className="flex items-center gap-2 border-b border-[var(--border-glass)] px-3 py-2">
           <div className="flex size-7 items-center justify-center rounded-full bg-[var(--neon-cyan)] text-[var(--bg-primary)]">
             <span className="text-xs font-bold">R</span>
@@ -236,9 +422,8 @@ function SmsPreview({ message }: { message: string }) {
             </div>
           </div>
         </div>
-        {/* Bulle SMS */}
         <div className="flex flex-col gap-1 px-3 py-4">
-          <div className="max-w-[85%] self-start rounded-2xl rounded-bl-md bg-[var(--bg-glass-strong)] px-3 py-2 text-[13px] leading-relaxed text-[var(--text-primary)] shadow-sm">
+          <div className="max-w-[85%] self-start whitespace-pre-line rounded-2xl rounded-bl-md bg-[var(--bg-glass-strong)] px-3 py-2 text-[13px] leading-relaxed text-[var(--text-primary)] shadow-sm">
             <span className={isPlaceholder ? "italic opacity-50" : ""}>
               {text}
             </span>

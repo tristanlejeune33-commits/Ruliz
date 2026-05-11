@@ -546,7 +546,13 @@ model BaseClient {
   email        String?  @db.VarChar(255)
   telephone    String?  @db.VarChar(20)
   prenom       String?  @db.VarChar(100)
+  /** Nom de famille — pour les tags SMS {nom} */
+  nom          String?  @db.VarChar(100)
+  /** Date d'anniversaire — pour automatisation SMS anniversaire */
+  anniversaire DateTime? @db.Date
   source       String?  @db.VarChar(50)
+  /** RGPD : true si le client a accepté de recevoir des SMS marketing */
+  optInSms     Boolean  @default(true) @map("opt_in_sms")
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -689,4 +695,135 @@ model BoutiqueCommandeItem {
   @@index([commandeId], map: "idx_boutique_commande_items_commande")
   @@index([produitId], map: "idx_boutique_commande_items_produit")
   @@map("boutique_commande_items")
+}
+
+// ============================================================
+// SMS MARKETING — système de crédits
+// ============================================================
+// Modèle : Tristan achète des SMS en gros sur Brevo (~0.03€/SMS),
+// les revend en packs à ses clients restaurateurs avec marge.
+// 1 seule BREVO_API_KEY côté serveur, jamais exposée aux clients.
+// Tracking par restaurant : balance, achats, envois.
+
+/**
+ * Solde de crédits SMS d'un restaurant.
+ * 1 ligne = 1 restaurant (unique). Décrémenté à chaque envoi, incrémenté
+ * à chaque achat de pack via Stripe Checkout.
+ */
+model SmsBalance {
+  id            BigInt   @id @default(autoincrement())
+  restaurantId  BigInt   @unique @map("restaurant_id")
+  /** Solde courant en tokens SMS (1 token = 1 segment GSM = 160 chars max) */
+  balance       Int      @default(0)
+  /** Total cumulé jamais reset (pour stats admin) */
+  totalAcquired Int      @default(0) @map("total_acquired")
+  totalSpent    Int      @default(0) @map("total_spent")
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([restaurantId], map: "idx_sms_balance_resto")
+  @@map("sms_balance")
+}
+
+/**
+ * Historique des achats de packs SMS (via Stripe Checkout one-shot).
+ */
+model SmsCreditPurchase {
+  id                BigInt   @id @default(autoincrement())
+  restaurantId      BigInt   @map("restaurant_id")
+  /** Nombre de SMS tokens achetés (ex: 100, 500, 1000, 5000) */
+  packSize          Int      @map("pack_size")
+  /** Prix payé en centimes (€) */
+  pricePaidCentimes Int      @map("price_paid_centimes")
+  /** ID session Stripe Checkout (idempotence webhook) */
+  stripeSessionId   String?  @unique @map("stripe_session_id") @db.VarChar(255)
+  /** "pending" / "paid" / "refunded" / "failed" */
+  status            String   @default("pending") @db.VarChar(20)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  paidAt            DateTime? @map("paid_at") @db.Timestamptz()
+
+  @@index([restaurantId], map: "idx_sms_purchase_resto")
+  @@index([status], map: "idx_sms_purchase_status")
+  @@map("sms_credit_purchases")
+}
+
+/**
+ * Historique des envois (1 ligne = 1 SMS individuel envoyé via Brevo).
+ * Permet de re-tracer, calculer coût, exporter pour facturation.
+ */
+model SmsMessage {
+  id            BigInt   @id @default(autoincrement())
+  restaurantId  BigInt   @map("restaurant_id")
+  /** Numéro destinataire au format international (33612345678) */
+  recipient     String   @db.VarChar(20)
+  /** Contenu final envoyé (après remplacement des tags) */
+  content       String   @db.Text
+  /** Nombre de segments (1 si ≤160 chars, sinon 2+) = tokens consommés */
+  segments      Int      @default(1)
+  /** "sent" / "failed" / "skipped" */
+  status        String   @default("pending") @db.VarChar(20)
+  /** Référence Brevo retournée par l'API */
+  brevoRef      String?  @map("brevo_ref") @db.VarChar(255)
+  /** Si campagne : lien vers la campagne parente */
+  campaignId    BigInt?  @map("campaign_id")
+  /** Si automatisation : type d'auto qui a déclenché (anniversaire, etc.) */
+  triggerType   String?  @map("trigger_type") @db.VarChar(50)
+  /** Si erreur Brevo, message */
+  errorMessage  String?  @map("error_message") @db.Text
+  sentAt        DateTime @default(now()) @map("sent_at") @db.Timestamptz()
+
+  @@index([restaurantId], map: "idx_sms_message_resto")
+  @@index([campaignId], map: "idx_sms_message_campaign")
+  @@index([sentAt], map: "idx_sms_message_sent_at")
+  @@map("sms_messages")
+}
+
+/**
+ * Campagne SMS (blast groupé) — 1 envoi à N destinataires avec le même
+ * template (qui peut contenir des tags personnalisés {prenom}, {nom}…).
+ */
+model SmsCampaign {
+  id              BigInt   @id @default(autoincrement())
+  restaurantId    BigInt   @map("restaurant_id")
+  /** Titre de la campagne pour retrouver dans l'historique */
+  title           String   @db.VarChar(255)
+  /** Template avec tags ({prenom}, {nom}, {resto}…) avant remplacement */
+  messageTemplate String   @map("message_template") @db.Text
+  /** Filtre destinataires : "all", "roulette", "manual", ou JSON custom */
+  targetFilter    String   @default("all") @map("target_filter") @db.VarChar(100)
+  /** Compteurs finaux après envoi */
+  totalSent       Int      @default(0) @map("total_sent")
+  totalFailed     Int      @default(0) @map("total_failed")
+  totalSkipped    Int      @default(0) @map("total_skipped")
+  /** Tokens dépensés (= total_sent × segments_moyens) */
+  tokensSpent     Int      @default(0) @map("tokens_spent")
+  status          String   @default("draft") @db.VarChar(20)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  sentAt          DateTime? @map("sent_at") @db.Timestamptz()
+
+  @@index([restaurantId], map: "idx_sms_campaign_resto")
+  @@map("sms_campaigns")
+}
+
+/**
+ * Automatisation SMS : déclencheur récurrent (anniversaire client,
+ * relance post-roulette, etc.). Cron quotidien Inngest fait le scan.
+ */
+model SmsAutomation {
+  id              BigInt   @id @default(autoincrement())
+  restaurantId    BigInt   @map("restaurant_id")
+  /** "birthday" / "post_roulette" / "anniversary_signup" / etc. */
+  triggerType     String   @map("trigger_type") @db.VarChar(50)
+  /** Template avec tags */
+  messageTemplate String   @map("message_template") @db.Text
+  /** Offset en jours : 0 = jour J, 1 = J+1, -7 = J-7 (pour rappel anniv) */
+  daysOffset      Int      @default(0) @map("days_offset")
+  /** Heure d'envoi 0-23 (default 10h) */
+  sendHour        Int      @default(10) @map("send_hour")
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([restaurantId], map: "idx_sms_auto_resto")
+  @@index([triggerType, active], map: "idx_sms_auto_trigger_active")
+  @@map("sms_automations")
 }
