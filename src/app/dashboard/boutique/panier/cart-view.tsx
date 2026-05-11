@@ -40,6 +40,7 @@ import {
   setCartQuantityAction,
 } from "@/server/dashboard/boutique-cart-actions";
 import { createBoutiqueCommande } from "@/server/dashboard/boutique-actions";
+import { createBoutiqueCheckoutSession } from "@/server/dashboard/boutique-checkout-actions";
 
 interface CartItemView {
   produitId: string;
@@ -134,7 +135,8 @@ export function CartView({
   const onSubmit = (values: Values) => {
     setSubmitting(true);
     startTransition(async () => {
-      const res = await createBoutiqueCommande({
+      // 1. Crée la commande en DB (statut "en_attente")
+      const commandeRes = await createBoutiqueCommande({
         items: items.map((i) => ({
           produitId: i.produitId,
           quantite: i.quantite,
@@ -149,12 +151,37 @@ export function CartView({
         livraisonTelephone: values.livraisonTelephone,
         notesClient: values.notesClient,
       });
+
+      if (!commandeRes.ok) {
+        setSubmitting(false);
+        toast.error(commandeRes.error);
+        return;
+      }
+      if (!commandeRes.data?.id) {
+        setSubmitting(false);
+        toast.error("Commande créée mais ID introuvable");
+        return;
+      }
+
+      // 2. Crée la session Stripe Checkout pour cette commande
+      const checkoutRes = await createBoutiqueCheckoutSession(
+        commandeRes.data.id,
+      );
       setSubmitting(false);
-      if (res.ok) {
-        toast.success("Commande envoyée — un email de confirmation arrive");
-        router.push("/dashboard/boutique/commandes");
+
+      if (checkoutRes.ok && checkoutRes.checkoutUrl) {
+        // 3. Redirige direct vers Stripe (l'utilisateur reviendra sur la page
+        //    commande via success_url / cancel_url définies côté serveur)
+        window.location.href = checkoutRes.checkoutUrl;
       } else {
-        toast.error(res.error);
+        // Si Stripe pas configuré ou autre erreur : la commande EST créée
+        // (paiement à régler manuellement), on redirige vers la page commande
+        toast.error(
+          checkoutRes.ok ? "Paiement indisponible" : checkoutRes.error,
+        );
+        router.push(
+          `/dashboard/boutique/commandes/${commandeRes.data.id}`,
+        );
       }
     });
   };
@@ -391,11 +418,16 @@ export function CartView({
               ) : (
                 <ShoppingBag className="size-4" strokeWidth={1.75} />
               )}
-              Passer commande ({items.length} article
-              {items.length > 1 ? "s" : ""})
+              {submitting
+                ? "Redirection vers le paiement…"
+                : `Payer ${(totalCentimes / 100).toLocaleString("fr-FR", { style: "currency", currency: items[0]?.produit.devise ?? "EUR" })}`}
             </Button>
+            <p className="flex items-center justify-center gap-1 text-center text-[10px] text-[var(--text-tertiary)]">
+              🔒 Paiement sécurisé Stripe · CB / SEPA / Apple Pay
+            </p>
             <p className="text-center text-[10px] text-[var(--text-tertiary)]">
-              On revient vers toi sous 24h pour le paiement et la livraison.
+              Tu seras redirigé vers la page de paiement sécurisée Stripe.
+              Facture PDF disponible après paiement.
             </p>
           </form>
         </Form>
