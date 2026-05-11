@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { usePreviewLang } from "@/components/shared/preview-lang-picker";
+import { PhoneFrame } from "@/components/shared/phone-frame";
 import {
   DndContext,
   KeyboardSensor,
@@ -587,17 +588,13 @@ export function MenuEditor({
               </Button>
             </div>
           </div>
-          <div
-            data-onboarding-anchor="preview-iframe"
-            className="aspect-[9/19] w-full max-w-[380px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-white shadow-xl"
-          >
-            <iframe
-              key={`mobile-${previewKey}-${previewLang}`}
-              src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
-              title="Preview carte publique"
-              className="h-full w-full"
-            />
-          </div>
+          <PhoneFrame
+            src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
+            title="Preview carte publique"
+            reloadKey={`mobile-${previewKey}-${previewLang}`}
+            maxWidth={380}
+            dataAttrs={{ "data-onboarding-anchor": "preview-iframe" }}
+          />
         </section>
       )}
 
@@ -812,14 +809,12 @@ export function MenuEditor({
             </div>
           </div>
           <div className="flex flex-1 items-start justify-center overflow-hidden p-4">
-            <div className="aspect-[9/19] w-full max-w-[320px] overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-white shadow-xl">
-              <iframe
-                key={`${previewKey}-${previewLang}`}
-                src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
-                title="Preview carte publique"
-                className="h-full w-full"
-              />
-            </div>
+            <PhoneFrame
+              src={`/carte/${restaurantId}?preview=1&lang=${previewLang}&v=${previewKey}`}
+              title="Preview carte publique"
+              reloadKey={`${previewKey}-${previewLang}`}
+              maxWidth={320}
+            />
           </div>
         </aside>
       )}
