@@ -25,7 +25,7 @@ import {
   listSmsAutomations,
   listSmsCampaigns,
 } from "@/server/dashboard/sms-actions";
-import { SMS_PACKS } from "@/server/dashboard/sms-packs";
+import { getActiveSmsPacks } from "@/server/dashboard/sms-packs";
 import { SmsBalanceCard } from "./sms-balance-card";
 import { SmsPacksList } from "./sms-packs-list";
 import { SmsBlastForm } from "./sms-blast-form";
@@ -46,7 +46,7 @@ export default async function SmsPage({ searchParams }: PageProps) {
 
   const restaurantId = restaurant.id.toString();
 
-  const [balance, baseClients, totalWithPhone, automations, campaigns] =
+  const [balance, baseClients, totalWithPhone, automations, campaigns, packs] =
     await Promise.all([
       getSmsBalance(restaurantId),
       prisma.baseClient.findMany({
@@ -62,6 +62,7 @@ export default async function SmsPage({ searchParams }: PageProps) {
       }),
       listSmsAutomations(restaurantId),
       listSmsCampaigns(restaurantId, 10),
+      getActiveSmsPacks(),
     ]);
 
   return (
@@ -132,7 +133,7 @@ export default async function SmsPage({ searchParams }: PageProps) {
           <CardContent>
             <SmsPacksList
               restaurantId={restaurantId}
-              packs={SMS_PACKS.map((p) => ({
+              packs={packs.map((p) => ({
                 id: p.id,
                 size: p.size,
                 priceCentimes: p.priceCentimes,

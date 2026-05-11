@@ -805,6 +805,32 @@ model SmsCampaign {
 }
 
 /**
+ * Configuration des packs SMS — édité par l'admin global (Tristan).
+ * 1 ligne par pack (starter / boost / growth / scale). Si la table est
+ * vide, le code retombe sur les valeurs par défaut codées dans
+ * src/server/dashboard/sms-packs.ts.
+ *
+ * Permet à l'admin de changer les prix sans redéploiement.
+ */
+model SmsPackSetting {
+  /** ID logique du pack : "starter" / "boost" / "growth" / "scale" */
+  packId        String   @id @map("pack_id") @db.VarChar(20)
+  /** Nombre de SMS dans le pack */
+  size          Int
+  /** Prix en centimes (€) */
+  priceCentimes Int      @map("price_centimes")
+  /** Libellé visible : "Pack Découverte", "Pack Boost"… */
+  label         String   @db.VarChar(100)
+  /** Badge optionnel : "Populaire", "Économie"… */
+  badge         String?  @db.VarChar(50)
+  /** false = pack masqué côté dashboard restos */
+  active        Boolean  @default(true)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("sms_pack_settings")
+}
+
+/**
  * Automatisation SMS : déclencheur récurrent (anniversaire client,
  * relance post-roulette, etc.). Cron quotidien Inngest fait le scan.
  */

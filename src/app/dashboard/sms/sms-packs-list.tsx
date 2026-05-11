@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { createSmsPackCheckout } from "@/server/dashboard/sms-actions";
 
 interface Pack {
-  id: "starter" | "boost" | "growth" | "scale";
+  id: string;
   size: number;
   priceCentimes: number;
   label: string;
@@ -29,7 +29,7 @@ export function SmsPacksList({ restaurantId, packs }: SmsPacksListProps) {
   const [pending, startTransition] = useTransition();
   const [loadingPack, setLoadingPack] = useState<string | null>(null);
 
-  const handleBuy = (packId: Pack["id"]) => {
+  const handleBuy = (packId: string) => {
     setLoadingPack(packId);
     startTransition(async () => {
       const res = await createSmsPackCheckout({ restaurantId, packId });

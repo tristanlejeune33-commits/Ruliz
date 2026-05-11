@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
-import { CheckCircle2, Database, Globe, Key, Settings, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Database,
+  Globe,
+  Key,
+  MessageSquare,
+  Settings,
+  XCircle,
+} from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { isStripeConfigured } from "@/lib/stripe";
 import { requireAdmin } from "@/lib/session";
+import { listAllSmsPacks } from "@/server/dashboard/sms-packs";
+import { SmsPacksEditor } from "./sms-packs-editor";
 
 export const metadata: Metadata = {
   title: "Paramètres système · Admin Ruliz",
@@ -21,6 +31,8 @@ export const metadata: Metadata = {
  */
 export default async function AdminSettingsPage() {
   await requireAdmin();
+
+  const smsPacks = await listAllSmsPacks();
 
   const integrations = [
     {
@@ -150,6 +162,30 @@ export default async function AdminSettingsPage() {
               </a>
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* === PRIX DES PACKS SMS === */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start gap-3">
+            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--neon-cyan-soft)] text-[var(--neon-cyan)] ring-1 ring-[var(--neon-cyan)]/30">
+              <MessageSquare className="size-5" strokeWidth={1.75} />
+            </span>
+            <div>
+              <CardTitle>Prix des packs SMS</CardTitle>
+              <CardDescription className="mt-1">
+                Modifie les prix et libellés des packs vendus aux
+                restaurateurs. Le coût Brevo est d&apos;environ 0,030 € par
+                SMS en France : garde une marge ×2 minimum pour la
+                rentabilité. Le changement est instantané pour tous les
+                clients (pas de redéploiement nécessaire).
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <SmsPacksEditor packs={smsPacks} />
         </CardContent>
       </Card>
 

@@ -6,7 +6,7 @@ import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { isBrevoConfigured, normalizeFrenchPhone, sendSms } from "@/lib/brevo";
 import { prisma } from "@/lib/db";
 import { APP_URL, getStripe } from "@/lib/stripe";
-import { SMS_PACKS, type SmsPack } from "./sms-packs";
+import { getSmsPackById } from "./sms-packs";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -707,12 +707,14 @@ export async function listSmsCampaigns(
  */
 export async function createSmsPackCheckout(input: {
   restaurantId: string;
-  packId: SmsPack["id"];
+  packId: string;
 }): Promise<ActionResult<{ url: string }>> {
   await ensureSmsSchema();
 
-  const pack = SMS_PACKS.find((p) => p.id === input.packId);
-  if (!pack) return { ok: false, error: "Pack inconnu" };
+  // Lit le pack depuis la DB (sms_pack_settings) ; respecte les prix custom
+  // définis par l'admin via /admin/settings.
+  const pack = await getSmsPackById(input.packId);
+  if (!pack) return { ok: false, error: "Pack inconnu ou désactivé" };
 
   let bigId: bigint;
   try {
