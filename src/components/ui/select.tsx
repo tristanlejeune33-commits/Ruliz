@@ -79,11 +79,9 @@ const SelectContent = React.forwardRef<
       ref={ref}
       position={position}
       className={cn(
-        // Background plus contrasté que --bg-card (qui était trop proche du
-        // canvas en light mode → dropdown quasi invisible). On force
-        // --bg-elevated (= glass) + border-glass-hover plus marquée +
-        // shadow-2xl pour décoller visuellement du fond.
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border-2 border-[var(--border-glass-hover)] bg-[var(--bg-elevated)] backdrop-blur-xl text-[var(--text-primary)] shadow-2xl",
+        // Fond solide --bg-popover-solid (jamais transparent) + border + shadow
+        // pour bien décoller du canvas dans les deux thèmes.
+        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border border-[var(--border-glass-hover)] bg-[var(--bg-popover-solid)] text-[var(--text-primary)] shadow-2xl",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         position === "popper" &&
           "data-[side=bottom]:translate-y-1 data-[side=top]:-translate-y-1",

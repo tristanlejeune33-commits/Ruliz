@@ -18,7 +18,10 @@ const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 w-72 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-4 text-[var(--text-primary)] shadow-xl outline-none",
+        // Fond solide --bg-popover-solid (#0e1422 dark / #ffffff light) +
+        // border marquée + shadow-2xl. Garantit l'opacité même au-dessus du
+        // gradient du body et du blob ambient.
+        "z-50 w-72 rounded-lg border border-[var(--border-glass-hover)] bg-[var(--bg-popover-solid)] p-4 text-[var(--text-primary)] shadow-2xl outline-none",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}

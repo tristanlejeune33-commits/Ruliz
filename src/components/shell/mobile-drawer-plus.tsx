@@ -4,18 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronRight,
-  CreditCard,
-  Gauge,
   HelpCircle,
   type LucideIcon,
   LogOut,
   Megaphone,
   MessageSquare,
-  Package,
+  QrCode,
   Settings,
   Sparkles,
   User as UserIcon,
-  Users,
   Building2,
 } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
@@ -62,20 +59,27 @@ interface DrawerSection {
 
 const DASHBOARD_SECTIONS: DrawerSection[] = [
   {
+    titleKey: "nav.section.principal",
+    // QR codes (qui contient désormais la boutique fusionnée) accessible
+    // directement depuis le drawer puisque l'item central de la BottomNav
+    // ouvre la carte publique en nouvel onglet (action #1 du restaurateur).
+    items: [
+      { labelKey: "nav.qrcodes", href: "/dashboard/qrcodes", icon: QrCode },
+    ],
+  },
+  {
     titleKey: "nav.section.acquisition",
     items: [
       { labelKey: "nav.jeu", href: "/dashboard/jeu", icon: Sparkles },
       { labelKey: "nav.popups", href: "/dashboard/popups", icon: Megaphone },
       { labelKey: "nav.sms", href: "/dashboard/sms", icon: MessageSquare },
-      { labelKey: "nav.boutique", href: "/dashboard/boutique", icon: Package },
     ],
   },
   {
     titleKey: "nav.section.gestion",
+    // Équipe + Facturation accessibles via Paramètres → on garde juste Mon resto
     items: [
       { labelKey: "nav.restaurant", href: "/dashboard/restaurant", icon: Building2 },
-      { labelKey: "nav.team", href: "/dashboard/team", icon: Users },
-      { labelKey: "nav.billing", href: "/dashboard/billing", icon: CreditCard },
     ],
   },
 ];

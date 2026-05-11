@@ -57,19 +57,19 @@ const DASHBOARD_NAV: SidebarNavSection[] = [
   },
   {
     titleKey: "nav.section.acquisition",
+    // Boutique QR fusionnée dans /dashboard/qrcodes — un seul accès au catalogue
     items: [
       { labelKey: "nav.stats", href: "/dashboard/stats", icon: Gauge },
       { labelKey: "nav.jeu", href: "/dashboard/jeu", icon: Sparkles },
       { labelKey: "nav.popups", href: "/dashboard/popups", icon: Megaphone },
       { labelKey: "nav.sms", href: "/dashboard/sms", icon: MessageSquare },
-      { labelKey: "nav.boutique", href: "/dashboard/boutique", icon: Package },
     ],
   },
   {
     titleKey: "nav.section.gestion",
+    // Équipe et Facturation sont accessibles via /dashboard/settings (les
+    // pages elles-mêmes restent en place pour les liens directs et bookmarks).
     items: [
-      { labelKey: "nav.team", href: "/dashboard/team", icon: Users },
-      { labelKey: "nav.billing", href: "/dashboard/billing", icon: CreditCard },
       { labelKey: "nav.settings", href: "/dashboard/settings", icon: Settings },
     ],
   },

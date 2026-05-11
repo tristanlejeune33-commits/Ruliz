@@ -12,8 +12,10 @@ const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 
+// Hover utilise --bg-glass-hover (différent de --bg-elevated) pour rester
+// visible même quand le menu lui-même utilise bg-elevated comme fond.
 const itemBaseClasses =
-  "relative flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-150 text-[var(--text-secondary)] data-[highlighted]:bg-[var(--bg-elevated)] data-[highlighted]:text-[var(--text-primary)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0";
+  "relative flex cursor-pointer select-none items-center gap-2 rounded-md px-2 py-1.5 text-sm outline-none transition-colors duration-150 text-[var(--text-primary)] data-[highlighted]:bg-[var(--bg-glass-hover)] data-[highlighted]:text-[var(--text-primary)] data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0";
 
 const DropdownMenuSubTrigger = React.forwardRef<
   React.ComponentRef<typeof DropdownMenuPrimitive.SubTrigger>,
@@ -39,7 +41,10 @@ const DropdownMenuSubContent = React.forwardRef<
   <DropdownMenuPrimitive.SubContent
     ref={ref}
     className={cn(
-      "z-50 min-w-[8rem] overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-1 shadow-xl",
+      // Fond opaque (--bg-elevated dark / fallback noir profond) + backdrop
+      // blur pour ne JAMAIS être transparent. Le bg-card translucide précédent
+      // se confondait avec le canvas en light mode et le glow néon en dark.
+      "z-50 min-w-[8rem] overflow-hidden rounded-lg border border-[var(--border-glass-hover)] bg-[var(--bg-popover-solid)] p-1 shadow-2xl",
       "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
       className,
     )}
@@ -57,7 +62,8 @@ const DropdownMenuContent = React.forwardRef<
       ref={ref}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 min-w-[10rem] overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] p-1 shadow-xl",
+        // Fond opaque + border-2 marquée + shadow-2xl pour bien décoller du fond
+        "z-50 min-w-[10rem] overflow-hidden rounded-lg border-2 border-[var(--border-glass-hover)] bg-[var(--bg-elevated)] backdrop-blur-xl p-1 shadow-2xl",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}

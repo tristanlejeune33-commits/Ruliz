@@ -693,10 +693,12 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
           </TabsContent>
         </Tabs>
 
-        {/* Sticky save bar — au-dessus de la BottomNav mobile (64px) + safe-area,
-            position relative desktop (collé en bas du contenu). */}
+        {/* Indicateur auto-save discret en bas — pas de bouton "Enregistrer
+            maintenant" car la sauvegarde se déclenche automatiquement 1.5s
+            après chaque modification. L'indicateur montre l'état : idle /
+            saving / saved / error. */}
         <div
-          className="sticky z-10 flex flex-col items-stretch gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)]/85 p-3 backdrop-blur-md sm:flex-row sm:items-center sm:justify-end lg:bottom-4"
+          className="sticky z-10 flex justify-end rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)]/85 p-3 backdrop-blur-md lg:bottom-4"
           style={{
             bottom: "calc(64px + env(safe-area-inset-bottom) + 12px)",
           }}
@@ -705,14 +707,6 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
             status={autoSaveStatus}
             errorMessage={autoSaveError}
           />
-          <Button
-            type="submit"
-            disabled={!form.formState.isDirty || pending}
-            className="w-full sm:w-auto"
-          >
-            {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            Enregistrer maintenant
-          </Button>
         </div>
       </form>
     </Form>

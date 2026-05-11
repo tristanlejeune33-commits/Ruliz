@@ -53,6 +53,11 @@
   --bg-glass: rgba(255, 255, 255, 0.04);
   --bg-glass-strong: rgba(255, 255, 255, 0.06);
   --bg-glass-hover: rgba(255, 255, 255, 0.07);
+  /* Fond opaque pour les menus flottants (Dropdown, Popover, Select content,
+     user menu, switcher resto, recherche rapide). Légèrement plus clair que
+     --bg-primary pour décoller visuellement du body sans laisser passer le
+     gradient/blob du fond. */
+  --bg-popover-solid: #0e1422;
 
   /* Bridge legacy → glass */
   --bg-elevated: var(--bg-glass);
@@ -138,6 +143,8 @@
   --bg-glass-strong: #f6f8fc;     /* sidebar / panels */
   --bg-glass-hover: #f1f4fa;
   --bg-active: #eef2fa;           /* item nav actif, sélections */
+  /* Fond opaque menus flottants (cohérent avec dark mode pattern) */
+  --bg-popover-solid: #ffffff;
 
   /* Bridge legacy */
   --bg-elevated: var(--bg-glass);
