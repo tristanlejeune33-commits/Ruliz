@@ -798,8 +798,23 @@
     margin: 0 !important;
     max-width: none !important;
   }
-  div[class*="grid-cols-"] {
+  /* Aplatit les grilles SAUF si la carte est marquée comme document imprimable */
+  div[class*="grid-cols-"]:not(.print-keep-grid):not(.print-keep-grid *) {
     display: block !important;
+  }
+
+  /* Document imprimable : marge A4 propre, pas de bordure carte */
+  .print-document {
+    box-shadow: none !important;
+    border: none !important;
+    background: white !important;
+    margin: 0 !important;
+    padding: 16mm 14mm !important;
+    max-width: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 0;
   }
 
   /* Évite les page-breaks au milieu d'une carte */
@@ -807,6 +822,9 @@
   tr,
   td,
   th {
+    page-break-inside: avoid;
+  }
+  .print-avoid-break {
     page-break-inside: avoid;
   }
 }
