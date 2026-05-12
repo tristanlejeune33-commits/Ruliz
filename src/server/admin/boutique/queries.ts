@@ -50,10 +50,26 @@ export async function listBoutiqueProduitsAdmin() {
   });
   // Enrichit chaque produit avec stockUtilise et stockRestant calculés
   const stockUsed = await getStockUsedByProduitIds(produits.map((p) => p.id));
+
+  // weight_grams via raw SQL (la colonne n'est pas dans le client Prisma).
+  // Map<id, grams> pour rattacher rapidement.
+  const weightRows = (await prisma
+    .$queryRawUnsafe(
+      `SELECT id::text AS id, COALESCE(weight_grams, 0)::int AS "weightGrams"
+       FROM boutique_produits`,
+    )
+    .catch(() => [])) as Array<{ id: string; weightGrams: number }>;
+  const weightMap = new Map(weightRows.map((r) => [r.id, r.weightGrams]));
+
   return produits.map((p) => {
     const used = stockUsed.get(p.id.toString()) ?? 0;
     const remaining = p.stockMax === null ? null : Math.max(0, p.stockMax - used);
-    return { ...p, stockUtilise: used, stockRestant: remaining };
+    return {
+      ...p,
+      stockUtilise: used,
+      stockRestant: remaining,
+      weightGrams: weightMap.get(p.id.toString()) ?? 0,
+    };
   });
 }
 

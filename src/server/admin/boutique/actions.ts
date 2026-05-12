@@ -54,6 +54,9 @@ const produitSchema = z.object({
   stockMax: z.number().int().nonnegative().nullable().optional(),
   /** Liste libre de features (ex: "100 unités", "Format A4") */
   features: z.array(z.string().max(120)).max(20).optional(),
+  /** Grammage (poids en grammes) pour le calcul des frais de port Colissimo.
+      0 = produit dématérialisé / non concerné par les frais de port. */
+  weightGrams: z.number().int().nonnegative().max(100000).default(0),
 });
 
 export async function createBoutiqueProduit(
@@ -91,6 +94,21 @@ export async function createBoutiqueProduit(
       featuresJson: data.features ?? [],
     },
   });
+
+  // weight_grams persisté en SQL brut — le client Prisma local peut ne pas
+  // avoir régénéré le champ (lock Windows EPERM bloque prisma generate).
+  // Idempotent : update no-op si la colonne n'existe pas.
+  if (data.weightGrams !== undefined) {
+    await prisma
+      .$executeRawUnsafe(
+        `UPDATE boutique_produits SET weight_grams = $1 WHERE id = $2`,
+        data.weightGrams,
+        created.id,
+      )
+      .catch((err) =>
+        console.warn("[boutique.create] persist weight_grams failed:", err),
+      );
+  }
 
   // Sync Stripe en best-effort (ne bloque pas la réponse en cas d'échec)
   await syncProduitToStripeAndPersist(created.id).catch((err) =>
@@ -145,6 +163,19 @@ export async function updateBoutiqueProduit(
       featuresJson: data.features ?? [],
     },
   });
+
+  // weight_grams en SQL brut (cf. createBoutiqueProduit)
+  if (data.weightGrams !== undefined) {
+    await prisma
+      .$executeRawUnsafe(
+        `UPDATE boutique_produits SET weight_grams = $1 WHERE id = $2`,
+        data.weightGrams,
+        id,
+      )
+      .catch((err) =>
+        console.warn("[boutique.update] persist weight_grams failed:", err),
+      );
+  }
 
   // Sync Stripe en best-effort
   await syncProduitToStripeAndPersist(id).catch((err) =>

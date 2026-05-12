@@ -65,6 +65,9 @@ export interface SerializedBoutiqueProduit {
   featuresJson: unknown;
   /** null = stock illimité */
   stockMax: number | null;
+  /** Poids unitaire en grammes pour le calcul des frais de port Colissimo.
+      0 = produit non concerné par les frais de port. */
+  weightGrams?: number;
   /** Calculé : somme des items des commandes non annulées */
   stockUtilise?: number;
   /** Calculé : stockMax - stockUtilise (null si stockMax null) */
@@ -85,6 +88,8 @@ const schema = z.object({
   stockMax: z
     .union([z.number().int().nonnegative(), z.literal("" as const), z.null()])
     .optional(),
+  // Grammage en g pour les frais de port (0 = produit dématérialisé / hors port)
+  weightGrams: z.number().int().nonnegative().max(100000),
 });
 
 type Values = z.infer<typeof schema>;
@@ -126,6 +131,7 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
       position: produit?.position ?? 0,
       statut: produit?.statut ?? "brouillon",
       stockMax: produit?.stockMax ?? "",
+      weightGrams: produit?.weightGrams ?? 0,
     },
   });
 
@@ -420,6 +426,39 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
                           )}
                       </>
                     )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Grammage produit (g) — utilisé pour calculer les frais de port
+                Colissimo à la commande. 0 = produit dématérialisé. */}
+            <FormField
+              control={form.control}
+              name="weightGrams"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Grammage (g)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      step={1}
+                      inputMode="numeric"
+                      placeholder="ex : 250"
+                      value={field.value}
+                      onChange={(e) =>
+                        field.onChange(parseInt(e.target.value || "0", 10))
+                      }
+                      className="font-mono"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-[10px]">
+                    Poids unitaire du produit en grammes. Sert au calcul
+                    automatique des frais de port (paliers Colissimo
+                    configurés dans /admin/boutique). Mets 0 si le produit
+                    est dématérialisé.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

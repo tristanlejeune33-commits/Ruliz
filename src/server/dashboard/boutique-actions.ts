@@ -157,14 +157,34 @@ export async function createBoutiqueCommande(
   const subtotalCentimes = itemsData.reduce((s, i) => s + i.totalCentimes, 0);
   const devise = produits[0]?.devise ?? "EUR";
 
-  // Calcule les frais de port selon la config admin (0 si désactivé ou si
-  // sous-total >= seuil "livraison offerte"). Le montant est snapshoté sur
-  // la commande pour cohérence (ne change pas si l'admin modifie le tarif
-  // après la création).
+  // === Calcul du poids total du panier ===
+  // weight_grams n'est pas dans le client Prisma → on lit en raw SQL pour
+  // récupérer le grammage de chaque produit, puis on somme grammage × qty.
+  const weightRows = (await prisma
+    .$queryRawUnsafe(
+      `SELECT id::text AS id, COALESCE(weight_grams, 0)::int AS "weightGrams"
+       FROM boutique_produits WHERE id = ANY($1::bigint[])`,
+      produits.map((p) => p.id),
+    )
+    .catch(() => [])) as Array<{ id: string; weightGrams: number }>;
+  const weightByProduitId = new Map(
+    weightRows.map((r) => [r.id, r.weightGrams]),
+  );
+  const totalWeightGrams = data.items.reduce((sum, item) => {
+    const w = weightByProduitId.get(item.produitId) ?? 0;
+    return sum + w * item.quantite;
+  }, 0);
+
+  // Calcule les frais de port selon la config admin + poids total. Le montant
+  // est snapshoté sur la commande pour cohérence (ne change pas si l'admin
+  // modifie le barème après la création).
   const { calcShippingCentimes } = await import(
     "@/server/admin/boutique/shipping-actions"
   );
-  const shippingCentimes = await calcShippingCentimes(subtotalCentimes);
+  const shippingCentimes = await calcShippingCentimes({
+    subtotalCentimes,
+    totalWeightGrams,
+  });
   const totalCentimes = subtotalCentimes + shippingCentimes;
 
   const created = await prisma.boutiqueCommande.create({

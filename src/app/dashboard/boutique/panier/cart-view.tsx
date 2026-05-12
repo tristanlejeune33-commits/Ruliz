@@ -53,6 +53,8 @@ interface CartItemView {
     imageUrl: string | null;
     prixCentimes: number;
     devise: string;
+    /** Grammage (g) du produit — passé par la query côté serveur. */
+    weightGrams?: number;
   };
 }
 
@@ -72,6 +74,13 @@ interface CartViewProps {
     freeThresholdCentimes: number;
     label: string;
     active: boolean;
+    tiers: Array<{
+      id: string;
+      maxGrams: number;
+      feeCentimes: number;
+      label: string;
+      position: number;
+    }>;
   };
 }
 
@@ -105,8 +114,21 @@ export function CartView({
     () => items.reduce((s, i) => s + i.totalCentimes, 0),
     [items],
   );
-  // Calcul shipping côté client (mirror du calcShippingCentimes serveur).
-  // Si le seuil "livraison offerte" est atteint OU shipping désactivé → 0€.
+
+  // Poids total du panier en grammes (somme des grammages × qty).
+  // Affiché à côté des frais de port et utilisé pour trouver le palier.
+  const totalWeightGrams = useMemo(
+    () =>
+      items.reduce(
+        (sum, i) => sum + (i.produit.weightGrams ?? 0) * i.quantite,
+        0,
+      ),
+    [items],
+  );
+
+  // Calcul shipping côté client (mirror exact du calcShippingCentimes
+  // serveur — paliers triés par poids croissant, on prend le 1er dont
+  // maxGrams ≥ poids total, sinon le dernier palier).
   const shippingCentimes = useMemo(() => {
     if (!shipping.active) return 0;
     if (
@@ -115,10 +137,32 @@ export function CartView({
     ) {
       return 0;
     }
-    return shipping.feeCentimes;
-  }, [shipping, subtotalCentimes]);
+    if (shipping.tiers.length === 0) {
+      return shipping.feeCentimes;
+    }
+    const sorted = [...shipping.tiers].sort(
+      (a, b) => a.maxGrams - b.maxGrams,
+    );
+    const tier =
+      sorted.find((t) => totalWeightGrams <= t.maxGrams) ??
+      sorted[sorted.length - 1];
+    return tier?.feeCentimes ?? shipping.feeCentimes;
+  }, [shipping, subtotalCentimes, totalWeightGrams]);
   const totalCentimes = subtotalCentimes + shippingCentimes;
   const devise = items[0]?.produit.devise ?? "EUR";
+
+  // Libellé du palier actif (ex: "Colissimo · 750 g")
+  const activeTierLabel = useMemo(() => {
+    if (!shipping.active || shippingCentimes === 0) return null;
+    if (shipping.tiers.length === 0) return null;
+    const sorted = [...shipping.tiers].sort(
+      (a, b) => a.maxGrams - b.maxGrams,
+    );
+    const tier =
+      sorted.find((t) => totalWeightGrams <= t.maxGrams) ??
+      sorted[sorted.length - 1];
+    return tier?.label || `Jusqu'à ${tier?.maxGrams ?? 0} g`;
+  }, [shipping, shippingCentimes, totalWeightGrams]);
 
   const updateQty = (produitId: string, newQty: number) => {
     setPendingId(produitId);
@@ -426,6 +470,14 @@ export function CartView({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-[var(--text-secondary)]">
                     {shipping.label}
+                    {activeTierLabel && (
+                      <span className="ml-1.5 text-[10px] font-mono text-[var(--text-tertiary)]">
+                        · {activeTierLabel}
+                        {totalWeightGrams > 0 && (
+                          <> · {totalWeightGrams} g</>
+                        )}
+                      </span>
+                    )}
                   </span>
                   {shippingCentimes === 0 ? (
                     <span className="font-mono tabular-nums font-semibold text-[var(--neon-success)]">

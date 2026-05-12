@@ -86,6 +86,16 @@ export async function getHydratedCart() {
     where: { id: { in: produitIds }, statut: "publie" },
   });
 
+  // weight_grams via raw SQL (pas dans le client Prisma).
+  const weightRows = (await prisma
+    .$queryRawUnsafe(
+      `SELECT id::text AS id, COALESCE(weight_grams, 0)::int AS "weightGrams"
+       FROM boutique_produits WHERE id = ANY($1::bigint[])`,
+      produits.map((p) => p.id),
+    )
+    .catch(() => [])) as Array<{ id: string; weightGrams: number }>;
+  const weightMap = new Map(weightRows.map((r) => [r.id, r.weightGrams]));
+
   return items
     .map((i) => {
       const produit = produits.find((p) => p.id.toString() === i.produitId);
@@ -93,7 +103,10 @@ export async function getHydratedCart() {
       return {
         produitId: i.produitId,
         quantite: i.quantite,
-        produit,
+        produit: {
+          ...produit,
+          weightGrams: weightMap.get(produit.id.toString()) ?? 0,
+        },
         totalCentimes: produit.prixCentimes * i.quantite,
       };
     })

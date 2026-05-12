@@ -180,6 +180,48 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "shipping_centimes" INTEGER NOT NULL DEFAULT 0;
     `);
 
+    // === Boutique : grammage produit (g) — pour calcul frais de port par poids ===
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "boutique_produits"
+        ADD COLUMN IF NOT EXISTS "weight_grams" INTEGER NOT NULL DEFAULT 0;
+    `);
+
+    // === Boutique : tiers Colissimo (paliers tarifaires par tranche de poids) ===
+    // Chaque ligne = un palier "jusqu'à max_grams → fee_centimes".
+    // Le calcul prend le 1er tier dont max_grams ≥ poids_total_panier.
+    // Si poids_total > tous les max_grams → on prend le dernier tier (le plus lourd).
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "boutique_shipping_tiers" (
+        "id" BIGSERIAL PRIMARY KEY,
+        "max_grams" INTEGER NOT NULL,
+        "fee_centimes" INTEGER NOT NULL,
+        "label" VARCHAR(100) NOT NULL DEFAULT '',
+        "position" INTEGER NOT NULL DEFAULT 0,
+        "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "idx_boutique_shipping_tiers_max"
+        ON "boutique_shipping_tiers" ("max_grams");
+    `);
+    // Seed des tiers Colissimo France métropolitaine si la table est vide.
+    // Prix indicatifs 2024 — l'admin peut tout modifier ensuite.
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "boutique_shipping_tiers" (max_grams, fee_centimes, label, position)
+      SELECT * FROM (VALUES
+        (250,    515, 'Jusqu''à 250 g',     1),
+        (500,    695, 'Jusqu''à 500 g',     2),
+        (750,    830, 'Jusqu''à 750 g',     3),
+        (1000,   940, 'Jusqu''à 1 kg',      4),
+        (2000,  1090, 'Jusqu''à 2 kg',      5),
+        (5000,  1480, 'Jusqu''à 5 kg',      6),
+        (10000, 1840, 'Jusqu''à 10 kg',     7),
+        (15000, 2510, 'Jusqu''à 15 kg',     8),
+        (30000, 3230, 'Jusqu''à 30 kg',     9)
+      ) AS seed(max_grams, fee_centimes, label, position)
+      WHERE NOT EXISTS (SELECT 1 FROM "boutique_shipping_tiers" LIMIT 1);
+    `);
+
     runtimeSchemaEnsured = true;
   } catch (err) {
     console.warn(
