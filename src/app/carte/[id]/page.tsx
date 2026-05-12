@@ -67,7 +67,9 @@ export default async function CartePage({ params, searchParams }: PageProps) {
   //     bonne version sans avoir à attendre Inngest (qui peut ne pas tourner
   //     sur Railway si non configuré)
   // Idempotent : translateRestaurantMenu skip les entrées déjà traduites.
-  if (menu.partiallyTranslated && !preview) {
+  // Run AUSSI en preview (aperçu mobile dashboard) — ne pas confondre avec
+  // le tracking scan plus bas qui lui est légitimement skip en preview.
+  if (menu.partiallyTranslated) {
     after(async () => {
       try {
         const { translateRestaurantMenu } = await import(

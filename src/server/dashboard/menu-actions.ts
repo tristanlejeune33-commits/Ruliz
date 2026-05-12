@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
@@ -48,6 +48,12 @@ async function assertProduitOwner(produitId: bigint) {
 async function bumpRestaurantCaches(restaurantId: bigint) {
   revalidatePath("/dashboard/menu");
   revalidatePath(`/carte/${restaurantId.toString()}`);
+  // ⚠️ Crucial : `unstable_cache(getPublicMenu, { tags: ["public-menu"] })`
+  // dans /carte/[id]/page.tsx ne se rafraîchit QUE par tag (revalidatePath
+  // n'invalide pas la data cache). Sans ça, après une modif catégorie/produit,
+  // la carte publique servait encore la version en cache pendant 60s — donc
+  // les traductions fraîchement re-générées ne s'affichaient pas.
+  revalidateTag("public-menu");
 
   // Purge Redis directement (sync, ne dépend pas d'Inngest qui peut être
   // absent en dev). C'était le bug qui faisait que les sous-cats / les
@@ -123,6 +129,9 @@ async function triggerProduitTranslation(produitId: bigint, restaurantId: bigint
         );
         await redis.del(...keys).catch(() => null);
       }
+      // Re-invalide après que les trads soient en DB : couvre le cas où un
+      // visiteur a re-peuplé l'unstable_cache pendant que after() tournait.
+      revalidateTag("public-menu");
     } catch (err) {
       console.warn("[after] triggerProduitTranslation failed:", err);
     }
@@ -161,6 +170,9 @@ async function triggerCategorieTranslation(categorieId: bigint, restaurantId: bi
         );
         await redis.del(...keys).catch(() => null);
       }
+      // Re-invalide après que les trads soient en DB : couvre le cas où un
+      // visiteur a re-peuplé l'unstable_cache pendant que after() tournait.
+      revalidateTag("public-menu");
     } catch (err) {
       console.warn("[after] triggerCategorieTranslation failed:", err);
     }
