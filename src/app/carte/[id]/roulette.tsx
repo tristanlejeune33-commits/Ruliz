@@ -250,7 +250,7 @@ export function Roulette({
             exit={{ opacity: 0, scale: 0.92, y: 20 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative flex max-h-[95vh] w-full max-w-md flex-col gap-4 overflow-y-auto rounded-[10px] p-5 text-center"
+            className="relative flex max-h-[95vh] w-full max-w-md flex-col gap-3 overflow-y-auto rounded-[10px] p-4 text-center sm:gap-4 sm:p-5"
             style={{
               // Couleurs FIXES indépendantes du thème resto
               background:
@@ -271,10 +271,10 @@ export function Roulette({
                 onClose();
                 reset();
               }}
-              className="absolute right-2.5 top-2.5 z-10 flex size-9 items-center justify-center rounded-full bg-white text-black shadow-md hover:scale-105"
+              className="absolute right-2 top-2 z-10 flex size-8 items-center justify-center rounded-full bg-white text-black shadow-md hover:scale-105 sm:right-2.5 sm:top-2.5 sm:size-9"
               aria-label="Fermer"
             >
-              <X className="size-5" />
+              <X className="size-4 sm:size-5" />
             </button>
 
             <AnimatePresence mode="wait">
@@ -413,15 +413,15 @@ function FormStep({
   const ctaTitle = jeu.cta || "Laisse-nous un avis Google et tente de gagner !";
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Titre */}
-      <h1 className="text-balance text-[28px] font-bold leading-tight md:text-[32px]">
+    <div className="flex flex-col gap-3 sm:gap-4">
+      {/* Titre — pr-10 pour ne pas se faire chevaucher par le bouton X */}
+      <h1 className="text-balance pr-10 text-[22px] font-bold leading-tight sm:pr-8 sm:text-[28px] md:text-[32px]">
         {ctaTitle}
       </h1>
 
       {/* Liste des lots avec emojis ou image custom */}
       {jeu.lots.length > 0 && (
-        <ul className="flex flex-wrap justify-center gap-2.5">
+        <ul className="flex flex-wrap justify-center gap-2 sm:gap-2.5">
           {jeu.lots.slice(0, 3).map((lot, i) => {
             const emoji = extractEmoji(lot.label) ?? "🎁";
             const text = removeEmoji(lot.label);
@@ -436,12 +436,14 @@ function FormStep({
                   <img
                     src={lot.imageUrl}
                     alt=""
-                    className="z-10 -mb-1.5 size-9 rounded-full bg-white object-cover shadow-md"
+                    className="z-10 -mb-1.5 size-8 rounded-full bg-white object-cover shadow-md sm:size-9"
                   />
                 ) : (
-                  <span className="z-10 -mb-1.5 text-[30px]">{emoji}</span>
+                  <span className="z-10 -mb-1.5 text-[26px] sm:text-[30px]">
+                    {emoji}
+                  </span>
                 )}
-                <span className="rounded-[15px] bg-white px-2.5 py-1 text-[13px] font-medium">
+                <span className="rounded-[15px] bg-white px-2 py-0.5 text-[12px] font-medium sm:px-2.5 sm:py-1 sm:text-[13px]">
                   {text}
                 </span>
               </li>
@@ -450,12 +452,14 @@ function FormStep({
         </ul>
       )}
 
-      <p className="text-base">Et bien d&apos;autres cadeaux à gagner...</p>
+      <p className="text-sm sm:text-base">
+        Et bien d&apos;autres cadeaux à gagner...
+      </p>
 
       {/* Étape 1 */}
       <div className="flex justify-center">
         <span
-          className="rounded-[15px] px-3 py-1 text-base font-medium text-white"
+          className="rounded-[15px] px-3 py-0.5 text-sm font-medium text-white sm:py-1 sm:text-base"
           style={{ backgroundColor: "#FF9B4A" }}
         >
           Étape 1
@@ -464,7 +468,7 @@ function FormStep({
 
       {/* Form */}
       <form
-        className="flex flex-col gap-2.5"
+        className="flex flex-col gap-2 sm:gap-2.5"
         onSubmit={(e) => {
           e.preventDefault();
           onSubmit();
@@ -530,9 +534,9 @@ function FormStep({
         </label>
 
         {/* Étape 2 (rappel) */}
-        <div className="mt-2 flex justify-center">
+        <div className="mt-1.5 flex justify-center sm:mt-2">
           <span
-            className="rounded-[15px] px-3 py-1 text-base font-medium text-white"
+            className="rounded-[15px] px-3 py-0.5 text-sm font-medium text-white sm:py-1 sm:text-base"
             style={{ backgroundColor: "#FF9B4A" }}
           >
             Étape 2
@@ -541,7 +545,7 @@ function FormStep({
 
         <button
           type="submit"
-          className="mx-auto mt-2 rounded-full px-8 py-3 text-base font-bold uppercase tracking-wide text-white transition-transform hover:scale-105"
+          className="mx-auto mt-1.5 rounded-full px-7 py-2.5 text-[15px] font-bold uppercase tracking-wide text-white transition-transform hover:scale-105 sm:mt-2 sm:px-8 sm:py-3 sm:text-base"
           style={{ backgroundColor: "#FF9B4A" }}
         >
           Continuer
@@ -580,7 +584,7 @@ function FormInput({
       autoComplete={
         type === "email" ? "email" : type === "tel" ? "tel" : undefined
       }
-      className="rounded-[15px] border-0 bg-white px-3 py-2.5 text-base text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#FF9B4A]"
+      className="rounded-[15px] border-0 bg-white px-3 py-2 text-[15px] text-black placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-[#FF9B4A] sm:py-2.5 sm:text-base"
       style={{ fontFamily: "var(--font-body)", colorScheme: "light" }}
       required
     />
