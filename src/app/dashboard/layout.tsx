@@ -63,24 +63,52 @@ export default async function DashboardLayout({
     : null;
   const activeId = activeIdFromCookie ?? restaurants[0]?.id ?? null;
 
-  const activeRestaurant = activeId
-    ? ((await prisma.restaurant.findUnique({
+  // Garde-fou : si la colonne planOffertExpiresAt manque (migration pas
+  // appliquée), on retombe sur une query plus simple sans ce champ pour
+  // ne JAMAIS casser l'accès au dashboard. C'est ce qui provoquait l'erreur
+  // "server-side exception" sur les nouveaux comptes (où la création du
+  // 1er resto venait d'écrire dans cette colonne et la 1ère relecture
+  // crashait si la migration n'avait pas tourné).
+  let activeRestaurant: {
+    stripeSubscriptionStatus: string | null;
+    statut: string;
+    plan: string;
+    planOffertExpiresAt: Date | null;
+  } | null = null;
+  if (activeId) {
+    try {
+      activeRestaurant = (await prisma.restaurant.findUnique({
         where: { id: BigInt(activeId) },
         select: {
           stripeSubscriptionStatus: true,
           statut: true,
           plan: true,
-          // planOffertExpiresAt : ajouté par migration plan_offert
-          // (cast as never pour bypasser types Prisma potentiellement stale)
           planOffertExpiresAt: true,
         } as never,
-      })) as unknown as {
-        stripeSubscriptionStatus: string | null;
-        statut: string;
-        plan: string;
-        planOffertExpiresAt: Date | null;
-      } | null)
-    : null;
+      })) as unknown as typeof activeRestaurant;
+    } catch (err) {
+      console.warn(
+        "[dashboard] activeRestaurant query failed, retrying without planOffertExpiresAt:",
+        err,
+      );
+      try {
+        const fallback = await prisma.restaurant.findUnique({
+          where: { id: BigInt(activeId) },
+          select: {
+            stripeSubscriptionStatus: true,
+            statut: true,
+            plan: true,
+          },
+        });
+        activeRestaurant = fallback
+          ? { ...fallback, planOffertExpiresAt: null }
+          : null;
+      } catch (err2) {
+        console.error("[dashboard] activeRestaurant fallback also failed:", err2);
+        activeRestaurant = null;
+      }
+    }
+  }
 
   const userHint = activeRestaurant?.plan
     ? `Plan ${activeRestaurant.plan}`

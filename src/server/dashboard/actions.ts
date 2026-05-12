@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import {
   assertRestaurantOwner,
   setActiveRestaurantCookie,
@@ -196,24 +197,55 @@ export async function createFirstRestaurant(
     : null;
 
   // Pré-remplit le pays et la langue native depuis le profil utilisateur
-  // (renseignés au signup via le picker de pays)
-  const restaurant = await prisma.restaurant.create({
-    data: {
-      userId: authUser.userId,
-      nom: parsed.data.nom,
-      ville: empty(parsed.data.ville),
-      email: empty(parsed.data.email),
-      telephone: empty(parsed.data.telephone),
-      pays: authUser.user?.pays ?? "France",
-      langueNative: authUser.user?.langueNative ?? "fr",
-      plan: isFirstRestaurant ? "premium" : "freemium",
-      statut: "actif",
-      // Cadeau de bienvenue (cast as never car client Prisma peut être stale)
-      ...(trialExpiresAt
-        ? ({ planOffertExpiresAt: trialExpiresAt } as never)
-        : {}),
-    },
-  });
+  // (renseignés au signup via le picker de pays).
+  //
+  // Garde-fou : on tente d'abord avec `planOffertExpiresAt` (cadeau 14j
+  // Premium). Si la colonne n'existe pas (migration pas encore appliquée),
+  // on retombe sur une création basique pour ne pas bloquer l'onboarding.
+  // Cas typique : Railway redéploye le code AVANT que prisma migrate deploy
+  // ait tourné → P2022 sur le 1er INSERT → user bloqué.
+  const baseData: Prisma.RestaurantUncheckedCreateInput = {
+    userId: authUser.userId,
+    nom: parsed.data.nom,
+    ville: empty(parsed.data.ville),
+    email: empty(parsed.data.email),
+    telephone: empty(parsed.data.telephone),
+    pays: authUser.user?.pays ?? "France",
+    langueNative: authUser.user?.langueNative ?? "fr",
+    plan: isFirstRestaurant ? "premium" : "freemium",
+    statut: "actif",
+  };
+
+  let restaurant;
+  try {
+    restaurant = await prisma.restaurant.create({
+      data: {
+        ...baseData,
+        ...(trialExpiresAt
+          ? ({ planOffertExpiresAt: trialExpiresAt } as never)
+          : {}),
+      },
+    });
+  } catch (err) {
+    console.warn(
+      "[onboarding] create resto with planOffertExpiresAt failed, retrying without:",
+      err,
+    );
+    restaurant = await prisma.restaurant.create({ data: baseData });
+    // Post-create : on tente d'écrire planOffertExpiresAt en SQL brut au cas
+    // où la colonne existerait mais le client Prisma serait stale.
+    if (trialExpiresAt) {
+      await prisma
+        .$executeRawUnsafe(
+          `UPDATE restaurants SET plan_offert_expires_at = $1 WHERE id = $2`,
+          trialExpiresAt,
+          restaurant.id,
+        )
+        .catch((e) =>
+          console.warn("[onboarding] persist plan_offert_expires_at failed:", e),
+        );
+    }
+  }
 
   // Set as active restaurant cookie
   await setActiveRestaurantCookie(restaurant.id);

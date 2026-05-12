@@ -37,7 +37,7 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "opt_in_sms" BOOLEAN NOT NULL DEFAULT TRUE;
     `);
 
-    // === users : champs onboarding ===
+    // === users : champs onboarding + i18n ===
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "users"
         ADD COLUMN IF NOT EXISTS "onboarding_step" INTEGER NOT NULL DEFAULT 0,
@@ -45,7 +45,18 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "onboarding_skipped" BOOLEAN NOT NULL DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS "onboarding_started_at" TIMESTAMPTZ,
         ADD COLUMN IF NOT EXISTS "onboarding_completed_at" TIMESTAMPTZ,
-        ADD COLUMN IF NOT EXISTS "onboarding_self_scanned" BOOLEAN NOT NULL DEFAULT FALSE;
+        ADD COLUMN IF NOT EXISTS "onboarding_self_scanned" BOOLEAN NOT NULL DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS "country_code" VARCHAR(2) DEFAULT 'FR',
+        ADD COLUMN IF NOT EXISTS "langue_native" VARCHAR(2) DEFAULT 'fr';
+    `);
+
+    // === restaurants : plan offert (cadeau bienvenue 14j Premium + admin) ===
+    // Bloque le signup d'un nouveau compte si la colonne manque, car
+    // createFirstRestaurant insère planOffertExpiresAt sur le 1er resto.
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "plan_offert_expires_at" TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS "plan_offert_by_user_id" INTEGER;
     `);
 
     // === Tables SMS marketing ===
