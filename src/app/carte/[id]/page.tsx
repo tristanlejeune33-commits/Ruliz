@@ -58,6 +58,37 @@ export default async function CartePage({ params, searchParams }: PageProps) {
   const menu = await getCachedMenu(id, lang);
   if (!menu) notFound();
 
+  // === Auto-heal des traductions manquantes ===
+  // Si la carte est servie dans une langue ≠ source et qu'au moins un champ
+  // n'a pas sa traduction (catégorie ou produit), on déclenche un backfill
+  // synchrone via after() qui :
+  //   - traduit les éléments manquants pour CETTE langue
+  //   - invalide le cache Next + Redis pour que le prochain visiteur ait la
+  //     bonne version sans avoir à attendre Inngest (qui peut ne pas tourner
+  //     sur Railway si non configuré)
+  // Idempotent : translateRestaurantMenu skip les entrées déjà traduites.
+  if (menu.partiallyTranslated && !preview) {
+    after(async () => {
+      try {
+        const { translateRestaurantMenu } = await import(
+          "@/server/translation/service"
+        );
+        await translateRestaurantMenu({
+          restaurantId: BigInt(menu.restaurant.id),
+          langs: [lang],
+        });
+        const { revalidateTag } = await import("next/cache");
+        revalidateTag("public-menu");
+        const { redis } = await import("@/lib/redis");
+        if (redis) {
+          await redis.del(`carte:${menu.restaurant.id}:${lang}`).catch(() => null);
+        }
+      } catch (e) {
+        console.warn("[menu] auto-heal translations failed:", e);
+      }
+    });
+  }
+
   // Track scan asynchronously — never block render
   if (!preview) {
     const headersList = await headers();

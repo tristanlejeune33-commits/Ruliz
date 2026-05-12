@@ -1,13 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { inngest } from "@/server/inngest/client";
-import { SUPPORTED_LANGS } from "@/lib/langs";
+import { SUPPORTED_LANGS, type SupportedLang } from "@/lib/langs";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -79,6 +80,17 @@ async function invalidateProduitTranslations(produitId: bigint) {
   await prisma.produitTranslation.deleteMany({ where: { produitId } });
 }
 
+/**
+ * Déclenche la traduction d'un produit en background. 2 chemins :
+ *   1. Inngest (prod path propre, si INNGEST_EVENT_KEY défini ET worker
+ *      qui tourne)
+ *   2. Fallback `after()` : exécute la traduction dans le même process
+ *      Node après la réponse — garantit que la trad arrive même si
+ *      Inngest n'est pas configuré ou si le worker ne tourne pas.
+ *
+ * Le fallback est idempotent (skip si déjà traduit en DB), donc lancer les
+ * 2 chemins en parallèle ne fait pas double appel API Anthropic.
+ */
 async function triggerProduitTranslation(produitId: bigint, restaurantId: bigint) {
   await inngest
     .send({
@@ -89,6 +101,32 @@ async function triggerProduitTranslation(produitId: bigint, restaurantId: bigint
       },
     })
     .catch((e) => console.warn("[inngest] produit/updated failed:", e));
+
+  // Fallback : traduction post-réponse, indépendante d'Inngest
+  after(async () => {
+    try {
+      const { translateProduitToLang } = await import(
+        "@/server/translation/service"
+      );
+      const targets = SUPPORTED_LANGS.filter((l) => l !== "fr");
+      for (const lang of targets) {
+        await translateProduitToLang({
+          produitId,
+          targetLang: lang as SupportedLang,
+        }).catch((e) =>
+          console.warn(`[after] produit ${produitId} → ${lang}:`, e),
+        );
+      }
+      if (redis) {
+        const keys = SUPPORTED_LANGS.map(
+          (l) => `carte:${restaurantId.toString()}:${l}`,
+        );
+        await redis.del(...keys).catch(() => null);
+      }
+    } catch (err) {
+      console.warn("[after] triggerProduitTranslation failed:", err);
+    }
+  });
 }
 
 async function triggerCategorieTranslation(categorieId: bigint, restaurantId: bigint) {
@@ -101,6 +139,32 @@ async function triggerCategorieTranslation(categorieId: bigint, restaurantId: bi
       },
     })
     .catch((e) => console.warn("[inngest] categorie/updated failed:", e));
+
+  // Fallback : traduction post-réponse, indépendante d'Inngest
+  after(async () => {
+    try {
+      const { translateCategorieToLang } = await import(
+        "@/server/translation/service"
+      );
+      const targets = SUPPORTED_LANGS.filter((l) => l !== "fr");
+      for (const lang of targets) {
+        await translateCategorieToLang({
+          categorieId,
+          targetLang: lang as SupportedLang,
+        }).catch((e) =>
+          console.warn(`[after] categorie ${categorieId} → ${lang}:`, e),
+        );
+      }
+      if (redis) {
+        const keys = SUPPORTED_LANGS.map(
+          (l) => `carte:${restaurantId.toString()}:${l}`,
+        );
+        await redis.del(...keys).catch(() => null);
+      }
+    } catch (err) {
+      console.warn("[after] triggerCategorieTranslation failed:", err);
+    }
+  });
 }
 
 // ---------------- Catégories ----------------
