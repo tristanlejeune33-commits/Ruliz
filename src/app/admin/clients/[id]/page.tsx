@@ -167,20 +167,26 @@ export default async function ClientDetailPage({ params }: PageProps) {
             restaurants={data.restaurants.map((r) => {
               // Cast pour accéder aux nouveaux champs planOffert* avant que
               // le client Prisma soit régénéré localement.
+              // ⚠️ Selon que la colonne est connue par Prisma OU lue via raw
+              //    SQL, la valeur peut arriver en Date OU en string ISO. On
+              //    normalise avec new Date(...) pour gérer les 2 cas.
               const ext = r as unknown as {
-                planOffertExpiresAt?: Date | null;
-                stripeCurrentPeriodEnd?: Date | null;
+                planOffertExpiresAt?: Date | string | null;
+                stripeCurrentPeriodEnd?: Date | string | null;
                 stripeSubscriptionStatus?: string | null;
+              };
+              const toIso = (v: Date | string | null | undefined) => {
+                if (!v) return null;
+                const d = v instanceof Date ? v : new Date(v);
+                return Number.isNaN(d.getTime()) ? null : d.toISOString();
               };
               return {
                 id: r.id.toString(),
                 nom: r.nom,
                 plan: r.plan,
                 ville: r.ville,
-                planOffertExpiresAt:
-                  ext.planOffertExpiresAt?.toISOString() ?? null,
-                stripeCurrentPeriodEnd:
-                  ext.stripeCurrentPeriodEnd?.toISOString() ?? null,
+                planOffertExpiresAt: toIso(ext.planOffertExpiresAt),
+                stripeCurrentPeriodEnd: toIso(ext.stripeCurrentPeriodEnd),
                 stripeSubscriptionStatus:
                   ext.stripeSubscriptionStatus ?? null,
               };
