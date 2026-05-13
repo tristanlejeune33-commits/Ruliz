@@ -191,7 +191,10 @@ export function CategorieDrawer({
 
   return (
     <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-md">
+      <SheetContent
+        side="right"
+        className="w-full overflow-y-auto sm:max-w-md"
+      >
         <SheetHeader>
           <SheetTitle>
             {isEdit ? "Éditer la catégorie" : "Nouvelle catégorie"}
