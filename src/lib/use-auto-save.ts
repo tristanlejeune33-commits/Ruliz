@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { UseFormReturn, FieldValues } from "react-hook-form";
+import { toast } from "sonner";
 
 /**
  * Hook d'auto-save débouncé pour React Hook Form.
@@ -99,13 +100,17 @@ export function useAutoSave<T extends FieldValues>({
             savedTimerRef.current = setTimeout(() => setStatus("idle"), 2000);
           } else {
             setStatus("error");
-            setErrorMessage(result.error ?? "Erreur de sauvegarde");
+            const msg = result.error ?? "Erreur de sauvegarde";
+            setErrorMessage(msg);
+            // Toast d'erreur visible — sinon l'user voit "Sauvegardé" qui
+            // n'apparaît jamais et croit que tout va bien.
+            toast.error(`Sauvegarde échouée : ${msg}`, { duration: 6000 });
           }
         } catch (err) {
           setStatus("error");
-          setErrorMessage(
-            err instanceof Error ? err.message : "Erreur réseau",
-          );
+          const msg = err instanceof Error ? err.message : "Erreur réseau";
+          setErrorMessage(msg);
+          toast.error(`Sauvegarde échouée : ${msg}`, { duration: 6000 });
         }
       }, delayMs);
     });

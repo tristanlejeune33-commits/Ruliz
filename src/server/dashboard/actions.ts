@@ -98,9 +98,7 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
 
   const empty = (v: string | undefined) => (v && v.trim().length > 0 ? v : null);
 
-  // S'assure que les colonnes horaires existent en DB avant d'updater.
-  // Sinon Prisma plante avec "column does not exist" et l'auto-save est
-  // silencieusement KO côté UI.
+  // === ÉTAPE 1 : assure que les colonnes horaires existent en DB ===
   try {
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "restaurants"
@@ -116,6 +114,46 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
       "[updateRestaurant] ensure horaires columns failed (continuing):",
       err,
     );
+  }
+
+  // === ÉTAPE 2 : sauvegarde EXPLICITE des horaires en raw SQL ===
+  // Avant le Prisma update général. Garantit que les horaires sont écrites
+  // en DB peu importe ce qui plante après (cache Prisma client, etc.).
+  const lunchStart = data.lunchStart || "11:30";
+  const lunchEnd = data.lunchEnd || "15:00";
+  const dinnerStart = data.dinnerStart || "18:30";
+  const dinnerEnd = data.dinnerEnd || "23:00";
+  const happyHourStart = data.happyHourStart || "18:00";
+  const happyHourEnd = data.happyHourEnd || "19:00";
+  try {
+    await prisma.$executeRawUnsafe(
+      `UPDATE "restaurants" SET
+         "lunch_start" = $2, "lunch_end" = $3,
+         "dinner_start" = $4, "dinner_end" = $5,
+         "happy_hour_start" = $6, "happy_hour_end" = $7
+       WHERE "id" = $1`,
+      bigId,
+      lunchStart,
+      lunchEnd,
+      dinnerStart,
+      dinnerEnd,
+      happyHourStart,
+      happyHourEnd,
+    );
+    console.log(
+      `[updateRestaurant] horaires raw SQL OK for resto ${bigId.toString()}`,
+      { lunchStart, lunchEnd, dinnerStart, dinnerEnd, happyHourStart, happyHourEnd },
+    );
+  } catch (err) {
+    console.error(
+      "[updateRestaurant] horaires raw SQL FAILED:",
+      err instanceof Error ? err.message : err,
+    );
+    return {
+      ok: false,
+      error:
+        "Impossible de sauvegarder les horaires. Une migration DB a peut-être échoué — contacte le support.",
+    };
   }
 
   // Tente d'abord l'update Prisma classique (avec tous les champs).
