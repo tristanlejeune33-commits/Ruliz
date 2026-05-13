@@ -20,10 +20,8 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 
 const schema = z
@@ -37,6 +35,35 @@ const schema = z
   });
 
 type Values = z.infer<typeof schema>;
+
+const INPUT_STYLE: React.CSSProperties = {
+  width: "100%",
+  height: 44,
+  padding: "0 14px",
+  fontSize: 14,
+  fontWeight: 500,
+  color: "#0B1530",
+  background: "#FFFFFF",
+  border: "1px solid #D8E1F3",
+  borderRadius: 12,
+  outline: "none",
+};
+const LABEL_STYLE: React.CSSProperties = {
+  display: "block",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#0B1530",
+  marginBottom: 6,
+};
+
+const focusFx = (e: React.FocusEvent<HTMLInputElement>) => {
+  e.currentTarget.style.borderColor = "#26438A";
+  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(38,67,138,0.18)";
+};
+const blurFx = (e: React.FocusEvent<HTMLInputElement>) => {
+  e.currentTarget.style.borderColor = "#D8E1F3";
+  e.currentTarget.style.boxShadow = "none";
+};
 
 export function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();
@@ -60,8 +87,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
       });
       if (res.error) {
         setTopError(
-          res.error.message ??
-            "Lien expiré ou invalide. Refais une demande.",
+          res.error.message ?? "Lien expiré ou invalide. Refais une demande.",
         );
         setIsPending(false);
         return;
@@ -88,10 +114,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
             role="alert"
             className="flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm"
             style={{
-              background: "var(--neon-danger-soft)",
-              borderColor:
-                "color-mix(in srgb, var(--neon-danger) 24%, transparent)",
-              color: "var(--neon-danger)",
+              background: "#FCE8EC",
+              borderColor: "rgba(185, 28, 59, 0.24)",
+              color: "#B91C3B",
             }}
           >
             <AlertCircle className="mt-px size-4 shrink-0" strokeWidth={2} />
@@ -103,10 +128,9 @@ export function ResetPasswordForm({ token }: { token: string }) {
             role="status"
             className="flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm"
             style={{
-              background: "var(--neon-success-soft)",
-              borderColor:
-                "color-mix(in srgb, var(--neon-success) 24%, transparent)",
-              color: "var(--neon-success)",
+              background: "#E6F4EE",
+              borderColor: "rgba(26, 127, 90, 0.24)",
+              color: "#1A7F5A",
             }}
           >
             <CheckCircle2 className="mt-px size-4 shrink-0" strokeWidth={2} />
@@ -121,25 +145,32 @@ export function ResetPasswordForm({ token }: { token: string }) {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nouveau mot de passe</FormLabel>
+              <label htmlFor="reset-password" style={LABEL_STYLE}>
+                Nouveau mot de passe
+              </label>
               <FormControl>
                 <div className="relative">
-                  <Input
+                  <input
+                    id="reset-password"
                     type={showPwd ? "text" : "password"}
                     autoComplete="new-password"
                     placeholder="8 caractères minimum"
-                    className="pr-11"
                     autoFocus
+                    style={{ ...INPUT_STYLE, paddingRight: 44 }}
                     {...field}
+                    onFocus={focusFx}
+                    onBlur={(e) => {
+                      blurFx(e);
+                      field.onBlur();
+                    }}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPwd((v) => !v)}
-                    aria-label={
-                      showPwd ? "Masquer" : "Afficher"
-                    }
+                    aria-label={showPwd ? "Masquer" : "Afficher"}
                     tabIndex={-1}
-                    className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-secondary)]"
+                    className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg transition"
+                    style={{ color: "#8892AB" }}
                   >
                     {showPwd ? (
                       <EyeOff className="size-4" strokeWidth={1.75} />
@@ -159,13 +190,22 @@ export function ResetPasswordForm({ token }: { token: string }) {
           name="confirm"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Confirme ton mot de passe</FormLabel>
+              <label htmlFor="reset-confirm" style={LABEL_STYLE}>
+                Confirme ton mot de passe
+              </label>
               <FormControl>
-                <Input
+                <input
+                  id="reset-confirm"
                   type={showPwd ? "text" : "password"}
                   autoComplete="new-password"
                   placeholder="Retape le mot de passe"
+                  style={INPUT_STYLE}
                   {...field}
+                  onFocus={focusFx}
+                  onBlur={(e) => {
+                    blurFx(e);
+                    field.onBlur();
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -178,6 +218,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
           size="lg"
           className="w-full gap-2"
           disabled={isPending || success}
+          style={{ background: "#26438A", color: "#FFFFFF", border: 0 }}
         >
           {isPending ? (
             <>

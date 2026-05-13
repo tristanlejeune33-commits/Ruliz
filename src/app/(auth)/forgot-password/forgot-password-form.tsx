@@ -11,10 +11,8 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 
 const schema = z.object({
@@ -22,6 +20,35 @@ const schema = z.object({
 });
 
 type Values = z.infer<typeof schema>;
+
+const INPUT_STYLE: React.CSSProperties = {
+  width: "100%",
+  height: 44,
+  padding: "0 14px",
+  fontSize: 14,
+  fontWeight: 500,
+  color: "#0B1530",
+  background: "#FFFFFF",
+  border: "1px solid #D8E1F3",
+  borderRadius: 12,
+  outline: "none",
+};
+const LABEL_STYLE: React.CSSProperties = {
+  display: "block",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#0B1530",
+  marginBottom: 6,
+};
+
+const focusFx = (e: React.FocusEvent<HTMLInputElement>) => {
+  e.currentTarget.style.borderColor = "#26438A";
+  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(38,67,138,0.18)";
+};
+const blurFx = (e: React.FocusEvent<HTMLInputElement>) => {
+  e.currentTarget.style.borderColor = "#D8E1F3";
+  e.currentTarget.style.boxShadow = "none";
+};
 
 export function ForgotPasswordForm() {
   const [isPending, setIsPending] = useState(false);
@@ -37,9 +64,6 @@ export function ForgotPasswordForm() {
     setTopError(null);
     setIsPending(true);
     try {
-      // Better-Auth — envoie l'email avec un lien `redirectTo` vers la page
-      // /reset-password avec un token. La page /reset-password lit le token
-      // depuis l'URL et appelle authClient.resetPassword().
       const res = await authClient.requestPasswordReset({
         email: values.email,
         redirectTo: "/reset-password",
@@ -64,24 +88,24 @@ export function ForgotPasswordForm() {
         className="flex flex-col items-start gap-3 rounded-xl border px-4 py-4 text-sm"
         role="status"
         style={{
-          background: "var(--neon-success-soft)",
-          borderColor:
-            "color-mix(in srgb, var(--neon-success) 24%, transparent)",
-          color: "var(--neon-success)",
+          background: "#E6F4EE",
+          borderColor: "rgba(26, 127, 90, 0.24)",
+          color: "#1A7F5A",
         }}
       >
-        <div className="flex items-center gap-2.5 font-semibold">
+        <div className="flex items-center gap-2.5 font-bold">
           <CheckCircle2 className="size-5" strokeWidth={2} />
           Email envoyé !
         </div>
-        <p className="leading-snug">
-          Si un compte existe pour <strong>{sentEmail}</strong>, tu vas
-          recevoir un email avec un lien pour réinitialiser ton mot de
-          passe. Il est valable <strong>1 heure</strong>.
+        <p className="leading-snug" style={{ color: "#0B1530" }}>
+          Si un compte existe pour{" "}
+          <strong style={{ color: "#0B1530" }}>{sentEmail}</strong>, tu vas
+          recevoir un email avec un lien pour réinitialiser ton mot de passe.
+          Il est valable <strong>1 heure</strong>.
         </p>
-        <p className="text-xs opacity-80">
-          Pense à vérifier ton dossier <strong>Spam</strong> si tu ne le
-          vois pas tout de suite.
+        <p className="text-xs" style={{ color: "#4A5573" }}>
+          Pense à vérifier ton dossier <strong>Spam</strong> si tu ne le vois
+          pas tout de suite.
         </p>
       </div>
     );
@@ -99,10 +123,9 @@ export function ForgotPasswordForm() {
             role="alert"
             className="flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm"
             style={{
-              background: "var(--neon-danger-soft)",
-              borderColor:
-                "color-mix(in srgb, var(--neon-danger) 24%, transparent)",
-              color: "var(--neon-danger)",
+              background: "#FCE8EC",
+              borderColor: "rgba(185, 28, 59, 0.24)",
+              color: "#B91C3B",
             }}
           >
             <AlertCircle className="mt-px size-4 shrink-0" strokeWidth={2} />
@@ -115,14 +138,23 @@ export function ForgotPasswordForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email du compte</FormLabel>
+              <label htmlFor="forgot-email" style={LABEL_STYLE}>
+                Email du compte
+              </label>
               <FormControl>
-                <Input
+                <input
+                  id="forgot-email"
                   type="email"
                   autoComplete="email"
                   placeholder="marie@tirebouchon.fr"
                   autoFocus
+                  style={INPUT_STYLE}
                   {...field}
+                  onFocus={focusFx}
+                  onBlur={(e) => {
+                    blurFx(e);
+                    field.onBlur();
+                  }}
                 />
               </FormControl>
               <FormMessage />
@@ -135,6 +167,7 @@ export function ForgotPasswordForm() {
           size="lg"
           className="w-full gap-2"
           disabled={isPending}
+          style={{ background: "#26438A", color: "#FFFFFF", border: 0 }}
         >
           {isPending ? (
             <>

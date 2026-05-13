@@ -8,23 +8,36 @@ export const metadata: Metadata = {
 
 export default function SignupPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">
+        <span
+          className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+          style={{ fontFamily: "var(--font-mono)", color: "#26438A" }}
+        >
+          Inscription · Restaurateur
+        </span>
+        <h1
+          className="mt-3 text-balance text-3xl font-bold leading-[1.15] tracking-tight"
+          style={{ color: "#0B1530" }}
+        >
           Crée ton compte gratuit
         </h1>
-        <p className="mt-2 text-sm text-[var(--text-secondary)]">
+        <p
+          className="mt-2.5 text-sm leading-relaxed"
+          style={{ color: "#4A5573" }}
+        >
           14 jours d&apos;essai Pro offerts. Aucune carte bancaire requise.
         </p>
       </div>
       <SignupForm />
-      <p className="text-center text-sm text-[var(--text-secondary)]">
+      <p className="text-center text-sm" style={{ color: "#4A5573" }}>
         Déjà un compte ?{" "}
         <Link
           href="/login"
-          className="font-medium text-[var(--accent)] hover:underline"
+          className="font-semibold hover:underline"
+          style={{ color: "#26438A", textUnderlineOffset: "3px" }}
         >
-          Se connecter
+          Se connecter →
         </Link>
       </p>
     </div>

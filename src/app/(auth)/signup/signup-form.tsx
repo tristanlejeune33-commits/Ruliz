@@ -5,26 +5,16 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { clearSessionCookies, signupClient } from "@/server/auth/actions";
 import {
   SIGNUP_COUNTRIES,
@@ -40,6 +30,35 @@ const schema = z.object({
 });
 
 type Values = z.infer<typeof schema>;
+
+const INPUT_STYLE: React.CSSProperties = {
+  width: "100%",
+  height: 44,
+  padding: "0 14px",
+  fontSize: 14,
+  fontWeight: 500,
+  color: "#0B1530",
+  background: "#FFFFFF",
+  border: "1px solid #D8E1F3",
+  borderRadius: 12,
+  outline: "none",
+};
+const LABEL_STYLE: React.CSSProperties = {
+  display: "block",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#0B1530",
+  marginBottom: 6,
+};
+
+const focusFx = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = "#26438A";
+  e.currentTarget.style.boxShadow = "0 0 0 3px rgba(38,67,138,0.18)";
+};
+const blurFx = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = "#D8E1F3";
+  e.currentTarget.style.boxShadow = "none";
+};
 
 export function SignupForm() {
   const router = useRouter();
@@ -74,8 +93,6 @@ export function SignupForm() {
     await clearSessionCookies().catch(() => null);
 
     toast.success("Compte créé. Bienvenue !");
-    // Better-Auth autoSignIn ouvre la session ; on force un refresh
-    // pour que les Server Components re-fetchent.
     router.push("/dashboard");
     router.refresh();
   }
@@ -89,9 +106,21 @@ export function SignupForm() {
             name="prenom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Prénom</FormLabel>
+                <label htmlFor="signup-prenom" style={LABEL_STYLE}>
+                  Prénom
+                </label>
                 <FormControl>
-                  <Input autoComplete="given-name" {...field} />
+                  <input
+                    id="signup-prenom"
+                    autoComplete="given-name"
+                    style={INPUT_STYLE}
+                    {...field}
+                    onFocus={focusFx}
+                    onBlur={(e) => {
+                      blurFx(e);
+                      field.onBlur();
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -102,92 +131,154 @@ export function SignupForm() {
             name="nom"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nom</FormLabel>
+                <label htmlFor="signup-nom" style={LABEL_STYLE}>
+                  Nom
+                </label>
                 <FormControl>
-                  <Input autoComplete="family-name" {...field} />
+                  <input
+                    id="signup-nom"
+                    autoComplete="family-name"
+                    style={INPUT_STYLE}
+                    {...field}
+                    onFocus={focusFx}
+                    onBlur={(e) => {
+                      blurFx(e);
+                      field.onBlur();
+                    }}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <label htmlFor="signup-email" style={LABEL_STYLE}>
+                Email professionnel
+              </label>
               <FormControl>
-                <Input
+                <input
+                  id="signup-email"
                   type="email"
                   autoComplete="email"
                   placeholder="marie@tirebouchon.fr"
+                  style={INPUT_STYLE}
                   {...field}
+                  onFocus={focusFx}
+                  onBlur={(e) => {
+                    blurFx(e);
+                    field.onBlur();
+                  }}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Mot de passe</FormLabel>
+              <label htmlFor="signup-password" style={LABEL_STYLE}>
+                Mot de passe
+              </label>
               <FormControl>
-                <Input
+                <input
+                  id="signup-password"
                   type="password"
                   autoComplete="new-password"
                   placeholder="8 caractères minimum"
+                  style={INPUT_STYLE}
                   {...field}
+                  onFocus={focusFx}
+                  onBlur={(e) => {
+                    blurFx(e);
+                    field.onBlur();
+                  }}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="country"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Pays de ton restaurant</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionne ton pays" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
+              <label htmlFor="signup-country" style={LABEL_STYLE}>
+                Pays de ton restaurant
+              </label>
+              <FormControl>
+                <select
+                  id="signup-country"
+                  style={INPUT_STYLE}
+                  value={field.value}
+                  onChange={field.onChange}
+                  onFocus={focusFx}
+                  onBlur={(e) => {
+                    blurFx(e);
+                    field.onBlur();
+                  }}
+                >
                   {SIGNUP_COUNTRIES.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>
-                      <span className="mr-2">{c.flag}</span>
-                      {c.name}
-                    </SelectItem>
+                    <option key={c.code} value={c.code}>
+                      {c.flag} {c.name}
+                    </option>
                   ))}
-                </SelectContent>
-              </Select>
-              <FormDescription>
+                </select>
+              </FormControl>
+              <p
+                className="mt-1.5 text-xs leading-snug"
+                style={{ color: "#8892AB" }}
+              >
                 Détecte automatiquement la langue de ta carte (
-                {detectedLang.toUpperCase()}). Tu pourras la modifier
-                plus tard dans les paramètres.
-              </FormDescription>
+                <strong style={{ color: "#26438A" }}>
+                  {detectedLang.toUpperCase()}
+                </strong>
+                ). Modifiable plus tard dans les paramètres.
+              </p>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" size="lg" className="w-full" disabled={isPending}>
-          {isPending && <Loader2 className="size-4 animate-spin" />}
-          Créer mon compte
+
+        <Button
+          type="submit"
+          size="lg"
+          className="w-full gap-2"
+          disabled={isPending}
+          style={{ background: "#26438A", color: "#FFFFFF", border: 0 }}
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="size-4 animate-spin" />
+              <span>Création…</span>
+            </>
+          ) : (
+            <>
+              <span>Créer mon compte</span>
+              <ArrowRight className="size-4" strokeWidth={2} />
+            </>
+          )}
         </Button>
-        <p className="text-center text-xs text-[var(--text-secondary)]">
+
+        <p className="text-center text-xs" style={{ color: "#4A5573" }}>
           En créant un compte, tu acceptes nos{" "}
           <a
             href="/legal/mentions-legales"
             target="_blank"
             rel="noreferrer"
-            className="font-medium text-[var(--accent)] underline hover:text-[var(--text-primary)]"
+            className="font-semibold hover:underline"
+            style={{ color: "#26438A" }}
           >
             CGV
           </a>{" "}
@@ -196,7 +287,8 @@ export function SignupForm() {
             href="/legal/politique-confidentialite"
             target="_blank"
             rel="noreferrer"
-            className="font-medium text-[var(--accent)] underline hover:text-[var(--text-primary)]"
+            className="font-semibold hover:underline"
+            style={{ color: "#26438A" }}
           >
             politique de confidentialité
           </a>
