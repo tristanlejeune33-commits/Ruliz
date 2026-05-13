@@ -127,6 +127,16 @@ const PHOTO = {
     "https://images.unsplash.com/photo-1576185850227-1f72b7f8d483?w=800&q=80&auto=format&fit=crop",
   brunch:
     "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=1200&q=80&auto=format&fit=crop",
+  bierePression:
+    "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=800&q=80&auto=format&fit=crop",
+  bierIpa:
+    "https://images.unsplash.com/photo-1571767454098-246b94fbcf70?w=800&q=80&auto=format&fit=crop",
+  blondeGarde:
+    "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=800&q=80&auto=format&fit=crop",
+  cidre:
+    "https://images.unsplash.com/photo-1568644396922-5c3bfae12521?w=800&q=80&auto=format&fit=crop",
+  bierSansAlcool:
+    "https://images.unsplash.com/photo-1542228262-3d663b306a53?w=800&q=80&auto=format&fit=crop",
 } as const;
 
 /**
@@ -180,6 +190,10 @@ async function createRichDemoRestaurant(adminUserId: number) {
       description?: string;
       prix: string;
       descriptionPrix?: string;
+      /** Variantes multi-volumes (bière demi/pinte, vin verre/bouteille…).
+       *  Si défini, le champ `prix` est masqué côté carte publique au profit
+       *  de la liste des variantes. */
+      prixVariantes?: { label: string; prix: number }[];
       position: number;
       estNouveau?: boolean;
       origine?: string;
@@ -197,6 +211,9 @@ async function createRichDemoRestaurant(adminUserId: number) {
           prix: new Prisma.Decimal(data.prix),
           devise: "€",
           descriptionPrix: data.descriptionPrix ?? null,
+          prixVariantes: data.prixVariantes
+            ? (data.prixVariantes as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
           position: data.position,
           estNouveau: data.estNouveau ?? false,
           origine: data.origine ?? null,
@@ -479,13 +496,100 @@ async function createRichDemoRestaurant(adminUserId: number) {
       allergeneCodes: ["lait", "oeufs", "gluten", "fruits_a_coque"],
     });
 
-    // ============== CATÉGORIE 5 — BOISSONS ==============
+    // ============== CATÉGORIE 5 — HAPPY HOUR 🍺 ==============
+    // Démontre la feature `prixVariantes` (JSON) : un seul produit avec
+    // plusieurs volumes/prix (Demi 25cl / Pinte 50cl), c'est ce qui permet
+    // d'afficher proprement les bières d'un bar sans dupliquer les fiches.
+    const happyHour = await tx.categorie.create({
+      data: {
+        restaurantId: resto.id,
+        titre: "Happy Hour 🍺",
+        icone: "beer",
+        position: 4,
+      },
+    });
+    await makeProduit({
+      categorieId: happyHour.id,
+      titre: "Bière Pression Bordelaise",
+      description:
+        "Notre brasserie locale, blonde maltée légèrement amère. -20% pendant l'Happy Hour 18h-20h.",
+      prix: "3.50", // prix le plus bas (masqué côté public si variantes définies)
+      prixVariantes: [
+        { label: "Demi 25cl", prix: 3.5 },
+        { label: "Pinte 50cl", prix: 6.5 },
+      ],
+      position: 0,
+      origine: "FR",
+      imageUrl: PHOTO.bierePression,
+      vignetteCodes: ["local", "signature"],
+      allergeneCodes: ["gluten"],
+    });
+    await makeProduit({
+      categorieId: happyHour.id,
+      titre: "IPA Brewdog Punk",
+      description:
+        "India Pale Ale écossaise, fruits tropicaux et amertume marquée.",
+      prix: "4.50",
+      prixVariantes: [
+        { label: "Demi 25cl", prix: 4.5 },
+        { label: "Pinte 50cl", prix: 8.5 },
+        { label: "Bouteille 33cl", prix: 6.0 },
+      ],
+      position: 1,
+      imageUrl: PHOTO.bierIpa,
+      vignetteCodes: ["signature"],
+      allergeneCodes: ["gluten"],
+    });
+    await makeProduit({
+      categorieId: happyHour.id,
+      titre: "Blonde de Garde Artisanale 6.5%",
+      description:
+        "Bière de garde du Nord, robe dorée, finale ronde et maltée.",
+      prix: "4.00",
+      prixVariantes: [
+        { label: "Demi 25cl", prix: 4.0 },
+        { label: "Pinte 50cl", prix: 7.5 },
+      ],
+      position: 2,
+      origine: "FR",
+      estNouveau: true,
+      imageUrl: PHOTO.blondeGarde,
+      vignetteCodes: ["local", "bio"],
+      allergeneCodes: ["gluten"],
+    });
+    await makeProduit({
+      categorieId: happyHour.id,
+      titre: "Cidre Brut Fermier",
+      description: "Cidre AOP du Pays Basque, pomme à cidre 100% locale.",
+      prix: "4.00",
+      prixVariantes: [
+        { label: "Verre 25cl", prix: 4.0 },
+        { label: "Bouteille 75cl", prix: 12.0 },
+      ],
+      position: 3,
+      origine: "FR",
+      imageUrl: PHOTO.cidre,
+      vignetteCodes: ["local", "bio", "sans_gluten"],
+    });
+    await makeProduit({
+      categorieId: happyHour.id,
+      titre: "Buckler 0,0% (sans alcool)",
+      description: "La bière sans alcool de référence, légère et désaltérante.",
+      prix: "5.00",
+      descriptionPrix: "33cl",
+      position: 4,
+      imageUrl: PHOTO.bierSansAlcool,
+      vignetteCodes: ["sans_gluten"],
+      allergeneCodes: ["gluten"],
+    });
+
+    // ============== CATÉGORIE 6 — BOISSONS ==============
     const boissons = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
         titre: "Boissons",
         icone: "coffee",
-        position: 4,
+        position: 5,
       },
     });
     const espresso = await makeProduit({
