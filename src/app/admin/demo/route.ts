@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
-import { ensureAdminDemoRestaurant, ADMIN_DEMO_COOKIE } from "@/lib/admin-demo";
+import {
+  ensureAdminDemoRestaurant,
+  ADMIN_DEMO_COOKIE,
+} from "@/lib/admin-demo";
 
 /**
  * GET /admin/demo — point d'entrée du "mode démo admin".
@@ -35,6 +38,14 @@ export async function GET(request: NextRequest) {
 
   if (!authUser?.userId) {
     return NextResponse.redirect(new URL("/admin", `${proto}://${host}`));
+  }
+
+  // ?force=1 → drop le resto démo existant et régénère depuis zéro avec
+  // le seed riche. Utile quand le user a un resto d'un ancien commit qui
+  // n'avait pas le jeu / popups / vignettes.
+  const force = request.nextUrl.searchParams.get("force") === "1";
+  if (force) {
+    await prisma.restaurant.deleteMany({ where: { userId: authUser.userId } });
   }
 
   const restaurant = await ensureAdminDemoRestaurant(authUser.userId);
