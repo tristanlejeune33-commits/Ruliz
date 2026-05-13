@@ -14,6 +14,7 @@ import { isStripeConfigured } from "@/lib/stripe";
 import { requireAdmin } from "@/lib/session";
 import { listAllSmsPacks } from "@/server/dashboard/sms-packs";
 import { SmsPacksEditor } from "./sms-packs-editor";
+import { R2CleanupCard } from "./r2-cleanup-card";
 
 export const metadata: Metadata = {
   title: "Paramètres système · Admin Ruliz",
@@ -219,6 +220,9 @@ export default async function AdminSettingsPage() {
           </dl>
         </CardContent>
       </Card>
+
+      {/* === Cleanup images orphelines R2 === */}
+      <R2CleanupCard />
 
       {/* === Roadmap admin === */}
       <Card className="border-dashed">

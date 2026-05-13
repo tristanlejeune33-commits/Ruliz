@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { compressImage, formatBytes } from "@/lib/image-compress";
 
 interface ImageUploaderProps {
   value?: string | null;
@@ -50,12 +51,33 @@ export function ImageUploader({
 
     setPending(true);
     try {
+      // === Compression client-side adaptative ===
+      // Resize + ré-encodage avant upload selon le kind (logo PNG préservé,
+      // bannière 2400px JPEG q90, produit/boutique 1600px JPEG q88).
+      // L'œil ne fait pas la différence avec l'original mais on gagne 70-85%
+      // de poids → carte publique 5-10× plus rapide à charger sur mobile.
+      const originalSize = file.size;
+      const compressed = await compressImage(file, kind);
+      const compressedSize = compressed.size;
+      const savings = Math.round(
+        (1 - compressedSize / originalSize) * 100,
+      );
+      if (savings >= 10) {
+        toast.message(
+          `Image optimisée : ${formatBytes(originalSize)} → ${formatBytes(compressedSize)} (-${savings}%)`,
+          { duration: 2500 },
+        );
+      }
+
       // Stratégie : on uploade côté serveur (proxy Next.js) pour éviter
       // tout problème CORS avec R2.
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", compressed);
       if (restaurantId) fd.append("restaurantId", restaurantId);
       fd.append("kind", kind);
+      // Si une image existe déjà, on demande au serveur de la supprimer
+      // après l'upload de la nouvelle (delete on replace).
+      if (value) fd.append("previousUrl", value);
 
       const res = await fetch("/api/upload-direct", {
         method: "POST",
