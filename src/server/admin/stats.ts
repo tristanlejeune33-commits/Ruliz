@@ -7,6 +7,15 @@ const PLAN_PRICES = {
   premium: 44.9,
 } as const;
 
+/**
+ * Filtre standard pour exclure les comptes admin des KPIs : leur restaurant
+ * "démo" sert juste à préparer les démos prospects, il ne reflète pas un
+ * vrai client payant et ne doit pas peser dans MRR / scans / etc.
+ */
+const NON_ADMIN_USER_FILTER = {
+  user: { role: { not: "admin" as const } },
+} as const;
+
 export async function getAdminKpis() {
   const now = Date.now();
   const since24h = new Date(now - 24 * 60 * 60 * 1000);
@@ -32,48 +41,83 @@ export async function getAdminKpis() {
         createdAt: { gte: since7d },
       },
     }),
+    // Exclu les restaurants démo des admins → MRR & totalRestaurants ne
+    // gonflent pas artificiellement.
     prisma.restaurant.findMany({
-      where: { statut: "actif" },
+      where: { statut: "actif", ...NON_ADMIN_USER_FILTER },
       select: { plan: true },
     }),
-    // Impressions cumulées = sum des compteurs scanTotal sur tous les QR codes
+    // Impressions cumulées — exclut les scans des cartes démo admin.
     prisma.qrcode.aggregate({
       _sum: { scanTotal: true },
+      where: { restaurant: NON_ADMIN_USER_FILTER },
     }),
     // Scans 24h / 7j / 30j depuis la table scans (events bruts)
-    prisma.scan.count({ where: { scannedAt: { gte: since24h } } }),
-    prisma.scan.count({ where: { scannedAt: { gte: since7d } } }),
-    prisma.scan.count({ where: { scannedAt: { gte: since30d } } }),
+    prisma.scan.count({
+      where: {
+        scannedAt: { gte: since24h },
+        restaurant: NON_ADMIN_USER_FILTER,
+      },
+    }),
+    prisma.scan.count({
+      where: {
+        scannedAt: { gte: since7d },
+        restaurant: NON_ADMIN_USER_FILTER,
+      },
+    }),
+    prisma.scan.count({
+      where: {
+        scannedAt: { gte: since30d },
+        restaurant: NON_ADMIN_USER_FILTER,
+      },
+    }),
     // Restaurants distincts ayant reçu au moins un scan aujourd'hui
     prisma.scan.groupBy({
       by: ["restaurantId"],
       where: {
         scannedAt: { gte: since24h },
         restaurantId: { not: null },
+        restaurant: NON_ADMIN_USER_FILTER,
       },
     }),
     // Approximation "scans uniques" : groupBy userAgent (proxy faute d'ipHash en DB)
     prisma.scan.groupBy({
       by: ["userAgent"],
-      where: { scannedAt: { gte: since7d } },
+      where: {
+        scannedAt: { gte: since7d },
+        restaurant: NON_ADMIN_USER_FILTER,
+      },
     }),
     prisma.scan.groupBy({
       by: ["userAgent"],
-      where: { scannedAt: { gte: since30d } },
+      where: {
+        scannedAt: { gte: since30d },
+        restaurant: NON_ADMIN_USER_FILTER,
+      },
     }),
   ]);
 
   const mrr = allRestaurants.reduce((acc, r) => acc + PLAN_PRICES[r.plan], 0);
 
-  // Revenus boutique cumulés (commandes payées)
+  // Revenus boutique cumulés (commandes payées) — exclu les commandes
+  // des comptes admin (achats internes / tests).
   const boutiqueRev = (await prisma.$queryRawUnsafe(
     `SELECT COALESCE(SUM(total_centimes), 0)::int AS "totalCentimes"
-     FROM boutique_commandes WHERE paid_at IS NOT NULL`,
+     FROM boutique_commandes
+     WHERE paid_at IS NOT NULL
+       AND user_id NOT IN (SELECT id FROM users WHERE role = 'admin')`,
   ).catch(() => [{ totalCentimes: 0 }])) as Array<{ totalCentimes: number }>;
-  // Revenus SMS cumulés (packs achetés)
+  // Revenus SMS cumulés (packs achetés) — exclu aussi les restaurants
+  // appartenant à un admin (pas de user_id direct sur sms_credit_purchases,
+  // on passe par restaurant_id → restaurants → user_id).
   const smsRev = (await prisma.$queryRawUnsafe(
     `SELECT COALESCE(SUM(price_paid_centimes), 0)::int AS "totalCentimes"
-     FROM sms_credit_purchases WHERE status = 'paid'`,
+     FROM sms_credit_purchases
+     WHERE status = 'paid'
+       AND restaurant_id NOT IN (
+         SELECT id FROM restaurants
+         WHERE user_id IN (SELECT id FROM users WHERE role = 'admin')
+       )`,
   ).catch(() => [{ totalCentimes: 0 }])) as Array<{ totalCentimes: number }>;
 
   return {
@@ -135,7 +179,13 @@ export async function getKpiTimeseries(
   try {
     let rows: Array<{ bucket: Date; value: number }> = [];
 
+    // CTE constante : IDs des users admin → on s'en sert dans tous les
+    // WHERE/JOIN pour exclure leur restaurant démo des KPIs.
+    const adminExcl =
+      "user_id NOT IN (SELECT id FROM users WHERE role = 'admin')";
+
     if (kpi === "signups") {
+      // Déjà filtré sur role='client', donc admin déjà exclu.
       rows = (await prisma.$queryRawUnsafe(
         `SELECT date_trunc($2, created_at) AS "bucket", COUNT(*)::int AS "value"
          FROM users
@@ -147,8 +197,11 @@ export async function getKpiTimeseries(
     } else if (kpi === "scans") {
       rows = (await prisma.$queryRawUnsafe(
         `SELECT date_trunc($2, scanned_at) AS "bucket", COUNT(*)::int AS "value"
-         FROM scans
-         WHERE scanned_at >= $1
+         FROM scans s
+         WHERE s.scanned_at >= $1
+           AND (s.restaurant_id IS NULL OR s.restaurant_id NOT IN (
+             SELECT id FROM restaurants WHERE ${adminExcl}
+           ))
          GROUP BY 1 ORDER BY 1`,
         since,
         grain,
@@ -157,8 +210,11 @@ export async function getKpiTimeseries(
       rows = (await prisma.$queryRawUnsafe(
         `SELECT date_trunc($2, scanned_at) AS "bucket",
                 COUNT(DISTINCT COALESCE(user_agent, '') || '|' || COALESCE(pays, ''))::int AS "value"
-         FROM scans
-         WHERE scanned_at >= $1
+         FROM scans s
+         WHERE s.scanned_at >= $1
+           AND (s.restaurant_id IS NULL OR s.restaurant_id NOT IN (
+             SELECT id FROM restaurants WHERE ${adminExcl}
+           ))
          GROUP BY 1 ORDER BY 1`,
         since,
         grain,
@@ -169,6 +225,7 @@ export async function getKpiTimeseries(
                 COALESCE(SUM(total_centimes), 0)::int AS "value"
          FROM boutique_commandes
          WHERE paid_at >= $1
+           AND ${adminExcl}
          GROUP BY 1 ORDER BY 1`,
         since,
         grain,
@@ -179,46 +236,52 @@ export async function getKpiTimeseries(
                 COALESCE(SUM(price_paid_centimes), 0)::int AS "value"
          FROM sms_credit_purchases
          WHERE status = 'paid' AND paid_at >= $1
+           AND restaurant_id NOT IN (
+             SELECT id FROM restaurants WHERE ${adminExcl}
+           )
          GROUP BY 1 ORDER BY 1`,
         since,
         grain,
       )) as typeof rows;
     } else if (kpi === "restaurants") {
-      // Restaurants créés par bucket
+      // Restaurants créés par bucket — exclu les démos admin.
       rows = (await prisma.$queryRawUnsafe(
         `SELECT date_trunc($2, created_at) AS "bucket", COUNT(*)::int AS "value"
          FROM restaurants
          WHERE created_at >= $1
+           AND ${adminExcl}
          GROUP BY 1 ORDER BY 1`,
         since,
         grain,
       )) as typeof rows;
     } else if (kpi === "activeRestos") {
-      // Restaurants distincts ayant reçu au moins 1 scan dans le bucket
       rows = (await prisma.$queryRawUnsafe(
         `SELECT date_trunc($2, scanned_at) AS "bucket",
                 COUNT(DISTINCT restaurant_id)::int AS "value"
-         FROM scans
-         WHERE scanned_at >= $1 AND restaurant_id IS NOT NULL
+         FROM scans s
+         WHERE s.scanned_at >= $1 AND s.restaurant_id IS NOT NULL
+           AND s.restaurant_id NOT IN (
+             SELECT id FROM restaurants WHERE ${adminExcl}
+           )
          GROUP BY 1 ORDER BY 1`,
         since,
         grain,
       )) as typeof rows;
     } else if (kpi === "impressions") {
-      // Identique à scans, mais sémantique différente pour le user
       rows = (await prisma.$queryRawUnsafe(
         `SELECT date_trunc($2, scanned_at) AS "bucket", COUNT(*)::int AS "value"
-         FROM scans
-         WHERE scanned_at >= $1
+         FROM scans s
+         WHERE s.scanned_at >= $1
+           AND (s.restaurant_id IS NULL OR s.restaurant_id NOT IN (
+             SELECT id FROM restaurants WHERE ${adminExcl}
+           ))
          GROUP BY 1 ORDER BY 1`,
         since,
         grain,
       )) as typeof rows;
     } else if (kpi === "mrr") {
-      // MRR mensuel : sum des prix des plans actifs par mois
-      // Approximation : on prend la valeur courante × 1 par bucket
-      // (le MRR ne change pas dans le temps si pas de churn, donc on récupère
-      // un snapshot mensuel via les restaurants actifs créés ≤ chaque date)
+      // MRR mensuel : sum des prix des plans actifs par mois — exclu les
+      // restaurants démo des admins.
       rows = (await prisma.$queryRawUnsafe(
         `WITH months AS (
            SELECT generate_series(
@@ -236,6 +299,7 @@ export async function getKpiTimeseries(
          FROM months m
          LEFT JOIN restaurants r ON r.created_at <= m.bucket + interval '1 month' - interval '1 second'
            AND r.statut = 'actif'
+           AND r.${adminExcl}
          GROUP BY m.bucket
          ORDER BY m.bucket`,
         since,
@@ -262,8 +326,9 @@ export async function getSignupTimeseries() {
       where: { role: "client", createdAt: { gte: since } },
       select: { createdAt: true },
     }),
+    // Exclu les restos démo des admins.
     prisma.restaurant.findMany({
-      where: { createdAt: { gte: since } },
+      where: { createdAt: { gte: since }, ...NON_ADMIN_USER_FILTER },
       select: { createdAt: true },
     }),
   ]);
