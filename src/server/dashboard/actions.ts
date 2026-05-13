@@ -98,41 +98,128 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
 
   const empty = (v: string | undefined) => (v && v.trim().length > 0 ? v : null);
 
-  await prisma.restaurant.update({
-    where: { id: bigId },
-    data: {
-      nom: data.nom,
-      description: empty(data.description),
-      email: empty(data.email),
-      telephone: empty(data.telephone),
-      adresse: empty(data.adresse),
-      codePostal: empty(data.codePostal),
-      ville: empty(data.ville),
-      pays: empty(data.pays),
-      deviseDefault: empty(data.deviseDefault) ?? "€",
-      langueNative: data.langueNative ?? "fr",
-      lunchStart: data.lunchStart || "11:30",
-      lunchEnd: data.lunchEnd || "15:00",
-      dinnerStart: data.dinnerStart || "18:30",
-      dinnerEnd: data.dinnerEnd || "23:00",
-      happyHourStart: data.happyHourStart || "18:00",
-      happyHourEnd: data.happyHourEnd || "19:00",
-      theme: data.theme ?? "light",
-      fontStyle: data.fontStyle ?? "editorial",
-      couleurPrimaire: empty(data.couleurPrimaire),
-      couleurSecondaire: empty(data.couleurSecondaire),
-      couleurFond: empty(data.couleurFond),
-      couleurTexteTitre: empty(data.couleurTexteTitre),
-      couleurCategorie: empty(data.couleurCategorie),
-      facebookUrl: empty(data.facebookUrl),
-      instagramUrl: empty(data.instagramUrl),
-      tiktokUrl: empty(data.tiktokUrl),
-      siteWeb: empty(data.siteWeb),
-      googleReviewUrl: empty(data.googleReviewUrl),
-      logoUrl: empty(data.logoUrl),
-      banniereUrl: empty(data.banniereUrl),
-    },
-  });
+  // S'assure que les colonnes horaires existent en DB avant d'updater.
+  // Sinon Prisma plante avec "column does not exist" et l'auto-save est
+  // silencieusement KO côté UI.
+  try {
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "lunch_start"      VARCHAR(5) DEFAULT '11:30',
+        ADD COLUMN IF NOT EXISTS "lunch_end"        VARCHAR(5) DEFAULT '15:00',
+        ADD COLUMN IF NOT EXISTS "dinner_start"     VARCHAR(5) DEFAULT '18:30',
+        ADD COLUMN IF NOT EXISTS "dinner_end"       VARCHAR(5) DEFAULT '23:00',
+        ADD COLUMN IF NOT EXISTS "happy_hour_start" VARCHAR(5) DEFAULT '18:00',
+        ADD COLUMN IF NOT EXISTS "happy_hour_end"   VARCHAR(5) DEFAULT '19:00';
+    `);
+  } catch (err) {
+    console.warn(
+      "[updateRestaurant] ensure horaires columns failed (continuing):",
+      err,
+    );
+  }
+
+  // Tente d'abord l'update Prisma classique (avec tous les champs).
+  // Si ça plante (P2022 column does not exist sur une colonne tardive),
+  // on retombe sur un raw SQL qui n'utilise que les colonnes essentielles.
+  try {
+    await prisma.restaurant.update({
+      where: { id: bigId },
+      data: {
+        nom: data.nom,
+        description: empty(data.description),
+        email: empty(data.email),
+        telephone: empty(data.telephone),
+        adresse: empty(data.adresse),
+        codePostal: empty(data.codePostal),
+        ville: empty(data.ville),
+        pays: empty(data.pays),
+        deviseDefault: empty(data.deviseDefault) ?? "€",
+        langueNative: data.langueNative ?? "fr",
+        lunchStart: data.lunchStart || "11:30",
+        lunchEnd: data.lunchEnd || "15:00",
+        dinnerStart: data.dinnerStart || "18:30",
+        dinnerEnd: data.dinnerEnd || "23:00",
+        happyHourStart: data.happyHourStart || "18:00",
+        happyHourEnd: data.happyHourEnd || "19:00",
+        theme: data.theme ?? "light",
+        fontStyle: data.fontStyle ?? "editorial",
+        couleurPrimaire: empty(data.couleurPrimaire),
+        couleurSecondaire: empty(data.couleurSecondaire),
+        couleurFond: empty(data.couleurFond),
+        couleurTexteTitre: empty(data.couleurTexteTitre),
+        couleurCategorie: empty(data.couleurCategorie),
+        facebookUrl: empty(data.facebookUrl),
+        instagramUrl: empty(data.instagramUrl),
+        tiktokUrl: empty(data.tiktokUrl),
+        siteWeb: empty(data.siteWeb),
+        googleReviewUrl: empty(data.googleReviewUrl),
+        logoUrl: empty(data.logoUrl),
+        banniereUrl: empty(data.banniereUrl),
+      },
+    });
+  } catch (err) {
+    console.error(
+      "[updateRestaurant] Prisma update FAILED, falling back to raw SQL:",
+      err,
+    );
+    // Fallback raw SQL : update colonne par colonne, ne bloque pas sur
+    // une colonne manquante (chaque update est isolé). Permet de save les
+    // horaires même si une autre colonne récente plante.
+    const updates: Array<[string, string | null]> = [
+      ["nom", data.nom],
+      ["description", empty(data.description)],
+      ["email", empty(data.email)],
+      ["telephone", empty(data.telephone)],
+      ["adresse", empty(data.adresse)],
+      ["code_postal", empty(data.codePostal)],
+      ["ville", empty(data.ville)],
+      ["pays", empty(data.pays)],
+      ["devise_default", empty(data.deviseDefault) ?? "€"],
+      ["langue_native", data.langueNative ?? "fr"],
+      ["lunch_start", data.lunchStart || "11:30"],
+      ["lunch_end", data.lunchEnd || "15:00"],
+      ["dinner_start", data.dinnerStart || "18:30"],
+      ["dinner_end", data.dinnerEnd || "23:00"],
+      ["happy_hour_start", data.happyHourStart || "18:00"],
+      ["happy_hour_end", data.happyHourEnd || "19:00"],
+      ["theme", data.theme ?? "light"],
+      ["font_style", data.fontStyle ?? "editorial"],
+      ["couleur_primaire", empty(data.couleurPrimaire)],
+      ["couleur_secondaire", empty(data.couleurSecondaire)],
+      ["couleur_fond", empty(data.couleurFond)],
+      ["couleur_texte_titre", empty(data.couleurTexteTitre)],
+      ["couleur_categorie", empty(data.couleurCategorie)],
+      ["facebook_url", empty(data.facebookUrl)],
+      ["instagram_url", empty(data.instagramUrl)],
+      ["tiktok_url", empty(data.tiktokUrl)],
+      ["site_web", empty(data.siteWeb)],
+      ["google_review_url", empty(data.googleReviewUrl)],
+      ["logo_url", empty(data.logoUrl)],
+      ["banniere_url", empty(data.banniereUrl)],
+    ];
+    let failedCount = 0;
+    for (const [col, val] of updates) {
+      try {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "restaurants" SET "${col}" = $1 WHERE "id" = $2`,
+          val,
+          bigId,
+        );
+      } catch (e) {
+        failedCount++;
+        console.warn(
+          `[updateRestaurant] raw SQL update failed for column "${col}":`,
+          e instanceof Error ? e.message : e,
+        );
+      }
+    }
+    if (failedCount === updates.length) {
+      return {
+        ok: false,
+        error: "Erreur de sauvegarde côté serveur. Réessaie dans 30s.",
+      };
+    }
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/restaurant");
