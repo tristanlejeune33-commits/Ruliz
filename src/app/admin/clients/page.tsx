@@ -8,7 +8,7 @@ import { serialize } from "@/lib/serialize";
 import { ClientsTable } from "./clients-table";
 
 export const metadata: Metadata = {
-  title: "Clients · Admin Ruliz",
+  title: "Clients Admin Ruliz",
 };
 
 interface PageProps {

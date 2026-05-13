@@ -75,13 +75,13 @@ interface KpiCardProps {
   trendPct?: number | null;
   iconKey: KpiIconKey;
   sparkline?: number[];
-  /** Variante de couleur · strictement DS Ruliz (cyan/violet/success/danger). */
+  /** Variante de couleur strictement DS Ruliz (cyan/violet/success/danger). */
   tone?: KpiTone;
   delay?: number;
   formatter?: (v: string | number) => string;
   /**
    * Active la marque de coin diagonale en haut-droite (innovation #10 du DS
-   * light). N'a aucun effet visible en dark · la classe est inerte côté CSS
+   * light). N'a aucun effet visible en dark la classe est inerte côté CSS
    * tant que data-theme≠"light". Réservée aux KPIs principaux pour signer
    * le détail tech sans en faire un motif.
    */

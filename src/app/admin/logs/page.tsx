@@ -13,11 +13,11 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata: Metadata = {
-  title: "Logs · Admin Ruliz",
+  title: "Logs Admin Ruliz",
 };
 
 /**
- * Page /admin/logs · audit trail global de toutes les actions admin/client
+ * Page /admin/logs audit trail global de toutes les actions admin/client
  * loguées via `prisma.log.create()`. Cap à 200 derniers événements ; pour
  * historique complet, query directe en DB.
  */
@@ -89,7 +89,7 @@ export default async function AdminLogsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                       <span className="font-mono text-[12px] font-semibold text-[var(--text-primary)]">
-                        {log.action ?? "·"}
+                        {log.action ?? " "}
                       </span>
                       {log.user ? (
                         <Link

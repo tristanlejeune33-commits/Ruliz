@@ -8,7 +8,7 @@ import { serialize } from "@/lib/serialize";
 import { PopupsManager } from "./popups-manager";
 
 export const metadata: Metadata = {
-  title: "Pop-ups événements · Ruliz",
+  title: "Pop-ups événements Ruliz",
 };
 
 export default async function PopupsPage() {

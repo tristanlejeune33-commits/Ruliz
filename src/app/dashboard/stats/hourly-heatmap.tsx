@@ -77,7 +77,7 @@ function RowGroup({
         return (
           <div
             key={h}
-            title={`${day} ${String(h).padStart(2, "0")}h · ${value} scan${value > 1 ? "s" : ""}`}
+            title={`${day} ${String(h).padStart(2, "0")}h ${value} scan${value > 1 ? "s" : ""}`}
             className="aspect-square rounded transition-transform hover:scale-110"
             style={{
               backgroundColor:
@@ -108,7 +108,7 @@ function Legend({ max }: { max: number }) {
           />
         ))}
       </div>
-      <span>Plus · max {max} scans/heure</span>
+      <span>Plus max {max} scans/heure</span>
     </div>
   );
 }

@@ -13,7 +13,7 @@ import { requireDashboard } from "@/lib/session";
 import { OnboardingForm } from "./onboarding-form";
 
 export const metadata: Metadata = {
-  title: "Bienvenue · Ruliz",
+  title: "Bienvenue Ruliz",
 };
 
 export default async function OnboardingPage() {

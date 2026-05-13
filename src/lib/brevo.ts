@@ -16,14 +16,14 @@ interface SendSmsOpts {
 }
 
 /**
- * Wrapper Brevo SMS · safe en l'absence de clé (no-op + log).
+ * Wrapper Brevo SMS safe en l'absence de clé (no-op + log).
  */
 export async function sendSms(
   opts: SendSmsOpts,
 ): Promise<{ ok: true; reference?: string } | { ok: false; error: string }> {
   const key = process.env.BREVO_API_KEY;
   if (!key) {
-    console.warn(`[brevo.sms] BREVO_API_KEY absent · SMS pour ${opts.recipient} non envoyé`);
+    console.warn(`[brevo.sms] BREVO_API_KEY absent SMS pour ${opts.recipient} non envoyé`);
     return { ok: false, error: "BREVO_API_KEY absent" };
   }
 

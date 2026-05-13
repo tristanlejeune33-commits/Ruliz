@@ -88,7 +88,7 @@ export function AddToCartButton({
         </p>
       )}
       <div className="space-y-3">
-        {/* Sélecteur quantité · input éditable + boutons +/− */}
+        {/* Sélecteur quantité input éditable + boutons +/− */}
         <div>
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
             Quantité

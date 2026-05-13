@@ -50,7 +50,7 @@ function buildRedis(): Redis | null {
   });
 
   client.on("end", () => {
-    // Connection abandonnée · on log une fois pour info.
+    // Connection abandonnée on log une fois pour info.
     if (!globalForRedis.redisErrorLogged) {
       console.warn("[redis] connexion abandonnée (retry strategy stopped)");
       globalForRedis.redisErrorLogged = true;

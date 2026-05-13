@@ -17,11 +17,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Ruliz · Menus digitaux pour restaurants",
+  title: "Ruliz Menus digitaux pour restaurants",
   description:
     "Menus digitaux : QR code, traduction automatique en 7 langues, espace pro pour restaurateurs.",
   metadataBase: new URL(getAppUrl()),
-  // PWA installable iOS / Android · voir src/app/manifest.ts
+  // PWA installable iOS / Android voir src/app/manifest.ts
   manifest: "/manifest.webmanifest",
   applicationName: "Ruliz",
   appleWebApp: {

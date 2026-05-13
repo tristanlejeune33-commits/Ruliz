@@ -28,7 +28,7 @@ import {
 } from "@/server/dashboard/onboarding-actions";
 
 /**
- * OnboardingBubble · bulle guidée persistante 320 px, bottom-right par défaut,
+ * OnboardingBubble bulle guidée persistante 320 px, bottom-right par défaut,
  * ancrée sur un élément DOM si l'étape courante le demande.
  *
  * Stratégie de positionnement :
@@ -284,7 +284,7 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
                   {currentStep.kind === "value" ? (
                     <>
-                      Bonus {currentStep.id - 10}/2 ·{" "}
+                      Bonus {currentStep.id - 10}/2  {" "}
                       <span style={{ color: "#d4a017" }}>plus-value</span>
                     </>
                   ) : (
@@ -328,7 +328,7 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
               {currentStep.body}
             </p>
 
-            {/* Toggle "Plus de détails" · affiché seulement si details présent */}
+            {/* Toggle "Plus de détails" affiché seulement si details présent */}
             {currentStep.details && (
               <>
                 <button
@@ -380,7 +380,7 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
               </>
             )}
 
-            {/* Actions · 3 zones : skip (gauche) · retour (centre) · suivant (droite) */}
+            {/* Actions 3 zones : skip (gauche) retour (centre) suivant (droite) */}
             <div className="flex items-center justify-between gap-2">
               {currentStep.allowSkip ? (
                 <button
@@ -396,7 +396,7 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
               )}
 
               <div className="flex items-center gap-1.5">
-                {/* Bouton retour · affiché à partir de la slide 2 */}
+                {/* Bouton retour affiché à partir de la slide 2 */}
                 {currentStep.id > 1 && (
                   <button
                     type="button"

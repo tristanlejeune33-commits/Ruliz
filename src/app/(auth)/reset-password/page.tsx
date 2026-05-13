@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ResetPasswordForm } from "./reset-password-form";
 
 export const metadata: Metadata = {
-  title: "Nouveau mot de passe · Ruliz",
+  title: "Nouveau mot de passe Ruliz",
 };
 
 export default async function ResetPasswordPage({

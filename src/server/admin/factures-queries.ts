@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getStripe } from "@/lib/stripe";
 
 /**
- * Récupère TOUTES les factures Stripe (tous customers confondus) · réservé
+ * Récupère TOUTES les factures Stripe (tous customers confondus) réservé
  * à l'admin. Cap à 200 pour ne pas spammer l'API Stripe ; pour l'historique
  * complet, l'admin va dans le Dashboard Stripe directement.
  *

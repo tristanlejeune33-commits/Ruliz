@@ -19,7 +19,7 @@ import { serialize } from "@/lib/serialize";
 import { JeuForm } from "./jeu-form";
 
 export const metadata: Metadata = {
-  title: "Roulette d'avis · Ruliz",
+  title: "Roulette d'avis Ruliz",
 };
 
 interface JeuConfig {
@@ -57,7 +57,7 @@ export default async function JeuPage() {
             Roulette d&apos;avis
           </HeroEyebrow>
         }
-        title="Récupère des avis Google · gagne des étoiles"
+        title="Récupère des avis Google gagne des étoiles"
         description="Tes clients laissent un avis 5 étoiles et tentent de gagner un lot. Tu remontes dans les recherches Google et tu récupères leurs contacts en même temps."
       />
 
@@ -135,7 +135,7 @@ export default async function JeuPage() {
                               {p.lotGagne ?? "Pas de lot"}
                               {p.actionSociale && (
                                 <span className="ml-1 opacity-70">
-                                  · via {p.actionSociale.replace("_", " ")}
+                                  via {p.actionSociale.replace("_", " ")}
                                 </span>
                               )}
                             </p>

@@ -19,7 +19,7 @@ import {
 import { FacturesAdminView } from "./factures-view";
 
 export const metadata: Metadata = {
-  title: "BC / Factures · Admin Ruliz",
+  title: "BC / Factures Admin Ruliz",
 };
 
 export default async function AdminFacturesPage() {

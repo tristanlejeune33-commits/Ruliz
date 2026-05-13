@@ -29,7 +29,7 @@ const schema = z.object({
  *      doivent passer par /admin pour supprimer un compte client).
  *   2. Vérifie que l'email confirmé matche l'email du compte.
  *   3. Annule les souscriptions Stripe actives (cancel immédiat, sans
- *      pro-rata · l'user a explicitement demandé à partir).
+ *      pro-rata l'user a explicitement demandé à partir).
  *   4. Purge TOUTES les images R2 du user (logos, bannières, photos
  *      produits, QR codes, lots roulette).
  *   5. Soft-delete :
@@ -228,7 +228,7 @@ export async function deleteOwnAccount(
  */
 function hashEmail(email: string): string {
   // Hash léger sans crypto module pour rester simple. Pour vrai usage GDPR
-  // on devrait utiliser createHash de node:crypto · fait dans la version
+  // on devrait utiliser createHash de node:crypto fait dans la version
   // serveur Node, ici c'est best-effort.
   let h = 0;
   for (let i = 0; i < email.length; i++) {

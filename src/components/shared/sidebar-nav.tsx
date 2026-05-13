@@ -66,7 +66,7 @@ const DASHBOARD_NAV: SidebarNavSection[] = [
   },
   {
     titleKey: "nav.section.acquisition",
-    // Boutique QR fusionnée dans /dashboard/qrcodes · un seul accès au catalogue
+    // Boutique QR fusionnée dans /dashboard/qrcodes un seul accès au catalogue
     items: [
       { labelKey: "nav.stats", href: "/dashboard/stats", icon: Gauge },
       { labelKey: "nav.jeu", href: "/dashboard/jeu", icon: Sparkles },
@@ -111,7 +111,7 @@ const ADMIN_NAV: SidebarNavSection[] = [
         labelKey: "nav.admin.demo",
         href: "/admin/demo",
         icon: FlaskConical,
-        external: true, // Route handler · exige un full page reload
+        external: true, // Route handler exige un full page reload
       },
       {
         labelKey: "nav.admin.email_test",
@@ -222,7 +222,7 @@ function NavItem({
           : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]",
       )}
     >
-      {/* Pill animé via layoutId Framer Motion · glisse entre items actifs */}
+      {/* Pill animé via layoutId Framer Motion glisse entre items actifs */}
       {active && (
         <motion.span
           layoutId={layoutId}
@@ -240,7 +240,7 @@ function NavItem({
         />
       )}
 
-      {/* Barre verticale gauche néon avec glow · non rendue en collapsed */}
+      {/* Barre verticale gauche néon avec glow non rendue en collapsed */}
       {active && !collapsed && (
         <motion.span
           layoutId={`${layoutId}-bar`}
@@ -250,7 +250,7 @@ function NavItem({
         />
       )}
 
-      {/* Icône · tile plus grande pour plus de présence */}
+      {/* Icône tile plus grande pour plus de présence */}
       <span
         className={cn(
           "relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg transition-all duration-200",
@@ -262,7 +262,7 @@ function NavItem({
         <item.icon className="size-4" strokeWidth={1.75} />
       </span>
 
-      {/* Label + badge · masqué en collapsed */}
+      {/* Label + badge masqué en collapsed */}
       {!collapsed && (
         <>
           <span className="relative z-10 flex-1 truncate tracking-tight">

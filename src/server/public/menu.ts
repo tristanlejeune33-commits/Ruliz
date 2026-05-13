@@ -21,7 +21,7 @@ export type PublicMenu = {
     langueNative: SupportedLang;
     /** light | dark */
     theme: "light" | "dark";
-    /** modern | editorial | elegant · pilote le choix de typo display. */
+    /** modern | editorial | elegant pilote le choix de typo display. */
     fontStyle: "modern" | "editorial" | "elegant";
     /** Couleur d'accent (CTA, boutons). */
     couleurPrimaire: string | null;
@@ -88,7 +88,7 @@ export interface MenuCategory {
   modeAffichage: "liste" | "grille" | "carrousel";
   /** Couleur custom (override theme). NULL = utilise theme.primary */
   couleur: string | null;
-  /** Type de créneau ("always", "happy_hour", etc.) · exposé pour effet visuel */
+  /** Type de créneau ("always", "happy_hour", etc.) exposé pour effet visuel */
   scheduleType: string;
   produits: Array<MenuProduit>;
   subCategories: Array<MenuCategory>;
@@ -120,10 +120,10 @@ function cacheKey(restaurantId: bigint | string, lang: SupportedLang) {
 
 /**
  * Loads the menu of a restaurant, translated to `lang`, with 4-level cache:
- *   L1 Cloudflare (HTTP edge) · handled in route headers
- *   L2 Next ISR · handled by `revalidate` in the page
- *   L3 Redis · handled here (`carte:{id}:{lang}`)
- *   L4 DB cache · `produit_translations` and `categorie_translations`
+ *   L1 Cloudflare (HTTP edge) handled in route headers
+ *   L2 Next ISR handled by `revalidate` in the page
+ *   L3 Redis handled here (`carte:{id}:{lang}`)
+ *   L4 DB cache `produit_translations` and `categorie_translations`
  *
  * If a translation is missing for some product/categorie, fall back to FR
  * and flag `partiallyTranslated`. The Inngest worker fills the gaps async.
@@ -132,7 +132,7 @@ export async function getPublicMenu(
   restaurantId: bigint,
   lang: SupportedLang,
 ): Promise<PublicMenu | null> {
-  // L3 Redis lookup · skip si client en mode "end" (connexion abandonnée).
+  // L3 Redis lookup skip si client en mode "end" (connexion abandonnée).
   // L'app continue sans cache, on retombe sur la DB.
   if (redis && redis.status !== "end" && redis.status !== "close") {
     try {
@@ -210,7 +210,7 @@ export async function getPublicMenu(
       orderBy: { createdAt: "desc" },
     }),
     // On fetch jusqu'à 5 popups matching dates + actif puis on filtre côté
-    // JS pour le planning hebdo (bitmap jours) + plage horaire · conditions
+    // JS pour le planning hebdo (bitmap jours) + plage horaire conditions
     // qu'il serait laborieux d'exprimer en SQL pur.
     prisma.popup.findMany({
       where: {
@@ -234,7 +234,7 @@ export async function getPublicMenu(
   // Le restaurateur doit régler son moyen de paiement pour réactiver.
   if (restaurant.statut === "suspendu") {
     console.log(
-      `[getPublicMenu] restaurant ${restaurantId} is suspended · blocking carte`,
+      `[getPublicMenu] restaurant ${restaurantId} is suspended blocking carte`,
     );
     return null;
   }
@@ -270,7 +270,7 @@ export async function getPublicMenu(
   const now = new Date();
   const currentDayBit = 1 << now.getDay(); // 0=dim, 6=sam
   const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-  // Cast vers un type incluant les colonnes Stripe/schedule · le client
+  // Cast vers un type incluant les colonnes Stripe/schedule le client
   // Prisma local peut ne pas avoir été régénéré (problème Windows file lock).
   // Les colonnes existent en DB, Prisma findMany les retourne au runtime.
   const popupRowsTyped = popupRow as unknown as Array<
@@ -501,7 +501,7 @@ export async function getPublicMenu(
   };
 
   // Write to Redis (best-effort, don't block response). Skip si client en
-  // mode "end" · pas la peine d'envoyer dans un socket fermé.
+  // mode "end" pas la peine d'envoyer dans un socket fermé.
   if (redis && redis.status !== "end" && redis.status !== "close") {
     redis
       .set(cacheKey(restaurantId, lang), JSON.stringify(menu), "EX", CACHE_TTL_SECONDS)

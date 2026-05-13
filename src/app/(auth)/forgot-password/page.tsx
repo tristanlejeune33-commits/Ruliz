@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ForgotPasswordForm } from "./forgot-password-form";
 
 export const metadata: Metadata = {
-  title: "Mot de passe oublié · Ruliz",
+  title: "Mot de passe oublié Ruliz",
 };
 
 export default function ForgotPasswordPage() {
@@ -26,8 +26,8 @@ export default function ForgotPasswordPage() {
           className="mt-2.5 text-sm leading-relaxed"
           style={{ color: "#4A5573" }}
         >
-          Tape ton email · on t&apos;envoie un lien pour choisir un nouveau
-          mot de passe (valable 1h).
+          Renseigne ton email pour recevoir un lien de réinitialisation
+          (valable 1h).
         </p>
       </div>
       <ForgotPasswordForm />

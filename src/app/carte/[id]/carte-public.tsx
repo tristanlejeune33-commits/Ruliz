@@ -22,16 +22,16 @@ interface CartePublicProps {
 }
 
 /**
- * Carte publique · assemblage complet, réplique du template original Ruliz.
+ * Carte publique assemblage complet, réplique du template original Ruliz.
  *
  * Structure :
- *   <HeaderPublic />        · sticky top, burger + titre + lang + cadeau
- *   <HeroSection />         · banner + logo circulaire + welcome
- *   <SocialBar />           · pills border navy avec FB/IG/TikTok/Web/Google
- *   <CategoryAccordion />   · liste accordéons (navy fermés)
- *   <FooterPublic />        · adresse + propulsé par Ruliz
- *   <PopupBanner />         · popup événement
- *   <Roulette />            · roulette cadeaux
+ *   <HeaderPublic />        sticky top, burger + titre + lang + cadeau
+ *   <HeroSection />         banner + logo circulaire + welcome
+ *   <SocialBar />           pills border navy avec FB/IG/TikTok/Web/Google
+ *   <CategoryAccordion />   liste accordéons (navy fermés)
+ *   <FooterPublic />        adresse + propulsé par Ruliz
+ *   <PopupBanner />         popup événement
+ *   <Roulette />            roulette cadeaux
  */
 export function CartePublic({ menu, preview }: CartePublicProps) {
   const theme = useMemo(() => resolveTheme(menu.restaurant), [menu.restaurant]);
@@ -65,8 +65,8 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
     return () => clearTimeout(timer);
   }, [preview, menu.jeu, menu.restaurant.id]);
 
-  // Aplatit récursivement TOUS les produits · y compris ceux des
-  // sous-catégories · sinon cliquer sur un produit nested ne pouvait pas
+  // Aplatit récursivement TOUS les produits y compris ceux des
+  // sous-catégories sinon cliquer sur un produit nested ne pouvait pas
   // l'ouvrir (le activeProduit restait null car le find() ne trouvait pas
   // l'ID dans la liste flat top-level uniquement).
   const allProduits = useMemo(() => {

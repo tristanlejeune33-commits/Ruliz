@@ -157,7 +157,7 @@ function CampaignRow({ campaign }: { campaign: Campaign }) {
                 <Badge variant="secondary">{c.totalSkipped} ignorés</Badge>
               )}
               <span className="text-[var(--text-muted)]">
-                · {c.tokensSpent} SMS utilisés
+                {c.tokensSpent} SMS utilisés
               </span>
             </>
           )}

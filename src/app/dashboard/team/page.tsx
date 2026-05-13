@@ -15,7 +15,7 @@ import { TeamMembersList } from "./team-members-list";
 import { TeamInviteForm } from "./team-invite-form";
 
 export const metadata: Metadata = {
-  title: "Équipe · Ruliz",
+  title: "Équipe Ruliz",
 };
 
 export default async function TeamPage() {

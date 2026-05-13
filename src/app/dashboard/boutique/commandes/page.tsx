@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { listMyBoutiqueCommandes } from "@/server/dashboard/boutique-queries";
 
 export const metadata: Metadata = {
-  title: "Mes commandes · Boutique Ruliz",
+  title: "Mes commandes Boutique Ruliz",
 };
 
 const STATUT_TONE: Record<string, { label: string; classes: string }> = {
@@ -136,11 +136,11 @@ export default async function MesCommandesPage() {
                       {c.items.reduce((s, i) => s + i.quantite, 0) > 1
                         ? "s"
                         : ""}
-                      {" · "}
+                      {" "}
                       {format(new Date(c.createdAt), "d MMM yyyy", { locale: fr })}
                       {c.restaurant && (
                         <>
-                          <span className="mx-1.5">·</span>
+                          <span className="mx-1.5"> </span>
                           {c.restaurant.nom}
                         </>
                       )}

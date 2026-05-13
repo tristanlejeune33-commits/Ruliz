@@ -19,11 +19,11 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 
 export const metadata: Metadata = {
-  title: "Activité · Admin Ruliz",
+  title: "Activité Admin Ruliz",
 };
 
 /**
- * Page /admin/activity · flux d'activité temps réel : derniers signups,
+ * Page /admin/activity flux d'activité temps réel : derniers signups,
  * dernières commandes boutique, derniers scans QR notables. Vue compacte
  * pour avoir un pouls instantané du SaaS.
  */
@@ -211,7 +211,7 @@ export default async function AdminActivityPage() {
                         </span>
                       </div>
                       <p className="text-[11px] text-[var(--text-tertiary)]">
-                        Statut {c.statut} ·{" "}
+                        Statut {c.statut}  {" "}
                         {formatDistanceToNow(c.createdAt, {
                           addSuffix: true,
                           locale: fr,
@@ -245,7 +245,7 @@ export default async function AdminActivityPage() {
                         {p.email ?? p.telephone ?? "Anonyme"}
                       </p>
                       <p className="truncate text-[11px] text-[var(--text-tertiary)]">
-                        {p.jeu.restaurant.nom} ·{" "}
+                        {p.jeu.restaurant.nom}  {" "}
                         {formatDistanceToNow(p.participatedAt, {
                           addSuffix: true,
                           locale: fr,

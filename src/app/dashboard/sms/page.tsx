@@ -35,7 +35,7 @@ import { SmsAutomationsList } from "./sms-automations-list";
 import { SmsHistoryList } from "./sms-history-list";
 
 export const metadata: Metadata = {
-  title: "SMS marketing · Ruliz",
+  title: "SMS marketing Ruliz",
 };
 
 interface PageProps {

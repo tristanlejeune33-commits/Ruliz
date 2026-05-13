@@ -105,7 +105,7 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
               url: `${appUrl}/reset-password?token=demo-test-token`,
             },
             footnote:
-              "Tu n'es pas à l'origine de cette demande ? Ignore cet email · ton compte reste sûr.",
+              "Tu n'es pas à l'origine de cette demande ? Ignore cet email ton compte reste sûr.",
           }),
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
@@ -146,7 +146,7 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
             { nom: "Stickers vinyle (50)", quantite: 1, totalEuros: "8,00 €" },
           ],
           livraisonAdresseHtml:
-            "<div><strong>Tristan Lejeune</strong></div><div>12 rue Sainte-Catherine</div><div>33000 Bordeaux · France</div>",
+            "<div><strong>Tristan Lejeune</strong></div><div>12 rue Sainte-Catherine</div><div>33000 Bordeaux France</div>",
           notesClient: "Merci pour la rapidité !",
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
@@ -164,7 +164,7 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
             { nom: "Stickers vinyle (50)", quantite: 1, totalEuros: "8,00 €" },
           ],
           livraisonAdresseHtml:
-            "<div><strong>Marie Dubois</strong></div><div>Le Tire-Bouchon</div><div>5 cours de l'Intendance</div><div>33000 Bordeaux · France</div>",
+            "<div><strong>Marie Dubois</strong></div><div>Le Tire-Bouchon</div><div>5 cours de l'Intendance</div><div>33000 Bordeaux France</div>",
           notesClient: null,
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
@@ -173,7 +173,7 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
       case "jeu-gain": {
         const res = await sendMail({
           to,
-          subject: "🎉 Tu as gagné · Roulette du Bistrot Ruliz",
+          subject: "🎉 Tu as gagné Roulette du Bistrot Ruliz",
           html: emailLayout({
             title: "Bravo, tu as gagné !",
             eyebrow: "Roulette d'avis Google",
@@ -185,11 +185,11 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
               ${hero({
                 emoji: "🍷",
                 title: "Bouteille de Margaux",
-                subtitle: "Médoc · grand cru bourgeois",
+                subtitle: "Médoc grand cru bourgeois",
               })}
               ${p(`Ton code à présenter à l'équipe : ${code("RULIZ-DEMO-9X4K")}`)}
               ${warnBox(
-                "<strong>Important :</strong> Présente ce mail (ou juste le code) au serveur lors de ta prochaine visite. Le code est unique et personnel · non transférable.",
+                "<strong>Important :</strong> Présente ce mail (ou juste le code) au serveur lors de ta prochaine visite. Le code est unique et personnel non transférable.",
               )}
             `,
             footnote:

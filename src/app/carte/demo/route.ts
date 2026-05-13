@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { getAppUrl } from "@/lib/url";
 
 /**
- * Public demo redirect · points to the first active restaurant we find.
+ * Public demo redirect points to the first active restaurant we find.
  * Used by the marketing landing "Voir une carte démo" CTA.
  */
 export async function GET(_req: Request) {

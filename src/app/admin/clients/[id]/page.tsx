@@ -49,7 +49,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  return { title: `Client #${id} · Admin Ruliz` };
+  return { title: `Client #${id} Admin Ruliz` };
 }
 
 export default async function ClientDetailPage({ params }: PageProps) {
@@ -95,7 +95,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
             )}
           </div>
           <p className="mt-1 text-sm text-[var(--text-secondary)]">
-            {data.email} · Inscrit{" "}
+            {data.email} Inscrit{" "}
             {formatDistanceToNow(new Date(data.createdAt), { addSuffix: true, locale: fr })}
           </p>
         </div>
@@ -205,7 +205,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
             )}
             {data.restaurants.map((r) => {
               const totalScans = r.qrcodes.reduce((acc, q) => acc + Number(q.scanTotal), 0);
-              // Calcule la durée restante : max(stripeEnd, offerEnd) · null si rien d'actif
+              // Calcule la durée restante : max(stripeEnd, offerEnd) null si rien d'actif
               const rExt = r as unknown as {
                 planOffertExpiresAt?: string | Date | null;
                 stripeCurrentPeriodEnd?: string | Date | null;
@@ -243,11 +243,11 @@ export default async function ClientDetailPage({ params }: PageProps) {
                     <div>
                       <CardTitle>{r.nom}</CardTitle>
                       <CardDescription>
-                        {r.ville ?? "·"} · {r._count.categories} catégorie
+                        {r.ville ?? " "} {r._count.categories} catégorie
                         {r._count.categories > 1 ? "s" : ""}
                         {daysLeft !== null && daysLeft > 0 && (
                           <>
-                            {" · "}
+                            {" "}
                             <span
                               className={
                                 daysLeft <= 7
@@ -353,7 +353,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
                       <History className="mt-0.5 size-3.5 text-[var(--text-muted)]" />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">
-                          {l.action ?? "·"}
+                          {l.action ?? " "}
                         </p>
                         {l.details !== null && (
                           <pre className="mt-1 truncate font-mono text-[11px] text-[var(--text-muted)]">
@@ -396,7 +396,7 @@ export default async function ClientDetailPage({ params }: PageProps) {
                           <span className="font-mono">{s.ipAddress ?? "?"}</span>
                         </p>
                         <p className="truncate text-xs text-[var(--text-muted)]">
-                          {s.userAgent ?? "·"}
+                          {s.userAgent ?? " "}
                         </p>
                       </div>
                       <div className="text-right text-xs text-[var(--text-muted)]">

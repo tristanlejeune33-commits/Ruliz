@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptic";
 
 /**
- * SegmentedControl · sélecteur iOS-style avec pill animé.
+ * SegmentedControl sélecteur iOS-style avec pill animé.
  *
  * Spec : `docs/design-system-mobile.md` §8 SegmentedControl
  *

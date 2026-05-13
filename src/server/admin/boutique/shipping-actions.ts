@@ -7,7 +7,7 @@ import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { requireAdmin } from "@/lib/session";
 
 /**
- * Frais de port boutique · modèle par paliers de poids (Colissimo-like).
+ * Frais de port boutique modèle par paliers de poids (Colissimo-like).
  *
  * - `active` : on/off global (si off → 0€ peu importe le poids)
  * - `freeThresholdCentimes` : seuil "livraison offerte" sur le sous-total
@@ -26,7 +26,7 @@ export type ShippingTier = {
 };
 
 export type ShippingSettings = {
-  feeCentimes: number; // Conservé pour compat · = 1er palier si tiers, sinon flat
+  feeCentimes: number; // Conservé pour compat = 1er palier si tiers, sinon flat
   freeThresholdCentimes: number;
   label: string;
   active: boolean;
@@ -123,7 +123,7 @@ export async function updateShippingSettings(
       parsed.data.active,
     );
 
-    // 2. Tiers : on remplace TOUT (delete + insert) · pattern le plus simple
+    // 2. Tiers : on remplace TOUT (delete + insert) pattern le plus simple
     //    quand le nombre de lignes est petit (< 30) et que l'admin pilote
     //    l'ordre via la position client-side.
     await prisma.$executeRawUnsafe(`DELETE FROM boutique_shipping_tiers`);

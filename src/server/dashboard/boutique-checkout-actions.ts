@@ -171,7 +171,7 @@ export async function createBoutiqueCheckoutSession(
         metadata: {
           ruliz_boutique_commande_id: commande.id.toString(),
         },
-        footer: "Ruliz · SaaS de menus digitaux pour restaurants.",
+        footer: "Ruliz SaaS de menus digitaux pour restaurants.",
       },
     },
     payment_intent_data: {
@@ -185,7 +185,7 @@ export async function createBoutiqueCheckoutSession(
       ruliz_boutique_commande_id: commande.id.toString(),
     },
     // Snapshot des coordonnées de livraison déjà collectées au moment de la
-    // commande · Stripe Checkout ne re-demande pas l'adresse au client.
+    // commande Stripe Checkout ne re-demande pas l'adresse au client.
     locale: "fr",
   });
 

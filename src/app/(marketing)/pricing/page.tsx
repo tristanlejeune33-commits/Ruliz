@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PLANS, formatPriceEuro, type PlanConfig } from "@/lib/plans";
 
 export const metadata: Metadata = {
-  title: "Tarifs · Ruliz",
+  title: "Tarifs Ruliz",
   description: "Plans Freemium / Pro / Premium pour ton restaurant. Sans engagement, prix HT.",
 };
 

@@ -75,7 +75,7 @@ export async function createBoutiqueProduit(
   if (existing) {
     return {
       ok: false,
-      error: `Un produit avec le slug "${slug}" existe déjà · choisis-en un autre.`,
+      error: `Un produit avec le slug "${slug}" existe déjà choisis-en un autre.`,
     };
   }
 
@@ -95,7 +95,7 @@ export async function createBoutiqueProduit(
     },
   });
 
-  // weight_grams persisté en SQL brut · le client Prisma local peut ne pas
+  // weight_grams persisté en SQL brut le client Prisma local peut ne pas
   // avoir régénéré le champ (lock Windows EPERM bloque prisma generate).
   // Idempotent : update no-op si la colonne n'existe pas.
   if (data.weightGrams !== undefined) {
@@ -231,7 +231,7 @@ export async function deleteBoutiqueProduit(
 }
 
 // ----------------------------------------------------------------------------
-// Commandes · gestion admin (changement de statut + notes admin)
+// Commandes gestion admin (changement de statut + notes admin)
 // ----------------------------------------------------------------------------
 
 const updateCommandeSchema = z.object({
@@ -272,7 +272,7 @@ export async function updateBoutiqueCommande(
 }
 
 /**
- * Changement de statut rapide (sans notes admin) · utilisé inline depuis
+ * Changement de statut rapide (sans notes admin) utilisé inline depuis
  * /admin/clients/[id] pour faire avancer une BC d'un statut à l'autre en
  * 1 clic. Idempotent (replay safe).
  */

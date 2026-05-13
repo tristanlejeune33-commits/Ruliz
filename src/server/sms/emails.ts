@@ -49,11 +49,11 @@ export async function sendSmsPackConfirmation(opts: {
 
   await sendMail({
     to: resto.user.email,
-    subject: `Pack ${opts.packSize} SMS crédité · Ruliz`,
+    subject: `Pack ${opts.packSize} SMS crédité Ruliz`,
     html: emailLayout({
       title: "Pack SMS crédité ✓",
       eyebrow: "Confirmation d'achat",
-      preheader: `${opts.packSize} SMS ajoutés à ton solde · ${priceEuros}€ payés.`,
+      preheader: `${opts.packSize} SMS ajoutés à ton solde ${priceEuros}€ payés.`,
       body: `
         ${lead(`Salut${firstName ? ` ${firstName}` : ""},`)}
         ${p(`Ton paiement de <strong>${priceEuros} €</strong> est confirmé. Le pack <strong>${opts.packSize} SMS</strong> est crédité sur ton compte <strong>${resto.nom}</strong>.`)}
@@ -105,7 +105,7 @@ export async function sendBoutiquePaidConfirmation(opts: {
 
   await sendMail({
     to: cmd.user.email,
-    subject: `Paiement reçu · Commande #${cmd.id.toString()} en préparation`,
+    subject: `Paiement reçu Commande #${cmd.id.toString()} en préparation`,
     html: emailLayout({
       title: "Paiement reçu, préparation lancée",
       eyebrow: "Boutique Ruliz",

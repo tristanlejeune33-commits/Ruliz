@@ -6,13 +6,13 @@ interface PageHeroProps {
   eyebrow?: React.ReactNode;
   /** Titre H1 de la page. */
   title: React.ReactNode;
-  /** Description sous le titre · 1 ligne idéalement. */
+  /** Description sous le titre 1 ligne idéalement. */
   description?: React.ReactNode;
   /** Slot d'actions (boutons) à droite, en haut. */
   actions?: React.ReactNode;
   /** Slot KPI / chips à droite, sous les actions. */
   kpis?: React.ReactNode;
-  /** Variante d'accent · strictement DS Ruliz (cyan/violet/success/danger). */
+  /** Variante d'accent strictement DS Ruliz (cyan/violet/success/danger). */
   accent?: "cyan" | "violet" | "success" | "danger";
   className?: string;
 }
@@ -32,7 +32,7 @@ const ACCENT_GLOWS_2: Record<NonNullable<PageHeroProps["accent"]>, string> = {
 };
 
 /**
- * Header de page haut-de-gamme · DS Ruliz (glass + néon).
+ * Header de page haut-de-gamme DS Ruliz (glass + néon).
  * - Glass surface + backdrop-blur
  * - 2 glows ambiants colorés selon l'accent
  * - Grille décorative subtile
@@ -117,7 +117,7 @@ export function PageHero({
   );
 }
 
-/** Petit chip d'eyebrow · DS Ruliz. */
+/** Petit chip d'eyebrow DS Ruliz. */
 export function HeroEyebrow({
   icon,
   children,

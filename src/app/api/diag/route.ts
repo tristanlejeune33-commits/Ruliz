@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { isR2Configured, uploadBuffer } from "@/lib/r2";
 
 /**
- * Diagnostic endpoint · **admin uniquement** (verrouillé).
+ * Diagnostic endpoint **admin uniquement** (verrouillé).
  *
  * Avant : accessible à tout user connecté, ce qui exposait :
  *   - L'énumération des services configurés (Stripe, Anthropic, R2, Brevo…)
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   });
   if (authUser?.user?.role !== "admin") {
     return NextResponse.json(
-      { error: "Forbidden · admin role required" },
+      { error: "Forbidden admin role required" },
       { status: 403 },
     );
   }

@@ -19,7 +19,7 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "Carte · Ruliz",
+  title: "Carte Ruliz",
 };
 
 export default function CarteLayout({ children }: { children: React.ReactNode }) {

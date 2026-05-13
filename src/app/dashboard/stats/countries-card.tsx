@@ -49,7 +49,7 @@ export function CountriesCard({ countries }: CountriesCardProps) {
                       </span>
                     </span>
                     <span className="shrink-0 font-mono text-xs text-[var(--text-muted)]">
-                      {c.count.toLocaleString("fr-FR")} · {pct}%
+                      {c.count.toLocaleString("fr-FR")} {pct}%
                     </span>
                   </div>
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-elevated)]">

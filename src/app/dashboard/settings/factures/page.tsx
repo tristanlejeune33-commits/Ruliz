@@ -35,7 +35,7 @@ import {
 } from "@/server/dashboard/factures-queries";
 
 export const metadata: Metadata = {
-  title: "BC / Factures · Ruliz",
+  title: "BC / Factures Ruliz",
 };
 
 // ============================================================
@@ -540,11 +540,11 @@ function CommandeCard({ commande }: CommandeCardProps) {
             </span>
           </div>
           <p className="mt-0.5 text-xs text-[var(--text-tertiary)]">
-            {totalQty} article{totalQty > 1 ? "s" : ""} ·{" "}
+            {totalQty} article{totalQty > 1 ? "s" : ""}  {" "}
             {format(new Date(c.createdAt), "d MMM yyyy", { locale: fr })}
             {c.restaurant && (
               <>
-                <span className="mx-1.5">·</span>
+                <span className="mx-1.5"> </span>
                 {c.restaurant.nom}
               </>
             )}
@@ -581,7 +581,7 @@ function CommandeCard({ commande }: CommandeCardProps) {
         </div>
       </div>
 
-      {/* Stepper 4 étapes · ou bandeau "Annulée" */}
+      {/* Stepper 4 étapes ou bandeau "Annulée" */}
       {isCancelled ? (
         <div className="flex items-center gap-2 border-t border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] px-4 py-2.5 text-sm font-medium text-[var(--neon-danger)]">
           <XCircle className="size-4" strokeWidth={1.75} />

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 /**
- * PWA Manifest · installable iOS/Android, splash dark cohérent design system.
+ * PWA Manifest installable iOS/Android, splash dark cohérent design system.
  *
  * Spec : `docs/design-system-mobile.md` §11 PWA installable
  *
@@ -15,7 +15,7 @@ import type { MetadataRoute } from "next";
  */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Ruliz · Menus digitaux",
+    name: "Ruliz Menus digitaux",
     short_name: "Ruliz",
     description:
       "SaaS de menus digitaux : QR code, traduction IA en 7 langues, dashboard pro pour restaurateurs.",

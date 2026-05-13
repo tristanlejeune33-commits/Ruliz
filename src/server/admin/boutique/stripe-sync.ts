@@ -16,7 +16,7 @@ import { getStripe } from "@/lib/stripe";
  * par un problème Stripe.
  *
  * Usage : appeler après chaque mutation de produit (create/update/delete).
- * Ne PAS bloquer la réponse · wrapper avec waitUntil() ou catch() pour
+ * Ne PAS bloquer la réponse wrapper avec waitUntil() ou catch() pour
  * éviter de retarder l'UI.
  */
 
@@ -100,7 +100,7 @@ export async function syncProduitToStripe(
         try {
           await stripe.prices.update(priceId, { active: false });
         } catch {
-          // ignore · peut-être déjà archivé / supprimé
+          // ignore peut-être déjà archivé / supprimé
         }
       }
       const newPrice = await stripe.prices.create({

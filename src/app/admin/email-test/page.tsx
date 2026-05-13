@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { EmailTestForm } from "./email-test-form";
 
 export const metadata: Metadata = {
-  title: "Test emails · Ruliz Admin",
+  title: "Test emails Ruliz Admin",
 };
 
 export default async function EmailTestPage() {
@@ -53,7 +53,7 @@ export default async function EmailTestPage() {
               <span className="text-[var(--neon-success)]">✓ Définie</span>
             ) : (
               <span className="text-[var(--neon-danger)]">
-                ✗ Absente · ajoute-la dans Railway Variables avant de tester
+                ✗ Absente ajoute-la dans Railway Variables avant de tester
               </span>
             )}
           </div>

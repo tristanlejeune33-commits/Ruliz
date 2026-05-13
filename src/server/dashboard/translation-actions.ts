@@ -33,7 +33,7 @@ type RetranslateData = {
  *      qu'`after()` qui pouvait être killé en dev.
  *
  * Quand Inngest n'est pas dispo (dev local par exemple), la fonction reste en
- * attente jusqu'à ce que toutes les langues soient traduites · l'utilisateur
+ * attente jusqu'à ce que toutes les langues soient traduites l'utilisateur
  * voit le résultat exact dans le toast.
  *
  * @param restaurantId - ID du restaurant
@@ -64,7 +64,7 @@ export async function retranslateMenu(
     };
   }
 
-  // 2. Inngest path (prod only · quand Railway a INNGEST_EVENT_KEY)
+  // 2. Inngest path (prod only quand Railway a INNGEST_EVENT_KEY)
   if (process.env.INNGEST_EVENT_KEY) {
     try {
       await inngest.send({

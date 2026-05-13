@@ -20,7 +20,7 @@ import { LiveFeed } from "./live-feed";
 import { InsightsCards } from "./insights-cards";
 
 export const metadata: Metadata = {
-  title: "Analyse · Ruliz",
+  title: "Analyse Ruliz",
 };
 
 interface PageProps {

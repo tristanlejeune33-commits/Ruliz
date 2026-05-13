@@ -99,7 +99,7 @@ interface CategoryIconProps {
 
 /**
  * Détecte si la chaîne est un emoji plutôt qu'un code Lucide. On regarde
- * la présence d'au moins un caractère "Extended_Pictographic" · robuste
+ * la présence d'au moins un caractère "Extended_Pictographic" robuste
  * vis-à-vis des emojis ZWJ-séquences (👨‍👩‍👧, 🏳️‍🌈, etc.).
  */
 function isEmojiString(value: string): boolean {
@@ -117,7 +117,7 @@ function isEmojiString(value: string): boolean {
  *
  * Depuis l'intro du picker emoji dans le dashboard, `icone` peut contenir
  * soit un code Lucide (legacy : "salad", "wine"…), soit un emoji Unicode.
- * On détecte automatiquement et on rend en conséquence · backward-compatible
+ * On détecte automatiquement et on rend en conséquence backward-compatible
  * avec toutes les catégories déjà existantes.
  */
 export function CategoryIcon({ code, className, style }: CategoryIconProps) {

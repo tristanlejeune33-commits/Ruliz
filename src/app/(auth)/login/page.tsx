@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
-  title: "Connexion · Ruliz",
+  title: "Connexion Ruliz",
 };
 
 export default async function LoginPage({
@@ -22,19 +22,19 @@ export default async function LoginPage({
             color: "#26438A",
           }}
         >
-          Connexion · Restaurateur
+          Espace restaurateur
         </span>
         <h1
           className="mt-3 text-balance text-3xl font-bold leading-[1.15] tracking-tight"
           style={{ color: "#0B1530" }}
         >
-          Reprenons là où vous vous êtes arrêté.
+          Reprenons là où vous vous êtes arrêté
         </h1>
         <p
           className="mt-2.5 text-sm leading-relaxed"
           style={{ color: "#4A5573" }}
         >
-          Vos cartes, vos QR codes, vos statistiques · tout est resté en ordre.
+          Vos cartes, vos QR codes et vos statistiques sont restés en ordre.
         </p>
       </div>
       <LoginForm redirectTo={redirect} />

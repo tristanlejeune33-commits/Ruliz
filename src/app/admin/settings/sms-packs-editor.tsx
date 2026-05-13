@@ -25,7 +25,7 @@ interface SmsPacksEditorProps {
 }
 
 /**
- * Éditeur de prix des packs SMS · admin uniquement.
+ * Éditeur de prix des packs SMS admin uniquement.
  * 4 cartes (Découverte / Boost / Croissance / Maxi) avec :
  *  - Champ taille (nombre de SMS)
  *  - Champ prix (en € avec virgule)

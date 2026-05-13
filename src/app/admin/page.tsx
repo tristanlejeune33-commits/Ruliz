@@ -24,7 +24,7 @@ import { KpiTile } from "./kpi-tile";
 import { SignupsChart } from "./signups-chart";
 
 export const metadata: Metadata = {
-  title: "Admin · Ruliz",
+  title: "Admin Ruliz",
 };
 
 const formatEuro = (n: number) =>
@@ -42,7 +42,7 @@ export default async function AdminHome() {
     getSignupTimeseries(),
   ]);
 
-  // KPIs business (en haut) · finance + base utilisateurs
+  // KPIs business (en haut) finance + base utilisateurs
   // Chaque KPI avec `kpi:` est cliquable → ouvre modal graphique 3 ans
   const businessCards = [
     {
@@ -56,7 +56,7 @@ export default async function AdminHome() {
     {
       label: "Revenus Boutique",
       value: formatEuro(kpis.revenueBoutiqueCentimes / 100),
-      helper: "Cumulé · sets de table, stickers, QR pré-imprimés",
+      helper: "Cumulé sets de table, stickers, QR pré-imprimés",
       icon: ShoppingBag,
       kpi: "revenueBoutique" as const,
       isMoney: true,
@@ -64,7 +64,7 @@ export default async function AdminHome() {
     {
       label: "Revenus SMS",
       value: formatEuro(kpis.revenueSmsCentimes / 100),
-      helper: "Cumulé · packs SMS vendus aux restaurateurs",
+      helper: "Cumulé packs SMS vendus aux restaurateurs",
       icon: Coins,
       kpi: "revenueSms" as const,
       isMoney: true,
@@ -92,7 +92,7 @@ export default async function AdminHome() {
     },
   ];
 
-  // KPIs trafic (audience / utilisation produit) · scans + visiteurs uniques
+  // KPIs trafic (audience / utilisation produit) scans + visiteurs uniques
   const trafficCards = [
     {
       label: "Scans 24h",
@@ -131,11 +131,11 @@ export default async function AdminHome() {
         <Badge variant="secondary">Backoffice</Badge>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Vue d&apos;ensemble</h1>
         <p className="mt-1 text-sm text-[var(--text-secondary)]">
-          Indicateurs Ruliz · branchés sur la DB live.
+          Indicateurs Ruliz branchés sur la DB live.
         </p>
       </div>
 
-      {/* === BUSINESS · finance + base utilisateurs === */}
+      {/* === BUSINESS finance + base utilisateurs === */}
       <div>
         <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
           Business
@@ -159,7 +159,7 @@ export default async function AdminHome() {
         </div>
       </div>
 
-      {/* === TRAFIC · utilisation produit (scans + visiteurs uniques) === */}
+      {/* === TRAFIC utilisation produit (scans + visiteurs uniques) === */}
       <div>
         <h2 className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
           Trafic carte publique

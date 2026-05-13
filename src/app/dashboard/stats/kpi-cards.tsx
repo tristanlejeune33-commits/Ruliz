@@ -62,7 +62,7 @@ export function KpiCards({ kpis }: KpiCardsProps) {
         label="Scans / visiteur"
         value={kpis.avgScansPerUser}
         decimal
-        helper={`pic ${String(kpis.busiestHour).padStart(2, "0")}h · ${DAY_LABELS[kpis.busiestDayOfWeek] ?? "?"}`}
+        helper={`pic ${String(kpis.busiestHour).padStart(2, "0")}h ${DAY_LABELS[kpis.busiestDayOfWeek] ?? "?"}`}
         icon={Clock}
       />
     </div>

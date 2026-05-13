@@ -7,7 +7,7 @@ import { listClients } from "@/server/dashboard/clients-actions";
 import { ClientsManager } from "./clients-manager";
 
 export const metadata: Metadata = {
-  title: "Clients · Ruliz",
+  title: "Clients Ruliz",
 };
 
 export default async function ClientsPage() {

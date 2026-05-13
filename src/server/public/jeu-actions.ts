@@ -116,7 +116,7 @@ export async function submitParticipation(
       },
     })
     .catch(() => {
-      // BaseClient peut déjà avoir l'email · on ignore l'erreur
+      // BaseClient peut déjà avoir l'email on ignore l'erreur
     });
 
   return { ok: true, lotGagne };

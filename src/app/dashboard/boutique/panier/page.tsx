@@ -12,7 +12,7 @@ import { getShippingSettings } from "@/server/admin/boutique/shipping-actions";
 import { CartView } from "./cart-view";
 
 export const metadata: Metadata = {
-  title: "Panier · Boutique Ruliz",
+  title: "Panier Boutique Ruliz",
 };
 
 export default async function PanierPage() {

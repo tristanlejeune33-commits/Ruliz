@@ -139,7 +139,7 @@ export async function importMenuFromImage(input: {
   const systemPrompt = `You are an OCR assistant specialized in restaurant menus.
 Analyze the menu image carefully and extract its full structure as VALID JSON.
 
-Output ONLY a JSON object · no markdown fences, no commentary, no preamble.
+Output ONLY a JSON object no markdown fences, no commentary, no preamble.
 
 JSON shape:
 {
@@ -163,17 +163,17 @@ JSON shape:
 }
 
 Rules for category-level fields:
-- "icone" should be a Lucide icon name in lowercase (salad, beef, wine, coffee, dessert, fish, pizza, etc.) · null/empty if unsure
+- "icone" should be a Lucide icon name in lowercase (salad, beef, wine, coffee, dessert, fish, pizza, etc.) null/empty if unsure
 - "modeAffichage" must be exactly one of: "liste" | "grille" | "carrousel" (default "liste")
 
 Rules for product-level fields:
 - "prix" is a number (decimal). Use null if no price visible.
-- "descriptionPrix" is for things like "12,5cl / 75cl" or "par personne" · empty string if N/A.
+- "descriptionPrix" is for things like "12,5cl / 75cl" or "par personne" empty string if N/A.
 
 Rules for AUTOMATIC TAG DETECTION (vignettes + allergens) :
 You must analyze each product description and add tags BASED ON THE INGREDIENTS visible.
 
-VIGNETTES (product type tags) · choose 0-3 from this exact list :
+VIGNETTES (product type tags) choose 0-3 from this exact list :
 - "vegetarien" → if no meat/fish (vegetable, cheese, eggs OK)
 - "vegan" → if no animal product at all (no eggs, no dairy, no honey)
 - "sans_gluten" → if explicitly mentioned "sans gluten" / "gluten-free"
@@ -184,7 +184,7 @@ VIGNETTES (product type tags) · choose 0-3 from this exact list :
 - "signature" → if "spécialité maison", "plat signature", "incontournable", or visually highlighted
 - Use ONLY these codes (lowercase, with underscores). Empty array [] if no match.
 
-ALLERGÈNES (UE 14) · analyze the dish ingredients and add ALL applicable from this list :
+ALLERGÈNES (UE 14) analyze the dish ingredients and add ALL applicable from this list :
 - "gluten" → wheat, barley, rye, oats, beer, pasta, bread, breading, flour
 - "crustaces" → shrimp, lobster, crab, langoustine
 - "oeufs" → egg, mayo, hollandaise, brioche, pasta fresh
@@ -202,7 +202,7 @@ ALLERGÈNES (UE 14) · analyze the dish ingredients and add ALL applicable from 
 
 CRITICAL :
 - Don't invent items or ingredients not visible.
-- Don't HALLUCINATE allergens · only add if the ingredient is clearly mentioned.
+- Don't HALLUCINATE allergens only add if the ingredient is clearly mentioned.
 - Keep all titles + descriptions in the original language (${langLabels[langue]}).
 - Group items under their visible category headers. If no clear category, use "Carte" as default.`;
 

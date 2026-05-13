@@ -152,10 +152,10 @@ export function QrcodesView({ restaurantId, qrcodes }: QrcodesViewProps) {
           value={filter}
           onChange={setFilter}
           options={[
-            { value: "tous", label: <span>Tous · <span className="font-mono tabular-nums opacity-60">{counts.tous}</span></span> },
-            { value: "actif", label: <span>Actifs · <span className="font-mono tabular-nums opacity-60">{counts.actif}</span></span> },
-            { value: "inactif", label: <span>Inactifs · <span className="font-mono tabular-nums opacity-60">{counts.inactif}</span></span> },
-            { value: "perdu", label: <span>Perdus · <span className="font-mono tabular-nums opacity-60">{counts.perdu}</span></span> },
+            { value: "tous", label: <span>Tous <span className="font-mono tabular-nums opacity-60">{counts.tous}</span></span> },
+            { value: "actif", label: <span>Actifs <span className="font-mono tabular-nums opacity-60">{counts.actif}</span></span> },
+            { value: "inactif", label: <span>Inactifs <span className="font-mono tabular-nums opacity-60">{counts.inactif}</span></span> },
+            { value: "perdu", label: <span>Perdus <span className="font-mono tabular-nums opacity-60">{counts.perdu}</span></span> },
           ]}
           size="compact"
           ariaLabel="Filtre statut"

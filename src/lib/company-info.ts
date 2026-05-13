@@ -11,7 +11,7 @@ import "server-only";
  *   RULIZ_COMPANY_CAPITAL, RULIZ_COMPANY_IBAN, RULIZ_COMPANY_BIC.
  *
  * Le taux de TVA (par défaut 20%) est aussi configurable via
- * RULIZ_VAT_RATE (string décimal, ex "0.20" · mettre "0" pour cacher).
+ * RULIZ_VAT_RATE (string décimal, ex "0.20" mettre "0" pour cacher).
  */
 
 export type CompanyInfo = {
@@ -23,9 +23,9 @@ export type CompanyInfo = {
   country: string;
   email: string;
   phone: string | null;
-  /** SIRET (14 chiffres) · null si pas encore communiqué */
+  /** SIRET (14 chiffres) null si pas encore communiqué */
   siret: string | null;
-  /** Numéro de TVA intracom (FR + 11 chiffres) · null si non assujetti */
+  /** Numéro de TVA intracom (FR + 11 chiffres) null si non assujetti */
   tva: string | null;
   /** "RCS Bordeaux 123 456 789" */
   rcs: string | null;
@@ -39,7 +39,7 @@ export type CompanyInfo = {
 
 function pickVatRate(): number {
   const raw = process.env.RULIZ_VAT_RATE;
-  // Défaut : 0 (micro-entreprise · TVA non applicable, art. 293 B du CGI)
+  // Défaut : 0 (micro-entreprise TVA non applicable, art. 293 B du CGI)
   if (raw === undefined || raw === "") return 0;
   const n = parseFloat(raw);
   if (Number.isNaN(n) || n < 0 || n > 1) return 0;

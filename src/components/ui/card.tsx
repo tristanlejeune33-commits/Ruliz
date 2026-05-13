@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Card · surface glass DS Ruliz.
+ * Card surface glass DS Ruliz.
  * Default = `glass` (rgba(255,255,255,0.04) + backdrop-blur + border glass).
  * `lift` = ajoute hover translateY(-2px) + glow cyan léger.
  */

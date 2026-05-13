@@ -60,7 +60,7 @@ export async function ensureRuntimeSchema(): Promise<void> {
     `);
 
     // === Horaires de service (presets créneaux catégories) ===
-    // Lunch / Dinner / Happy Hour · utilisés dans /dashboard/restaurant pour
+    // Lunch / Dinner / Happy Hour utilisés dans /dashboard/restaurant pour
     // pré-configurer les créneaux que les catégories peuvent réutiliser.
     // Sans ces colonnes, updateRestaurant plante silencieusement → l'auto-save
     // ne persiste rien et le user revoit ses anciennes valeurs au refresh.
@@ -195,7 +195,7 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "shipping_centimes" INTEGER NOT NULL DEFAULT 0;
     `);
 
-    // === Boutique : grammage produit (g) · pour calcul frais de port par poids ===
+    // === Boutique : grammage produit (g) pour calcul frais de port par poids ===
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "boutique_produits"
         ADD COLUMN IF NOT EXISTS "weight_grams" INTEGER NOT NULL DEFAULT 0;

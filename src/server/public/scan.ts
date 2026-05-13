@@ -26,7 +26,7 @@ export async function recordScan(opts: RecordScanOpts) {
       },
     });
   } catch (e) {
-    // Ne JAMAIS throw · un scan raté ne doit pas casser la réponse publique.
+    // Ne JAMAIS throw un scan raté ne doit pas casser la réponse publique.
     console.warn("[scan] insert failed:", e);
   }
 }

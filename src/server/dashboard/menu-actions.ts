@@ -51,7 +51,7 @@ async function bumpRestaurantCaches(restaurantId: bigint) {
   // ⚠️ Crucial : `unstable_cache(getPublicMenu, { tags: ["public-menu"] })`
   // dans /carte/[id]/page.tsx ne se rafraîchit QUE par tag (revalidatePath
   // n'invalide pas la data cache). Sans ça, après une modif catégorie/produit,
-  // la carte publique servait encore la version en cache pendant 60s · donc
+  // la carte publique servait encore la version en cache pendant 60s donc
   // les traductions fraîchement re-générées ne s'affichaient pas.
   revalidateTag("public-menu");
 
@@ -77,7 +77,7 @@ async function bumpRestaurantCaches(restaurantId: bigint) {
       data: { restaurantId: restaurantId.toString() },
     })
     .catch(() => {
-      // silent · c'est OK si Inngest n'est pas configuré
+      // silent c'est OK si Inngest n'est pas configuré
     });
 }
 
@@ -91,7 +91,7 @@ async function invalidateProduitTranslations(produitId: bigint) {
  *   1. Inngest (prod path propre, si INNGEST_EVENT_KEY défini ET worker
  *      qui tourne)
  *   2. Fallback `after()` : exécute la traduction dans le même process
- *      Node après la réponse · garantit que la trad arrive même si
+ *      Node après la réponse garantit que la trad arrive même si
  *      Inngest n'est pas configuré ou si le worker ne tourne pas.
  *
  * Le fallback est idempotent (skip si déjà traduit en DB), donc lancer les
@@ -270,7 +270,7 @@ export async function updateCategorie(input: unknown): Promise<ActionResult> {
     },
   });
 
-  // Invalide les traductions existantes · Inngest re-traduira en background.
+  // Invalide les traductions existantes Inngest re-traduira en background.
   await prisma.categorieTranslation.deleteMany({ where: { categorieId: id } });
 
   await triggerCategorieTranslation(id, cat.restaurantId);
@@ -605,7 +605,7 @@ export async function moveCategorie(input: unknown): Promise<ActionResult> {
     if (childrenCount > 0) {
       return {
         ok: false,
-        error: "Cette catégorie contient des sous-catégories · impossible de la déplacer",
+        error: "Cette catégorie contient des sous-catégories impossible de la déplacer",
       };
     }
   }

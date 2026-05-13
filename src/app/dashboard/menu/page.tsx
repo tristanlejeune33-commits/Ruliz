@@ -16,7 +16,7 @@ import { MenuFab } from "./menu-fab";
 import { RetranslateButton } from "./retranslate-button";
 
 export const metadata: Metadata = {
-  title: "Éditeur de carte · Ruliz",
+  title: "Éditeur de carte Ruliz",
 };
 
 export default async function MenuEditorPage() {
@@ -70,7 +70,7 @@ export default async function MenuEditorPage() {
               <span className="font-mono tabular-nums text-[var(--text-primary)]">
                 {totalCats}
               </span>
-              <span aria-hidden className="text-[var(--text-muted)]/40">·</span>
+              <span aria-hidden className="text-[var(--text-muted)]/40"> </span>
               <span className="font-mono tabular-nums text-[var(--text-primary)]">
                 {totalProduits}
               </span>
@@ -84,14 +84,14 @@ export default async function MenuEditorPage() {
                 {totalCats}
               </span>
               <span className="text-[var(--text-muted)]">catégories</span>
-              <span aria-hidden className="text-[var(--text-muted)]/40">·</span>
+              <span aria-hidden className="text-[var(--text-muted)]/40"> </span>
               <span className="font-mono tabular-nums text-[var(--text-primary)]">
                 {totalProduits}
               </span>
               <span className="text-[var(--text-muted)]">produits</span>
             </div>
 
-            {/* GROS CTA "Importer ma carte par photo" · full-width mobile, inline desktop */}
+            {/* GROS CTA "Importer ma carte par photo" full-width mobile, inline desktop */}
             <Button
               asChild
               size="sm"
@@ -167,7 +167,7 @@ function ImportColdStartBanner() {
               </span>
             </div>
             <p className="mt-0.5 text-[13px] text-[var(--text-secondary)] lg:text-sm">
-              Prends ta carte papier en photo · le système détecte tout seul catégories,
+              Prends ta carte papier en photo le système détecte tout seul catégories,
               plats, prix et allergènes en{" "}
               <strong className="font-semibold text-[var(--text-primary)]">
                 30 secondes

@@ -3,7 +3,7 @@
 import { useCallback, useRef } from "react";
 
 /**
- * useLongPress · détecte un appui long (≥ 500ms par défaut) sans annuler le tap.
+ * useLongPress détecte un appui long (≥ 500ms par défaut) sans annuler le tap.
  *
  * Spec : `docs/design-system-mobile.md` §8 LongPressMenu
  *

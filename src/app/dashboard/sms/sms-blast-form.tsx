@@ -191,7 +191,7 @@ export function SmsBlastForm({
           );
         } else {
           toast.success(
-            `✅ Envoyés : ${res.data.sent} · ${res.data.tokensSpent} SMS utilisés`,
+            `✅ Envoyés : ${res.data.sent} ${res.data.tokensSpent} SMS utilisés`,
           );
         }
         form.reset({
@@ -239,7 +239,7 @@ export function SmsBlastForm({
               )}
             />
 
-            {/* Nom expéditeur · affiché sur le téléphone du client */}
+            {/* Nom expéditeur affiché sur le téléphone du client */}
             <FormField
               control={form.control}
               name="sender"
@@ -486,7 +486,7 @@ function CharCounter({
       {segments > 1 && (
         <>
           <span aria-hidden className="opacity-50">
-            ·
+             
           </span>
           <span>{segments} SMS chacun</span>
         </>
@@ -703,7 +703,7 @@ function SmsPreview({ message, sender }: { message: string; sender: string }) {
               {sender || "Restaurant"}
             </div>
             <div className="text-[10px] text-[var(--text-tertiary)]">
-              SMS · maintenant
+              SMS maintenant
             </div>
           </div>
         </div>

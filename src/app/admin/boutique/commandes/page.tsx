@@ -8,7 +8,7 @@ import { listBoutiqueCommandesAdmin } from "@/server/admin/boutique/queries";
 import { CommandesAdminView } from "./commandes-view";
 
 export const metadata: Metadata = {
-  title: "Commandes boutique · Admin Ruliz",
+  title: "Commandes boutique Admin Ruliz",
 };
 
 const VALID_STATUTS = [

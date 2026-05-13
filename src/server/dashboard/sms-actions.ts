@@ -34,7 +34,7 @@ async function ensureSmsSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "opt_in_sms" BOOLEAN NOT NULL DEFAULT TRUE;
     `);
 
-    // Colonne sms_sender sur restaurants · nom expéditeur custom par resto
+    // Colonne sms_sender sur restaurants nom expéditeur custom par resto
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "restaurants"
         ADD COLUMN IF NOT EXISTS "sms_sender" VARCHAR(11);
@@ -350,7 +350,7 @@ export async function sendSmsBlast(input: unknown): Promise<
   // === Détermine le nom d'expéditeur (sender) ===
   // Ordre de priorité :
   //   1. sender passé en argument (form de campagne)
-  //   2. restaurant.smsSender (DB · dernier choix mémorisé)
+  //   2. restaurant.smsSender (DB dernier choix mémorisé)
   //   3. fallback "Ruliz" (via env BREVO_SMS_SENDER)
   // Nettoyage automatique : alphanumérique uniquement, 11 chars max.
   let resolvedSender: string = "";
@@ -589,7 +589,7 @@ export async function sendSmsBlast(input: unknown): Promise<
 }
 
 // ============================================================
-// CAMPAGNES PROGRAMMÉES · dispatch par le cron Inngest
+// CAMPAGNES PROGRAMMÉES dispatch par le cron Inngest
 // ============================================================
 
 /**
@@ -774,7 +774,7 @@ export async function dispatchScheduledCampaign(
 }
 
 // ============================================================
-// CAMPAGNES PROGRAMMÉES · annulation
+// CAMPAGNES PROGRAMMÉES annulation
 // ============================================================
 
 /**
@@ -1190,7 +1190,7 @@ export async function createSmsPackCheckout(input: {
             currency: "eur",
             unit_amount: pack.priceCentimes,
             product_data: {
-              name: `${pack.label} · ${pack.size} SMS`,
+              name: `${pack.label} ${pack.size} SMS`,
               description: `Pack de ${pack.size} crédits SMS pour ${restaurant.nom}`,
             },
           },
@@ -1206,7 +1206,7 @@ export async function createSmsPackCheckout(input: {
             ruliz_sms_restaurant_id: input.restaurantId,
             ruliz_resto_nom: restaurant.nom,
           },
-          footer: "Ruliz · SaaS de menus digitaux pour restaurants.",
+          footer: "Ruliz SaaS de menus digitaux pour restaurants.",
         },
       },
       metadata: {

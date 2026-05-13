@@ -23,7 +23,7 @@ export interface SmsPack {
 }
 
 /**
- * Valeurs par défaut · utilisées si la DB est vide ou injoignable.
+ * Valeurs par défaut utilisées si la DB est vide ou injoignable.
  * Tristan achète sur Brevo ~0.030€/SMS, revend avec marge :
  *  - 100 SMS  → 9.90€  (0.099€/SMS) → marge ×3.3
  *  - 500 SMS  → 39.90€ (0.080€/SMS) → marge ×2.7
@@ -49,7 +49,7 @@ export const DEFAULT_SMS_PACKS: SmsPack[] = [
   },
 ];
 
-/** Compatibilité avec l'ancien export · DEFAULT_SMS_PACKS sous l'alias SMS_PACKS. */
+/** Compatibilité avec l'ancien export DEFAULT_SMS_PACKS sous l'alias SMS_PACKS. */
 export const SMS_PACKS = DEFAULT_SMS_PACKS;
 
 /**
@@ -138,7 +138,7 @@ export async function getSmsPackById(packId: string): Promise<SmsPack | null> {
 }
 
 /**
- * Liste TOUS les packs (actifs + inactifs) · pour l'admin uniquement.
+ * Liste TOUS les packs (actifs + inactifs) pour l'admin uniquement.
  * Utilisé dans /admin/settings pour afficher la grille d'édition.
  */
 export async function listAllSmsPacks(): Promise<

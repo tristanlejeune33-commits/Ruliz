@@ -55,7 +55,7 @@ export async function getCurrentRestaurant() {
   const userId = acting.actingUserId;
 
   // Vérifie qu'il y a au moins un restaurant pour ce user
-  // (sinon onboarding requis · sauf en mode impersonation où on ne veut pas
+  // (sinon onboarding requis sauf en mode impersonation où on ne veut pas
   //  forcer l'admin à créer un resto pour le client)
   const requestedId = await getActiveRestaurantId();
 

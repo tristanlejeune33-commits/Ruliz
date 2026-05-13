@@ -121,14 +121,14 @@ export async function createBoutiqueCommande(
           ok: false,
           error:
             remaining === 0
-              ? `« ${p.nom} » est en rupture de stock · retire-le du panier pour finaliser.`
+              ? `« ${p.nom} » est en rupture de stock retire-le du panier pour finaliser.`
               : `Stock insuffisant pour « ${p.nom} » : ${remaining} unité${remaining > 1 ? "s" : ""} restante${remaining > 1 ? "s" : ""}, tu en demandes ${wanted}.`,
         };
       }
     }
   }
 
-  // Restaurant rattaché · vérifie ownership si fourni
+  // Restaurant rattaché vérifie ownership si fourni
   let restaurantId: bigint | null = null;
   if (data.restaurantId) {
     const restoBig = bigOrNull(data.restaurantId);

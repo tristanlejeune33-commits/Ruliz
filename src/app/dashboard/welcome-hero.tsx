@@ -29,7 +29,7 @@ const QUICK_ACTION_ICONS: Record<string, LucideIcon> = {
 
 export type QuickActionIconKey = keyof typeof QUICK_ACTION_ICONS;
 
-/** Variantes de couleur d'accent · strictement DS Ruliz (palette néon). */
+/** Variantes de couleur d'accent strictement DS Ruliz (palette néon). */
 export type QuickActionTone = "cyan" | "violet" | "success" | "danger";
 
 interface WelcomeHeroProps {
@@ -40,10 +40,10 @@ interface WelcomeHeroProps {
 }
 
 /**
- * Hero status premium (DS Ruliz) · pas de "Welcome back 👋" mou.
+ * Hero status premium (DS Ruliz) pas de "Welcome back 👋" mou.
  * - Status chip "Carte en ligne" avec dot vert pulsant
  * - Titre = nom du restaurant (display large)
- * - Sous-titre direct : "Vue d'ensemble · {date}"
+ * - Sous-titre direct : "Vue d'ensemble {date}"
  * - Glow ambient cyan en haut-gauche, violet en bas-droite
  */
 export function WelcomeHero({
@@ -60,7 +60,7 @@ export function WelcomeHero({
     return () => clearInterval(id);
   }, []);
 
-  // Locale pour le format de date · mappe la lang panel sur un BCP-47
+  // Locale pour le format de date mappe la lang panel sur un BCP-47
   const localeMap: Record<string, string> = {
     fr: "fr-FR",
     en: "en-GB",
@@ -124,13 +124,13 @@ export function WelcomeHero({
             <span>{t("home.overview")}</span>
             {firstName && (
               <>
-                <span aria-hidden className="text-[var(--text-tertiary)]">·</span>
+                <span aria-hidden className="text-[var(--text-tertiary)]"> </span>
                 <span>{firstName}</span>
               </>
             )}
             {dateStr && (
               <>
-                <span aria-hidden className="text-[var(--text-tertiary)]">·</span>
+                <span aria-hidden className="text-[var(--text-tertiary)]"> </span>
                 <span className="capitalize">{dateStr}</span>
               </>
             )}

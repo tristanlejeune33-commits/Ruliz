@@ -4,7 +4,7 @@ import { Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Bouton qui déclenche window.print() · la CSS @media print du layout
+ * Bouton qui déclenche window.print() la CSS @media print du layout
  * masque le header/sidebar et imprime uniquement le bon de commande.
  */
 export function PrintButton() {

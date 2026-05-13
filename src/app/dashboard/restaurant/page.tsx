@@ -13,7 +13,7 @@ import { serialize } from "@/lib/serialize";
 import { RestaurantForm } from "./restaurant-form";
 
 export const metadata: Metadata = {
-  title: "Mon restaurant · Ruliz",
+  title: "Mon restaurant Ruliz",
 };
 
 export default async function RestaurantPage() {

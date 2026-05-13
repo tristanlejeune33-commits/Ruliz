@@ -3,14 +3,14 @@ import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Politique de confidentialité · Ruliz",
+  title: "Politique de confidentialité Ruliz",
   description:
     "Conditions d'utilisation, collecte et protection des données personnelles, licence, commentaires, liens et clause de non-responsabilité de Ruliz.",
   robots: { index: true, follow: true },
 };
 
 /**
- * Politique de confidentialité · page dédiée séparée des mentions légales /
+ * Politique de confidentialité page dédiée séparée des mentions légales /
  * CGV. Même chartre graphique que /legal/mentions-legales (TOC sticky à
  * gauche sur desktop, prose lisible au centre). Contenu fourni par Tristan.
  */
@@ -178,20 +178,20 @@ export default function PolitiqueConfidentialitePage() {
             </p>
             <ul className="ml-1 space-y-1 text-sm">
               <Li>
-                <strong>Accès</strong> · vous pouvez demander une copie des
+                <strong>Accès</strong> vous pouvez demander une copie des
                 données personnelles que nous détenons à votre sujet.
               </Li>
               <Li>
-                <strong>Modification</strong> · vous pouvez demander la
+                <strong>Modification</strong> vous pouvez demander la
                 correction ou la mise à jour de vos données personnelles.
               </Li>
               <Li>
-                <strong>Suppression</strong> · vous pouvez demander la
+                <strong>Suppression</strong> vous pouvez demander la
                 suppression de vos données personnelles, sous réserve des
                 obligations légales de conservation.
               </Li>
               <Li>
-                <strong>Opposition</strong> · vous pouvez vous opposer à tout
+                <strong>Opposition</strong> vous pouvez vous opposer à tout
                 moment à l&apos;utilisation de vos données personnelles à des
                 fins de communication commerciale.
               </Li>
@@ -476,7 +476,7 @@ export default function PolitiqueConfidentialitePage() {
             <p className="mt-1 text-[var(--text-secondary)]">
               Écris-nous à{" "}
               <a href="mailto:contact@ruliz.fr">contact@ruliz.fr</a> en
-              indiquant « RGPD » en objet · on te répond sous 48h.
+              indiquant « RGPD » en objet on te répond sous 48h.
             </p>
             <div className="mt-4 flex flex-wrap gap-4">
               <Link

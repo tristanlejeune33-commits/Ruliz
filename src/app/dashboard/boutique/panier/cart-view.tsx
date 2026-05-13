@@ -53,7 +53,7 @@ interface CartItemView {
     imageUrl: string | null;
     prixCentimes: number;
     devise: string;
-    /** Grammage (g) du produit · passé par la query côté serveur. */
+    /** Grammage (g) du produit passé par la query côté serveur. */
     weightGrams?: number;
   };
 }
@@ -127,7 +127,7 @@ export function CartView({
   );
 
   // Calcul shipping côté client (mirror exact du calcShippingCentimes
-  // serveur · paliers triés par poids croissant, on prend le 1er dont
+  // serveur paliers triés par poids croissant, on prend le 1er dont
   // maxGrams ≥ poids total, sinon le dernier palier).
   const shippingCentimes = useMemo(() => {
     if (!shipping.active) return 0;
@@ -151,7 +151,7 @@ export function CartView({
   const totalCentimes = subtotalCentimes + shippingCentimes;
   const devise = items[0]?.produit.devise ?? "EUR";
 
-  // Libellé du palier actif (ex: "Colissimo · 750 g")
+  // Libellé du palier actif (ex: "Colissimo 750 g")
   const activeTierLabel = useMemo(() => {
     if (!shipping.active || shippingCentimes === 0) return null;
     if (shipping.tiers.length === 0) return null;
@@ -472,9 +472,9 @@ export function CartView({
                     {shipping.label}
                     {activeTierLabel && (
                       <span className="ml-1.5 text-[10px] font-mono text-[var(--text-tertiary)]">
-                        · {activeTierLabel}
+                        {activeTierLabel}
                         {totalWeightGrams > 0 && (
-                          <> · {totalWeightGrams} g</>
+                          <> {totalWeightGrams} g</>
                         )}
                       </span>
                     )}
@@ -548,7 +548,7 @@ export function CartView({
                 : `Payer ${(totalCentimes / 100).toLocaleString("fr-FR", { style: "currency", currency: items[0]?.produit.devise ?? "EUR" })}`}
             </Button>
             <p className="flex items-center justify-center gap-1 text-center text-[10px] text-[var(--text-tertiary)]">
-              🔒 Paiement sécurisé Stripe · CB / SEPA / Apple Pay
+              🔒 Paiement sécurisé Stripe CB / SEPA / Apple Pay
             </p>
             <p className="text-center text-[10px] text-[var(--text-tertiary)]">
               Tu seras redirigé vers la page de paiement sécurisée Stripe.

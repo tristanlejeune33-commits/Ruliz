@@ -8,7 +8,7 @@ import type { SupportedLang } from "@/lib/langs";
  *
  * Phase 1 (cette release) : sidebar + topbar + home hero + status communs.
  * Les autres écrans (éditeur de carte, formulaires, etc.) seront migrés
- * progressivement · en attendant, ils restent en français.
+ * progressivement en attendant, ils restent en français.
  *
  * On évite next-intl/react-intl pour rester léger : pas de dep, pas de setup
  * router middleware. Cookie `ruliz_panel_lang` + Context React + helper t().
@@ -18,7 +18,7 @@ type LangDict = Record<SupportedLang, string>;
 
 const DICT: Record<string, LangDict> = {
   // -----------------------------------------------------------------------
-  // Sidebar · sections
+  // Sidebar sections
   // -----------------------------------------------------------------------
   "nav.section.principal": {
     fr: "Principal",
@@ -76,7 +76,7 @@ const DICT: Record<string, LangDict> = {
   },
 
   // -----------------------------------------------------------------------
-  // Sidebar · items dashboard
+  // Sidebar items dashboard
   // -----------------------------------------------------------------------
   "nav.dashboard": {
     fr: "Tableau de bord",
@@ -224,7 +224,7 @@ const DICT: Record<string, LangDict> = {
   },
 
   // -----------------------------------------------------------------------
-  // Sidebar · items admin
+  // Sidebar items admin
   // -----------------------------------------------------------------------
   "nav.admin.overview": {
     fr: "Vue d'ensemble",
@@ -447,7 +447,7 @@ const DICT: Record<string, LangDict> = {
   },
 
   // -----------------------------------------------------------------------
-  // Dashboard home · Welcome / Status
+  // Dashboard home Welcome / Status
   // -----------------------------------------------------------------------
   "home.status.online": {
     fr: "Carte en ligne",

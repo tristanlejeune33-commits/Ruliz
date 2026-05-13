@@ -17,7 +17,7 @@ import { BoutiqueAdminView } from "./boutique-admin-view";
 import { ShippingEditor } from "./shipping-editor";
 
 export const metadata: Metadata = {
-  title: "Boutique QR · Admin Ruliz",
+  title: "Boutique QR Admin Ruliz",
 };
 
 export default async function AdminBoutiquePage() {

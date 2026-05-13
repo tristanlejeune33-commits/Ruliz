@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { AppShell, COLLAPSED_COOKIE } from "@/components/shared/app-shell";
 
 // Force dynamic rendering pour éviter toute mise en cache HTML/RSC entre
-// users différents · l'auth est cookie-based donc chaque request a son
+// users différents l'auth est cookie-based donc chaque request a son
 // propre user, on doit refetch côté serveur à chaque navigation.
 export const dynamic = "force-dynamic";
 import { AdminDemoBanner } from "@/components/shared/admin-demo-banner";
@@ -125,7 +125,7 @@ export default async function DashboardLayout({
   //  - Le tour n'est ni complété ni skippé
   //  - La migration DB est appliquée (sinon getOnboardingState retourne null)
   // Double try/catch : getOnboardingState gère déjà le P2022, mais on garde
-  // un filet de sécurité ici au cas où une exception remonterait · il ne faut
+  // un filet de sécurité ici au cas où une exception remonterait il ne faut
   // JAMAIS qu'un bug onboarding casse l'accès au dashboard.
   let onboardingState: Awaited<ReturnType<typeof getOnboardingState>> = null;
   if (restaurants.length > 0) {
@@ -142,13 +142,13 @@ export default async function DashboardLayout({
     !onboardingState.skipped &&
     !acting?.isImpersonating; // pas de tour en mode SAV admin
 
-  // Lang du panel · lue depuis le cookie ruliz_panel_lang. Défaut FR.
+  // Lang du panel lue depuis le cookie ruliz_panel_lang. Défaut FR.
   const langCookie = cookieStore.get(PANEL_LANG_COOKIE)?.value;
   const panelLang: SupportedLang = isSupportedLang(langCookie)
     ? langCookie
     : "fr";
 
-  // Affiché en mode SAV · nom + email du user impersonné
+  // Affiché en mode SAV nom + email du user impersonné
   const impersonatedTargetName =
     acting?.isImpersonating && acting.impersonatedUser
       ? [acting.impersonatedUser.prenom, acting.impersonatedUser.nom]

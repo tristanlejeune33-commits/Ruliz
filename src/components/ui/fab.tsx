@@ -7,7 +7,7 @@ import { useScrollDirection } from "@/hooks/use-scroll-direction";
 import { haptic } from "@/lib/haptic";
 
 /**
- * FAB · Floating Action Button mobile.
+ * FAB Floating Action Button mobile.
  *
  * Spec : `docs/design-system-mobile.md` §8 FAB
  *

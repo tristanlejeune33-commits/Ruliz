@@ -34,7 +34,7 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 /**
- * Styles d'input et label en HEX explicites · on évite les var() pour ne PAS
+ * Styles d'input et label en HEX explicites on évite les var() pour ne PAS
  * dépendre de la cascade `data-theme="light"` qui peut foirer si une CSS
  * variable n'est pas overridée correctement par un parent. Tout est lisible
  * peu importe le contexte parent.

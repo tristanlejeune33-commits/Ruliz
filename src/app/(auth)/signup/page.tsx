@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SignupForm } from "./signup-form";
 
 export const metadata: Metadata = {
-  title: "Créer un compte · Ruliz",
+  title: "Créer un compte Ruliz",
 };
 
 export default function SignupPage() {
@@ -14,7 +14,7 @@ export default function SignupPage() {
           className="text-[11px] font-semibold uppercase tracking-[0.12em]"
           style={{ fontFamily: "var(--font-mono)", color: "#26438A" }}
         >
-          Inscription · Restaurateur
+          Inscription restaurateur
         </span>
         <h1
           className="mt-3 text-balance text-3xl font-bold leading-[1.15] tracking-tight"
@@ -26,7 +26,7 @@ export default function SignupPage() {
           className="mt-2.5 text-sm leading-relaxed"
           style={{ color: "#4A5573" }}
         >
-          14 jours d&apos;essai Pro offerts. Aucune carte bancaire requise.
+          14 jours d&apos;essai Pro offerts, aucune carte bancaire requise.
         </p>
       </div>
       <SignupForm />

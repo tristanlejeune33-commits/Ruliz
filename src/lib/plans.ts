@@ -1,6 +1,6 @@
 /**
  * Plans Ruliz et matrice de fonctionnalités.
- * Pure TypeScript · safe to import from Server ET Client Components.
+ * Pure TypeScript safe to import from Server ET Client Components.
  */
 
 export type Plan = "freemium" | "pro" | "premium";

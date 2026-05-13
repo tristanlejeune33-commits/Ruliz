@@ -159,9 +159,9 @@ export function PopupsManager({ restaurantId, popups }: PopupsManagerProps) {
                                 (d) => ((p.joursActifs ?? 0) & (1 << d.bit)) !== 0,
                               )
                                 .map((d) => d.label)
-                                .join(" · ")
+                                .join(" ")
                             : "Tous les jours"}
-                          {p.heureDebut && p.heureFin && ` · ${p.heureDebut}–${p.heureFin}`}
+                          {p.heureDebut && p.heureFin && ` ${p.heureDebut}–${p.heureFin}`}
                         </p>
                       )}
                     </div>
@@ -230,7 +230,7 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
-/** Jours de la semaine · bit position 0=dim, 1=lun, …, 6=sam (convention JS). */
+/** Jours de la semaine bit position 0=dim, 1=lun, …, 6=sam (convention JS). */
 const DAYS_OF_WEEK = [
   { bit: 1, label: "Lun", full: "Lundi" },
   { bit: 2, label: "Mar", full: "Mardi" },

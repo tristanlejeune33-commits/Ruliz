@@ -10,7 +10,7 @@ import type { SerializedProduit } from "./types";
 
 interface ProduitsListProps {
   produits: SerializedProduit[];
-  /** Catégorie parente · encodé dans data dnd pour le drop cross-catégorie. */
+  /** Catégorie parente encodé dans data dnd pour le drop cross-catégorie. */
   categorieId: string;
   onEdit: (p: SerializedProduit) => void;
 }
@@ -132,7 +132,7 @@ function ProduitItem({
       </button>
       <div className="flex shrink-0 flex-col items-end gap-1 pl-2">
         <span className="font-mono text-sm font-medium tabular-nums text-[var(--text-primary)]">
-          {produit.prix !== null ? `${produit.prix.toFixed(2)} ${produit.devise}` : "·"}
+          {produit.prix !== null ? `${produit.prix.toFixed(2)} ${produit.devise}` : " "}
         </span>
         {produit.descriptionPrix && (
           <span className="text-[10px] text-[var(--text-muted)]">

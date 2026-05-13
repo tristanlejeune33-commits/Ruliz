@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { restartOnboarding } from "@/server/dashboard/onboarding-actions";
 
 /**
- * Bouton "Réactiver le didacticiel" · reset onboarding_step à 0, clear
+ * Bouton "Réactiver le didacticiel" reset onboarding_step à 0, clear
  * onboarding_skipped et onboarding_completed, puis router.refresh() pour
  * que le layout dashboard re-monte avec la bulle.
  */
@@ -21,7 +21,7 @@ export function RestartTourButton() {
     startTransition(async () => {
       const res = await restartOnboarding();
       if (res.ok) {
-        toast.success("Didacticiel réactivé · la bulle va réapparaître 👋");
+        toast.success("Didacticiel réactivé la bulle va réapparaître 👋");
         setDone(true);
         router.refresh();
         // Redirige sur /dashboard pour démarrer à l'étape 1

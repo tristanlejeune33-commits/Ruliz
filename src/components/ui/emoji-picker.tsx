@@ -9,11 +9,11 @@ import {
 } from "@/components/ui/popover";
 
 /**
- * EmojiPicker · wrapper Popover Radix autour de `frimousse`.
+ * EmojiPicker wrapper Popover Radix autour de `frimousse`.
  *
  * Frimousse fournit l'intégralité des emojis Unicode (~3 700) avec recherche,
  * catégories, skin tones, locale FR. La data est chargée à la demande depuis
- * un CDN et mise en cache localStorage · première ouverture ~150 KB
+ * un CDN et mise en cache localStorage première ouverture ~150 KB
  * compressés, ensuite c'est instantané.
  *
  * API identique à l'ancien picker : `<EmojiPicker onSelect={...}>{trigger}</EmojiPicker>`.

@@ -7,7 +7,7 @@ import {
 } from "@/lib/admin-demo";
 
 /**
- * GET /admin/demo · point d'entrée du "mode démo admin".
+ * GET /admin/demo point d'entrée du "mode démo admin".
  *
  * - Vérifie qu'on est admin
  * - Crée ou récupère le resto démo lié au compte admin
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     new URL("/dashboard", `${proto}://${host}`),
   );
 
-  // Cookies set directement sur la response · garantit qu'ils sont inclus
+  // Cookies set directement sur la response garantit qu'ils sont inclus
   // dans le redirect 307 et lisibles par le serveur au prochain hit.
   const isProd = process.env.NODE_ENV === "production";
   response.cookies.set(ADMIN_DEMO_COOKIE, "1", {

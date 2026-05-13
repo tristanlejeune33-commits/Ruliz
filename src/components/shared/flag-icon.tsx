@@ -12,14 +12,14 @@ interface FlagIconProps {
 }
 
 /**
- * Drapeau de langue · image SVG hébergée par flagcdn.com (CDN public,
+ * Drapeau de langue image SVG hébergée par flagcdn.com (CDN public,
  * format `https://flagcdn.com/{country}.svg`). Aucune dépendance npm.
  *
  * Usage typique : `<FlagIcon lang="fr" />` (20×15px) dans un dropdown,
  * une chip de langue, un picker de traduction.
  *
  * On rend une `<img>` simple (pas next/image) pour éviter la conf
- * `images.remotePatterns` Next.js · les flags sont 1-2 KB chacun, le gain
+ * `images.remotePatterns` Next.js les flags sont 1-2 KB chacun, le gain
  * de l'optimisation est négligeable.
  */
 export function FlagIcon({

@@ -45,7 +45,7 @@ function Banner({ restaurant, theme }: HeroSectionProps) {
           backgroundColor: !restaurant.banniereUrl ? theme.primary : undefined,
         }}
       >
-        {/* Wave SVG en bas · réplique exacte de l'ancien template */}
+        {/* Wave SVG en bas réplique exacte de l'ancien template */}
         <svg
           className="absolute bottom-0 left-0 z-[1] -mb-px w-full"
           viewBox="0 0 320 24"
@@ -61,7 +61,7 @@ function Banner({ restaurant, theme }: HeroSectionProps) {
           />
         </svg>
 
-        {/* Logo circulaire · overlay sur la wave (taille fluide responsive) */}
+        {/* Logo circulaire overlay sur la wave (taille fluide responsive) */}
         {restaurant.logoUrl && (
           <motion.div
             initial={{ opacity: 0, scale: 0.85 }}

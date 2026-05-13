@@ -1,5 +1,5 @@
 /**
- * Panier boutique · stocké côté client dans un cookie JSON, lu côté serveur
+ * Panier boutique stocké côté client dans un cookie JSON, lu côté serveur
  * pour valider la commande au moment du checkout.
  *
  * Format : `[{ produitId: "123", quantite: 2 }, ...]`
@@ -8,7 +8,7 @@
  * panier côté serveur (page panier RSC, action createBoutiqueCommande)
  * sans appel client supplémentaire.
  *
- * Pourquoi pas une table DB `boutique_cart` ? KISS · la persistance entre
+ * Pourquoi pas une table DB `boutique_cart` ? KISS la persistance entre
  * sessions n'est pas critique (panier expire après 7j de toute façon), pas
  * de jointure à faire, l'écriture client est triviale via document.cookie.
  */

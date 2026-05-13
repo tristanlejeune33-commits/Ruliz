@@ -420,14 +420,14 @@ function CommandeRow({ commande }: { commande: ClientBoutiqueCommande }) {
             })}
             {commande.restaurantNom && (
               <>
-                <span className="mx-1">·</span>
+                <span className="mx-1"> </span>
                 {commande.restaurantNom}
               </>
             )}
           </p>
         </div>
 
-        {/* SELECT STATUT INLINE (admin-only) · SelectValue rend l'enfant
+        {/* SELECT STATUT INLINE (admin-only) SelectValue rend l'enfant
             de SelectItem (icône + label), donc pas de duplication d'icône
             dans le trigger. Le CSS [&>span] cible le SelectValue rendu. */}
         <div className="shrink-0">

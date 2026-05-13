@@ -39,14 +39,14 @@ export interface OnboardingStep {
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
   // =========================================================================
-  // TOUR DE BASE · slides 1 à 10
+  // TOUR DE BASE slides 1 à 10
   // =========================================================================
   {
     id: 1,
     path: "/dashboard",
     anchorSelector: null,
     title: "Salut 👋 Bienvenue dans Ruliz.",
-    body: "Je te montre tout en 12 étapes · 3 minutes chrono. C'est parti ?",
+    body: "Je te montre tout en 12 étapes 3 minutes chrono. C'est parti ?",
     details: `On va voir ensemble :
 • Comment configurer ton restaurant (logo, couleurs, infos)
 • Créer tes premières catégories et plats
@@ -85,7 +85,7 @@ Onglet "Thème" :
 • Choisis-en un, tu peux ajuster les couleurs après si tu veux
 
 À droite, tu vois ta carte se mettre à jour en direct à chaque
-modification · c'est exactement ce que tes clients verront.`,
+modification c'est exactement ce que tes clients verront.`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "bottom",
@@ -97,7 +97,7 @@ modification · c'est exactement ce que tes clients verront.`,
     anchorSelector: "[data-onboarding-anchor='restaurant-infos']",
     title: "Infos pratiques 📍",
     body: "Adresse, téléphone, horaires. C'est ce qui rassure tes clients.",
-    details: `Onglet "Infos" · remplis les champs de ton restaurant :
+    details: `Onglet "Infos" remplis les champs de ton restaurant :
 
 • Nom du restaurant (s'affiche en haut de ta carte)
 • Adresse complète : numéro, rue, code postal, ville
@@ -110,7 +110,7 @@ modification · c'est exactement ce que tes clients verront.`,
   (les autres langues seront traduites toutes seules)
 
 Attention : tout ce que tu mets ici est PUBLIC sur ta carte.
-Évite ton numéro personnel · mets celui du resto.`,
+Évite ton numéro personnel mets celui du resto.`,
     cta: "Suivant →",
     allowSkip: true,
     placement: "bottom",
@@ -121,8 +121,8 @@ Attention : tout ce que tu mets ici est PUBLIC sur ta carte.
     path: "/dashboard/restaurant",
     anchorSelector: "[data-onboarding-anchor='restaurant-social']",
     title: "Réseaux & avis Google 🌐",
-    body: "Facebook, Insta, lien Google · pour remonter dans les recherches.",
-    details: `Onglet "Réseaux" · tout est optionnel, mets ce que tu veux :
+    body: "Facebook, Insta, lien Google pour remonter dans les recherches.",
+    details: `Onglet "Réseaux" tout est optionnel, mets ce que tu veux :
 
 • Facebook : copie l'adresse de ta page (ex: facebook.com/tonresto)
 • Instagram : pareil
@@ -140,7 +140,7 @@ Pourquoi c'est si important ?
 • En moyenne, les restos qui ajoutent ce lien ont 35% d'avis en plus
   dans les 2 mois qui suivent
 
-Tu n'as pas encore de fiche Google ? Crée-la AVANT · c'est gratuit
+Tu n'as pas encore de fiche Google ? Crée-la AVANT c'est gratuit
 et c'est ce qui te rapporte le plus de visibilité dans ton quartier.`,
     cta: "Suivant →",
     allowSkip: true,
@@ -159,7 +159,7 @@ et c'est ce qui te rapporte le plus de visibilité dans ton quartier.`,
 Pour créer une catégorie :
 1. Clic sur "+ Catégorie" en haut à gauche
 2. Donne-lui un nom (ex: "Entrées")
-3. Choisis un emoji (optionnel) · clique sur le bouton 🍽️
+3. Choisis un emoji (optionnel) clique sur le bouton 🍽️
 4. Clic "Créer"
 
 Options supplémentaires :
@@ -231,7 +231,7 @@ pour publier ton plat. Tu enrichiras (photos, allergènes…) plus tard.`,
 2. GLISSER : prends une image avec ta souris depuis ton bureau,
    glisse-la dans la zone photo
 
-3. COLLER (Ctrl+V) · le plus rapide :
+3. COLLER (Ctrl+V) le plus rapide :
    • Sur Windows : appuie sur Win+Maj+S pour faire une capture d'écran,
      puis Ctrl+V dans la zone photo
    • Sur Mac : appuie sur Cmd+Maj+4 pour la capture,
@@ -288,7 +288,7 @@ Comment ça s'affiche pour tes clients :
 • Les allergènes en bas, avec leur sigle officiel
 • Tout est traduit dans les 7 langues
 
-Conseil : ne triche pas avec le "fait maison" · les clients lisent
+Conseil : ne triche pas avec le "fait maison" les clients lisent
 et apprécient quand c'est honnête.`,
     cta: "Suivant →",
     allowSkip: true,
@@ -301,7 +301,7 @@ et apprécient quand c'est honnête.`,
     anchorSelector: "[data-onboarding-anchor='preview-iframe']",
     title: "Aperçu live + 7 langues 🌍",
     body: "À droite, ta carte comme tes clients la voient. Change la langue, on traduit tout seul.",
-    details: `Ce que tu vois à droite, c'est ta vraie carte publique ·
+    details: `Ce que tu vois à droite, c'est ta vraie carte publique  
 exactement ce que tes clients verront.
 
 Comportement :
@@ -313,19 +313,19 @@ Comportement :
 Choix de la langue (en haut de l'aperçu) :
 • FR : ta langue d'écriture (français)
 • EN, ES, DE, IT, PT, ZH : Anglais, Espagnol, Allemand,
-  Italien, Portugais, Chinois · traduites automatiquement
+  Italien, Portugais, Chinois traduites automatiquement
 
 Comment marche la traduction automatique ?
 • La première fois qu'un client consulte ta carte en anglais
   → traduction faite en quelques secondes
-• Ensuite c'est enregistré POUR TOUJOURS · la prochaine fois c'est instantané
+• Ensuite c'est enregistré POUR TOUJOURS la prochaine fois c'est instantané
 • Si tu modifies un texte en français, les traductions
   se mettent à jour toutes seules en arrière-plan
-• Tu n'as RIEN à faire · c'est inclus
+• Tu n'as RIEN à faire c'est inclus
 
 Bouton "Re-traduire" :
 • Force une nouvelle traduction si tu veux changer le style
-• Aucun coût supplémentaire · inclus dans tous les abonnements
+• Aucun coût supplémentaire inclus dans tous les abonnements
 
 Si tu vois un bandeau orange "Traduction partielle" :
 ça veut juste dire que la traduction est encore en cours
@@ -362,7 +362,7 @@ Statistiques par QR (page Analyse) :
   (exemple : "Les clients de la vitrine commandent surtout des desserts")
 
 ═══════════════════════════════════════════════════
-🛒 BOUTIQUE RULIZ · commande tes supports pré-imprimés
+🛒 BOUTIQUE RULIZ commande tes supports pré-imprimés
 ═══════════════════════════════════════════════════
 
 Pas envie de t'embêter avec l'impression ? On le fait pour toi.
@@ -394,8 +394,8 @@ Paiement sécurisé en ligne, livraison France 3-5 jours
 
 ═══════════════════════════════════════════════════
 
-Si tu imprimes TOI-MÊME · conseils pratiques :
-• Imprime sur sticker MAT (pas brillant · sinon ça fait des reflets
+Si tu imprimes TOI-MÊME conseils pratiques :
+• Imprime sur sticker MAT (pas brillant sinon ça fait des reflets
   et bloque le scan)
 • Taille minimum : 4×4 cm pour un scan smartphone confortable
 • Pose à hauteur des yeux sur les tables
@@ -404,7 +404,7 @@ Si tu imprimes TOI-MÊME · conseils pratiques :
 
 ASTUCE GÉNIALE : si tu changes ta carte (été → hiver),
 tu n'as PAS à ré-imprimer ton QR code. Le QR pointe toujours
-vers ta carte à jour · tu modifies côté dashboard, c'est tout.
+vers ta carte à jour tu modifies côté dashboard, c'est tout.
 Donc tes sets de table commandés à la boutique restent valables
 À VIE même si tu changes 50 fois ta carte.`,
     cta: "Voir les plus 🎁",
@@ -413,7 +413,7 @@ Donc tes sets de table commandés à la boutique restent valables
     kind: "base",
   },
   // =========================================================================
-  // PLUS-VALUE · slides 11 et 12
+  // PLUS-VALUE slides 11 et 12
   // =========================================================================
   {
     id: 11,
@@ -435,7 +435,7 @@ Comment ça marche :
 2. Activation du pop-up automatique :
    • Apparaît 3 secondes après que le client scanne ton QR
    • Le client peut le fermer s'il préfère juste voir la carte
-   • Mais c'est tentant · 60 à 70% des clients tournent la roue
+   • Mais c'est tentant 60 à 70% des clients tournent la roue
 
 3. Le client tourne la roue (jolie animation)
 
@@ -499,14 +499,14 @@ Ce que tu peux voir dans la page "Analyse" :
 LES 3 ABONNEMENTS RULIZ :
 ═══════════════════════════════════════
 
-📦 GRATUIT (Freemium) · 0€/mois
+📦 GRATUIT (Freemium) 0€/mois
 • 1 restaurant
 • Statistiques sur les 7 derniers jours
 • Max 5 catégories, 30 plats
 • Petite mention "Propulsé par Ruliz" en bas de ta carte
 • Carte uniquement en français
 
-⭐ PRO · 29,90€ / mois
+⭐ PRO 29,90€ / mois
 • Tout ce qui est gratuit + en illimité
 • Carte traduite en 7 langues automatiquement
 • Roulette à avis Google (étape 11)
@@ -514,12 +514,12 @@ LES 3 ABONNEMENTS RULIZ :
 • Statistiques sur 30 jours
 • 1 restaurant
 
-💎 PREMIUM · 44,90€ / mois
+💎 PREMIUM 44,90€ / mois
 • Tout du Pro
 • SANS mention Ruliz (ta carte 100% à toi)
 • Plusieurs restaurants (jusqu'à 5) gérés depuis un seul compte
 • Invite tes employés (gestion d'équipe)
-• 📱 SMS MARKETING INTÉGRÉ · voir détail ci-dessous
+• 📱 SMS MARKETING INTÉGRÉ voir détail ci-dessous
 • Statistiques sans limite dans le temps
 • Support prioritaire (réponse en moins de 4h en semaine)
 

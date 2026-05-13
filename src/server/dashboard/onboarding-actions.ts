@@ -6,7 +6,7 @@ import { requireDashboard } from "@/lib/session";
 /**
  * Server actions du tour onboarding (bulle guidée).
  *
- * Robustesse : toutes les opérations sont try/catch · si la migration
+ * Robustesse : toutes les opérations sont try/catch si la migration
  * `20260511120000_user_onboarding` n'est pas encore appliquée sur la DB
  * (Railway en cours de redeploy, rollback, etc.), on retombe sur des
  * defaults safe (pas de bulle) au lieu de crasher tout le dashboard avec
@@ -23,7 +23,7 @@ export type OnboardingActionResult =
 
 /**
  * Retourne `true` si l'erreur Prisma indique une colonne manquante (P2022)
- * ou table manquante (P2021) · typiquement quand la migration n'a pas
+ * ou table manquante (P2021) typiquement quand la migration n'a pas
  * encore tourné.
  */
 function isMissingSchemaError(err: unknown): boolean {
@@ -61,7 +61,7 @@ async function ensureOnboardingSchema(): Promise<void> {
     schemaEnsured = true;
   } catch (err) {
     // Si l'ALTER échoue (table users elle-même manquante, droits insuffisants),
-    // on log et on continue · les queries en aval retomberont sur le P2022
+    // on log et on continue les queries en aval retomberont sur le P2022
     // handling défensif.
     console.warn("[onboarding] ensureOnboardingSchema failed:", err);
   }
@@ -116,7 +116,7 @@ export async function getOnboardingState(): Promise<{
       // Migration pas encore appliquée → on désactive silencieusement le
       // tour. Réessaiera au prochain refresh une fois la migration passée.
       console.warn(
-        "[onboarding] schema pas à jour (P2022) · bulle désactivée le temps que la migration tourne",
+        "[onboarding] schema pas à jour (P2022) bulle désactivée le temps que la migration tourne",
       );
       return null;
     }
@@ -190,7 +190,7 @@ export async function setOnboardingStep(
   } catch (err) {
     if (isMissingSchemaError(err)) {
       console.warn(
-        "[onboarding] setStep : schema pas à jour · étape non persistée",
+        "[onboarding] setStep : schema pas à jour étape non persistée",
       );
       return { ok: true }; // silencieux : le tour fonctionne côté client même sans persistance
     }
@@ -199,7 +199,7 @@ export async function setOnboardingStep(
 }
 
 /**
- * L'utilisateur clique "Passer le tour" · on ne réaffichera plus la bulle.
+ * L'utilisateur clique "Passer le tour" on ne réaffichera plus la bulle.
  */
 export async function skipOnboarding(): Promise<OnboardingActionResult> {
   await ensureOnboardingSchema();
@@ -229,7 +229,7 @@ export async function skipOnboarding(): Promise<OnboardingActionResult> {
     return { ok: true };
   } catch (err) {
     if (isMissingSchemaError(err)) {
-      console.warn("[onboarding] skip : schema pas à jour · non persisté");
+      console.warn("[onboarding] skip : schema pas à jour non persisté");
       return { ok: true };
     }
     return { ok: false, error: "Skip échoué" };

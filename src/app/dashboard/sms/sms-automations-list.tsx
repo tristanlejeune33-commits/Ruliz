@@ -118,9 +118,9 @@ export function SmsAutomationsList({
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-semibold">{config.label}</p>
                   <p className="text-xs text-[var(--text-muted)]">
-                    {config.desc} · envoi à {auto.sendHour}h
+                    {config.desc} envoi à {auto.sendHour}h
                     {auto.daysOffset !== 0 &&
-                      ` · décalage ${auto.daysOffset > 0 ? "+" : ""}${auto.daysOffset}j`}
+                      ` décalage ${auto.daysOffset > 0 ? "+" : ""}${auto.daysOffset}j`}
                   </p>
                   <p className="mt-1 line-clamp-2 text-xs italic text-[var(--text-secondary)]">
                     « {auto.messageTemplate} »

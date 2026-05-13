@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CreateClientForm } from "./create-form";
 
 export const metadata: Metadata = {
-  title: "Nouveau client · Admin Ruliz",
+  title: "Nouveau client Admin Ruliz",
 };
 
 export default function NewClientPage() {
@@ -33,7 +33,7 @@ export default function NewClientPage() {
         <CardHeader>
           <CardTitle>Coordonnées</CardTitle>
           <CardDescription>
-            Le mot de passe est envoyé par email · le restaurateur peut le changer à la première connexion.
+            Le mot de passe est envoyé par email le restaurateur peut le changer à la première connexion.
           </CardDescription>
         </CardHeader>
         <CardContent>

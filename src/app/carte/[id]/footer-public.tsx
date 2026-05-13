@@ -53,7 +53,7 @@ interface FooterPublicProps {
 }
 
 /**
- * Footer riche navy · réplique exacte du <footer> de l'ancien template Ruliz.
+ * Footer riche navy réplique exacte du <footer> de l'ancien template Ruliz.
  *
  * Structure :
  *  - SVG wave navy en haut (transition entre le contenu blanc et le footer navy)
@@ -61,7 +61,7 @@ interface FooterPublicProps {
  *  - Nom du restaurant (Magra 20px white)
  *  - Adresse multi-lignes
  *  - Téléphone + Email cliquables
- *  - Pills sociales (FB, IG, TikTok, Web, Google review) · fond rgba blanc 14%
+ *  - Pills sociales (FB, IG, TikTok, Web, Google review) fond rgba blanc 14%
  *  - "Propulsé par Ruliz" + langue active
  */
 export function FooterPublic({
@@ -225,7 +225,7 @@ export function FooterPublic({
             >
               Ruliz
             </Link>
-            <span className="opacity-70">· {langLabel(lang)}</span>
+            <span className="opacity-70">  {langLabel(lang)}</span>
           </div>
         )}
        </div>

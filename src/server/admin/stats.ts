@@ -24,7 +24,7 @@ export async function getAdminKpis() {
 
   // Pré-récupère les IDs des restos admin pour pouvoir les filtrer dans
   // les queries Scan (qui n'ont qu'un foreign key `restaurantId` sans
-  // relation Prisma typée · on ne peut donc pas faire `restaurant: {…}`).
+  // relation Prisma typée on ne peut donc pas faire `restaurant: {…}`).
   const adminRestoIds = (
     await prisma.restaurant.findMany({
       where: NON_ADMIN_USER_FILTER.user
@@ -64,12 +64,12 @@ export async function getAdminKpis() {
       where: { statut: "actif", ...NON_ADMIN_USER_FILTER },
       select: { plan: true },
     }),
-    // Impressions cumulées · exclut les scans des cartes démo admin.
+    // Impressions cumulées exclut les scans des cartes démo admin.
     prisma.qrcode.aggregate({
       _sum: { scanTotal: true },
       where: { restaurant: NON_ADMIN_USER_FILTER },
     }),
-    // Scans 24h / 7j / 30j · `Scan` n'a pas de relation Prisma vers
+    // Scans 24h / 7j / 30j `Scan` n'a pas de relation Prisma vers
     // Restaurant, on filtre par restaurantId.
     prisma.scan.count({
       where: { scannedAt: { gte: since24h }, ...scanWhereExcl },
@@ -99,7 +99,7 @@ export async function getAdminKpis() {
 
   const mrr = allRestaurants.reduce((acc, r) => acc + PLAN_PRICES[r.plan], 0);
 
-  // Revenus boutique cumulés (commandes payées) · exclu les commandes
+  // Revenus boutique cumulés (commandes payées) exclu les commandes
   // des comptes admin (achats internes / tests).
   const boutiqueRev = (await prisma.$queryRawUnsafe(
     `SELECT COALESCE(SUM(total_centimes), 0)::int AS "totalCentimes"
@@ -107,7 +107,7 @@ export async function getAdminKpis() {
      WHERE paid_at IS NOT NULL
        AND user_id NOT IN (SELECT id FROM users WHERE role = 'admin')`,
   ).catch(() => [{ totalCentimes: 0 }])) as Array<{ totalCentimes: number }>;
-  // Revenus SMS cumulés (packs achetés) · exclu aussi les restaurants
+  // Revenus SMS cumulés (packs achetés) exclu aussi les restaurants
   // appartenant à un admin (pas de user_id direct sur sms_credit_purchases,
   // on passe par restaurant_id → restaurants → user_id).
   const smsRev = (await prisma.$queryRawUnsafe(
@@ -143,7 +143,7 @@ export async function getAdminKpis() {
 }
 
 // ============================================================
-// TIMESERIES 3 ANS · pour les modals "graphique temporel"
+// TIMESERIES 3 ANS pour les modals "graphique temporel"
 // ============================================================
 
 export type TimeseriesKpi =
@@ -244,7 +244,7 @@ export async function getKpiTimeseries(
         grain,
       )) as typeof rows;
     } else if (kpi === "restaurants") {
-      // Restaurants créés par bucket · exclu les démos admin.
+      // Restaurants créés par bucket exclu les démos admin.
       rows = (await prisma.$queryRawUnsafe(
         `SELECT date_trunc($2, created_at) AS "bucket", COUNT(*)::int AS "value"
          FROM restaurants
@@ -280,7 +280,7 @@ export async function getKpiTimeseries(
         grain,
       )) as typeof rows;
     } else if (kpi === "mrr") {
-      // MRR mensuel : sum des prix des plans actifs par mois · exclu les
+      // MRR mensuel : sum des prix des plans actifs par mois exclu les
       // restaurants démo des admins.
       rows = (await prisma.$queryRawUnsafe(
         `WITH months AS (

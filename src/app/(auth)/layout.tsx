@@ -5,7 +5,7 @@ import { ensureAdminDemoRestaurant } from "@/lib/admin-demo";
 import { CartePreviewPane } from "./carte-preview-pane";
 
 /**
- * Auth layout · light mode forcé (logique marketing : un visiteur non connecté
+ * Auth layout light mode forcé (logique marketing : un visiteur non connecté
  * n'a pas encore de préférence stockée, on lui sert une UI accueillante claire).
  * Le toggle dark/light du dashboard s'applique uniquement après login.
  *
@@ -68,7 +68,7 @@ export default async function AuthLayout({
       data-theme="light"
       className="grid min-h-screen bg-[var(--bg-primary)] lg:grid-cols-[1fr_1.05fr]"
     >
-      {/* Form pane · fond blanc */}
+      {/* Form pane fond blanc */}
       <div className="flex flex-col bg-[var(--bg-primary)] px-6 py-10 lg:px-14">
         <header className="flex items-center justify-between">
           <Link href="/" aria-label="Retour à l'accueil">
@@ -107,7 +107,7 @@ export default async function AuthLayout({
         </footer>
       </div>
 
-      {/* Showcase pane · phone preview avec carte démo Bistrot Ruliz */}
+      {/* Showcase pane phone preview avec carte démo Bistrot Ruliz */}
       <div className="relative hidden overflow-hidden lg:block">
         <CartePreviewPane defaultCarteUrl={defaultCarteUrl} />
       </div>

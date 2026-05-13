@@ -20,7 +20,7 @@ interface ProduitCardsProps {
 }
 
 /**
- * Liste des produits d'une catégorie · réplique de l'ancien `.list-choice-item`.
+ * Liste des produits d'une catégorie réplique de l'ancien `.list-choice-item`.
  *
  * Pour chaque produit :
  *  - Carte blanche, shadow soft, radius 10
@@ -150,7 +150,7 @@ function ProduitItem({
           Photo 72×72 à gauche (visible mais discrète), contenu à droite
           en stack : titre + badges/pills inline + description 2 lignes,
           colonne prix à l'extrême droite. Hauteur ~110-130 px vs 340 px
-          avant · même densité visuelle que les cartes sans image. */}
+          avant même densité visuelle que les cartes sans image. */}
       {hasImage ? (
         <button
           type="button"
@@ -158,7 +158,7 @@ function ProduitItem({
           className="flex h-full w-full items-center gap-3 p-[12px] text-left md:gap-4 md:p-[14px] lg:p-4"
           style={{ color: theme.textBody }}
         >
-          {/* Photo à gauche · 72×72 mobile, 84×84 desktop */}
+          {/* Photo à gauche 72×72 mobile, 84×84 desktop */}
           <div
             className="relative size-[72px] shrink-0 overflow-hidden rounded-lg md:size-[84px]"
             style={{ backgroundColor: "rgba(0,0,0,0.04)" }}
@@ -173,7 +173,7 @@ function ProduitItem({
             />
           </div>
 
-          {/* Contenu central · titre + badges + description + voir photo */}
+          {/* Contenu central titre + badges + description + voir photo */}
           <div className="min-w-0 flex-1">
             {/* Titre + badges + pills inline */}
             <h3
@@ -209,7 +209,7 @@ function ProduitItem({
               ))}
             </h3>
 
-            {/* Description · 2 lignes max */}
+            {/* Description 2 lignes max */}
             {produit.description && (
               <p
                 className="mt-0.5 line-clamp-2 text-[13px] font-light leading-snug md:text-[13.5px] lg:text-[14px]"

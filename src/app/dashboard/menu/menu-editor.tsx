@@ -76,7 +76,7 @@ export function MenuEditor({
   const [showPreview, setShowPreview] = useState(true);
   // Mode mobile uniquement : "edit" (default) montre l'éditeur, "preview"
   // montre l'iframe full-width. Sur desktop, le toggle showPreview gère
-  // la 3ème colonne · le mode mobile est ignoré (le SegmentedControl est lg:hidden).
+  // la 3ème colonne le mode mobile est ignoré (le SegmentedControl est lg:hidden).
   const [mobileView, setMobileView] = useState<"edit" | "preview">("edit");
   const [activeCategorieId, setActiveCategorieId] = useState<string | null>(
     tree[0]?.id ?? null,
@@ -208,7 +208,7 @@ export function MenuEditor({
   );
 
   /**
-   * Custom collision detection · résout le bug "drag produit vers sidebar
+   * Custom collision detection résout le bug "drag produit vers sidebar
    * ne détecte pas la cat" :
    * - closestCenter compare le CENTRE du draggable au centre des droppables.
    *   Quand on drag un produit (large) vers une cat (sidebar étroite), le
@@ -226,7 +226,7 @@ export function MenuEditor({
   };
 
   // ----------------------------------------------------------------------
-  // Helpers state · opérations sur l'arbre (top-level + sub-cats)
+  // Helpers state opérations sur l'arbre (top-level + sub-cats)
   // ----------------------------------------------------------------------
 
   /** Met à jour les produits d'une catégorie (top-level OU sub-cat). */
@@ -336,7 +336,7 @@ export function MenuEditor({
   };
 
   // ----------------------------------------------------------------------
-  // Handler unifié drag&drop · dispatch par type via active.data.current.type
+  // Handler unifié drag&drop dispatch par type via active.data.current.type
   // ----------------------------------------------------------------------
 
   /**
@@ -519,7 +519,7 @@ export function MenuEditor({
       collisionDetection={collisionDetection}
       onDragEnd={handleDragEnd}
     >
-      {/* Toggle mobile-only Édition / Aperçu · caché desktop (la 3ème colonne
+      {/* Toggle mobile-only Édition / Aperçu caché desktop (la 3ème colonne
           de preview prend le relais). Empilé avec le mode preview qui swap
           le contenu entre éditeur (sidebar+produits) et iframe full-width. */}
       <div className="border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 px-4 py-2 lg:hidden">
@@ -552,7 +552,7 @@ export function MenuEditor({
         />
       </div>
 
-      {/* Aperçu mobile full-width · visible seulement en mode "preview" sous lg.
+      {/* Aperçu mobile full-width visible seulement en mode "preview" sous lg.
           Sur desktop l'iframe est dans la 3ème colonne (cf. plus bas). */}
       {mobileView === "preview" && (
         <section className="flex flex-1 flex-col items-center justify-start bg-[var(--bg-elevated)]/40 p-4 lg:hidden">
@@ -657,7 +657,7 @@ export function MenuEditor({
       <section className="min-w-0">
         {activeCategorie ? (
           <div className="flex h-full flex-col">
-            {/* Topbar éditeur · breadcrumb + chips + actions */}
+            {/* Topbar éditeur breadcrumb + chips + actions */}
             <div className="sticky top-14 z-10 border-b border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 backdrop-blur-xl">
               <div className="flex items-start justify-between gap-3 px-6 py-3">
                 <div className="min-w-0 flex-1">

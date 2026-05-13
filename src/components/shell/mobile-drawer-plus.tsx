@@ -28,7 +28,7 @@ import { haptic } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 
 /**
- * MobileDrawerPlus · bottom sheet "Plus" qui regroupe tout le contenu
+ * MobileDrawerPlus bottom sheet "Plus" qui regroupe tout le contenu
  * secondaire qui ne tient pas dans la BottomNav (5 items max).
  *
  * Spec : `docs/design-system-mobile.md` §9 Drawer "Plus"
@@ -147,7 +147,7 @@ export function MobileDrawerPlus({
 
           <div className="px-3 pt-4">
             <p className="text-center text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
-              Ruliz · v1
+              Ruliz v1
             </p>
           </div>
         </div>

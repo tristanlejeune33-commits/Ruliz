@@ -80,7 +80,7 @@ export function FiltersBar({
       style={{ top: "calc(var(--h-mobile-topbar) + env(safe-area-inset-top))" }}
     >
       <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
-        {/* Period switcher · SegmentedControl mobile-first (44px touch + scroll-snap si > 4) */}
+        {/* Period switcher SegmentedControl mobile-first (44px touch + scroll-snap si > 4) */}
         <SegmentedControl<PeriodValue>
           value={(currentFilters.period as PeriodValue) ?? "30d"}
           onChange={(v) => updateParams({ period: v })}

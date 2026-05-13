@@ -7,7 +7,7 @@ import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { ImportMenuForm } from "./import-form";
 
 export const metadata: Metadata = {
-  title: "Importer un menu · Ruliz",
+  title: "Importer un menu Ruliz",
 };
 
 export default async function ImportMenuPage() {

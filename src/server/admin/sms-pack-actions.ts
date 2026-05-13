@@ -20,7 +20,7 @@ const updatePackSchema = z.object({
 
 /**
  * Met à jour un pack SMS depuis /admin/settings.
- * Admin uniquement (requireAdmin) · un client ne peut PAS toucher aux prix.
+ * Admin uniquement (requireAdmin) un client ne peut PAS toucher aux prix.
  */
 export async function updateSmsPackSetting(
   input: unknown,

@@ -22,7 +22,7 @@ import { usePanelLang } from "@/components/shared/panel-lang-context";
 import { MobileDrawerPlus } from "./mobile-drawer-plus";
 
 /**
- * MobileBottomNav · barre de navigation principale mobile.
+ * MobileBottomNav barre de navigation principale mobile.
  *
  * Spec : `docs/design-system-mobile.md` §9 Navigation mobile
  *
@@ -93,7 +93,7 @@ const ADMIN_SECTIONS_PLUS = [
 
 interface MobileBottomNavProps {
   scope: "admin" | "dashboard";
-  /** ID du resto actif côté dashboard · alimente le bouton central
+  /** ID du resto actif côté dashboard alimente le bouton central
       "Voir ma carte" qui ouvre la carte publique en nouvel onglet. */
   activeRestaurantId?: string | null;
 }

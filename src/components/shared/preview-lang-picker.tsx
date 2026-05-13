@@ -13,7 +13,7 @@ import { usePanelLang } from "@/components/shared/panel-lang-context";
 import { LANG_META, type SupportedLang } from "@/lib/langs";
 
 /**
- * Picker de langue dans la topbar · change la **langue du panel** (sidebar,
+ * Picker de langue dans la topbar change la **langue du panel** (sidebar,
  * boutons, hero, etc.) ainsi que la **langue de prévisualisation de la carte**
  * (le iframe dans l'éditeur). Une seule source de vérité = cookie
  * `ruliz_panel_lang` lu côté serveur.

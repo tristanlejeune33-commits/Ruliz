@@ -19,7 +19,7 @@ import { prisma } from "@/lib/db";
 import { listParticipations } from "@/server/dashboard/jeu-participations";
 
 export const metadata: Metadata = {
-  title: "Participants au jeu · Ruliz",
+  title: "Participants au jeu Ruliz",
 };
 
 export const dynamic = "force-dynamic";
@@ -74,7 +74,7 @@ export default async function ParticipationsPage() {
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <Badge variant="secondary">
-            <Sparkles className="size-3" /> Jeu · Participants
+            <Sparkles className="size-3" /> Jeu Participants
           </Badge>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight">
             {participations.length} participant
@@ -146,7 +146,7 @@ export default async function ParticipationsPage() {
                           <div>
                             <p className="font-medium">
                               {[p.prenom, p.nom].filter(Boolean).join(" ") ||
-                                "·"}
+                                " "}
                             </p>
                             {p.naissance && (
                               <p className="text-xs text-[var(--text-muted)]">
@@ -199,7 +199,7 @@ export default async function ParticipationsPage() {
                           </span>
                         ) : (
                           <span className="text-xs text-[var(--text-muted)]">
-                            ·
+                             
                           </span>
                         )}
                       </td>

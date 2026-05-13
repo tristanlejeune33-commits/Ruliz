@@ -59,7 +59,7 @@ export function LiveFeed({ initialItems }: LiveFeedProps) {
               Live feed
             </CardTitle>
             <CardDescription>
-              50 derniers scans · refresh auto toutes les 30s
+              50 derniers scans refresh auto toutes les 30s
             </CardDescription>
           </div>
           <Activity className="size-4 text-[var(--text-muted)]" />
@@ -104,7 +104,7 @@ function ScanRow({ scan }: { scan: LiveScan }) {
           <span className="text-[var(--text-primary)]">{country.name}</span>
           {langMeta && isSupportedLang(scan.lang) && (
             <span className="inline-flex items-center gap-1 text-xs text-[var(--text-muted)]">
-              · langue
+              langue
               <FlagIcon lang={scan.lang} width={14} rounded />
             </span>
           )}
@@ -114,7 +114,7 @@ function ScanRow({ scan }: { scan: LiveScan }) {
           {BROWSER_LABEL[scan.browser]}
           {scan.qrcodeCode && (
             <>
-              <span className="px-0.5">·</span>
+              <span className="px-0.5"> </span>
               <span className="font-mono">{scan.qrcodeCode}</span>
             </>
           )}

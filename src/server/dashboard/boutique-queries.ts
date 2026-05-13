@@ -63,7 +63,7 @@ export type BoutiqueCommandeRow = Awaited<
 >[number];
 
 /**
- * Panier "hydraté" · pour chaque produitId du cookie, on jointure sur la DB
+ * Panier "hydraté" pour chaque produitId du cookie, on jointure sur la DB
  * pour obtenir nom, prix, image actuels. Si un produit n'existe plus ou
  * n'est plus publié, il est filtré silencieusement.
  */

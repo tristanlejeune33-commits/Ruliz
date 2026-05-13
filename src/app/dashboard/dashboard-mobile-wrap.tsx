@@ -8,7 +8,7 @@ import { PullToRefresh } from "@/components/ui/pull-to-refresh";
 import { toast } from "sonner";
 
 /**
- * DashboardMobileWrap · wrapper client qui ajoute pull-to-refresh + FAB
+ * DashboardMobileWrap wrapper client qui ajoute pull-to-refresh + FAB
  * autour du contenu du Tableau de bord.
  *
  * - Pull-to-refresh : `router.refresh()` re-render la route avec

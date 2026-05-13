@@ -14,7 +14,7 @@ import { requireAdmin } from "@/lib/session";
  *
  * Pourquoi pas une presigned URL ? Parce que les buckets R2 n'ont pas de CORS
  * activé par défaut, et un PUT direct depuis le browser échoue silencieusement.
- * En proxant via Next.js, on évite complètement le souci CORS · le fichier
+ * En proxant via Next.js, on évite complètement le souci CORS le fichier
  * arrive en multipart côté serveur, on le streame vers R2 en Node, c'est fini.
  *
  * Limite à 5 MB côté Next (config par défaut OK pour ce cas).
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
   const file = form.get("file");
   const restaurantId = form.get("restaurantId");
   const kind = form.get("kind");
-  // URL de l'image à remplacer (optionnel) · l'ImageUploader la passe quand
+  // URL de l'image à remplacer (optionnel) l'ImageUploader la passe quand
   // l'utilisateur remplace une image existante. On la supprime après l'upload
   // de la nouvelle pour ne pas laisser de déchets dans R2 (delete on replace).
   const previousUrl = form.get("previousUrl");
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
       err instanceof Error ? `${err.name}: ${err.message}` : String(err);
     return NextResponse.json(
       {
-        error: `Upload R2 échoué · ${detail}`,
+        error: `Upload R2 échoué ${detail}`,
         hint:
           "Causes courantes : R2_ACCOUNT_ID erroné, clé/secret avec mauvaises permissions (besoin Object Read+Write sur le bucket), ou R2_BUCKET_NAME inexistant.",
       },
