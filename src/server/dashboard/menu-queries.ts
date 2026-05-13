@@ -18,6 +18,10 @@ export async function getMenuTree(restaurantId: bigint) {
             include: {
               vignettes: { include: { vignette: true } },
               allergenes: { include: { allergene: true } },
+              suggestionsIn: {
+                orderBy: { position: "asc" },
+                select: { suggestionId: true, position: true },
+              },
             },
           },
         },
@@ -27,6 +31,10 @@ export async function getMenuTree(restaurantId: bigint) {
         include: {
           vignettes: { include: { vignette: true } },
           allergenes: { include: { allergene: true } },
+          suggestionsIn: {
+            orderBy: { position: "asc" },
+            select: { suggestionId: true, position: true },
+          },
         },
       },
     },

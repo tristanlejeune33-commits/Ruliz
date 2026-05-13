@@ -83,6 +83,8 @@ const schema = z.object({
   descriptionRemarque: z.string().max(2000),
   vignettes: z.array(z.number().int()),
   allergenes: z.array(z.number().int()),
+  /** IDs (string car BigInt) des produits à proposer comme "marier avec". */
+  suggestions: z.array(z.string()),
   scheduleType: z.enum(["always", "lunch", "dinner", "happy_hour", "custom"]),
   scheduleStart: z.string().max(5),
   scheduleEnd: z.string().max(5),
@@ -147,6 +149,10 @@ export function ProduitDialog({
       descriptionRemarque: produit?.descriptionRemarque ?? "",
       vignettes: produit?.vignettes.map((v) => v.vignetteId) ?? [],
       allergenes: produit?.allergenes.map((a) => a.allergeneId) ?? [],
+      suggestions:
+        (produit as unknown as {
+          suggestionsIn?: Array<{ suggestionId: string | bigint }>;
+        })?.suggestionsIn?.map((s) => s.suggestionId.toString()) ?? [],
       scheduleType:
         ((produit as unknown as { scheduleType?: string })?.scheduleType as
           | "always"
@@ -508,6 +514,92 @@ export function ProduitDialog({
                         </label>
                       );
                     })}
+                  </div>
+                </div>
+
+                {/* === Marier avec : suggestions d'accompagnement ===
+                    Flat array de tous les produits du resto (sauf le produit
+                    courant). Quand un client ouvre la modale produit sur la
+                    carte publique, il voit les suggestions en bas avec un
+                    "Marier avec : <plat 1>, <plat 2>..." */}
+                <div>
+                  <Label>Marier avec</Label>
+                  <p className="mb-2 mt-1 text-xs text-[var(--text-muted)]">
+                    Suggestions d&apos;accompagnement affichées à tes clients
+                    dans la modale produit (ex: un plat suggère un vin).
+                  </p>
+                  <div className="max-h-48 overflow-y-auto rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-2">
+                    {(() => {
+                      // Flat array de tous les produits du resto, en excluant
+                      // le produit courant (pas de self-pairing).
+                      const allProducts: Array<{ id: string; titre: string; catTitre: string }> = [];
+                      categories.forEach((cat) => {
+                        cat.produits.forEach((p) => {
+                          if (!produit || p.id !== produit.id) {
+                            allProducts.push({
+                              id: p.id,
+                              titre: p.titre,
+                              catTitre: cat.titre,
+                            });
+                          }
+                        });
+                        cat.children?.forEach((subCat) => {
+                          subCat.produits.forEach((p) => {
+                            if (!produit || p.id !== produit.id) {
+                              allProducts.push({
+                                id: p.id,
+                                titre: p.titre,
+                                catTitre: `${cat.titre} › ${subCat.titre}`,
+                              });
+                            }
+                          });
+                        });
+                      });
+
+                      if (allProducts.length === 0) {
+                        return (
+                          <p className="px-2 py-3 text-xs text-[var(--text-muted)]">
+                            Aucun autre produit à proposer. Crée d&apos;autres
+                            plats pour les marier ensemble.
+                          </p>
+                        );
+                      }
+
+                      return (
+                        <div className="space-y-1">
+                          {allProducts.map((p) => {
+                            const checked = form
+                              .watch("suggestions")
+                              .includes(p.id);
+                            return (
+                              <label
+                                key={p.id}
+                                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-[var(--bg-glass-hover)]"
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={(value) => {
+                                    const current = form.getValues("suggestions");
+                                    const next = value
+                                      ? [...current, p.id]
+                                      : current.filter((id) => id !== p.id);
+                                    form.setValue("suggestions", next, {
+                                      shouldDirty: true,
+                                    });
+                                  }}
+                                />
+                                <span className="flex-1 truncate font-medium">
+                                  {p.titre}
+                                </span>
+                                <span className="text-[10px] text-[var(--text-muted)]">
+                                  {p.catTitre}
+                                </span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 

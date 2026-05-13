@@ -341,6 +341,9 @@ const produitSchema = z.object({
   descriptionRemarque: z.string().max(2000).optional().or(z.literal("")),
   vignettes: z.array(z.number().int()).default([]),
   allergenes: z.array(z.number().int()).default([]),
+  /** IDs des autres produits du resto à proposer comme "marier avec".
+   *  Le client de la carte publique verra ces suggestions dans la modale produit. */
+  suggestions: z.array(z.string()).default([]),
   scheduleType: z
     .enum(["always", "lunch", "dinner", "happy_hour", "custom"])
     .optional(),
@@ -411,6 +414,30 @@ export async function createProduit(input: unknown): Promise<ActionResult<{ id: 
     } as never,
   });
 
+  // Suggestions "marier avec" : crée les liens ProduitSuggestion une fois
+  // l'ID du nouveau produit connu. Skip si vide.
+  if (data.suggestions.length > 0) {
+    const validIds = data.suggestions
+      .map((s) => {
+        try {
+          return BigInt(s);
+        } catch {
+          return null;
+        }
+      })
+      .filter((id): id is bigint => id !== null && id !== created.id);
+    if (validIds.length > 0) {
+      await prisma.produitSuggestion.createMany({
+        data: validIds.map((suggestionId, idx) => ({
+          produitId: created.id,
+          suggestionId,
+          position: idx,
+        })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
   await triggerProduitTranslation(created.id, cat.restaurantId);
   await bumpRestaurantCaches(cat.restaurantId);
   return { ok: true, data: { id: created.id.toString() } };
@@ -464,6 +491,22 @@ export async function updateProduit(input: unknown): Promise<ActionResult> {
     }),
     prisma.produitAllergene.createMany({
       data: data.allergenes.map((a) => ({ produitId: id, allergeneId: a })),
+      skipDuplicates: true,
+    }),
+    // Suggestions "marier avec" : delete + recreate pour gérer ajouts/retraits
+    prisma.produitSuggestion.deleteMany({ where: { produitId: id } }),
+    prisma.produitSuggestion.createMany({
+      data: data.suggestions
+        .map((s, idx) => {
+          try {
+            const suggId = BigInt(s);
+            if (suggId === id) return null; // skip self-reference
+            return { produitId: id, suggestionId: suggId, position: idx };
+          } catch {
+            return null;
+          }
+        })
+        .filter((x): x is { produitId: bigint; suggestionId: bigint; position: number } => x !== null),
       skipDuplicates: true,
     }),
   ]);
