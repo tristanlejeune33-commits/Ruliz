@@ -31,7 +31,11 @@ import { headers } from "next/headers";
  */
 
 export const IMPERSONATE_COOKIE = "ruliz_impersonate_user_id";
-const IMPERSONATE_TTL_SECONDS = 60 * 60 * 8; // 8 heures
+// TTL réduit à 1h (vs 8h initial) : durcissement de défense en profondeur.
+// Si un admin oublie de quitter le mode SAV, son cookie expire au bout d'1h
+// au lieu de rester actif toute une journée. Plus court = moins de fenêtre
+// d'attaque si la session admin est compromise.
+const IMPERSONATE_TTL_SECONDS = 60 * 60; // 1 heure
 
 /** Lit l'ID impersonné depuis le cookie. null si pas d'impersonation. */
 export async function getImpersonatedUserId(): Promise<number | null> {

@@ -57,6 +57,39 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // === Content-Security-Policy ===
+    // Whitelist explicite des sources de script/style/connexion autorisées.
+    // Note importante : Next.js 15 + Tailwind nécessitent 'unsafe-inline' pour
+    // les styles (CSS-in-JS, ordered class attributes). Pour les scripts on
+    // garde 'unsafe-inline' faute de nonces (plus de boulot à introduire).
+    // C'est imparfait mais déjà mieux qu'aucune CSP : bloque les requêtes
+    // sortantes vers des domaines non whitelistés (exfiltration data).
+    const cspDirectives = [
+      "default-src 'self'",
+      // Scripts : Next.js inline + Stripe.js + Sentry browser
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://checkout.stripe.com https://*.ingest.sentry.io https://browser.sentry-cdn.com",
+      // Styles : Tailwind a besoin de unsafe-inline (class attributes ordered)
+      "style-src 'self' 'unsafe-inline'",
+      // Images : self + data: (icônes inlinées) + blob: (uploads) + R2 buckets
+      "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.cloudflare.com",
+      // Fonts : self + data: (fontes inlinées) + Geist Sans/Mono via next/font
+      "font-src 'self' data:",
+      // Connexions API : self + Stripe + Sentry + Anthropic + Inngest + Brevo
+      "connect-src 'self' https://api.stripe.com https://*.ingest.sentry.io https://api.anthropic.com https://api.inngest.com https://api.brevo.com",
+      // Frames : Stripe Checkout (paiement) — autorisé en frame
+      "frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://hooks.stripe.com",
+      // Forms : self uniquement (sauf checkout Stripe pour le POST initial)
+      "form-action 'self' https://checkout.stripe.com",
+      // Refus d'être embarqué dans un iframe externe (clickjacking)
+      "frame-ancestors 'self'",
+      // Base URI : empêche <base> injecté de modifier les URL relatives
+      "base-uri 'self'",
+      // Bloque <object>/<embed> (flash legacy)
+      "object-src 'none'",
+      // Force HTTPS pour toutes les sub-resources
+      "upgrade-insecure-requests",
+    ].join("; ");
+
     return [
       {
         source: "/(.*)",
@@ -67,6 +100,15 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          // HSTS : force HTTPS pendant 1 an + sous-domaines (ruliz.fr et tous
+          // les sous-domaines). On NE met PAS `preload` pour garder la
+          // possibilité de revenir en arrière en cas de souci certif.
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+          // Content-Security-Policy
+          { key: "Content-Security-Policy", value: cspDirectives },
         ],
       },
       // Carte publique : Cloudflare edge cache 60s + stale-while-revalidate 5 min.

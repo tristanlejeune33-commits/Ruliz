@@ -16,6 +16,7 @@ import {
   Building2,
 } from "lucide-react";
 import { signOut } from "@/lib/auth-client";
+import { clearSessionCookies } from "@/server/auth/actions";
 import {
   BottomSheet,
   BottomSheetBody,
@@ -95,7 +96,11 @@ const ACCOUNT_SECTION: DrawerSection = {
       href: "#",
       icon: LogOut,
       destructive: true,
-      onSelect: () => signOut(),
+      onSelect: async () => {
+        // Cleanup cookies session-scoped avant signOut
+        await clearSessionCookies().catch(() => null);
+        await signOut();
+      },
     },
   ],
 };

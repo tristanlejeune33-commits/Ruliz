@@ -281,6 +281,32 @@ export async function grantPlanForDays(input: {
   });
   const adminUserId = authUser?.userId ?? null;
 
+  // === Rate-limit défense en profondeur ===
+  // Max 10 octrois de plan offert / admin / 5 min. Un usage légitime
+  // dépasse rarement 1-2 par session. Au-delà = comportement suspect
+  // (compte admin compromis qui mass-grant des Premium gratuits).
+  // Variante Redis pour partager le compteur si on scale horizontalement
+  // (fallback in-memory si Redis indispo).
+  if (adminUserId) {
+    const { checkRateLimitRedis } = await import("@/lib/rate-limit");
+    const rl = await checkRateLimitRedis(
+      `grant-plan:${adminUserId}`,
+      10,
+      5 * 60_000,
+    );
+    if (!rl.allowed) {
+      console.warn(
+        `[security] grantPlanForDays rate-limited for admin ${adminUserId} ` +
+          `(${rl.limit} octrois en 5 min). Possible compromission de compte.`,
+      );
+      return {
+        ok: false,
+        error:
+          "Trop d'octrois récents. Pour ta sécurité, attends quelques minutes avant de réessayer (ou contacte un autre admin).",
+      };
+    }
+  }
+
   const current = await prisma.restaurant.findUnique({
     where: { id: bigId },
     select: { planOffertExpiresAt: true } as never,

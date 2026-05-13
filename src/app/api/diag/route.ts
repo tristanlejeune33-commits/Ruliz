@@ -1,19 +1,38 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { isR2Configured, uploadBuffer } from "@/lib/r2";
 
 /**
- * Diagnostic endpoint — accessible à tout user connecté.
- * Affiche uniquement la présence (boolean) des variables d'env, et fait
- * un vrai test PUT vers R2 pour reporter l'erreur exacte si ça pète.
+ * Diagnostic endpoint — **admin uniquement** (verrouillé).
  *
- * Aucun secret n'est jamais retourné, juste des booléens et messages d'erreur.
+ * Avant : accessible à tout user connecté, ce qui exposait :
+ *   - L'énumération des services configurés (Stripe, Anthropic, R2, Brevo…)
+ *   - L'URL R2 publique (recon réseau)
+ *   - Un PUT R2 réel via ?r2test=1 → pollution de bucket triviale
+ *
+ * Maintenant : check session + role 'admin' → 401/403 sinon. Pas de
+ * redirect() ici (on est dans une route handler API, on veut un vrai
+ * status code pas un 307).
  */
 export async function GET(req: Request) {
+  // 1. Auth : doit être connecté
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // 2. Authz : doit être admin (rôle métier sur la table users)
+  const authUser = await prisma.authUser.findUnique({
+    where: { id: session.user.id },
+    select: { user: { select: { role: true } } },
+  });
+  if (authUser?.user?.role !== "admin") {
+    return NextResponse.json(
+      { error: "Forbidden — admin role required" },
+      { status: 403 },
+    );
   }
 
   const present = (k: string) =>

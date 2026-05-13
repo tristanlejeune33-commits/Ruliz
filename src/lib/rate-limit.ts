@@ -1,14 +1,18 @@
 /**
- * Rate-limit in-memory pour les routes publiques (carte, API publique).
+ * Rate-limit hybride : in-memory (Edge-compatible) + Redis (Node-only).
+ *
+ * Deux entrées :
+ *   - `checkRateLimit(key, limit, windowMs)` : in-memory, Edge-compatible
+ *     → utilisée par le middleware (qui tourne en Edge runtime)
+ *   - `checkRateLimitRedis(key, limit, windowMs)` : Redis-backed, async,
+ *     Node-only → utilisée par les server actions sensibles (octroi de
+ *     plan offert, etc.) pour garantir le rate-limit même si on scale
+ *     horizontalement Railway (chaque instance partagerait alors le store
+ *     in-memory et un attaquant pourrait contourner par round-robin)
  *
  * Implémentation : Map<key, { count, resetAt }> avec fenêtre glissante
  * de N secondes. Auto-purge des entrées expirées tous les 100 hits pour
  * éviter de faire fuir la mémoire.
- *
- * Pourquoi pas Redis ? Le middleware Next.js 15 tourne en Edge runtime
- * par défaut, et `ioredis` (notre client Redis) n'est pas compatible Edge.
- * In-memory marche très bien tant qu'on a 1 instance Railway. Si on scale
- * horizontalement, on swap vers @upstash/ratelimit + Redis HTTP.
  *
  * Le store est sur `globalThis` pour survivre aux hot reloads en dev.
  */
@@ -89,4 +93,53 @@ export function checkRateLimit(
     resetAt: existing.resetAt,
     retryAfter: Math.ceil((existing.resetAt - now) / 1000),
   };
+}
+
+/**
+ * Variante Redis-backed pour les server actions sensibles (Node runtime only).
+ *
+ * Utilise INCR + EXPIRE atomique pour un compteur distribué :
+ *   1. INCR sur la clé → retourne le nouveau count
+ *   2. Si count === 1 (1ère fois) → EXPIRE pour fixer la fenêtre
+ *   3. allowed = count <= limit
+ *
+ * En cas d'indisponibilité Redis (down, timeout), fallback transparent vers
+ * la version in-memory pour ne pas bloquer les actions légitimes.
+ */
+export async function checkRateLimitRedis(
+  key: string,
+  limit: number,
+  windowMs: number,
+): Promise<RateLimitResult> {
+  // Import dynamique : évite que ce module soit bundlé pour Edge runtime
+  // (middleware) où ioredis ne fonctionne pas.
+  try {
+    const { redis } = await import("./redis");
+    if (!redis) return checkRateLimit(key, limit, windowMs);
+
+    const redisKey = `ratelimit:${key}`;
+    const count = await redis.incr(redisKey);
+    if (count === 1) {
+      // Première requête de la fenêtre → définit l'expiration
+      await redis.pexpire(redisKey, windowMs);
+    }
+    const ttl = await redis.pttl(redisKey);
+    const resetAt = Date.now() + (ttl > 0 ? ttl : windowMs);
+
+    return {
+      allowed: count <= limit,
+      limit,
+      remaining: Math.max(0, limit - count),
+      resetAt,
+      retryAfter: Math.ceil((resetAt - Date.now()) / 1000),
+    };
+  } catch (err) {
+    // Redis indisponible → fallback in-memory (toujours mieux que rien)
+    console.warn(
+      "[rate-limit] Redis indisponible, fallback in-memory pour:",
+      key,
+      err instanceof Error ? err.message : err,
+    );
+    return checkRateLimit(key, limit, windowMs);
+  }
 }

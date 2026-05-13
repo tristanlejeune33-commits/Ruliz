@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { authClient } from "@/lib/auth-client";
+import { clearSessionCookies } from "@/server/auth/actions";
 
 interface UserMenuProps {
   user: {
@@ -37,6 +38,9 @@ export function UserMenu({ user, signOutRedirect = "/login" }: UserMenuProps) {
   const router = useRouter();
 
   async function handleSignOut() {
+    // Nettoie cookies session-scoped (active resto, impersonation) avant le
+    // signOut Better-Auth — évite qu'ils survivent au changement de compte.
+    await clearSessionCookies().catch(() => null);
     await authClient.signOut();
     router.push(signOutRedirect);
     router.refresh();

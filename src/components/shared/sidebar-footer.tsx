@@ -25,6 +25,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { authClient } from "@/lib/auth-client";
+import { clearSessionCookies } from "@/server/auth/actions";
 import { useSidebarCollapse } from "./sidebar-collapse-context";
 import { usePanelLang } from "./panel-lang-context";
 
@@ -64,6 +65,10 @@ export function SidebarFooter({
   const { t } = usePanelLang();
 
   async function handleSignOut() {
+    // Sécu : nettoie d'abord les cookies session-scoped (active restaurant,
+    // impersonation admin) AVANT le signOut Better-Auth pour éviter qu'ils
+    // survivent à un changement de compte sur le même navigateur.
+    await clearSessionCookies().catch(() => null);
     await authClient.signOut();
     router.push(signOutRedirect);
     router.refresh();
