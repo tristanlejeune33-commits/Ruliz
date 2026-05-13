@@ -100,12 +100,15 @@ export default async function RestaurantPage() {
               | "it"
               | "pt"
               | "zh") ?? "fr",
-          lunchStart: data.lunchStart ?? "11:30",
-          lunchEnd: data.lunchEnd ?? "15:00",
-          dinnerStart: data.dinnerStart ?? "18:30",
-          dinnerEnd: data.dinnerEnd ?? "23:00",
-          happyHourStart: data.happyHourStart ?? "18:00",
-          happyHourEnd: data.happyHourEnd ?? "19:00",
+          // String vide si null en DB (au lieu de forcer la valeur par défaut)
+          // → permet à l'user de "vider" un horaire pour signaler qu'il n'a
+          // pas ce créneau de service (pas de lunch / pas de happy hour).
+          lunchStart: data.lunchStart ?? "",
+          lunchEnd: data.lunchEnd ?? "",
+          dinnerStart: data.dinnerStart ?? "",
+          dinnerEnd: data.dinnerEnd ?? "",
+          happyHourStart: data.happyHourStart ?? "",
+          happyHourEnd: data.happyHourEnd ?? "",
           theme: (data.theme as "light" | "dark") ?? "light",
           fontStyle: (data.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",
           couleurPrimaire: data.couleurPrimaire ?? "#4870e0",

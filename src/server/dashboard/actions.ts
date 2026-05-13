@@ -119,12 +119,16 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
   // === ÉTAPE 2 : sauvegarde EXPLICITE des horaires en raw SQL ===
   // Avant le Prisma update général. Garantit que les horaires sont écrites
   // en DB peu importe ce qui plante après (cache Prisma client, etc.).
-  const lunchStart = data.lunchStart || "11:30";
-  const lunchEnd = data.lunchEnd || "15:00";
-  const dinnerStart = data.dinnerStart || "18:30";
-  const dinnerEnd = data.dinnerEnd || "23:00";
-  const happyHourStart = data.happyHourStart || "18:00";
-  const happyHourEnd = data.happyHourEnd || "19:00";
+  //
+  // Important : on autorise les valeurs vides (null) si l'user a délibérément
+  // vidé le champ. Pas de fallback automatique sur la valeur par défaut
+  // (sinon impossible de "ne pas avoir" d'happy hour par exemple).
+  const lunchStart = empty(data.lunchStart);
+  const lunchEnd = empty(data.lunchEnd);
+  const dinnerStart = empty(data.dinnerStart);
+  const dinnerEnd = empty(data.dinnerEnd);
+  const happyHourStart = empty(data.happyHourStart);
+  const happyHourEnd = empty(data.happyHourEnd);
   try {
     await prisma.$executeRawUnsafe(
       `UPDATE "restaurants" SET
@@ -173,12 +177,12 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         pays: empty(data.pays),
         deviseDefault: empty(data.deviseDefault) ?? "€",
         langueNative: data.langueNative ?? "fr",
-        lunchStart: data.lunchStart || "11:30",
-        lunchEnd: data.lunchEnd || "15:00",
-        dinnerStart: data.dinnerStart || "18:30",
-        dinnerEnd: data.dinnerEnd || "23:00",
-        happyHourStart: data.happyHourStart || "18:00",
-        happyHourEnd: data.happyHourEnd || "19:00",
+        lunchStart,
+        lunchEnd,
+        dinnerStart,
+        dinnerEnd,
+        happyHourStart,
+        happyHourEnd,
         theme: data.theme ?? "light",
         fontStyle: data.fontStyle ?? "editorial",
         couleurPrimaire: empty(data.couleurPrimaire),
@@ -214,12 +218,12 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
       ["pays", empty(data.pays)],
       ["devise_default", empty(data.deviseDefault) ?? "€"],
       ["langue_native", data.langueNative ?? "fr"],
-      ["lunch_start", data.lunchStart || "11:30"],
-      ["lunch_end", data.lunchEnd || "15:00"],
-      ["dinner_start", data.dinnerStart || "18:30"],
-      ["dinner_end", data.dinnerEnd || "23:00"],
-      ["happy_hour_start", data.happyHourStart || "18:00"],
-      ["happy_hour_end", data.happyHourEnd || "19:00"],
+      ["lunch_start", lunchStart],
+      ["lunch_end", lunchEnd],
+      ["dinner_start", dinnerStart],
+      ["dinner_end", dinnerEnd],
+      ["happy_hour_start", happyHourStart],
+      ["happy_hour_end", happyHourEnd],
       ["theme", data.theme ?? "light"],
       ["font_style", data.fontStyle ?? "editorial"],
       ["couleur_primaire", empty(data.couleurPrimaire)],
