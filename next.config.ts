@@ -54,6 +54,17 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.r2.dev",
       },
+      // Photos seed démo (Bistrot Ruliz) — remplaçables par des uploads R2
+      // quand le client met ses vraies photos. Sans ça, next/image refuse
+      // de charger les URLs Unsplash → toast d'erreur et placeholder vide.
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
+      {
+        protocol: "https",
+        hostname: "images.pexels.com",
+      },
     ],
   },
   async headers() {
@@ -71,7 +82,9 @@ const nextConfig: NextConfig = {
       // Styles : Tailwind a besoin de unsafe-inline (class attributes ordered)
       "style-src 'self' 'unsafe-inline'",
       // Images : self + data: (icônes inlinées) + blob: (uploads) + R2 buckets
-      "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.cloudflare.com",
+      // + flagcdn (drapeaux switch langue) + Unsplash/Pexels (photos seed démo,
+      // remplaçables par upload R2 quand le client met ses vraies photos)
+      "img-src 'self' data: blob: https://*.r2.cloudflarestorage.com https://*.r2.dev https://*.cloudflare.com https://flagcdn.com https://images.unsplash.com https://images.pexels.com",
       // Fonts : self + data: (fontes inlinées) + Geist Sans/Mono via next/font
       "font-src 'self' data:",
       // Connexions API : self + Stripe + Sentry + Anthropic + Inngest + Brevo
