@@ -4,24 +4,21 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 
 /**
- * "Mode démo admin" — permet à un compte admin (Tristan) d'utiliser
- * /dashboard avec un restaurant fictif lui appartenant pour préparer
- * des démos prospects ou tester l'UI client end-to-end.
+ * "Mode démo admin" — restaurant fictif lié au compte admin pour préparer
+ * des démos prospects (carte complète qui démontre 100% des features Ruliz).
  *
  * Flow :
  *   1. Click "Ma carte démo" en sidebar admin → GET /admin/demo
- *   2. ensureAdminDemoRestaurant() crée le resto démo si manquant :
- *      - Logo Ruliz, bannière, branding bleu, plan premium
- *      - 5 catégories × 4 plats = 20 produits avec photos Unsplash
- *      - Un jeu roulette d'avis Google avec 5 lots
- *      - Un popup "Happy Hour" pour démontrer le système
- *   3. Si un resto démo existe mais avec peu de contenu (<8 produits),
- *      régénère. Sinon respecte le custom du user.
- *   4. Cookies admin_demo + active_restaurant set sur la NextResponse,
- *      redirige vers /dashboard.
+ *   2. ensureAdminDemoRestaurant() crée le Bistrot Ruliz si manquant :
+ *      - Logo Ruliz + bannière + branding bleu signature
+ *      - 5 catégories dont 1 avec sous-catégories (Plats → Viandes/Poissons/Végétariens)
+ *      - 20 produits avec photos, vignettes, allergènes, suggestions d'accompagnement
+ *      - Une roulette d'avis Google (5 lots)
+ *      - 2 pop-ups (Happy Hour 18-20h + Brunch dominical)
+ *   3. Régénère si <8 produits (ancien seed obsolète), respecte custom sinon.
+ *   4. Cookies admin_demo + active_restaurant set sur la NextResponse.
  *
- * Distinct du système d'impersonation (lib/impersonation.ts) qui sert
- * au SAV.
+ * Distinct du système d'impersonation (lib/impersonation.ts) qui sert au SAV.
  */
 
 export const ADMIN_DEMO_COOKIE = "ruliz_admin_demo";
@@ -47,10 +44,6 @@ export async function clearAdminDemoFlag() {
   cookieStore.delete(ADMIN_DEMO_COOKIE);
 }
 
-/**
- * Retourne le resto démo de l'admin. Crée le tout si pas existant,
- * régénère si l'ancien seed était pauvre.
- */
 export async function ensureAdminDemoRestaurant(adminUserId: number) {
   const existing = await prisma.restaurant.findFirst({
     where: { userId: adminUserId },
@@ -66,13 +59,12 @@ export async function ensureAdminDemoRestaurant(adminUserId: number) {
       0,
     );
     if (totalProduits >= 8) {
-      // Déjà customisé (≥8 produits) → on respecte
       const fresh = await prisma.restaurant.findUnique({
         where: { id: existing.id },
       });
       return fresh!;
     }
-    // Ancien seed pauvre → on drop tout (cascade) et on regénère
+    // Seed pauvre ou intermédiaire → régénère tout
     await prisma.restaurant.delete({ where: { id: existing.id } });
   }
 
@@ -80,14 +72,11 @@ export async function ensureAdminDemoRestaurant(adminUserId: number) {
 }
 
 // ===========================================================================
-// PHOTOS UNSPLASH — URLs stables, format direct, w=800 pour optimisation
-// Si l'une casse, le composant carte-public fallback gracieusement (pas
-// d'image affichée, pas de crash).
+// PHOTOS UNSPLASH — URLs stables. Si une casse, carte-public fallback OK.
 // ===========================================================================
 const PHOTO = {
   banniere:
     "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1600&q=80&auto=format&fit=crop",
-  // Apéritifs & Vins
   cremant:
     "https://images.unsplash.com/photo-1605270012917-bf357a1fae9e?w=800&q=80&auto=format&fit=crop",
   margaux:
@@ -96,7 +85,6 @@ const PHOTO = {
     "https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=800&q=80&auto=format&fit=crop",
   spritz:
     "https://images.unsplash.com/photo-1551751299-1b51cab2694c?w=800&q=80&auto=format&fit=crop",
-  // Entrées
   tartare:
     "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80&auto=format&fit=crop",
   burrata:
@@ -105,7 +93,6 @@ const PHOTO = {
     "https://images.unsplash.com/photo-1606756790138-261d2b21cd75?w=800&q=80&auto=format&fit=crop",
   veloute:
     "https://images.unsplash.com/photo-1547592180-85f173990554?w=800&q=80&auto=format&fit=crop",
-  // Plats
   bavette:
     "https://images.unsplash.com/photo-1546964124-0cce460f38ef?w=800&q=80&auto=format&fit=crop",
   magret:
@@ -113,7 +100,6 @@ const PHOTO = {
   risotto:
     "https://images.unsplash.com/photo-1476124369491-e7addf5db371?w=800&q=80&auto=format&fit=crop",
   lieu: "https://images.unsplash.com/photo-1485921325833-c519f76c4927?w=800&q=80&auto=format&fit=crop",
-  // Desserts
   cannele:
     "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=800&q=80&auto=format&fit=crop",
   tiramisu:
@@ -122,7 +108,6 @@ const PHOTO = {
     "https://images.unsplash.com/photo-1606313564200-e75d5e30476c?w=800&q=80&auto=format&fit=crop",
   cafeGourmand:
     "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=800&q=80&auto=format&fit=crop",
-  // Boissons
   espresso:
     "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=800&q=80&auto=format&fit=crop",
   the: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&q=80&auto=format&fit=crop",
@@ -130,35 +115,110 @@ const PHOTO = {
     "https://images.unsplash.com/photo-1564725073220-14dc4c4f8d3a?w=800&q=80&auto=format&fit=crop",
   jusPomme:
     "https://images.unsplash.com/photo-1576185850227-1f72b7f8d483?w=800&q=80&auto=format&fit=crop",
+  brunch:
+    "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=1200&q=80&auto=format&fit=crop",
 } as const;
 
 /**
- * Génère un Bistrot Ruliz complet : 20 plats, jeu roulette, popup happy
- * hour, logo + bannière, branding bleu Ruliz. Plan premium pour
- * démontrer toutes les features Ruliz dans une démo prospect.
+ * Crée le Bistrot Ruliz complet — démo end-to-end de toutes les features.
  */
 async function createRichDemoRestaurant(adminUserId: number) {
+  // Récupère les IDs des vignettes & allergènes (seedés au boot, idempotent
+  // dans prisma/seed.ts). On les query AVANT la transaction pour éviter de
+  // les re-fetch dans chaque branche.
+  const [vignettes, allergenes] = await Promise.all([
+    prisma.vignette.findMany(),
+    prisma.allergene.findMany(),
+  ]);
+  const vId = (code: string) =>
+    vignettes.find((v) => v.code === code)?.id ?? null;
+  const aId = (code: string) =>
+    allergenes.find((a) => a.code === code)?.id ?? null;
+
   return prisma.$transaction(async (tx) => {
+    // ============== RESTAURANT ==============
     const resto = await tx.restaurant.create({
       data: {
         userId: adminUserId,
         nom: "Bistrot Ruliz",
         ville: "Bordeaux",
+        codePostal: "33000",
+        adresse: "12 rue Sainte-Catherine",
         pays: "France",
         plan: "premium",
         statut: "actif",
         deviseDefault: "€",
         description:
-          "Une démo vivante de Ruliz — cette carte illustre tout ce que vous pouvez faire avec votre menu digital : photos, traductions automatiques en 14 langues, jeu d'avis Google, pop-ups Happy Hour, suggestions d'accompagnement.",
+          "Une démo vivante de Ruliz — cette carte illustre TOUTES les features : photos, allergènes, suggestions d'accompagnement, traductions 14 langues, jeu d'avis Google, pop-ups Happy Hour, sous-catégories.",
         theme: "light",
         fontStyle: "editorial",
         couleurPrimaire: "#26438A",
         logoUrl: "/brand/logo-mark.png",
         banniereUrl: PHOTO.banniere,
+        // Réseaux sociaux pour montrer le footer carte publique
+        instagramUrl: "https://instagram.com/ruliz",
+        facebookUrl: "https://facebook.com/ruliz",
+        googleReviewUrl: "https://g.page/r/ruliz",
+        siteWeb: "https://ruliz.fr",
       } satisfies Prisma.RestaurantUncheckedCreateInput,
     });
 
-    // ============== APÉRITIFS & VINS ==============
+    // Helper interne pour créer un produit avec ses relations en une fois.
+    async function makeProduit(data: {
+      categorieId: bigint;
+      titre: string;
+      description?: string;
+      prix: string;
+      descriptionPrix?: string;
+      position: number;
+      estNouveau?: boolean;
+      origine?: string;
+      titreRemarque?: string;
+      descriptionRemarque?: string;
+      imageUrl?: string;
+      vignetteCodes?: string[];
+      allergeneCodes?: string[];
+    }) {
+      const produit = await tx.produit.create({
+        data: {
+          categorieId: data.categorieId,
+          titre: data.titre,
+          description: data.description ?? null,
+          prix: new Prisma.Decimal(data.prix),
+          devise: "€",
+          descriptionPrix: data.descriptionPrix ?? null,
+          position: data.position,
+          estNouveau: data.estNouveau ?? false,
+          origine: data.origine ?? null,
+          titreRemarque: data.titreRemarque ?? null,
+          descriptionRemarque: data.descriptionRemarque ?? null,
+          imageUrl: data.imageUrl ?? null,
+        },
+      });
+      // Vignettes (signature, fait_maison, bio, local…)
+      if (data.vignetteCodes?.length) {
+        const links = data.vignetteCodes
+          .map((c) => vId(c))
+          .filter((id): id is number => id !== null)
+          .map((vignetteId) => ({ produitId: produit.id, vignetteId }));
+        if (links.length) {
+          await tx.produitVignette.createMany({ data: links });
+        }
+      }
+      // Allergènes (gluten, lait, oeufs…)
+      if (data.allergeneCodes?.length) {
+        const links = data.allergeneCodes
+          .map((c) => aId(c))
+          .filter((id): id is number => id !== null)
+          .map((allergeneId) => ({ produitId: produit.id, allergeneId }));
+        if (links.length) {
+          await tx.produitAllergene.createMany({ data: links });
+        }
+      }
+      return produit;
+    }
+
+    // ============== CATÉGORIE 1 — APÉRITIFS & VINS ==============
     const aperitifs = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -167,52 +227,50 @@ async function createRichDemoRestaurant(adminUserId: number) {
         position: 0,
       },
     });
-    await tx.produit.createMany({
-      data: [
-        {
-          categorieId: aperitifs.id,
-          titre: "Coupe de Crémant de Bordeaux",
-          description: "Domaine local, bulles fines et notes briochées.",
-          prix: new Prisma.Decimal("6.50"),
-          devise: "€",
-          position: 0,
-          imageUrl: PHOTO.cremant,
-        },
-        {
-          categorieId: aperitifs.id,
-          titre: "Margaux 2019",
-          description: "Médoc · grand cru bourgeois · arômes de fruits noirs.",
-          prix: new Prisma.Decimal("12.00"),
-          descriptionPrix: "15cl",
-          devise: "€",
-          origine: "FR",
-          position: 1,
-          imageUrl: PHOTO.margaux,
-        },
-        {
-          categorieId: aperitifs.id,
-          titre: "Cocktail « Le Ruliz »",
-          description:
-            "Gin local, citron vert, sirop de gentiane, branche de romarin fumée.",
-          prix: new Prisma.Decimal("9.50"),
-          devise: "€",
-          position: 2,
-          estNouveau: true,
-          imageUrl: PHOTO.cocktail,
-        },
-        {
-          categorieId: aperitifs.id,
-          titre: "Spritz Aperol",
-          description: "Prosecco, Aperol, eau gazeuse, tranche d'orange.",
-          prix: new Prisma.Decimal("8.00"),
-          devise: "€",
-          position: 3,
-          imageUrl: PHOTO.spritz,
-        },
-      ],
+    const cremant = await makeProduit({
+      categorieId: aperitifs.id,
+      titre: "Coupe de Crémant de Bordeaux",
+      description: "Domaine local, bulles fines et notes briochées.",
+      prix: "6.50",
+      position: 0,
+      imageUrl: PHOTO.cremant,
+      vignetteCodes: ["local", "bio"],
+      allergeneCodes: ["sulfites"],
+    });
+    const margaux = await makeProduit({
+      categorieId: aperitifs.id,
+      titre: "Margaux 2019",
+      description: "Médoc · grand cru bourgeois · arômes de fruits noirs.",
+      prix: "12.00",
+      descriptionPrix: "15cl",
+      position: 1,
+      origine: "FR",
+      imageUrl: PHOTO.margaux,
+      vignetteCodes: ["local", "signature"],
+      allergeneCodes: ["sulfites"],
+    });
+    await makeProduit({
+      categorieId: aperitifs.id,
+      titre: "Cocktail « Le Ruliz »",
+      description:
+        "Gin local, citron vert, sirop de gentiane, branche de romarin fumée.",
+      prix: "9.50",
+      position: 2,
+      estNouveau: true,
+      imageUrl: PHOTO.cocktail,
+      vignetteCodes: ["signature", "fait_maison"],
+    });
+    const spritz = await makeProduit({
+      categorieId: aperitifs.id,
+      titre: "Spritz Aperol",
+      description: "Prosecco, Aperol, eau gazeuse, tranche d'orange.",
+      prix: "8.00",
+      position: 3,
+      imageUrl: PHOTO.spritz,
+      allergeneCodes: ["sulfites"],
     });
 
-    // ============== ENTRÉES ==============
+    // ============== CATÉGORIE 2 — ENTRÉES ==============
     const entrees = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -221,57 +279,57 @@ async function createRichDemoRestaurant(adminUserId: number) {
         position: 1,
       },
     });
-    await tx.produit.createMany({
-      data: [
-        {
-          categorieId: entrees.id,
-          titre: "Tartare de bœuf Charolais",
-          description:
-            "Coupé au couteau, jaune d'œuf bio, câpres, échalotes, frites maison.",
-          prix: new Prisma.Decimal("16.00"),
-          devise: "€",
-          origine: "FR",
-          position: 0,
-          estNouveau: true,
-          imageUrl: PHOTO.tartare,
-        },
-        {
-          categorieId: entrees.id,
-          titre: "Burrata de Pouilles",
-          description:
-            "Crémeuse à souhait, tomates anciennes, pesto basilic maison, focaccia tiède.",
-          prix: new Prisma.Decimal("14.00"),
-          devise: "€",
-          origine: "IT",
-          position: 1,
-          imageUrl: PHOTO.burrata,
-        },
-        {
-          categorieId: entrees.id,
-          titre: "Foie gras maison & confit d'oignons",
-          description: "Mi-cuit au torchon, pain de campagne toasté.",
-          prix: new Prisma.Decimal("18.00"),
-          devise: "€",
-          origine: "FR",
-          position: 2,
-          imageUrl: PHOTO.foieGras,
-        },
-        {
-          categorieId: entrees.id,
-          titre: "Velouté de potimarron",
-          description:
-            "Crème de châtaigne, huile de noisettes torréfiées, croûtons.",
-          prix: new Prisma.Decimal("9.00"),
-          devise: "€",
-          position: 3,
-          titreRemarque: "Végétarien",
-          descriptionRemarque: "Sans gluten possible",
-          imageUrl: PHOTO.veloute,
-        },
-      ],
+    const tartare = await makeProduit({
+      categorieId: entrees.id,
+      titre: "Tartare de bœuf Charolais",
+      description:
+        "Coupé au couteau, jaune d'œuf bio, câpres, échalotes, frites maison.",
+      prix: "16.00",
+      position: 0,
+      estNouveau: true,
+      origine: "FR",
+      imageUrl: PHOTO.tartare,
+      vignetteCodes: ["signature", "fait_maison", "local"],
+      allergeneCodes: ["oeufs", "moutarde", "gluten"],
+    });
+    const burrata = await makeProduit({
+      categorieId: entrees.id,
+      titre: "Burrata de Pouilles",
+      description:
+        "Crémeuse à souhait, tomates anciennes, pesto basilic maison, focaccia tiède.",
+      prix: "14.00",
+      position: 1,
+      origine: "IT",
+      imageUrl: PHOTO.burrata,
+      vignetteCodes: ["fait_maison", "vegetarien"],
+      allergeneCodes: ["lait", "gluten"],
+    });
+    const foieGras = await makeProduit({
+      categorieId: entrees.id,
+      titre: "Foie gras maison & confit d'oignons",
+      description: "Mi-cuit au torchon, pain de campagne toasté.",
+      prix: "18.00",
+      position: 2,
+      origine: "FR",
+      imageUrl: PHOTO.foieGras,
+      vignetteCodes: ["signature", "fait_maison", "local"],
+      allergeneCodes: ["gluten", "sulfites"],
+    });
+    await makeProduit({
+      categorieId: entrees.id,
+      titre: "Velouté de potimarron",
+      description:
+        "Crème de châtaigne, huile de noisettes torréfiées, croûtons.",
+      prix: "9.00",
+      position: 3,
+      titreRemarque: "Plat végétarien",
+      descriptionRemarque: "Disponible sans gluten — précise-le au serveur",
+      imageUrl: PHOTO.veloute,
+      vignetteCodes: ["vegetarien", "bio", "fait_maison"],
+      allergeneCodes: ["lait", "fruits_a_coque"],
     });
 
-    // ============== PLATS ==============
+    // ============== CATÉGORIE 3 — PLATS (avec SOUS-CATÉGORIES) ==============
     const plats = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -280,55 +338,85 @@ async function createRichDemoRestaurant(adminUserId: number) {
         position: 2,
       },
     });
-    await tx.produit.createMany({
-      data: [
-        {
-          categorieId: plats.id,
-          titre: "Bavette d'aloyau, sauce béarnaise",
-          description: "Bœuf race à viande, frites maison, salade de saison.",
-          prix: new Prisma.Decimal("22.00"),
-          devise: "€",
-          origine: "FR",
-          position: 0,
-          imageUrl: PHOTO.bavette,
-        },
-        {
-          categorieId: plats.id,
-          titre: "Magret de canard, jus à la cerise",
-          description:
-            "Cuisson rosée, purée de patate douce, légumes glacés.",
-          prix: new Prisma.Decimal("24.00"),
-          devise: "€",
-          origine: "FR",
-          position: 1,
-          imageUrl: PHOTO.magret,
-        },
-        {
-          categorieId: plats.id,
-          titre: "Risotto aux cèpes",
-          description:
-            "Arborio crémeux, cèpes du Périgord, copeaux de parmesan affiné 24 mois.",
-          prix: new Prisma.Decimal("19.00"),
-          devise: "€",
-          position: 2,
-          estNouveau: true,
-          titreRemarque: "Végétarien",
-          imageUrl: PHOTO.risotto,
-        },
-        {
-          categorieId: plats.id,
-          titre: "Pavé de lieu jaune, beurre blanc",
-          description: "Pêche atlantique, écrasé de pomme de terre à l'huile d'olive.",
-          prix: new Prisma.Decimal("21.00"),
-          devise: "€",
-          origine: "FR",
-          position: 3,
-          imageUrl: PHOTO.lieu,
-        },
-      ],
+    // Sous-catégorie : Viandes
+    const viandes = await tx.categorie.create({
+      data: {
+        restaurantId: resto.id,
+        parentId: plats.id,
+        titre: "Viandes",
+        icone: "beef",
+        position: 0,
+      },
+    });
+    const bavette = await makeProduit({
+      categorieId: viandes.id,
+      titre: "Bavette d'aloyau, sauce béarnaise",
+      description: "Bœuf race à viande, frites maison, salade de saison.",
+      prix: "22.00",
+      position: 0,
+      origine: "FR",
+      imageUrl: PHOTO.bavette,
+      vignetteCodes: ["signature", "local"],
+      allergeneCodes: ["oeufs", "moutarde", "lait"],
+    });
+    const magret = await makeProduit({
+      categorieId: viandes.id,
+      titre: "Magret de canard, jus à la cerise",
+      description: "Cuisson rosée, purée de patate douce, légumes glacés.",
+      prix: "24.00",
+      position: 1,
+      origine: "FR",
+      imageUrl: PHOTO.magret,
+      vignetteCodes: ["signature", "local"],
+      allergeneCodes: ["sulfites"],
+    });
+    // Sous-catégorie : Poissons
+    const poissons = await tx.categorie.create({
+      data: {
+        restaurantId: resto.id,
+        parentId: plats.id,
+        titre: "Poissons",
+        icone: "fish",
+        position: 1,
+      },
+    });
+    await makeProduit({
+      categorieId: poissons.id,
+      titre: "Pavé de lieu jaune, beurre blanc",
+      description:
+        "Pêche atlantique, écrasé de pomme de terre à l'huile d'olive.",
+      prix: "21.00",
+      position: 0,
+      origine: "FR",
+      imageUrl: PHOTO.lieu,
+      vignetteCodes: ["local"],
+      allergeneCodes: ["poissons", "lait"],
+    });
+    // Sous-catégorie : Végétariens
+    const veggies = await tx.categorie.create({
+      data: {
+        restaurantId: resto.id,
+        parentId: plats.id,
+        titre: "Végétariens",
+        icone: "salad",
+        position: 2,
+      },
+    });
+    await makeProduit({
+      categorieId: veggies.id,
+      titre: "Risotto aux cèpes",
+      description:
+        "Arborio crémeux, cèpes du Périgord, copeaux de parmesan affiné 24 mois.",
+      prix: "19.00",
+      position: 0,
+      estNouveau: true,
+      titreRemarque: "Plat végétarien signature",
+      imageUrl: PHOTO.risotto,
+      vignetteCodes: ["vegetarien", "signature", "fait_maison"],
+      allergeneCodes: ["lait", "sulfites"],
     });
 
-    // ============== DESSERTS ==============
+    // ============== CATÉGORIE 4 — DESSERTS ==============
     const desserts = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -337,51 +425,51 @@ async function createRichDemoRestaurant(adminUserId: number) {
         position: 3,
       },
     });
-    await tx.produit.createMany({
-      data: [
-        {
-          categorieId: desserts.id,
-          titre: "Cannelé bordelais & crème vanille",
-          description:
-            "La spécialité bordelaise · croûte caramélisée, cœur moelleux à la vanille de Madagascar.",
-          prix: new Prisma.Decimal("7.00"),
-          devise: "€",
-          origine: "FR",
-          position: 0,
-          imageUrl: PHOTO.cannele,
-        },
-        {
-          categorieId: desserts.id,
-          titre: "Tiramisu aux spéculoos",
-          description: "Mascarpone fouetté, café espresso, miettes de spéculoos.",
-          prix: new Prisma.Decimal("8.50"),
-          devise: "€",
-          position: 1,
-          imageUrl: PHOTO.tiramisu,
-        },
-        {
-          categorieId: desserts.id,
-          titre: "Tarte au chocolat noir 70%",
-          description: "Ganache intense, sablé breton, fleur de sel.",
-          prix: new Prisma.Decimal("9.00"),
-          devise: "€",
-          position: 2,
-          imageUrl: PHOTO.tarteChoco,
-        },
-        {
-          categorieId: desserts.id,
-          titre: "Café gourmand",
-          description: "Espresso + 3 mignardises (cannelé, mousse choco, financier).",
-          prix: new Prisma.Decimal("9.50"),
-          devise: "€",
-          position: 3,
-          estNouveau: true,
-          imageUrl: PHOTO.cafeGourmand,
-        },
-      ],
+    const cannele = await makeProduit({
+      categorieId: desserts.id,
+      titre: "Cannelé bordelais & crème vanille",
+      description:
+        "La spécialité bordelaise · croûte caramélisée, cœur moelleux à la vanille de Madagascar.",
+      prix: "7.00",
+      position: 0,
+      origine: "FR",
+      imageUrl: PHOTO.cannele,
+      vignetteCodes: ["signature", "local", "fait_maison"],
+      allergeneCodes: ["lait", "oeufs", "gluten"],
+    });
+    await makeProduit({
+      categorieId: desserts.id,
+      titre: "Tiramisu aux spéculoos",
+      description: "Mascarpone fouetté, café espresso, miettes de spéculoos.",
+      prix: "8.50",
+      position: 1,
+      imageUrl: PHOTO.tiramisu,
+      vignetteCodes: ["fait_maison"],
+      allergeneCodes: ["lait", "oeufs", "gluten"],
+    });
+    await makeProduit({
+      categorieId: desserts.id,
+      titre: "Tarte au chocolat noir 70%",
+      description: "Ganache intense, sablé breton, fleur de sel.",
+      prix: "9.00",
+      position: 2,
+      imageUrl: PHOTO.tarteChoco,
+      vignetteCodes: ["fait_maison", "bio"],
+      allergeneCodes: ["lait", "oeufs", "gluten", "soja"],
+    });
+    const cafeGourmand = await makeProduit({
+      categorieId: desserts.id,
+      titre: "Café gourmand",
+      description: "Espresso + 3 mignardises (cannelé, mousse choco, financier).",
+      prix: "9.50",
+      position: 3,
+      estNouveau: true,
+      imageUrl: PHOTO.cafeGourmand,
+      vignetteCodes: ["signature", "fait_maison"],
+      allergeneCodes: ["lait", "oeufs", "gluten", "fruits_a_coque"],
     });
 
-    // ============== BOISSONS ==============
+    // ============== CATÉGORIE 5 — BOISSONS ==============
     const boissons = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -390,50 +478,62 @@ async function createRichDemoRestaurant(adminUserId: number) {
         position: 4,
       },
     });
-    await tx.produit.createMany({
+    const espresso = await makeProduit({
+      categorieId: boissons.id,
+      titre: "Café espresso",
+      description: "Torréfaction artisanale bordelaise.",
+      prix: "2.50",
+      position: 0,
+      imageUrl: PHOTO.espresso,
+      vignetteCodes: ["bio", "local"],
+    });
+    await makeProduit({
+      categorieId: boissons.id,
+      titre: "Thé bio (gamme Kusmi)",
+      description: "Anastasia, Detox, Rooibos vanille, English Breakfast.",
+      prix: "4.00",
+      position: 1,
+      imageUrl: PHOTO.the,
+      vignetteCodes: ["bio"],
+    });
+    await makeProduit({
+      categorieId: boissons.id,
+      titre: "Vittel 50cl",
+      description: "Eau de source plate.",
+      prix: "4.00",
+      descriptionPrix: "50cl",
+      position: 2,
+      imageUrl: PHOTO.vittel,
+    });
+    await makeProduit({
+      categorieId: boissons.id,
+      titre: "Jus de pomme bio artisanal",
+      description: "Pommes du Périgord, pressées à froid · 25cl.",
+      prix: "5.00",
+      position: 3,
+      origine: "FR",
+      imageUrl: PHOTO.jusPomme,
+      vignetteCodes: ["local", "bio"],
+    });
+
+    // ============== SUGGESTIONS D'ACCOMPAGNEMENT ==============
+    // Le tartare suggère un Margaux, la burrata un Spritz, le foie gras un
+    // Margaux aussi, le cannelé/café gourmand un espresso. Montre la feature
+    // upsell de Ruliz.
+    await tx.produitSuggestion.createMany({
       data: [
-        {
-          categorieId: boissons.id,
-          titre: "Café espresso",
-          description: "Torréfaction artisanale bordelaise.",
-          prix: new Prisma.Decimal("2.50"),
-          devise: "€",
-          position: 0,
-          imageUrl: PHOTO.espresso,
-        },
-        {
-          categorieId: boissons.id,
-          titre: "Thé bio (gamme Kusmi)",
-          description: "Anastasia, Detox, Rooibos vanille, English Breakfast.",
-          prix: new Prisma.Decimal("4.00"),
-          devise: "€",
-          position: 1,
-          imageUrl: PHOTO.the,
-        },
-        {
-          categorieId: boissons.id,
-          titre: "Vittel 50cl",
-          description: "Eau de source plate.",
-          prix: new Prisma.Decimal("4.00"),
-          descriptionPrix: "50cl",
-          devise: "€",
-          position: 2,
-          imageUrl: PHOTO.vittel,
-        },
-        {
-          categorieId: boissons.id,
-          titre: "Jus de pomme bio artisanal",
-          description: "Pommes du Périgord, pressées à froid · 25cl.",
-          prix: new Prisma.Decimal("5.00"),
-          devise: "€",
-          origine: "FR",
-          position: 3,
-          imageUrl: PHOTO.jusPomme,
-        },
+        { produitId: tartare.id, suggestionId: margaux.id, position: 0 },
+        { produitId: tartare.id, suggestionId: cremant.id, position: 1 },
+        { produitId: burrata.id, suggestionId: spritz.id, position: 0 },
+        { produitId: foieGras.id, suggestionId: margaux.id, position: 0 },
+        { produitId: bavette.id, suggestionId: margaux.id, position: 0 },
+        { produitId: magret.id, suggestionId: margaux.id, position: 0 },
+        { produitId: cannele.id, suggestionId: espresso.id, position: 0 },
+        { produitId: cafeGourmand.id, suggestionId: espresso.id, position: 0 },
       ],
     });
 
-    // ============== JEU ROULETTE D'AVIS GOOGLE ==============
+    // ============== JEU — ROULETTE D'AVIS GOOGLE ==============
     await tx.jeu.create({
       data: {
         restaurantId: resto.id,
@@ -455,7 +555,8 @@ async function createRichDemoRestaurant(adminUserId: number) {
       },
     });
 
-    // ============== POPUP HAPPY HOUR ==============
+    // ============== POP-UPS ==============
+    // 1. Happy Hour quotidien 18h-20h
     await tx.popup.create({
       data: {
         restaurantId: resto.id,
@@ -467,6 +568,23 @@ async function createRichDemoRestaurant(adminUserId: number) {
         actif: true,
         heureDebut: "18:00",
         heureFin: "20:00",
+      },
+    });
+
+    // 2. Brunch dominical (joursActifs bitmap : dimanche = bit 0 = 1)
+    await tx.popup.create({
+      data: {
+        restaurantId: resto.id,
+        titre: "Brunch dominical 🥐",
+        description:
+          "Brunch complet 26€ chaque dimanche de 11h à 14h : viennoiseries, œufs brouillés, charcuterie locale, fromages, fruits frais, jus pressé, café à volonté.",
+        imageUrl: PHOTO.brunch,
+        ctaLabel: "Réserver une table",
+        ctaUrl: "https://ruliz.fr/reservation",
+        actif: true,
+        joursActifs: 1, // 0b0000001 = dimanche uniquement
+        heureDebut: "11:00",
+        heureFin: "14:00",
       },
     });
 
