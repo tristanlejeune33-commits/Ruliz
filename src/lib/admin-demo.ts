@@ -10,19 +10,15 @@ import { prisma } from "./db";
  *
  * Flow :
  *   1. Click "Ma carte démo" en sidebar admin → GET /admin/demo
- *   2. Le handler crée le resto démo si manquant (lié à user_id admin) +
- *      seed minimal (catégorie Entrées + 2 produits).
- *   3. Set cookies `ruliz_admin_demo=1` + `ruliz_active_restaurant=<id>`.
- *   4. Redirect /dashboard → `requireDashboard()` autorise l'admin si le
- *      cookie demo est set, sinon redirige vers /admin comme d'hab.
- *   5. Bandeau orange "Mode démo · Quitter" affiché dans le dashboard,
- *      bouton Quitter → /api/admin/demo/exit clear le cookie et revient
- *      sur /admin.
- *
- * Le compte admin n'est PAS un client comme les autres : il n'apparaît
- * pas dans /admin/clients (la requête filtre role=client) et son resto
- * démo n'apparaît pas dans /admin/restaurants (filtré sur le userId
- * admin, exclu).
+ *   2. Le handler ensureAdminDemoRestaurant() crée le resto démo si
+ *      manquant, avec un menu COMPLET (5 catégories × 4 plats, badges
+ *      NEW, descriptions appétissantes, branding bleu Ruliz, plan
+ *      premium pour montrer toutes les features).
+ *   3. Si un resto démo existe mais avec peu de contenu (< 8 produits),
+ *      on assume que c'est un ancien seed obsolète et on le régénère.
+ *      Si > 8 produits, on respecte le travail du user (ne touche à rien).
+ *   4. Set cookies `ruliz_admin_demo=1` + `ruliz_active_restaurant=<id>`.
+ *   5. Redirect /dashboard → bandeau orange "Mode démo · Retour à l'admin".
  *
  * Distinct du système d'impersonation (lib/impersonation.ts) qui sert
  * au SAV — ici on bosse SUR son propre compte admin, pas sur celui
@@ -53,59 +49,318 @@ export async function clearAdminDemoFlag() {
 }
 
 /**
- * Retourne le resto démo de l'admin. Crée le tout (resto + 1 catégorie
- * "Entrées" + 2 produits exemples) si pas encore existant.
- *
- * Idempotent : safe à appeler à chaque entrée en mode démo.
+ * Retourne le resto démo de l'admin. Crée le tout (resto + menu complet)
+ * si pas encore existant. Régénère si l'ancien seed était pauvre.
  */
 export async function ensureAdminDemoRestaurant(adminUserId: number) {
   const existing = await prisma.restaurant.findFirst({
     where: { userId: adminUserId },
+    include: {
+      categories: { include: { produits: { select: { id: true } } } },
+    },
     orderBy: { createdAt: "asc" },
   });
-  if (existing) return existing;
 
+  if (existing) {
+    const totalProduits = existing.categories.reduce(
+      (sum, c) => sum + c.produits.length,
+      0,
+    );
+    // Si déjà un menu costaud (≥ 8 produits), on assume customisation
+    // par l'admin → on garde tel quel.
+    if (totalProduits >= 8) {
+      // Réutilise le resto existant (sans les includes) pour cohérence type
+      const fresh = await prisma.restaurant.findUnique({
+        where: { id: existing.id },
+      });
+      return fresh!;
+    }
+    // Sinon, c'est l'ancien seed (2 produits). On drop tout le resto
+    // démo et on regénère avec le seed riche. Cascade supprime aussi
+    // categories + produits + qrcodes + jeux + popups.
+    await prisma.restaurant.delete({ where: { id: existing.id } });
+  }
+
+  return createRichDemoRestaurant(adminUserId);
+}
+
+/**
+ * Génère le menu complet du Bistrot Ruliz — la carte de démo officielle.
+ * 5 catégories × 4 produits ≈ 20 plats variés, badges NEW, origines,
+ * prix et descriptions appétissantes. Plan premium pour pouvoir montrer
+ * toutes les features (roulette d'avis, pop-ups, SMS, etc.) lors d'une
+ * démo prospect.
+ */
+async function createRichDemoRestaurant(adminUserId: number) {
   return prisma.$transaction(async (tx) => {
     const resto = await tx.restaurant.create({
       data: {
         userId: adminUserId,
-        nom: "Démo Ruliz",
+        nom: "Bistrot Ruliz",
         ville: "Bordeaux",
         pays: "France",
         plan: "premium",
-        description:
-          "Restaurant de démonstration — utilisé pour les démos prospects et les tests internes.",
+        statut: "actif",
         deviseDefault: "€",
+        description:
+          "Une démo vivante de Ruliz — cette carte illustre tout ce que vous pouvez faire avec votre menu digital : photos, allergènes, traductions automatiques en 14 langues, suggestions d'accompagnement, jeu d'avis Google.",
+        theme: "light",
+        fontStyle: "editorial",
+        couleurPrimaire: "#26438A",
       } satisfies Prisma.RestaurantUncheckedCreateInput,
     });
 
-    const cat = await tx.categorie.create({
+    // ============== APÉRITIFS ==============
+    const aperitifs = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
-        titre: "Entrées",
+        titre: "Apéritifs & Vins",
         icone: "wine",
         position: 0,
       },
     });
-
     await tx.produit.createMany({
       data: [
         {
-          categorieId: cat.id,
-          titre: "Tartare de bœuf",
-          description: "Couteau, jaune d'œuf, frites maison",
-          prix: new Prisma.Decimal("18.00"),
+          categorieId: aperitifs.id,
+          titre: "Coupe de Crémant de Bordeaux",
+          description: "Domaine local, bulles fines et notes briochées.",
+          prix: new Prisma.Decimal("6.50"),
           devise: "€",
+          position: 0,
+        },
+        {
+          categorieId: aperitifs.id,
+          titre: "Margaux 2019",
+          description: "Médoc · grand cru bourgeois · arômes de fruits noirs.",
+          prix: new Prisma.Decimal("12.00"),
+          descriptionPrix: "15cl",
+          devise: "€",
+          origine: "FR",
+          position: 1,
+        },
+        {
+          categorieId: aperitifs.id,
+          titre: "Cocktail « Le Ruliz »",
+          description:
+            "Gin local, citron vert, sirop de gentiane, branche de romarin fumée.",
+          prix: new Prisma.Decimal("9.50"),
+          devise: "€",
+          position: 2,
+          estNouveau: true,
+        },
+        {
+          categorieId: aperitifs.id,
+          titre: "Spritz Aperol",
+          description: "Prosecco, Aperol, eau gazeuse, tranche d'orange.",
+          prix: new Prisma.Decimal("8.00"),
+          devise: "€",
+          position: 3,
+        },
+      ],
+    });
+
+    // ============== ENTRÉES ==============
+    const entrees = await tx.categorie.create({
+      data: {
+        restaurantId: resto.id,
+        titre: "Entrées",
+        icone: "utensils",
+        position: 1,
+      },
+    });
+    await tx.produit.createMany({
+      data: [
+        {
+          categorieId: entrees.id,
+          titre: "Tartare de bœuf Charolais",
+          description:
+            "Coupé au couteau, jaune d'œuf bio, câpres, échalotes, frites maison.",
+          prix: new Prisma.Decimal("16.00"),
+          devise: "€",
+          origine: "FR",
           position: 0,
           estNouveau: true,
         },
         {
-          categorieId: cat.id,
+          categorieId: entrees.id,
           titre: "Burrata de Pouilles",
-          description: "Tomates anciennes, pesto basilic",
+          description:
+            "Crémeuse à souhait, tomates anciennes, pesto basilic maison, focaccia tiède.",
           prix: new Prisma.Decimal("14.00"),
           devise: "€",
+          origine: "IT",
           position: 1,
+        },
+        {
+          categorieId: entrees.id,
+          titre: "Foie gras maison & confit d'oignons",
+          description: "Mi-cuit au torchon, pain de campagne toasté.",
+          prix: new Prisma.Decimal("18.00"),
+          devise: "€",
+          origine: "FR",
+          position: 2,
+        },
+        {
+          categorieId: entrees.id,
+          titre: "Velouté de potimarron",
+          description:
+            "Crème de châtaigne, huile de noisettes torréfiées, croûtons.",
+          prix: new Prisma.Decimal("9.00"),
+          devise: "€",
+          position: 3,
+          titreRemarque: "Végétarien",
+          descriptionRemarque: "Sans gluten possible",
+        },
+      ],
+    });
+
+    // ============== PLATS ==============
+    const plats = await tx.categorie.create({
+      data: {
+        restaurantId: resto.id,
+        titre: "Plats",
+        icone: "beef",
+        position: 2,
+      },
+    });
+    await tx.produit.createMany({
+      data: [
+        {
+          categorieId: plats.id,
+          titre: "Bavette d'aloyau, sauce béarnaise",
+          description: "Bœuf race à viande, frites maison, salade de saison.",
+          prix: new Prisma.Decimal("22.00"),
+          devise: "€",
+          origine: "FR",
+          position: 0,
+        },
+        {
+          categorieId: plats.id,
+          titre: "Magret de canard, jus à la cerise",
+          description:
+            "Cuisson rosée, purée de patate douce, légumes glacés.",
+          prix: new Prisma.Decimal("24.00"),
+          devise: "€",
+          origine: "FR",
+          position: 1,
+        },
+        {
+          categorieId: plats.id,
+          titre: "Risotto aux cèpes",
+          description:
+            "Arborio crémeux, cèpes du Périgord, copeaux de parmesan affiné 24 mois.",
+          prix: new Prisma.Decimal("19.00"),
+          devise: "€",
+          position: 2,
+          estNouveau: true,
+          titreRemarque: "Végétarien",
+        },
+        {
+          categorieId: plats.id,
+          titre: "Pavé de lieu jaune, beurre blanc",
+          description: "Pêche atlantique, écrasé de pomme de terre à l'huile d'olive.",
+          prix: new Prisma.Decimal("21.00"),
+          devise: "€",
+          origine: "FR",
+          position: 3,
+        },
+      ],
+    });
+
+    // ============== DESSERTS ==============
+    const desserts = await tx.categorie.create({
+      data: {
+        restaurantId: resto.id,
+        titre: "Desserts",
+        icone: "cake",
+        position: 3,
+      },
+    });
+    await tx.produit.createMany({
+      data: [
+        {
+          categorieId: desserts.id,
+          titre: "Cannelé bordelais & crème vanille",
+          description:
+            "La spécialité bordelaise · croûte caramélisée, cœur moelleux à la vanille de Madagascar.",
+          prix: new Prisma.Decimal("7.00"),
+          devise: "€",
+          origine: "FR",
+          position: 0,
+        },
+        {
+          categorieId: desserts.id,
+          titre: "Tiramisu aux spéculoos",
+          description: "Mascarpone fouetté, café espresso, miettes de spéculoos.",
+          prix: new Prisma.Decimal("8.50"),
+          devise: "€",
+          position: 1,
+        },
+        {
+          categorieId: desserts.id,
+          titre: "Tarte au chocolat noir 70%",
+          description: "Ganache intense, sablé breton, fleur de sel.",
+          prix: new Prisma.Decimal("9.00"),
+          devise: "€",
+          position: 2,
+        },
+        {
+          categorieId: desserts.id,
+          titre: "Café gourmand",
+          description: "Espresso + 3 mignardises (cannelé, mousse choco, financier).",
+          prix: new Prisma.Decimal("9.50"),
+          devise: "€",
+          position: 3,
+          estNouveau: true,
+        },
+      ],
+    });
+
+    // ============== BOISSONS ==============
+    const boissons = await tx.categorie.create({
+      data: {
+        restaurantId: resto.id,
+        titre: "Boissons",
+        icone: "coffee",
+        position: 4,
+      },
+    });
+    await tx.produit.createMany({
+      data: [
+        {
+          categorieId: boissons.id,
+          titre: "Café espresso",
+          description: "Torréfaction artisanale bordelaise.",
+          prix: new Prisma.Decimal("2.50"),
+          devise: "€",
+          position: 0,
+        },
+        {
+          categorieId: boissons.id,
+          titre: "Thé bio (gamme Kusmi)",
+          description: "Anastasia, Detox, Rooibos vanille, English Breakfast.",
+          prix: new Prisma.Decimal("4.00"),
+          devise: "€",
+          position: 1,
+        },
+        {
+          categorieId: boissons.id,
+          titre: "Vittel 50cl",
+          description: "Eau de source plate.",
+          prix: new Prisma.Decimal("4.00"),
+          descriptionPrix: "50cl",
+          devise: "€",
+          position: 2,
+        },
+        {
+          categorieId: boissons.id,
+          titre: "Jus de pomme bio artisanal",
+          description: "Pommes du Périgord, pressées à froid · 25cl.",
+          prix: new Prisma.Decimal("5.00"),
+          devise: "€",
+          origine: "FR",
+          position: 3,
         },
       ],
     });
