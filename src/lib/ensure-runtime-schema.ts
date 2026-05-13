@@ -241,6 +241,10 @@ export async function ensureRuntimeSchema(): Promise<void> {
     // Snapshot de chaque facture émise (abo / SMS / boutique). Garantit une
     // trace locale même si Stripe a un souci, audit comptable rapide via SQL,
     // backup des URLs PDF Stripe + key R2 si on télécharge le PDF.
+    //
+    // Note : chaque CREATE TABLE / CREATE INDEX dans un appel séparé car
+    // Postgres prepared statements n'acceptent qu'une seule commande SQL
+    // par $executeRawUnsafe (erreur 42601 sinon).
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "invoices_archive" (
         "id" BIGSERIAL PRIMARY KEY,
@@ -265,14 +269,22 @@ export async function ensureRuntimeSchema(): Promise<void> {
         "metadata_json" JSONB,
         "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+    `);
+    await prisma.$executeRawUnsafe(`
       CREATE UNIQUE INDEX IF NOT EXISTS "idx_invoices_archive_stripe_invoice"
         ON "invoices_archive" ("stripe_invoice_id")
         WHERE "stripe_invoice_id" IS NOT NULL;
+    `);
+    await prisma.$executeRawUnsafe(`
       CREATE UNIQUE INDEX IF NOT EXISTS "idx_invoices_archive_stripe_session"
         ON "invoices_archive" ("stripe_session_id")
         WHERE "stripe_session_id" IS NOT NULL;
+    `);
+    await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "idx_invoices_archive_user"
         ON "invoices_archive" ("user_id", "paid_at" DESC);
+    `);
+    await prisma.$executeRawUnsafe(`
       CREATE INDEX IF NOT EXISTS "idx_invoices_archive_type"
         ON "invoices_archive" ("type", "paid_at" DESC);
     `);
