@@ -4,6 +4,10 @@ import { prisma } from "@/lib/db";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { priceIdToPlan, type Plan } from "@/lib/plans";
+import {
+  sendSmsPackConfirmation,
+  sendBoutiquePaidConfirmation,
+} from "@/server/sms/emails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -163,6 +167,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       console.log(
         `[stripe.webhook] SMS pack credited : restaurant ${smsRestaurantId} +${size} SMS`,
       );
+
+      // 3. Email de confirmation au client (best-effort, non bloquant)
+      const amountTotal = session.amount_total ?? 0;
+      try {
+        await sendSmsPackConfirmation({
+          restaurantId: restoBigId,
+          packSize: size,
+          pricePaidCentimes: amountTotal,
+        });
+      } catch (err) {
+        console.error("[stripe.webhook] SMS confirmation email failed:", err);
+      }
     } catch (err) {
       console.error("[stripe.webhook] SMS pack crediting failed:", err);
     }
@@ -188,7 +204,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       return;
     }
 
-    await prisma.boutiqueCommande.updateMany({
+    const updateResult = await prisma.boutiqueCommande.updateMany({
       where: { id: bigId, paidAt: null },
       data: {
         paidAt: new Date(),
@@ -201,6 +217,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     console.log(
       `[stripe.webhook] boutique commande ${commandeId} paid (PI: ${paymentIntentId})`,
     );
+
+    // Email de confirmation paiement au client (best-effort, non bloquant).
+    // Skip si l'update n'a rien fait (déjà payée → email déjà envoyé).
+    if (updateResult.count > 0) {
+      try {
+        await sendBoutiquePaidConfirmation({
+          commandeId: bigId,
+          paidCentimes: session.amount_total ?? 0,
+        });
+      } catch (err) {
+        console.error(
+          "[stripe.webhook] boutique paid confirmation email failed:",
+          err,
+        );
+      }
+    }
     return;
   }
 }
