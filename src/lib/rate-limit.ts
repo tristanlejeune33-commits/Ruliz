@@ -115,7 +115,15 @@ export async function checkRateLimitRedis(
   // (middleware) où ioredis ne fonctionne pas.
   try {
     const { redis } = await import("./redis");
-    if (!redis) return checkRateLimit(key, limit, windowMs);
+    if (
+      !redis ||
+      redis.status === "end" ||
+      redis.status === "close" ||
+      redis.status === "wait"
+    ) {
+      // Redis pas dispo → fallback in-memory (silencieux, déjà loggé 1x)
+      return checkRateLimit(key, limit, windowMs);
+    }
 
     const redisKey = `ratelimit:${key}`;
     const count = await redis.incr(redisKey);
@@ -133,13 +141,9 @@ export async function checkRateLimitRedis(
       resetAt,
       retryAfter: Math.ceil((resetAt - Date.now()) / 1000),
     };
-  } catch (err) {
-    // Redis indisponible → fallback in-memory (toujours mieux que rien)
-    console.warn(
-      "[rate-limit] Redis indisponible, fallback in-memory pour:",
-      key,
-      err instanceof Error ? err.message : err,
-    );
+  } catch {
+    // Redis indisponible → fallback silencieux in-memory.
+    // L'erreur est déjà loggée 1x par lib/redis.ts.
     return checkRateLimit(key, limit, windowMs);
   }
 }

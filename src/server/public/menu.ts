@@ -132,15 +132,17 @@ export async function getPublicMenu(
   restaurantId: bigint,
   lang: SupportedLang,
 ): Promise<PublicMenu | null> {
-  // L3 Redis lookup
-  if (redis) {
+  // L3 Redis lookup — skip si client en mode "end" (connexion abandonnée).
+  // L'app continue sans cache, on retombe sur la DB.
+  if (redis && redis.status !== "end" && redis.status !== "close") {
     try {
       const cached = await redis.get(cacheKey(restaurantId, lang));
       if (cached) {
         return JSON.parse(cached) as PublicMenu;
       }
-    } catch (e) {
-      console.warn("[redis] read failed:", e);
+    } catch {
+      // Erreur Redis = best-effort, déjà loggée 1x par lib/redis.ts.
+      // On ne re-log pas ici pour éviter le spam des logs Railway.
     }
   }
 
@@ -498,11 +500,14 @@ export async function getPublicMenu(
     categories,
   };
 
-  // Write to Redis (best-effort, don't block response)
-  if (redis) {
+  // Write to Redis (best-effort, don't block response). Skip si client en
+  // mode "end" — pas la peine d'envoyer dans un socket fermé.
+  if (redis && redis.status !== "end" && redis.status !== "close") {
     redis
       .set(cacheKey(restaurantId, lang), JSON.stringify(menu), "EX", CACHE_TTL_SECONDS)
-      .catch((e) => console.warn("[redis] write failed:", e));
+      .catch(() => {
+        // Best-effort, erreurs déjà loggées 1x par lib/redis.ts. Silence ici.
+      });
   }
 
   return menu;
