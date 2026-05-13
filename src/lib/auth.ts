@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
 import { prisma } from "./db";
 import { sendMail } from "./resend";
+import { emailLayout, lead, p, infoBox } from "./email-template";
 import { getAuthUrl } from "./url";
 
 export const auth = betterAuth({
@@ -16,26 +17,24 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     autoSignIn: true,
     sendResetPassword: async ({ user, url }) => {
+      const firstName = user.name?.split(" ")[0] ?? "";
       await sendMail({
         to: user.email,
         subject: "Réinitialise ton mot de passe Ruliz",
-        html: `
-          <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#0f172a">
-            <h1 style="font-size:20px;margin:0 0 16px">Réinitialisation de ton mot de passe</h1>
-            <p style="margin:0 0 24px;line-height:1.5">
-              Hello ${user.name ?? ""},<br>
-              Tu as demandé à réinitialiser ton mot de passe Ruliz. Clique sur le bouton ci-dessous (lien valable 1h) :
-            </p>
-            <p style="margin:0 0 32px">
-              <a href="${url}" style="background:#4870e0;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">
-                Choisir un nouveau mot de passe
-              </a>
-            </p>
-            <p style="font-size:12px;color:#64748b;margin:0">
-              Si tu n'es pas à l'origine de cette demande, ignore cet email.
-            </p>
-          </div>
-        `,
+        html: emailLayout({
+          title: "Réinitialise ton mot de passe",
+          eyebrow: "Récupération de compte",
+          preheader:
+            "Lien valable 1h pour choisir un nouveau mot de passe Ruliz.",
+          body: `
+            ${lead(`Salut${firstName ? ` ${firstName}` : ""},`)}
+            ${p("Tu as demandé à réinitialiser ton mot de passe sur Ruliz. Clique sur le bouton ci-dessous pour choisir un nouveau mot de passe.")}
+            ${infoBox("⏱️ Ce lien est valable <strong>1 heure</strong>. Au-delà, il faudra refaire une demande.")}
+          `,
+          cta: { label: "Choisir un nouveau mot de passe", url },
+          footnote:
+            "Tu n'es pas à l'origine de cette demande ? Ignore cet email — ton compte reste sûr, aucun changement n'a été fait.",
+        }),
       });
     },
   },

@@ -2,6 +2,15 @@
 
 import { z } from "zod";
 import { sendMail } from "@/lib/resend";
+import {
+  emailLayout,
+  lead,
+  p,
+  hero,
+  infoBox,
+  code,
+  warnBox,
+} from "@/lib/email-template";
 import { requireAdmin } from "@/lib/session";
 import {
   sendCommandeConfirmationToClient,
@@ -29,6 +38,9 @@ const schema = z.object({
  * /admin/email-test pour valider que la config Resend + DNS marche
  * end-to-end après le setup d'un nouveau domaine.
  *
+ * Tous les templates utilisent emailLayout() de lib/email-template pour
+ * le branding Ruliz cohérent (logo, bleu signature, footer légal).
+ *
  * Réservé aux admins (les emails ont parfois des URLs absolutes qui
  * révèlent la structure du panel).
  */
@@ -50,15 +62,26 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
         const res = await sendMail({
           to,
           subject: "Bienvenue sur Ruliz 🎉",
-          html: simpleHtml(
-            "Bienvenue sur Ruliz",
-            `<p>Salut Tristan,</p>
-             <p>Ton compte Ruliz est créé. Tu peux maintenant brancher ta carte digitale,
-             générer tes QR codes et démarrer ton premier jeu d'avis.</p>
-             <p style="margin-top: 24px;">
-               <a href="${appUrl}/dashboard" class="btn">Accéder au dashboard</a>
-             </p>`,
-          ),
+          html: emailLayout({
+            title: "Bienvenue sur Ruliz",
+            eyebrow: "Création de compte",
+            preheader:
+              "Ton compte Ruliz est créé. Première étape : brancher ta carte digitale.",
+            body: `
+              ${lead("Salut Tristan,")}
+              ${p("Ton compte Ruliz est <strong>créé</strong> 🎉. Tu peux maintenant brancher ta carte digitale, générer tes QR codes et démarrer ton premier jeu d'avis.")}
+              ${infoBox(`<strong>Premiers pas suggérés :</strong>
+                <ol style="margin:8px 0 0;padding-left:20px;color:#4A5573;font-size:14px;line-height:1.7;">
+                  <li>Renseigne les <strong>infos de ton restaurant</strong> (nom, logo, bannière)</li>
+                  <li>Crée ta <strong>première catégorie</strong> et ajoute tes plats</li>
+                  <li>Génère un <strong>QR code</strong> à coller sur tes tables</li>
+                  <li>Lance la <strong>roulette d'avis Google</strong> pour récolter des avis</li>
+                </ol>`)}
+            `,
+            cta: { label: "Accéder au dashboard", url: `${appUrl}/dashboard` },
+            footnote:
+              "Besoin d'aide ? Réponds à cet email, l'équipe Ruliz te répondra dans la journée.",
+          }),
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
       }
@@ -67,20 +90,23 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
         const res = await sendMail({
           to,
           subject: "Réinitialise ton mot de passe Ruliz",
-          html: simpleHtml(
-            "Mot de passe oublié ?",
-            `<p>Salut,</p>
-             <p>Tu as demandé à réinitialiser ton mot de passe. Clique sur le lien ci-dessous —
-             il est valable 1h.</p>
-             <p style="margin-top: 24px;">
-               <a href="${appUrl}/reset-password?token=demo-test-token" class="btn">
-                 Réinitialiser mon mot de passe
-               </a>
-             </p>
-             <p style="color: #8892AB; font-size: 12px; margin-top: 32px;">
-               Tu n'as pas fait cette demande ? Ignore ce mail, ton compte reste sûr.
-             </p>`,
-          ),
+          html: emailLayout({
+            title: "Réinitialise ton mot de passe",
+            eyebrow: "Récupération de compte",
+            preheader:
+              "Lien valable 1h pour choisir un nouveau mot de passe Ruliz.",
+            body: `
+              ${lead("Salut,")}
+              ${p("Tu as demandé à réinitialiser ton mot de passe sur Ruliz. Clique sur le bouton ci-dessous pour choisir un nouveau mot de passe.")}
+              ${infoBox("⏱️ Ce lien est valable <strong>1 heure</strong>. Au-delà, il faudra refaire une demande.")}
+            `,
+            cta: {
+              label: "Choisir un nouveau mot de passe",
+              url: `${appUrl}/reset-password?token=demo-test-token`,
+            },
+            footnote:
+              "Tu n'es pas à l'origine de cette demande ? Ignore cet email — ton compte reste sûr.",
+          }),
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
       }
@@ -89,14 +115,22 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
         const res = await sendMail({
           to,
           subject: "Tristan t'invite sur Ruliz",
-          html: simpleHtml(
-            "Rejoins l'équipe Ruliz",
-            `<p>Tristan t'a invité à rejoindre son équipe sur Ruliz pour gérer la carte du
-             <strong>Bistrot Ruliz</strong>.</p>
-             <p style="margin-top: 24px;">
-               <a href="${appUrl}/signup?invite=demo-team-token" class="btn">Accepter l'invitation</a>
-             </p>`,
-          ),
+          html: emailLayout({
+            title: "Bienvenue dans l'équipe",
+            eyebrow: "Invitation Ruliz",
+            preheader:
+              "Tristan t'a invité comme éditeur de la carte du Bistrot Ruliz.",
+            body: `
+              ${lead("Salut,")}
+              ${p("<strong>Tristan</strong> t'a invité à rejoindre son équipe sur Ruliz pour gérer la carte du <strong>Bistrot Ruliz</strong>.")}
+              ${infoBox(`<strong>Ton rôle :</strong> Éditeur<br>
+                <span style="color:#8892AB;font-size:13px;">Tu pourras modifier la carte, ajouter des produits et gérer les QR codes.</span>`)}
+            `,
+            cta: {
+              label: "Accepter l'invitation",
+              url: `${appUrl}/signup?invite=demo-team-token`,
+            },
+          }),
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
       }
@@ -108,11 +142,11 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
           clientEmail: to,
           totalEuros: "47,80 €",
           items: [
-            { nom: "QR Acrylique Pro × 2", quantite: 2, totalEuros: "39,80 €" },
+            { nom: "QR Acrylique Pro", quantite: 2, totalEuros: "39,80 €" },
             { nom: "Stickers vinyle (50)", quantite: 1, totalEuros: "8,00 €" },
           ],
           livraisonAdresseHtml:
-            "<div>Tristan Lejeune</div><div>12 rue Sainte-Catherine</div><div>33000 Bordeaux</div>",
+            "<div><strong>Tristan Lejeune</strong></div><div>12 rue Sainte-Catherine</div><div>33000 Bordeaux · France</div>",
           notesClient: "Merci pour la rapidité !",
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
@@ -126,11 +160,11 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
           clientEmail: "marie.dubois@tirebouchon.fr",
           totalEuros: "47,80 €",
           items: [
-            { nom: "QR Acrylique Pro × 2", quantite: 2, totalEuros: "39,80 €" },
+            { nom: "QR Acrylique Pro", quantite: 2, totalEuros: "39,80 €" },
             { nom: "Stickers vinyle (50)", quantite: 1, totalEuros: "8,00 €" },
           ],
           livraisonAdresseHtml:
-            "<div>Marie Dubois</div><div>5 cours de l'Intendance</div><div>33000 Bordeaux</div>",
+            "<div><strong>Marie Dubois</strong></div><div>Le Tire-Bouchon</div><div>5 cours de l'Intendance</div><div>33000 Bordeaux · France</div>",
           notesClient: null,
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
@@ -139,25 +173,28 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
       case "jeu-gain": {
         const res = await sendMail({
           to,
-          subject: "🎉 Tu as gagné — Roulette Ruliz",
-          html: simpleHtml(
-            "Bravo, tu as gagné !",
-            `<p>Salut,</p>
-             <p>Tu viens de gagner à la roulette d'avis du <strong>Bistrot Ruliz</strong> :</p>
-             <div style="margin: 24px 0; padding: 20px; background: #EEF2FA; border-radius: 12px; text-align: center;">
-               <div style="font-size: 32px; line-height: 1;">🍷</div>
-               <div style="font-size: 18px; font-weight: 700; color: #26438A; margin-top: 8px;">
-                 Bouteille de Margaux
-               </div>
-               <div style="margin-top: 16px; font-family: monospace; font-size: 14px; color: #0B1530;">
-                 Code : <strong>RULIZ-DEMO-9X4K</strong>
-               </div>
-             </div>
-             <p>Présente ce mail au serveur lors de ta prochaine visite — l'équipe te remettra ton lot.</p>
-             <p style="color: #8892AB; font-size: 12px; margin-top: 32px;">
-               À utiliser dans les 30 jours. Non cumulable avec d'autres offres.
-             </p>`,
-          ),
+          subject: "🎉 Tu as gagné — Roulette du Bistrot Ruliz",
+          html: emailLayout({
+            title: "Bravo, tu as gagné !",
+            eyebrow: "Roulette d'avis Google",
+            preheader:
+              "Tu as gagné une bouteille de Margaux à la roulette du Bistrot Ruliz.",
+            body: `
+              ${lead("Félicitations !")}
+              ${p("Tu viens de gagner à la roulette d'avis du <strong>Bistrot Ruliz</strong> :")}
+              ${hero({
+                emoji: "🍷",
+                title: "Bouteille de Margaux",
+                subtitle: "Médoc · grand cru bourgeois",
+              })}
+              ${p(`Ton code à présenter à l'équipe : ${code("RULIZ-DEMO-9X4K")}`)}
+              ${warnBox(
+                "<strong>Important :</strong> Présente ce mail (ou juste le code) au serveur lors de ta prochaine visite. Le code est unique et personnel — non transférable.",
+              )}
+            `,
+            footnote:
+              "Code valable 30 jours dans le restaurant participant. Non cumulable avec d'autres offres. Non échangeable contre de l'argent.",
+          }),
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
       }
@@ -168,37 +205,4 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
       error: err instanceof Error ? err.message : String(err),
     };
   }
-}
-
-/**
- * Wrapper HTML simple avec branding Ruliz (light DS, bleu signature).
- */
-function simpleHtml(title: string, body: string): string {
-  return `
-<div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif; background: #FAFBFD; color: #0B1530; padding: 24px; line-height: 1.5;">
-  <div style="max-width: 560px; margin: 0 auto; background: #FFFFFF; border: 1px solid #ECEFF5; border-radius: 16px; padding: 32px;">
-    <div style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #8892AB; margin-bottom: 12px;">
-      Email de test · Ruliz
-    </div>
-    <h1 style="font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 16px; color: #0B1530;">
-      ${title}
-    </h1>
-    <style>
-      .btn {
-        display: inline-block;
-        padding: 12px 24px;
-        background: #26438A;
-        color: #FFFFFF !important;
-        text-decoration: none;
-        border-radius: 12px;
-        font-weight: 600;
-      }
-    </style>
-    ${body}
-    <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #ECEFF5; color: #8892AB; font-size: 12px; text-align: center;">
-      Ruliz — SaaS de menus digitaux pour restaurants · <a href="https://ruliz-panel.fr" style="color: #26438A;">ruliz-panel.fr</a>
-    </div>
-  </div>
-</div>
-  `.trim();
 }

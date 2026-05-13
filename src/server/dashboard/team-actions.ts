@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { canAddTeamMember } from "@/lib/restaurant-limits";
 import { sendMail } from "@/lib/resend";
+import { emailLayout, lead, p, infoBox } from "@/lib/email-template";
 import { requireDashboard } from "@/lib/session";
 import { getAppUrl } from "@/lib/url";
 
@@ -89,20 +90,27 @@ export async function inviteTeamMember(input: unknown): Promise<ActionResult> {
   await sendMail({
     to: invitee.email,
     subject: "Tu as été ajouté à une équipe Ruliz",
-    html: `
-      <div style="font-family:system-ui,sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#0f172a">
-        <h1 style="font-size:20px;margin:0 0 16px">Bienvenue dans l'équipe</h1>
-        <p style="margin:0 0 16px;line-height:1.5">
-          Hello ${invitee.prenom ?? ""},<br>
-          Tu as été ajouté comme <strong>${parsed.data.role}</strong> à une équipe Ruliz. Connecte-toi pour gérer la carte avec tes collègues.
-        </p>
-        <p style="margin:0 0 32px">
-          <a href="${getAppUrl()}/login" style="background:#4870e0;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">
-            Me connecter à Ruliz
-          </a>
-        </p>
-      </div>
-    `,
+    html: emailLayout({
+      title: "Bienvenue dans l'équipe",
+      eyebrow: "Invitation Ruliz",
+      preheader: `Tu as été ajouté comme ${parsed.data.role} à une équipe Ruliz.`,
+      body: `
+        ${lead(`Salut${invitee.prenom ? ` ${invitee.prenom}` : ""},`)}
+        ${p(`Tu as été ajouté comme <strong>${parsed.data.role}</strong> à une équipe Ruliz. Tu peux maintenant te connecter pour gérer la carte digitale avec tes collègues.`)}
+        ${infoBox(
+          `<strong>Ton rôle :</strong> ${parsed.data.role}<br>
+          <span style="color:#8892AB;font-size:13px;">${
+            parsed.data.role === "editor"
+              ? "Tu peux modifier la carte, ajouter des produits et gérer les QR codes."
+              : "Tu peux consulter la carte et les statistiques."
+          }</span>`,
+        )}
+      `,
+      cta: {
+        label: "Me connecter à Ruliz",
+        url: `${getAppUrl()}/login`,
+      },
+    }),
   });
 
   revalidatePath("/dashboard/team");
