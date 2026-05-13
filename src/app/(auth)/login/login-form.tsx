@@ -21,10 +21,8 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
 import { clearSessionCookies, getPostLoginUrl } from "@/server/auth/actions";
 
@@ -34,6 +32,32 @@ const loginSchema = z.object({
 });
 
 type LoginValues = z.infer<typeof loginSchema>;
+
+/**
+ * Styles d'input et label en HEX explicites — on évite les var() pour ne PAS
+ * dépendre de la cascade `data-theme="light"` qui peut foirer si une CSS
+ * variable n'est pas overridée correctement par un parent. Tout est lisible
+ * peu importe le contexte parent.
+ */
+const INPUT_STYLE: React.CSSProperties = {
+  width: "100%",
+  height: 44,
+  padding: "0 14px",
+  fontSize: 14,
+  fontWeight: 500,
+  color: "#0B1530",
+  background: "#FFFFFF",
+  border: "1px solid #D8E1F3",
+  borderRadius: 12,
+  outline: "none",
+};
+const LABEL_STYLE: React.CSSProperties = {
+  display: "block",
+  fontSize: 13,
+  fontWeight: 600,
+  color: "#0B1530",
+  marginBottom: 6,
+};
 
 export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const router = useRouter();
@@ -50,7 +74,8 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   async function onSubmit(values: LoginValues) {
     setTopError(null);
     setIsPending(true);
-    let error: { message?: string; code?: string; status?: number } | null = null;
+    let error: { message?: string; code?: string; status?: number } | null =
+      null;
     try {
       const res = await authClient.signIn.email({
         email: values.email,
@@ -73,12 +98,8 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       return;
     }
 
-    // Garde-fou anti-leak : si un cookie ruliz_active_restaurant ou
-    // ruliz_impersonate_user_id (ou ruliz_admin_demo) traîne d'une session
-    // précédente, on le supprime avant la nav.
     await clearSessionCookies().catch(() => null);
 
-    // Détermine la cible selon le rôle (admin → /admin, client → /dashboard).
     let target = "/dashboard";
     try {
       const res = await getPostLoginUrl(redirectTo);
@@ -105,10 +126,9 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
             role="alert"
             className="flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm"
             style={{
-              background: "var(--neon-danger-soft)",
-              borderColor:
-                "color-mix(in srgb, var(--neon-danger) 24%, transparent)",
-              color: "var(--neon-danger)",
+              background: "#FCE8EC",
+              borderColor: "rgba(185, 28, 59, 0.24)",
+              color: "#B91C3B",
             }}
           >
             <AlertCircle className="mt-px size-4 shrink-0" strokeWidth={2} />
@@ -120,10 +140,9 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
             role="status"
             className="flex items-start gap-2.5 rounded-xl border px-3 py-2.5 text-sm"
             style={{
-              background: "var(--neon-success-soft)",
-              borderColor:
-                "color-mix(in srgb, var(--neon-success) 24%, transparent)",
-              color: "var(--neon-success)",
+              background: "#E6F4EE",
+              borderColor: "rgba(26, 127, 90, 0.24)",
+              color: "#1A7F5A",
             }}
           >
             <CheckCircle2 className="mt-px size-4 shrink-0" strokeWidth={2} />
@@ -138,42 +157,70 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email professionnel</FormLabel>
+              <label htmlFor="login-email" style={LABEL_STYLE}>
+                Email professionnel
+              </label>
               <FormControl>
-                <Input
+                <input
+                  id="login-email"
                   type="email"
                   autoComplete="email"
                   placeholder="marie@tirebouchon.fr"
+                  style={INPUT_STYLE}
                   {...field}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = "#26438A";
+                    e.currentTarget.style.boxShadow =
+                      "0 0 0 3px rgba(38,67,138,0.18)";
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = "#D8E1F3";
+                    e.currentTarget.style.boxShadow = "none";
+                    field.onBlur();
+                  }}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
+
         <FormField
           control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
-              <div className="flex items-center justify-between">
-                <FormLabel>Mot de passe</FormLabel>
+              <div className="flex items-baseline justify-between">
+                <label htmlFor="login-password" style={LABEL_STYLE}>
+                  Mot de passe
+                </label>
                 <Link
                   href="/forgot-password"
-                  className="text-xs font-medium text-[var(--accent)] hover:underline"
-                  style={{ textUnderlineOffset: "3px" }}
+                  className="text-xs font-semibold hover:underline"
+                  style={{ color: "#26438A", textUnderlineOffset: "3px" }}
                 >
                   Oublié ?
                 </Link>
               </div>
               <FormControl>
                 <div className="relative">
-                  <Input
+                  <input
+                    id="login-password"
                     type={showPwd ? "text" : "password"}
                     autoComplete="current-password"
                     placeholder="••••••••"
-                    className="pr-11"
+                    style={{ ...INPUT_STYLE, paddingRight: 44 }}
                     {...field}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = "#26438A";
+                      e.currentTarget.style.boxShadow =
+                        "0 0 0 3px rgba(38,67,138,0.18)";
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = "#D8E1F3";
+                      e.currentTarget.style.boxShadow = "none";
+                      field.onBlur();
+                    }}
                   />
                   <button
                     type="button"
@@ -184,7 +231,8 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
                         : "Afficher le mot de passe"
                     }
                     tabIndex={-1}
-                    className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-secondary)]"
+                    className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg transition"
+                    style={{ color: "#8892AB" }}
                   >
                     {showPwd ? (
                       <EyeOff className="size-4" strokeWidth={1.75} />
@@ -198,11 +246,17 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
             </FormItem>
           )}
         />
+
         <Button
           type="submit"
           size="lg"
           className="w-full gap-2"
           disabled={isPending || success}
+          style={{
+            background: "#26438A",
+            color: "#FFFFFF",
+            border: 0,
+          }}
         >
           {isPending ? (
             <>
