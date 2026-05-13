@@ -38,6 +38,13 @@ export interface SidebarNavItem {
   href: string;
   icon: LucideIcon;
   badge?: string;
+  /**
+   * Si true, rend un `<a>` natif au lieu d'un `<Link>` Next.js. Utilisé
+   * pour les liens qui pointent vers un Route Handler (et pas une page),
+   * où le SPA fetch RSC ne suit pas correctement le redirect 302 et
+   * perd les cookies de la response.
+   */
+  external?: boolean;
 }
 
 export interface SidebarNavSection {
@@ -99,7 +106,12 @@ const ADMIN_NAV: SidebarNavSection[] = [
   {
     titleKey: "nav.section.outils",
     items: [
-      { labelKey: "nav.admin.demo", href: "/admin/demo", icon: FlaskConical },
+      {
+        labelKey: "nav.admin.demo",
+        href: "/admin/demo",
+        icon: FlaskConical,
+        external: true, // Route handler — exige un full page reload
+      },
     ],
   },
   {
@@ -185,8 +197,12 @@ function NavItem({
 }) {
   const { t } = usePanelLang();
   const label = t(item.labelKey);
+  // Pour les Route Handlers (ex: /admin/demo qui set des cookies et redirect),
+  // on doit utiliser <a> natif pour forcer une vraie navigation HTTP. Sinon
+  // Next.js fait un fetch RSC qui ne commit ni les cookies ni le redirect.
+  const LinkTag = item.external ? "a" : Link;
   const link = (
-    <Link
+    <LinkTag
       href={item.href}
       aria-current={active ? "page" : undefined}
       aria-label={collapsed ? label : undefined}
@@ -260,7 +276,7 @@ function NavItem({
           )}
         </>
       )}
-    </Link>
+    </LinkTag>
   );
 
   // En mode collapsed, on enrobe d'un Tooltip pour montrer le label au hover

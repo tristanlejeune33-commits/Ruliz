@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { FlaskConical, LogOut } from "lucide-react";
 import { getAdminDemoFlag } from "@/lib/admin-demo";
 
@@ -26,13 +25,17 @@ export async function AdminDemoBanner() {
           </p>
         </div>
       </div>
-      <Link
+      {/* <a> natif (pas <Link>) car /api/admin/demo/exit est un Route Handler :
+          on a besoin d'un full page reload pour que les cookies de la response
+          soient bien commités au browser, sinon Next.js fait un fetch RSC qui
+          ignore la response. */}
+      <a
         href="/api/admin/demo/exit"
         className="inline-flex shrink-0 items-center gap-2 rounded-md border border-amber-500/40 bg-white/40 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-white/70 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
       >
         <LogOut className="size-3.5" strokeWidth={2} />
         Retour à l&apos;admin
-      </Link>
+      </a>
     </div>
   );
 }
