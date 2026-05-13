@@ -246,8 +246,11 @@ export function CartePreviewPane({ defaultCarteUrl }: CartePreviewPaneProps = {}
           </p>
         </div>
 
+        {/* Phone interactive : pas de pointer-events-none ici → l'iframe
+            de la carte démo accepte les clicks, scrolls, ouverture des
+            modales produit, switch langue, etc. */}
         <div
-          className="pointer-events-none absolute -bottom-8 right-12 hidden xl:block"
+          className="absolute -bottom-8 right-12 hidden xl:block"
           style={{
             transform: "rotate(-4deg)",
             filter: "drop-shadow(0 30px 60px rgba(0,0,0,0.35))",
