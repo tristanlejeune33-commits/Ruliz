@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Building2, ExternalLink, Globe2, MapPin } from "lucide-react";
+
+// Force le re-fetch à chaque hit pour ne JAMAIS retourner une version cached
+// du restaurant. Sans ça, après un save l'auto-save écrit bien en DB mais
+// quand l'user revient sur la page, Next.js sert la version cached et
+// l'user voit les anciennes valeurs → impression que rien n'a été sauvegardé.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 import { Button } from "@/components/ui/button";
 import {
   HeroEyebrow,

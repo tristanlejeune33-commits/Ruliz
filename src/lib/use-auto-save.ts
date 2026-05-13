@@ -64,14 +64,28 @@ export function useAutoSave<T extends FieldValues>({
       // Skip le premier render (au mount, avant qu'aucun champ soit modifié)
       if (isFirstRenderRef.current) {
         isFirstRenderRef.current = false;
+        console.debug("[autosave] skip first render");
         return;
       }
 
       // Skip si le form n'est pas dirty (ex: reset programmatique)
-      if (!form.formState.isDirty) return;
+      if (!form.formState.isDirty) {
+        console.debug("[autosave] skip: not dirty", info.name);
+        return;
+      }
 
       // Skip si on lit juste les valeurs (pas un user input)
-      if (info.type !== "change") return;
+      if (info.type !== "change") {
+        console.debug("[autosave] skip: not 'change' event, got", info.type);
+        return;
+      }
+
+      console.debug(
+        "[autosave] triggered for field:",
+        info.name,
+        "new value:",
+        info.name ? (values as Record<string, unknown>)[info.name] : "?",
+      );
 
       // Reset le timer
       if (timerRef.current) clearTimeout(timerRef.current);
@@ -88,8 +102,10 @@ export function useAutoSave<T extends FieldValues>({
         }
 
         setStatus("saving");
+        console.debug("[autosave] calling onSave with values", values);
         try {
           const result = await onSave(values as T);
+          console.debug("[autosave] onSave returned", result);
           if (result.ok) {
             setStatus("saved");
             // Reset le dirty state pour éviter les save inutiles ensuite
