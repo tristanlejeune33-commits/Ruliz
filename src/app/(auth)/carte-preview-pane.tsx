@@ -18,6 +18,12 @@ function readStoredUrl(): string {
   }
 }
 
+interface CartePreviewPaneProps {
+  /** URL par défaut chargée dans le téléphone si l'user n'a pas branché
+   *  sa carte manuellement (ex: l'URL du Bistrot Ruliz démo admin). */
+  defaultCarteUrl?: string;
+}
+
 /**
  * Pane droit de l'écran d'auth (login/signup).
  *
@@ -30,10 +36,12 @@ function readStoredUrl(): string {
  * une URL — utile en démo / onboarding. Si la prod renvoie `X-Frame-Options:
  * DENY`, l'iframe affichera blanc → fallback mockup automatique.
  */
-export function CartePreviewPane() {
-  const [carteUrl, setCarteUrl] = useState(readStoredUrl);
+export function CartePreviewPane({ defaultCarteUrl }: CartePreviewPaneProps = {}) {
+  // Priorité : localStorage user-set > defaultCarteUrl (Bistrot Ruliz démo)
+  const initial = () => readStoredUrl() || defaultCarteUrl || "";
+  const [carteUrl, setCarteUrl] = useState(initial);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [draftUrl, setDraftUrl] = useState(readStoredUrl);
+  const [draftUrl, setDraftUrl] = useState(initial);
   const [iframeErr, setIframeErr] = useState(false);
 
   function applyUrl(url: string) {

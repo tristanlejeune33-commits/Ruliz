@@ -1,13 +1,38 @@
 import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
+import { prisma } from "@/lib/db";
 import { CartePreviewPane } from "./carte-preview-pane";
 
 /**
  * Auth layout — light mode forcé (logique marketing : un visiteur non connecté
  * n'a pas encore de préférence stockée, on lui sert une UI accueillante claire).
  * Le toggle dark/light du dashboard s'applique uniquement après login.
+ *
+ * Le pane droit affiche la **carte démo admin (Bistrot Ruliz)** par défaut
+ * dans l'iframe du téléphone. Si la query échoue (table manquante, pas de
+ * resto démo créé), on retombe sur le mockup statique.
  */
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+async function getDemoCarteId(): Promise<string | null> {
+  try {
+    const demoResto = await prisma.restaurant.findFirst({
+      where: { user: { role: "admin" } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    return demoResto ? demoResto.id.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const demoCarteId = await getDemoCarteId();
+  const defaultCarteUrl = demoCarteId ? `/carte/${demoCarteId}` : undefined;
+
   return (
     <div
       data-theme="light"
@@ -52,9 +77,9 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         </footer>
       </div>
 
-      {/* Showcase pane — phone preview avec mockup carte ou iframe live */}
+      {/* Showcase pane — phone preview avec carte démo Bistrot Ruliz */}
       <div className="relative hidden overflow-hidden lg:block">
-        <CartePreviewPane />
+        <CartePreviewPane defaultCarteUrl={defaultCarteUrl} />
       </div>
     </div>
   );

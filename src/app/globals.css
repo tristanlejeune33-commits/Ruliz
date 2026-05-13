@@ -691,6 +691,30 @@
   animation: pulse-halo 1.8s var(--ease-default) infinite;
 }
 
+/* === Neutralise les couleurs d'autofill Chrome/WebKit ===
+   Sans ça, les inputs autofill apparaissent en fond jaune-pâle avec un
+   texte gris très clair illisible (notamment sur la page de login avec
+   l'email mémorisé). On force la couleur du texte au foreground du DS
+   et on remplace le fond jaune par le bg-glass du DS via une fake inset
+   shadow (la background-color en autofill n'est pas modifiable côté
+   browser). */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill,
+select:-webkit-autofill:hover,
+select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary) !important;
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-glass) inset !important;
+  caret-color: var(--text-primary);
+  /* Long transition pour que l'animation autofill ne montre pas le jaune */
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 /* Reduced motion — désactive tous les transforms / animations longues */
 @media (prefers-reduced-motion: reduce) {
   *,
