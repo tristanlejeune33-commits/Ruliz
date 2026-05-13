@@ -59,6 +59,21 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "plan_offert_by_user_id" INTEGER;
     `);
 
+    // === Horaires de service (presets créneaux catégories) ===
+    // Lunch / Dinner / Happy Hour — utilisés dans /dashboard/restaurant pour
+    // pré-configurer les créneaux que les catégories peuvent réutiliser.
+    // Sans ces colonnes, updateRestaurant plante silencieusement → l'auto-save
+    // ne persiste rien et le user revoit ses anciennes valeurs au refresh.
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "lunch_start"      VARCHAR(5) DEFAULT '11:30',
+        ADD COLUMN IF NOT EXISTS "lunch_end"        VARCHAR(5) DEFAULT '15:00',
+        ADD COLUMN IF NOT EXISTS "dinner_start"     VARCHAR(5) DEFAULT '18:30',
+        ADD COLUMN IF NOT EXISTS "dinner_end"       VARCHAR(5) DEFAULT '23:00',
+        ADD COLUMN IF NOT EXISTS "happy_hour_start" VARCHAR(5) DEFAULT '18:00',
+        ADD COLUMN IF NOT EXISTS "happy_hour_end"   VARCHAR(5) DEFAULT '19:00';
+    `);
+
     // === Tables SMS marketing ===
     await prisma.$executeRawUnsafe(`
       CREATE TABLE IF NOT EXISTS "sms_balance" (
