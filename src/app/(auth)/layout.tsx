@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
 import { prisma } from "@/lib/db";
+import { ensureAdminDemoRestaurant } from "@/lib/admin-demo";
 import { CartePreviewPane } from "./carte-preview-pane";
 
 /**
@@ -16,24 +17,40 @@ async function getDemoCarteId(): Promise<string | null> {
   try {
     // Priorité : email admin spécifique via env ADMIN_DEMO_EMAIL (recommandé
     // en prod pour cibler le bon compte), fallback sur le premier admin.
-    const adminEmail = process.env.ADMIN_DEMO_EMAIL ?? "tristanlejeune33@gmail.com";
+    const adminEmail =
+      process.env.ADMIN_DEMO_EMAIL ?? "tristanlejeune33@gmail.com";
 
-    const demoResto =
-      (await prisma.restaurant.findFirst({
-        where: {
-          user: { role: "admin", email: adminEmail },
-        },
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      })) ??
-      (await prisma.restaurant.findFirst({
-        where: { user: { role: "admin" } },
-        orderBy: { createdAt: "asc" },
-        select: { id: true },
-      }));
+    // Cherche le resto démo de l'admin spécifique
+    const existing = await prisma.restaurant.findFirst({
+      where: { user: { role: "admin", email: adminEmail } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    if (existing) return existing.id.toString();
 
-    return demoResto ? demoResto.id.toString() : null;
-  } catch {
+    // Pas de resto démo encore → on le crée à la volée pour que l'iframe
+    // de la page login charge directement la VRAIE carte de l'admin (au
+    // lieu de retomber sur le mockup statique). Idempotent : si l'admin
+    // clique ensuite sur "Ma carte démo", la même carte est retournée.
+    const adminUser = await prisma.user.findFirst({
+      where: { role: "admin", email: adminEmail },
+      select: { id: true },
+    });
+    if (adminUser) {
+      const created = await ensureAdminDemoRestaurant(adminUser.id);
+      return created.id.toString();
+    }
+
+    // Fallback ultime : premier admin trouvé (compte différent de l'email
+    // configuré, ex: en dev local avec un seed différent).
+    const fallback = await prisma.restaurant.findFirst({
+      where: { user: { role: "admin" } },
+      orderBy: { createdAt: "asc" },
+      select: { id: true },
+    });
+    return fallback ? fallback.id.toString() : null;
+  } catch (err) {
+    console.warn("[auth-layout] getDemoCarteId failed:", err);
     return null;
   }
 }
