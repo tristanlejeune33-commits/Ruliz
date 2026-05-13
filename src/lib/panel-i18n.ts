@@ -289,6 +289,15 @@ const DICT: Record<string, LangDict> = {
     pt: "Minha carta demo",
     zh: "我的演示菜单",
   },
+  "nav.admin.email_test": {
+    fr: "Test emails",
+    en: "Test emails",
+    es: "Probar emails",
+    de: "E-Mails testen",
+    it: "Testa email",
+    pt: "Testar emails",
+    zh: "测试邮件",
+  },
   "nav.section.outils": {
     fr: "Outils",
     en: "Tools",

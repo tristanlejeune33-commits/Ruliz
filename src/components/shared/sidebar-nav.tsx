@@ -12,6 +12,7 @@ import {
   Gauge,
   LayoutDashboard,
   type LucideIcon,
+  Mail,
   Megaphone,
   MessageSquare,
   Package,
@@ -111,6 +112,11 @@ const ADMIN_NAV: SidebarNavSection[] = [
         href: "/admin/demo",
         icon: FlaskConical,
         external: true, // Route handler — exige un full page reload
+      },
+      {
+        labelKey: "nav.admin.email_test",
+        href: "/admin/email-test",
+        icon: Mail,
       },
     ],
   },
