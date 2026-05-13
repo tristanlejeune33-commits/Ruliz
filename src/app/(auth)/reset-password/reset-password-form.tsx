@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,71 +25,55 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
-import { clearSessionCookies, getPostLoginUrl } from "@/server/auth/actions";
 
-const loginSchema = z.object({
-  email: z.email("Email invalide"),
-  password: z.string().min(8, "8 caractères minimum"),
-});
+const schema = z
+  .object({
+    password: z.string().min(8, "8 caractères minimum"),
+    confirm: z.string().min(8),
+  })
+  .refine((v) => v.password === v.confirm, {
+    message: "Les mots de passe ne correspondent pas",
+    path: ["confirm"],
+  });
 
-type LoginValues = z.infer<typeof loginSchema>;
+type Values = z.infer<typeof schema>;
 
-export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+export function ResetPasswordForm({ token }: { token: string }) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [topError, setTopError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const form = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { password: "", confirm: "" },
   });
 
-  async function onSubmit(values: LoginValues) {
+  async function onSubmit(values: Values) {
     setTopError(null);
     setIsPending(true);
-    let error: { message?: string; code?: string; status?: number } | null = null;
     try {
-      const res = await authClient.signIn.email({
-        email: values.email,
-        password: values.password,
+      const res = await authClient.resetPassword({
+        newPassword: values.password,
+        token,
       });
-      error = res.error;
+      if (res.error) {
+        setTopError(
+          res.error.message ??
+            "Lien expiré ou invalide. Refais une demande.",
+        );
+        setIsPending(false);
+        return;
+      }
+      setSuccess(true);
+      toast.success("Mot de passe mis à jour. Redirection…");
+      setTimeout(() => router.push("/login"), 1500);
     } catch (err) {
-      console.error("[login] signIn.email threw:", err);
       const msg = err instanceof Error ? err.message : String(err);
       setTopError(`Erreur serveur : ${msg}`);
       setIsPending(false);
-      return;
     }
-
-    if (error) {
-      console.error("[login] auth error:", error);
-      const detail = error.message ?? error.code ?? "inconnue";
-      setTopError(`Connexion impossible : ${detail}`);
-      setIsPending(false);
-      return;
-    }
-
-    // Garde-fou anti-leak : si un cookie ruliz_active_restaurant ou
-    // ruliz_impersonate_user_id (ou ruliz_admin_demo) traîne d'une session
-    // précédente, on le supprime avant la nav.
-    await clearSessionCookies().catch(() => null);
-
-    // Détermine la cible selon le rôle (admin → /admin, client → /dashboard).
-    let target = "/dashboard";
-    try {
-      const res = await getPostLoginUrl(redirectTo);
-      target = res.url;
-    } catch (err) {
-      console.warn("[login] getPostLoginUrl failed, fallback /dashboard:", err);
-    }
-
-    setSuccess(true);
-    toast.success("Connecté.");
-    router.push(target);
-    router.refresh();
   }
 
   return (
@@ -128,60 +111,32 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           >
             <CheckCircle2 className="mt-px size-4 shrink-0" strokeWidth={2} />
             <span className="leading-snug">
-              Connecté. Redirection vers le tableau de bord…
+              Mot de passe mis à jour. Tu peux te reconnecter.
             </span>
           </div>
         )}
 
         <FormField
           control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email professionnel</FormLabel>
-              <FormControl>
-                <Input
-                  type="email"
-                  autoComplete="email"
-                  placeholder="marie@tirebouchon.fr"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="password"
           render={({ field }) => (
             <FormItem>
-              <div className="flex items-center justify-between">
-                <FormLabel>Mot de passe</FormLabel>
-                <Link
-                  href="/forgot-password"
-                  className="text-xs font-medium text-[var(--accent)] hover:underline"
-                  style={{ textUnderlineOffset: "3px" }}
-                >
-                  Oublié ?
-                </Link>
-              </div>
+              <FormLabel>Nouveau mot de passe</FormLabel>
               <FormControl>
                 <div className="relative">
                   <Input
                     type={showPwd ? "text" : "password"}
-                    autoComplete="current-password"
-                    placeholder="••••••••"
+                    autoComplete="new-password"
+                    placeholder="8 caractères minimum"
                     className="pr-11"
+                    autoFocus
                     {...field}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPwd((v) => !v)}
                     aria-label={
-                      showPwd
-                        ? "Masquer le mot de passe"
-                        : "Afficher le mot de passe"
+                      showPwd ? "Masquer" : "Afficher"
                     }
                     tabIndex={-1}
                     className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg text-[var(--text-tertiary)] transition hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-secondary)]"
@@ -198,6 +153,26 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="confirm"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirme ton mot de passe</FormLabel>
+              <FormControl>
+                <Input
+                  type={showPwd ? "text" : "password"}
+                  autoComplete="new-password"
+                  placeholder="Retape le mot de passe"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <Button
           type="submit"
           size="lg"
@@ -207,16 +182,16 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              <span>Connexion…</span>
+              <span>Mise à jour…</span>
             </>
           ) : success ? (
             <>
               <CheckCircle2 className="size-4" strokeWidth={2.5} />
-              <span>Connecté</span>
+              <span>Réussi</span>
             </>
           ) : (
             <>
-              <span>Se connecter</span>
+              <span>Changer mon mot de passe</span>
               <ArrowRight className="size-4" strokeWidth={2} />
             </>
           )}

@@ -181,7 +181,7 @@ export function Roulette({
       return;
     }
     if (!conditionsOK) {
-      toast.error("Tu dois accepter les règles du jeu.");
+      toast.error("Tu dois accepter les CGV et la politique de confidentialité.");
       return;
     }
     setStep("social");
@@ -522,12 +522,21 @@ function FormStep({
           <span className="text-[11px] leading-tight text-white/95">
             *Je confirme avoir pris connaissance et accepté les{" "}
             <a
-              href="https://ruliz.fr/dp"
+              href="/legal/mentions-legales"
               target="_blank"
               rel="noreferrer"
               className="underline"
             >
-              règles du jeu
+              CGV
+            </a>{" "}
+            et la{" "}
+            <a
+              href="/legal/politique-confidentialite"
+              target="_blank"
+              rel="noreferrer"
+              className="underline"
+            >
+              politique de confidentialité
             </a>
             .
           </span>
@@ -707,16 +716,25 @@ function SocialStep({
         Votre avis ou votre abonnement n&apos;influencera pas vos chances de gagner.
       </p>
 
-      {/* Rappel règles du jeu — lien permanent en bas */}
+      {/* Rappel CGV + confidentialité — liens permanents en bas */}
       <p className="text-center text-[10px] text-neutral-400">
         ✓ En participant, vous acceptez les{" "}
         <a
-          href="https://ruliz.fr/dp"
+          href="/legal/mentions-legales"
           target="_blank"
           rel="noreferrer"
           className="underline hover:text-neutral-700"
         >
-          règles du jeu
+          CGV
+        </a>{" "}
+        et la{" "}
+        <a
+          href="/legal/politique-confidentialite"
+          target="_blank"
+          rel="noreferrer"
+          className="underline hover:text-neutral-700"
+        >
+          politique de confidentialité
         </a>
         .
       </p>
@@ -781,16 +799,25 @@ function CountdownStep({
         Votre avis ou votre abonnement n&apos;influencera pas vos chances de gagner.
       </p>
 
-      {/* Rappel règles du jeu — lien permanent en bas */}
+      {/* Rappel CGV + confidentialité — liens permanents en bas */}
       <p className="text-center text-[10px] text-neutral-400">
         ✓ En participant, vous acceptez les{" "}
         <a
-          href="https://ruliz.fr/dp"
+          href="/legal/mentions-legales"
           target="_blank"
           rel="noreferrer"
           className="underline hover:text-neutral-700"
         >
-          règles du jeu
+          CGV
+        </a>{" "}
+        et la{" "}
+        <a
+          href="/legal/politique-confidentialite"
+          target="_blank"
+          rel="noreferrer"
+          className="underline hover:text-neutral-700"
+        >
+          politique de confidentialité
         </a>
         .
       </p>

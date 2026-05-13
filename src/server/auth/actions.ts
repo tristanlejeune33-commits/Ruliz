@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { headers, cookies } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -12,8 +12,8 @@ export type ActionResult<T = unknown> =
 
 /**
  * Nettoie les cookies session-scoped au login/logout pour éviter qu'un
- * cookie d'un précédent user (active restaurant, impersonation admin SAV)
- * fuite vers un autre compte sur le même navigateur.
+ * cookie d'un précédent user (active restaurant, impersonation admin SAV,
+ * mode démo admin) fuite vers un autre compte sur le même navigateur.
  *
  * À appeler côté client juste après signIn / signUp.
  */
@@ -21,7 +21,36 @@ export async function clearSessionCookies(): Promise<{ ok: true }> {
   const cookieStore = await cookies();
   cookieStore.delete("ruliz_active_restaurant");
   cookieStore.delete("ruliz_impersonate_user_id");
+  cookieStore.delete("ruliz_admin_demo");
   return { ok: true };
+}
+
+/**
+ * Retourne l'URL où rediriger l'utilisateur juste après un login réussi :
+ *   - admin (role=admin) → /admin
+ *   - sinon → /dashboard (ou redirectTo si fourni et autorisé)
+ *
+ * Appelé côté client depuis le login-form après signIn.email().
+ */
+export async function getPostLoginUrl(
+  redirectTo?: string,
+): Promise<{ url: string }> {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session) return { url: "/login" };
+
+  const authUser = await prisma.authUser.findUnique({
+    where: { id: session.user.id },
+    select: { user: { select: { role: true } } },
+  });
+  const role = authUser?.user?.role ?? "client";
+
+  if (role === "admin") return { url: "/admin" };
+
+  // Whitelist redirectTo aux chemins internes pour éviter l'open redirect.
+  if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
+    return { url: redirectTo };
+  }
+  return { url: "/dashboard" };
 }
 
 const signupSchema = z.object({

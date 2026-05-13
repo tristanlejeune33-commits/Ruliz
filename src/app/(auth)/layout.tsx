@@ -14,11 +14,24 @@ import { CartePreviewPane } from "./carte-preview-pane";
  */
 async function getDemoCarteId(): Promise<string | null> {
   try {
-    const demoResto = await prisma.restaurant.findFirst({
-      where: { user: { role: "admin" } },
-      orderBy: { createdAt: "asc" },
-      select: { id: true },
-    });
+    // Priorité : email admin spécifique via env ADMIN_DEMO_EMAIL (recommandé
+    // en prod pour cibler le bon compte), fallback sur le premier admin.
+    const adminEmail = process.env.ADMIN_DEMO_EMAIL ?? "tristanlejeune33@gmail.com";
+
+    const demoResto =
+      (await prisma.restaurant.findFirst({
+        where: {
+          user: { role: "admin", email: adminEmail },
+        },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      })) ??
+      (await prisma.restaurant.findFirst({
+        where: { user: { role: "admin" } },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
+      }));
+
     return demoResto ? demoResto.id.toString() : null;
   } catch {
     return null;

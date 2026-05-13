@@ -181,15 +181,22 @@ export function SignupForm() {
           {isPending && <Loader2 className="size-4 animate-spin" />}
           Créer mon compte
         </Button>
-        <p className="text-center text-xs text-[var(--text-muted)]">
+        <p className="text-center text-xs text-[var(--text-secondary)]">
           En créant un compte, tu acceptes nos{" "}
-          <a href="/legal/cgv" className="underline hover:text-[var(--text-primary)]">
+          <a
+            href="/legal/mentions-legales"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-[var(--accent)] underline hover:text-[var(--text-primary)]"
+          >
             CGV
           </a>{" "}
           et notre{" "}
           <a
-            href="/legal/privacy"
-            className="underline hover:text-[var(--text-primary)]"
+            href="/legal/politique-confidentialite"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-[var(--accent)] underline hover:text-[var(--text-primary)]"
           >
             politique de confidentialité
           </a>
