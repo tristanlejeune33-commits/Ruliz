@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, PanelLeft, PanelLeftClose, Search } from "lucide-react";
+import { PanelLeft, PanelLeftClose, Search } from "lucide-react";
 import { Kbd } from "@/components/ui/kbd";
 import {
   Tooltip,
@@ -84,33 +84,6 @@ export function Topbar({ user, onOpenCommand, leftSlot }: TopbarProps) {
             <Kbd>⌘K</Kbd>
           </button>
         </div>
-
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button
-              type="button"
-              className="relative inline-flex size-9 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-glass-hover)] hover:text-[var(--text-primary)]"
-              aria-label={t("topbar.notifications")}
-            >
-              <Bell className="size-4" strokeWidth={1.75} />
-              <span
-                aria-hidden
-                className="absolute right-2 top-2 flex size-2"
-              >
-                <span className="pulse-dot absolute inset-0 rounded-full bg-[var(--neon-danger)]" />
-                <span className="relative size-2 rounded-full bg-[var(--neon-danger)] ring-2 ring-[var(--bg-primary)]" />
-              </span>
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="bottom" sideOffset={8}>
-            {t("topbar.notifications")}
-          </TooltipContent>
-        </Tooltip>
-
-        <span
-          aria-hidden
-          className="mx-1 hidden h-5 w-px bg-[var(--border-glass)] sm:block"
-        />
 
         <div className="flex items-center gap-1">
           <PreviewLangPicker />
