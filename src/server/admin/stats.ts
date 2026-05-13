@@ -22,6 +22,23 @@ export async function getAdminKpis() {
   const since7d = new Date(now - 7 * 24 * 60 * 60 * 1000);
   const since30d = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
+  // Pré-récupère les IDs des restos admin pour pouvoir les filtrer dans
+  // les queries Scan (qui n'ont qu'un foreign key `restaurantId` sans
+  // relation Prisma typée — on ne peut donc pas faire `restaurant: {…}`).
+  const adminRestoIds = (
+    await prisma.restaurant.findMany({
+      where: NON_ADMIN_USER_FILTER.user
+        ? { user: { role: "admin" } }
+        : undefined,
+      select: { id: true },
+    })
+  ).map((r) => r.id);
+
+  const scanWhereExcl =
+    adminRestoIds.length > 0
+      ? { restaurantId: { notIn: adminRestoIds } }
+      : {};
+
   const [
     activeClients,
     newClients7d,
@@ -52,48 +69,31 @@ export async function getAdminKpis() {
       _sum: { scanTotal: true },
       where: { restaurant: NON_ADMIN_USER_FILTER },
     }),
-    // Scans 24h / 7j / 30j depuis la table scans (events bruts)
+    // Scans 24h / 7j / 30j — `Scan` n'a pas de relation Prisma vers
+    // Restaurant, on filtre par restaurantId.
     prisma.scan.count({
-      where: {
-        scannedAt: { gte: since24h },
-        restaurant: NON_ADMIN_USER_FILTER,
-      },
+      where: { scannedAt: { gte: since24h }, ...scanWhereExcl },
     }),
     prisma.scan.count({
-      where: {
-        scannedAt: { gte: since7d },
-        restaurant: NON_ADMIN_USER_FILTER,
-      },
+      where: { scannedAt: { gte: since7d }, ...scanWhereExcl },
     }),
     prisma.scan.count({
-      where: {
-        scannedAt: { gte: since30d },
-        restaurant: NON_ADMIN_USER_FILTER,
-      },
+      where: { scannedAt: { gte: since30d }, ...scanWhereExcl },
     }),
-    // Restaurants distincts ayant reçu au moins un scan aujourd'hui
     prisma.scan.groupBy({
       by: ["restaurantId"],
       where: {
         scannedAt: { gte: since24h },
-        restaurantId: { not: null },
-        restaurant: NON_ADMIN_USER_FILTER,
-      },
-    }),
-    // Approximation "scans uniques" : groupBy userAgent (proxy faute d'ipHash en DB)
-    prisma.scan.groupBy({
-      by: ["userAgent"],
-      where: {
-        scannedAt: { gte: since7d },
-        restaurant: NON_ADMIN_USER_FILTER,
+        restaurantId: { not: null, notIn: adminRestoIds },
       },
     }),
     prisma.scan.groupBy({
       by: ["userAgent"],
-      where: {
-        scannedAt: { gte: since30d },
-        restaurant: NON_ADMIN_USER_FILTER,
-      },
+      where: { scannedAt: { gte: since7d }, ...scanWhereExcl },
+    }),
+    prisma.scan.groupBy({
+      by: ["userAgent"],
+      where: { scannedAt: { gte: since30d }, ...scanWhereExcl },
     }),
   ]);
 
