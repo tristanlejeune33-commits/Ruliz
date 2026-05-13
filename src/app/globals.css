@@ -672,6 +672,25 @@
   50% { opacity: 0; transform: scale(1.4); }
 }
 
+/* "Services opérationnels" pulse — dot vert avec halo expansif, utilisé en
+   topbar des pages d'auth (light mode) pour signaler l'état du SaaS. */
+.rz-pulse {
+  position: relative;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--neon-success, #1a7f5a);
+}
+.rz-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 4px rgba(26, 127, 90, 0.18);
+  animation: pulse-halo 1.8s var(--ease-default) infinite;
+}
+
 /* Reduced motion — désactive tous les transforms / animations longues */
 @media (prefers-reduced-motion: reduce) {
   *,

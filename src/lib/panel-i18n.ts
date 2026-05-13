@@ -280,6 +280,24 @@ const DICT: Record<string, LangDict> = {
     pt: "Pedidos / Faturas",
     zh: "订单/发票",
   },
+  "nav.admin.demo": {
+    fr: "Ma carte démo",
+    en: "My demo menu",
+    es: "Mi carta demo",
+    de: "Meine Demo-Karte",
+    it: "La mia carta demo",
+    pt: "Minha carta demo",
+    zh: "我的演示菜单",
+  },
+  "nav.section.outils": {
+    fr: "Outils",
+    en: "Tools",
+    es: "Herramientas",
+    de: "Werkzeuge",
+    it: "Strumenti",
+    pt: "Ferramentas",
+    zh: "工具",
+  },
 
   // -----------------------------------------------------------------------
   // Topbar

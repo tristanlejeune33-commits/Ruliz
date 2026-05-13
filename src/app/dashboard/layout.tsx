@@ -5,6 +5,7 @@ import { AppShell, COLLAPSED_COOKIE } from "@/components/shared/app-shell";
 // users différents — l'auth est cookie-based donc chaque request a son
 // propre user, on doit refetch côté serveur à chaque navigation.
 export const dynamic = "force-dynamic";
+import { AdminDemoBanner } from "@/components/shared/admin-demo-banner";
 import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
 import {
   PanelLangProvider,
@@ -191,6 +192,7 @@ export default async function DashboardLayout({
           <RestaurantSwitcher restaurants={restaurants} activeId={activeId} />
         }
       >
+        <AdminDemoBanner />
         {activeRestaurant && (
           <div className="mb-4">
             <SubscriptionBanner

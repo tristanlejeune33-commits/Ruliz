@@ -8,6 +8,7 @@ import {
   ActivitySquare,
   Building2,
   CreditCard,
+  FlaskConical,
   Gauge,
   LayoutDashboard,
   type LucideIcon,
@@ -93,6 +94,12 @@ const ADMIN_NAV: SidebarNavSection[] = [
       { labelKey: "nav.admin.restaurants", href: "/admin/restaurants", icon: Building2 },
       { labelKey: "nav.admin.logs", href: "/admin/logs", icon: ScrollText },
       { labelKey: "nav.boutique", href: "/admin/boutique", icon: Package },
+    ],
+  },
+  {
+    titleKey: "nav.section.outils",
+    items: [
+      { labelKey: "nav.admin.demo", href: "/admin/demo", icon: FlaskConical },
     ],
   },
   {
