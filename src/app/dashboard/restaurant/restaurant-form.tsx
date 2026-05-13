@@ -705,6 +705,33 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
           status={autoSaveStatus}
           errorMessage={autoSaveError}
         />
+
+        {/* Bouton "Sauvegarder maintenant" sticky bas — fallback si l'auto-save
+            ne trigger pas pour une raison X (browser, focus loss, etc.).
+            Click → submit synchrone garanti + toast de feedback. */}
+        <div className="sticky bottom-0 z-10 -mx-6 mt-6 flex items-center justify-between gap-3 border-t border-[var(--border-glass)] bg-[var(--bg-primary)]/95 px-6 py-3 backdrop-blur">
+          <div className="text-xs text-[var(--text-muted)]">
+            {autoSaveStatus === "saving" && "Sauvegarde en cours…"}
+            {autoSaveStatus === "saved" && "✓ Sauvegardé"}
+            {autoSaveStatus === "pending" && "Modification en attente…"}
+            {autoSaveStatus === "error" &&
+              "✗ Erreur — clique le bouton pour réessayer"}
+            {autoSaveStatus === "idle" && "Auto-save activé"}
+          </div>
+          <Button type="submit" disabled={pending} className="gap-2">
+            {pending ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Sauvegarde…
+              </>
+            ) : (
+              <>
+                <Save className="size-4" strokeWidth={2} />
+                Sauvegarder maintenant
+              </>
+            )}
+          </Button>
+        </div>
       </form>
     </Form>
   );
