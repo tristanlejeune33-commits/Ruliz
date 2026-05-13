@@ -237,22 +237,53 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ON "boutique_shipping_tiers" ("max_grams");
     `);
     // Seed des tiers Colissimo France métropolitaine si la table est vide.
-    // Prix indicatifs 2024 — l'admin peut tout modifier ensuite.
+    // === Tarifs officiels Colissimo France métropolitaine avec livraison
+    // à domicile, applicables au 01/04/2026 (cf. cahier tarifaire La Poste
+    // particuliers). Reflète exactement la grille 9 paliers de l'opérateur.
+    // L'admin peut modifier ensuite via /admin/boutique → Frais de port.
     await prisma.$executeRawUnsafe(`
       INSERT INTO "boutique_shipping_tiers" (max_grams, fee_centimes, label, position)
       SELECT * FROM (VALUES
-        (250,    515, 'Jusqu''à 250 g',     1),
-        (500,    695, 'Jusqu''à 500 g',     2),
-        (750,    830, 'Jusqu''à 750 g',     3),
-        (1000,   940, 'Jusqu''à 1 kg',      4),
-        (2000,  1090, 'Jusqu''à 2 kg',      5),
-        (5000,  1480, 'Jusqu''à 5 kg',      6),
-        (10000, 1840, 'Jusqu''à 10 kg',     7),
-        (15000, 2510, 'Jusqu''à 15 kg',     8),
-        (30000, 3230, 'Jusqu''à 30 kg',     9)
+        (250,    549, 'Jusqu''à 250 g',     1),
+        (500,    759, 'Jusqu''à 500 g',     2),
+        (750,    929, 'Jusqu''à 750 g',     3),
+        (1000,   959, 'Jusqu''à 1 kg',      4),
+        (2000,  1119, 'Jusqu''à 2 kg',      5),
+        (5000,  1739, 'Jusqu''à 5 kg',      6),
+        (10000, 2529, 'Jusqu''à 10 kg',     7),
+        (15000, 3199, 'Jusqu''à 15 kg',     8),
+        (30000, 3959, 'Jusqu''à 30 kg',     9)
       ) AS seed(max_grams, fee_centimes, label, position)
       WHERE NOT EXISTS (SELECT 1 FROM "boutique_shipping_tiers" LIMIT 1);
     `);
+
+    // === Migration tarifs Colissimo 2026 ===
+    // Met à jour les paliers EXISTANTS qui correspondent encore aux anciens
+    // prix par défaut (issu du seed 2024). Si l'admin a customisé un palier
+    // (fee différent de l'ancienne valeur par défaut), on respecte sa
+    // modification et on ne touche pas.
+    // Mapping : max_grams → (ancien_fee_centimes, nouveau_fee_centimes_2026)
+    const colissimo2026Migration: Array<[number, number, number]> = [
+      [250, 515, 549],
+      [500, 695, 759],
+      [750, 830, 929],
+      [1000, 940, 959],
+      [2000, 1090, 1119],
+      [5000, 1480, 1739],
+      [10000, 1840, 2529],
+      [15000, 2510, 3199],
+      [30000, 3230, 3959],
+    ];
+    for (const [maxGrams, oldFee, newFee] of colissimo2026Migration) {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "boutique_shipping_tiers"
+         SET fee_centimes = $1
+         WHERE max_grams = $2 AND fee_centimes = $3`,
+        newFee,
+        maxGrams,
+        oldFee,
+      );
+    }
 
     runtimeSchemaEnsured = true;
   } catch (err) {
