@@ -31,6 +31,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import {
+  deleteClientAccount,
   sendResetPasswordEmail,
   setClientStatut,
   toggleClientDemo,
@@ -72,6 +73,19 @@ export function ClientActions({ id, email, statut, demoActive }: ClientActionsPr
       const res = await sendResetPasswordEmail(email);
       if (res.ok) toast.success(`Email envoyé à ${email}`);
       else toast.error(res.error);
+    });
+
+  const onHardDelete = () =>
+    startTransition(async () => {
+      const res = await deleteClientAccount(id);
+      if (res.ok) {
+        toast.success(
+          `Compte supprimé. ${res.data?.purgedImages ?? 0} image${(res.data?.purgedImages ?? 0) > 1 ? "s" : ""} purgée${(res.data?.purgedImages ?? 0) > 1 ? "s" : ""} de R2.`,
+          { duration: 6000 },
+        );
+        router.push("/admin/clients");
+        router.refresh();
+      } else toast.error(res.error);
     });
 
   return (
@@ -129,6 +143,50 @@ export function ClientActions({ id, email, statut, demoActive }: ClientActionsPr
                 <AlertDialogCancel>Annuler</AlertDialogCancel>
                 <AlertDialogAction onClick={() => onStatut("archive")}>
                   Archiver
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Suppression définitive (RGPD) — purge images R2 + anonymise PII +
+              annule Stripe + empêche tout futur login. Action irréversible. */}
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <DropdownMenuItem
+                onSelect={(e) => e.preventDefault()}
+                className="text-[var(--neon-danger)] data-[highlighted]:text-[var(--neon-danger)]"
+              >
+                <Trash2 /> Supprimer définitivement (RGPD)
+              </DropdownMenuItem>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-[var(--neon-danger)]">
+                  Supprimer définitivement ce compte ?
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Action <strong>irréversible</strong>. Cette suppression :
+                  <ul className="mt-2 ml-4 list-disc space-y-0.5 text-xs">
+                    <li>Annule les souscriptions Stripe actives</li>
+                    <li>Purge toutes les images R2 du client (logos, photos…)</li>
+                    <li>Anonymise les données personnelles (email, nom, téléphone, adresse)</li>
+                    <li>Archive les restaurants et empêche tout login</li>
+                    <li>
+                      Conserve les <strong>factures et BC</strong> (obligation
+                      comptable 10 ans)
+                    </li>
+                  </ul>
+                  À utiliser uniquement sur demande RGPD du client ou compte
+                  abandonné depuis 6+ mois.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onHardDelete}
+                  className="bg-[var(--neon-danger)] hover:bg-[var(--neon-danger)]/90"
+                >
+                  Supprimer définitivement
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

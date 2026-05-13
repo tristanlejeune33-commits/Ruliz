@@ -398,3 +398,161 @@ export async function sendResetPasswordEmail(email: string): Promise<ActionResul
     return { ok: false, error: "Impossible d'envoyer l'email de réinitialisation" };
   }
 }
+
+/**
+ * Suppression définitive d'un compte client par un admin (RGPD).
+ *
+ * Comportement identique au self-service deleteOwnAccount mais sans le check
+ * "tape ton email" puisque c'est l'admin qui agit. Garde-fous :
+ *   - Action réservée admin
+ *   - Refuse de supprimer un autre admin (sécurité)
+ *   - Audit log explicite avec userId admin qui agit
+ *
+ * Flow :
+ *   1. Cancel Stripe subs actives
+ *   2. Purge toutes les images R2 du client (logos, bannières, photos, QR)
+ *   3. Soft-delete + anonymisation PII (User + Restaurants)
+ *   4. Hard-delete AuthUser → empêche tout login
+ *   5. Audit log
+ */
+export async function deleteClientAccount(
+  clientUserId: number,
+): Promise<ActionResult<{ purgedImages: number }>> {
+  const adminSession = await requireAdmin();
+
+  if (!Number.isInteger(clientUserId) || clientUserId <= 0) {
+    return { ok: false, error: "Identifiant invalide" };
+  }
+
+  const target = await prisma.user.findUnique({
+    where: { id: clientUserId },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      stripeCustomerId: true,
+    },
+  });
+  if (!target) return { ok: false, error: "Client introuvable" };
+
+  // Sécu : on refuse de supprimer un admin via cette action (faut le faire à
+  // la main en DB pour forcer la réflexion — pas de bouton "delete admin" UI)
+  if (target.role === "admin") {
+    return {
+      ok: false,
+      error: "Impossible de supprimer un compte admin via cette action.",
+    };
+  }
+
+  // Identifie l'admin qui agit (pour audit log)
+  const actingAuth = await prisma.authUser.findUnique({
+    where: { id: adminSession.user.id },
+    select: { userId: true },
+  });
+  const actingAdminId = actingAuth?.userId ?? null;
+
+  // === 1. Annule Stripe subs ===
+  if (target.stripeCustomerId) {
+    const { getStripe, isStripeConfigured } = await import("@/lib/stripe");
+    if (isStripeConfigured()) {
+      const stripe = getStripe();
+      if (stripe) {
+        try {
+          const subs = await stripe.subscriptions.list({
+            customer: target.stripeCustomerId,
+            status: "all",
+            limit: 100,
+          });
+          for (const sub of subs.data) {
+            if (
+              sub.status === "active" ||
+              sub.status === "trialing" ||
+              sub.status === "past_due"
+            ) {
+              await stripe.subscriptions
+                .cancel(sub.id, { invoice_now: false, prorate: false })
+                .catch((err) =>
+                  console.warn(
+                    `[admin.delete-account] cancel sub ${sub.id} failed:`,
+                    err,
+                  ),
+                );
+            }
+          }
+        } catch (err) {
+          console.warn(
+            "[admin.delete-account] list Stripe subs failed:",
+            err,
+          );
+        }
+      }
+    }
+  }
+
+  // === 2. Purge images R2 ===
+  const { deleteR2Batch, listR2Keys } = await import("@/lib/r2");
+  const restos = await prisma.restaurant.findMany({
+    where: { userId: target.id },
+    select: { id: true },
+  });
+  let purgedImages = 0;
+  for (const r of restos) {
+    try {
+      const keys = await listR2Keys(`restaurants/${r.id.toString()}/`);
+      if (keys.length > 0) {
+        const result = await deleteR2Batch(keys.map((k) => k.key));
+        purgedImages += result.deleted;
+      }
+    } catch (err) {
+      console.warn(
+        `[admin.delete-account] R2 purge failed for resto ${r.id}:`,
+        err,
+      );
+    }
+  }
+
+  // === 3. Soft-delete + anonymisation PII ===
+  const anonEmail = `deleted-${target.id}-${Date.now()}@deleted.invalid`;
+  await prisma.user.update({
+    where: { id: target.id },
+    data: {
+      statut: "archive",
+      email: anonEmail,
+      prenom: null,
+      nom: null,
+      telephone: null,
+      adresse: null,
+      codePostal: null,
+      ville: null,
+      pays: null,
+    },
+  });
+  await prisma.restaurant.updateMany({
+    where: { userId: target.id },
+    data: {
+      statut: "archive",
+      logoUrl: null,
+      banniereUrl: null,
+    },
+  });
+
+  // === 4. Hard-delete AuthUser (empêche tout futur login) ===
+  try {
+    await prisma.authUser.deleteMany({
+      where: { userId: target.id },
+    });
+  } catch (err) {
+    console.warn("[admin.delete-account] AuthUser delete failed:", err);
+  }
+
+  // === 5. Audit ===
+  await logAdminAction("client.hard_delete", {
+    targetUserId: target.id,
+    byAdminUserId: actingAdminId,
+    restoCount: restos.length,
+    purgedImages,
+  });
+
+  revalidatePath("/admin/clients");
+  return { ok: true, data: { purgedImages } };
+}

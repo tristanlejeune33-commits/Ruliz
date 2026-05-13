@@ -29,6 +29,7 @@ import {
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { PlanBadge, type Plan } from "@/components/shared/status-badge";
 import { RestartTourButton } from "./restart-tour-button";
+import { DeleteAccountCard } from "./delete-account-card";
 
 export const metadata: Metadata = {
   title: "Paramètres · Ruliz",
@@ -151,6 +152,9 @@ export default async function SettingsPage() {
               </Button>
             </CardContent>
           </Card>
+
+          {/* === Zone dangereuse — suppression de compte (RGPD) === */}
+          <DeleteAccountCard userEmail={session.user.email} />
         </TabsContent>
 
         <TabsContent value="equipe">
