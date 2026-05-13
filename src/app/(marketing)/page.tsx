@@ -99,8 +99,18 @@ export default function HomePage() {
             3 formules, sans engagement.
           </h2>
           <p className="mt-3 text-[var(--text-secondary)]">
-            Page de tarifs détaillée à venir en Phase 5.
+            Freemium pour démarrer, Pro à 29,90 €/mois pour les essentiels,
+            Premium à 44,90 €/mois pour pousser plus loin. Modifiable à tout
+            moment, paiement sécurisé via Stripe.
           </p>
+          <div className="mt-6">
+            <Button asChild size="lg">
+              <Link href="/pricing">
+                Voir les tarifs détaillés
+                <ArrowRight className="size-3.5" strokeWidth={1.75} />
+              </Link>
+            </Button>
+          </div>
         </div>
       </section>
     </div>

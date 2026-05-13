@@ -186,6 +186,23 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "weight_grams" INTEGER NOT NULL DEFAULT 0;
     `);
 
+    // === Stripe : table d'idempotence des webhooks ===
+    // Stripe peut renvoyer le MÊME event plusieurs fois (retry réseau, replay).
+    // Sans déduplication, on risque double crédit SMS, double upgrade de plan,
+    // etc. Cette table garde la trace des event.id déjà traités.
+    // TTL informel : on peut purger > 30 jours en cron plus tard.
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "stripe_processed_events" (
+        "event_id" VARCHAR(255) PRIMARY KEY,
+        "event_type" VARCHAR(100) NOT NULL,
+        "processed_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "idx_stripe_processed_events_at"
+        ON "stripe_processed_events" ("processed_at" DESC);
+    `);
+
     // === Boutique : tiers Colissimo (paliers tarifaires par tranche de poids) ===
     // Chaque ligne = un palier "jusqu'à max_grams → fee_centimes".
     // Le calcul prend le 1er tier dont max_grams ≥ poids_total_panier.

@@ -67,8 +67,15 @@ export default async function SettingsPage() {
             <CardHeader>
               <CardTitle>Mon compte</CardTitle>
               <CardDescription>
-                Coordonnées de connexion. Le changement d&apos;email sera
-                disponible bientôt.
+                Coordonnées de connexion. Pour changer ton email, contacte
+                le support à{" "}
+                <a
+                  href="mailto:tom.rullier@ruliz.fr"
+                  className="underline hover:text-[var(--text-primary)]"
+                >
+                  tom.rullier@ruliz.fr
+                </a>
+                .
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-2">

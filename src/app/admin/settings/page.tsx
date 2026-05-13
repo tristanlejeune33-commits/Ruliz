@@ -220,16 +220,19 @@ export default async function AdminSettingsPage() {
         </CardContent>
       </Card>
 
-      {/* === BIENTÔT === */}
+      {/* === Roadmap admin === */}
       <Card className="border-dashed">
         <CardHeader>
           <CardTitle className="text-[var(--text-secondary)]">
-            Bientôt
+            Roadmap admin
           </CardTitle>
           <CardDescription>
-            <ul className="list-inside list-disc space-y-0.5">
+            Améliorations prévues sur cette page — pour l&apos;instant ces
+            paramètres sont configurables uniquement via les variables
+            d&apos;environnement Railway.
+            <ul className="mt-2 list-inside list-disc space-y-0.5">
               <li>Édition des templates email (Resend) — confirmation client, notification admin</li>
-              <li>Limites par plan (max produits, max QR codes, etc.) — pour l&apos;instant codé en dur dans <code className="font-mono text-[10px]">src/lib/plans.ts</code></li>
+              <li>Limites par plan (max produits, max QR codes, etc.) — codé pour l&apos;instant dans <code className="font-mono text-[10px]">src/lib/plans.ts</code></li>
               <li>Liste des langues activées globalement</li>
               <li>Réset du cache Redis depuis le dashboard</li>
             </ul>

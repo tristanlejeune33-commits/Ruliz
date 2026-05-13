@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { prisma } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { priceIdToPlan, type Plan } from "@/lib/plans";
 
@@ -32,6 +33,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Signature invalide" }, { status: 400 });
   }
 
+  // === Idempotence : Stripe peut envoyer le même event plusieurs fois
+  // (retry sur timeout réseau, replay manuel depuis le dashboard, etc.).
+  // On vérifie en DB qu'on ne l'a pas déjà traité — sinon on renvoie 200
+  // immédiatement pour acquitter sans rejouer le handler.
+  await ensureRuntimeSchema();
+  try {
+    const seen = (await prisma.$queryRawUnsafe(
+      `SELECT event_id FROM stripe_processed_events WHERE event_id = $1 LIMIT 1`,
+      event.id,
+    )) as Array<{ event_id: string }>;
+    if (seen.length > 0) {
+      console.log(
+        `[stripe.webhook] event ${event.id} (${event.type}) already processed, skipping`,
+      );
+      return NextResponse.json({ received: true, deduped: true });
+    }
+  } catch (err) {
+    // Si la table n'existe pas encore (schema drift), on log et on continue
+    // — perdre l'idempotence est moins grave que de manquer un webhook.
+    console.warn(
+      "[stripe.webhook] idempotence check failed, processing anyway:",
+      err,
+    );
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed":
@@ -53,10 +79,27 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     console.error(`[stripe.webhook] handler error for ${event.type}:`, err);
+    // On NE marque PAS comme traité si le handler a échoué — Stripe va
+    // retry, et l'idempotence n'empêchera pas le retry de fonctionner.
     return NextResponse.json(
       { error: "Erreur de traitement" },
       { status: 500 },
     );
+  }
+
+  // Marque l'event comme traité (idempotence). best-effort : si l'INSERT
+  // échoue (ex: doublon en course concurrence), on log mais on renvoie 200
+  // au webhook car le handler a réussi.
+  try {
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO stripe_processed_events (event_id, event_type)
+       VALUES ($1, $2)
+       ON CONFLICT (event_id) DO NOTHING`,
+      event.id,
+      event.type,
+    );
+  } catch (err) {
+    console.warn("[stripe.webhook] mark processed failed:", err);
   }
 
   return NextResponse.json({ received: true });
