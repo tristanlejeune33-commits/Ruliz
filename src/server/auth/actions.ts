@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -7,6 +8,20 @@ import { prisma } from "@/lib/db";
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
   | { ok: false; error: string };
+
+/**
+ * Nettoie les cookies session-scoped au login/logout pour éviter qu'un
+ * cookie d'un précédent user (active restaurant, impersonation admin SAV)
+ * fuite vers un autre compte sur le même navigateur.
+ *
+ * À appeler côté client juste après signIn / signUp.
+ */
+export async function clearSessionCookies(): Promise<{ ok: true }> {
+  const cookieStore = await cookies();
+  cookieStore.delete("ruliz_active_restaurant");
+  cookieStore.delete("ruliz_impersonate_user_id");
+  return { ok: true };
+}
 
 const signupSchema = z.object({
   email: z.email("Email invalide"),

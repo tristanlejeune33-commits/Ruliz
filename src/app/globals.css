@@ -70,3 +70,42 @@
     scroll-behavior: smooth;
   }
 }
+
+/* ============================================================================
+ * Tokens "light auth" — utilisés exclusivement par le layout (auth)/login/signup
+ * qui force data-theme="light" pour une UI accueillante avant connexion.
+ * Hex literals pour rester aligné avec le DS light brand-blue (#26438A).
+ * ========================================================================= */
+[data-theme="light"] {
+  --brand-blue: #26438a;
+  --brand-blue-hover: #1e3670;
+  --text-tertiary: #8892ab;
+  --bg-surface-hover: #f1f4fa;
+  --success-fg: #1a7f5a;
+  --success-bg: #e6f4ee;
+  --danger-fg: #b91c3b;
+  --danger-bg: #fce8ec;
+}
+
+/* "Services opérationnels" pulse — dot vert avec halo expansif, utilisé en
+   topbar des pages d'auth. */
+.rz-pulse {
+  position: relative;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--success-fg, #1a7f5a);
+}
+.rz-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 0 4px rgba(26, 127, 90, 0.18);
+  animation: rz-halo 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+@keyframes rz-halo {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0; transform: scale(1.4); }
+}
