@@ -8,6 +8,7 @@ import {
   sendSmsPackConfirmation,
   sendBoutiquePaidConfirmation,
 } from "@/server/sms/emails";
+import { archiveInvoice } from "@/server/billing/invoice-archive";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -73,6 +74,9 @@ export async function POST(req: Request) {
         break;
       case "customer.subscription.deleted":
         await handleSubscriptionDeleted(event.data.object);
+        break;
+      case "invoice.payment_succeeded":
+        await handleInvoicePaid(event.data.object);
         break;
       case "invoice.payment_failed":
         await handlePaymentFailed(event.data.object);
@@ -179,6 +183,24 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       } catch (err) {
         console.error("[stripe.webhook] SMS confirmation email failed:", err);
       }
+
+      // 4. Archive comptable (DB + R2 PDF si Stripe a généré une invoice)
+      try {
+        const resto = await prisma.restaurant.findUnique({
+          where: { id: restoBigId },
+          select: { userId: true },
+        });
+        if (resto?.userId) {
+          await archiveSmsPurchase({
+            userId: resto.userId,
+            restaurantId: restoBigId,
+            session,
+            packSize: size,
+          });
+        }
+      } catch (err) {
+        console.error("[stripe.webhook] SMS archive failed:", err);
+      }
     } catch (err) {
       console.error("[stripe.webhook] SMS pack crediting failed:", err);
     }
@@ -232,9 +254,214 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
           err,
         );
       }
+
+      // Archive comptable (DB + R2 PDF si Stripe a généré une invoice)
+      try {
+        const cmd = await prisma.boutiqueCommande.findUnique({
+          where: { id: bigId },
+          select: { userId: true, restaurantId: true },
+        });
+        if (cmd?.userId) {
+          await archiveBoutiqueOrder({
+            userId: cmd.userId,
+            restaurantId: cmd.restaurantId,
+            commandeId: bigId,
+            session,
+          });
+        }
+      } catch (err) {
+        console.error("[stripe.webhook] boutique archive failed:", err);
+      }
     }
     return;
   }
+}
+
+/**
+ * Handler `invoice.payment_succeeded` : renouvellement mensuel d'abonnement
+ * Pro/Premium. Stripe envoie cet event à chaque cycle.
+ */
+async function handleInvoicePaid(invoice: Stripe.Invoice) {
+  // Récupère le restaurant via la subscription metadata.
+  // `invoice.subscription` est déprécié dans Stripe SDK 22.x mais existe
+  // encore au runtime — on fait un cast défensif pour rester compatible.
+  const invAny = invoice as unknown as {
+    subscription?: string | { id?: string } | null;
+  };
+  const rawSub = invAny.subscription;
+  const subId =
+    typeof rawSub === "string" ? rawSub : rawSub?.id ?? null;
+  if (!subId) {
+    // Invoice one-shot (boutique / SMS) — déjà archivée via checkout.session.completed
+    return;
+  }
+
+  const stripe = getStripe();
+  if (!stripe) return;
+
+  let restaurantId: string | null = null;
+  try {
+    const sub = await stripe.subscriptions.retrieve(subId);
+    restaurantId =
+      sub.metadata?.ruliz_restaurant_id ??
+      (await findRestaurantBySubId(subId));
+  } catch (err) {
+    console.warn("[stripe.webhook] retrieve sub failed:", err);
+    return;
+  }
+  if (!restaurantId) return;
+
+  const restoBigId = BigInt(restaurantId);
+  const resto = await prisma.restaurant.findUnique({
+    where: { id: restoBigId },
+    select: { userId: true, nom: true, plan: true },
+  });
+  if (!resto?.userId) return;
+
+  await archiveInvoice({
+    userId: resto.userId,
+    restaurantId: restoBigId,
+    type: "subscription",
+    stripeInvoiceId: invoice.id,
+    stripeCustomerId:
+      typeof invoice.customer === "string"
+        ? invoice.customer
+        : invoice.customer?.id ?? null,
+    invoiceNumber: invoice.number ?? null,
+    amountPaidCentimes: invoice.amount_paid ?? 0,
+    amountDueCentimes: invoice.amount_due ?? 0,
+    currency: invoice.currency ?? "eur",
+    status: invoice.status === "paid" ? "paid" : "open",
+    description:
+      invoice.lines.data[0]?.description ??
+      `Abonnement ${resto.plan} — ${resto.nom}`,
+    hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
+    invoicePdfUrl: invoice.invoice_pdf ?? null,
+    issuedAt: invoice.created ? new Date(invoice.created * 1000) : null,
+    paidAt:
+      "status_transitions" in invoice &&
+      invoice.status_transitions?.paid_at
+        ? new Date(invoice.status_transitions.paid_at * 1000)
+        : null,
+    metadata: {
+      subscriptionId: subId,
+      plan: resto.plan,
+      restoNom: resto.nom,
+    },
+  });
+}
+
+/** Archive SMS pack (invoice optionnelle si Stripe l'a générée). */
+async function archiveSmsPurchase(opts: {
+  userId: number;
+  restaurantId: bigint;
+  session: Stripe.Checkout.Session;
+  packSize: number;
+}) {
+  const stripe = getStripe();
+  let invoicePdf: string | null = null;
+  let hostedUrl: string | null = null;
+  let invoiceNumber: string | null = null;
+  let stripeInvoiceId: string | null = null;
+
+  // Expand l'invoice si Stripe l'a créée via invoice_creation
+  if (stripe && opts.session.id) {
+    try {
+      const full = await stripe.checkout.sessions.retrieve(opts.session.id, {
+        expand: ["invoice"],
+      });
+      if (full.invoice && typeof full.invoice !== "string") {
+        invoicePdf = full.invoice.invoice_pdf ?? null;
+        hostedUrl = full.invoice.hosted_invoice_url ?? null;
+        invoiceNumber = full.invoice.number ?? null;
+        stripeInvoiceId = full.invoice.id;
+      }
+    } catch (err) {
+      console.warn("[archive-sms] retrieve session invoice failed:", err);
+    }
+  }
+
+  await archiveInvoice({
+    userId: opts.userId,
+    restaurantId: opts.restaurantId,
+    type: "sms",
+    stripeInvoiceId,
+    stripeSessionId: opts.session.id,
+    stripePaymentIntentId:
+      typeof opts.session.payment_intent === "string"
+        ? opts.session.payment_intent
+        : opts.session.payment_intent?.id ?? null,
+    stripeCustomerId:
+      typeof opts.session.customer === "string"
+        ? opts.session.customer
+        : opts.session.customer?.id ?? null,
+    invoiceNumber,
+    amountPaidCentimes: opts.session.amount_total ?? 0,
+    currency: opts.session.currency ?? "eur",
+    status: "paid",
+    description: `Pack ${opts.packSize} SMS`,
+    hostedInvoiceUrl: hostedUrl,
+    invoicePdfUrl: invoicePdf,
+    issuedAt: new Date(),
+    paidAt: new Date(),
+    metadata: { packSize: opts.packSize },
+  });
+}
+
+/** Archive boutique commande (invoice optionnelle si Stripe l'a générée). */
+async function archiveBoutiqueOrder(opts: {
+  userId: number;
+  restaurantId: bigint | null;
+  commandeId: bigint;
+  session: Stripe.Checkout.Session;
+}) {
+  const stripe = getStripe();
+  let invoicePdf: string | null = null;
+  let hostedUrl: string | null = null;
+  let invoiceNumber: string | null = null;
+  let stripeInvoiceId: string | null = null;
+
+  if (stripe && opts.session.id) {
+    try {
+      const full = await stripe.checkout.sessions.retrieve(opts.session.id, {
+        expand: ["invoice"],
+      });
+      if (full.invoice && typeof full.invoice !== "string") {
+        invoicePdf = full.invoice.invoice_pdf ?? null;
+        hostedUrl = full.invoice.hosted_invoice_url ?? null;
+        invoiceNumber = full.invoice.number ?? null;
+        stripeInvoiceId = full.invoice.id;
+      }
+    } catch (err) {
+      console.warn("[archive-boutique] retrieve session invoice failed:", err);
+    }
+  }
+
+  await archiveInvoice({
+    userId: opts.userId,
+    restaurantId: opts.restaurantId,
+    type: "boutique",
+    stripeInvoiceId,
+    stripeSessionId: opts.session.id,
+    stripePaymentIntentId:
+      typeof opts.session.payment_intent === "string"
+        ? opts.session.payment_intent
+        : opts.session.payment_intent?.id ?? null,
+    stripeCustomerId:
+      typeof opts.session.customer === "string"
+        ? opts.session.customer
+        : opts.session.customer?.id ?? null,
+    invoiceNumber,
+    amountPaidCentimes: opts.session.amount_total ?? 0,
+    currency: opts.session.currency ?? "eur",
+    status: "paid",
+    description: `Commande boutique #${opts.commandeId.toString()}`,
+    hostedInvoiceUrl: hostedUrl,
+    invoicePdfUrl: invoicePdf,
+    issuedAt: new Date(),
+    paidAt: new Date(),
+    metadata: { commandeId: opts.commandeId.toString() },
+  });
 }
 
 async function handleSubscriptionUpsert(sub: Stripe.Subscription) {

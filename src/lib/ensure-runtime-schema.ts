@@ -237,6 +237,46 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ON "boutique_shipping_tiers" ("max_grams");
     `);
     // Seed des tiers Colissimo France métropolitaine si la table est vide.
+    // === Archive locale des factures (obligation comptable 10 ans) ===
+    // Snapshot de chaque facture émise (abo / SMS / boutique). Garantit une
+    // trace locale même si Stripe a un souci, audit comptable rapide via SQL,
+    // backup des URLs PDF Stripe + key R2 si on télécharge le PDF.
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "invoices_archive" (
+        "id" BIGSERIAL PRIMARY KEY,
+        "user_id" INTEGER NOT NULL,
+        "restaurant_id" BIGINT,
+        "type" VARCHAR(20) NOT NULL,
+        "stripe_invoice_id" VARCHAR(255),
+        "stripe_session_id" VARCHAR(255),
+        "stripe_payment_intent_id" VARCHAR(255),
+        "stripe_customer_id" VARCHAR(255),
+        "invoice_number" VARCHAR(50),
+        "amount_paid_centimes" INTEGER NOT NULL DEFAULT 0,
+        "amount_due_centimes" INTEGER NOT NULL DEFAULT 0,
+        "currency" VARCHAR(3) NOT NULL DEFAULT 'EUR',
+        "status" VARCHAR(20) NOT NULL DEFAULT 'paid',
+        "description" TEXT,
+        "hosted_invoice_url" TEXT,
+        "invoice_pdf_url" TEXT,
+        "r2_pdf_key" TEXT,
+        "issued_at" TIMESTAMPTZ,
+        "paid_at" TIMESTAMPTZ,
+        "metadata_json" JSONB,
+        "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS "idx_invoices_archive_stripe_invoice"
+        ON "invoices_archive" ("stripe_invoice_id")
+        WHERE "stripe_invoice_id" IS NOT NULL;
+      CREATE UNIQUE INDEX IF NOT EXISTS "idx_invoices_archive_stripe_session"
+        ON "invoices_archive" ("stripe_session_id")
+        WHERE "stripe_session_id" IS NOT NULL;
+      CREATE INDEX IF NOT EXISTS "idx_invoices_archive_user"
+        ON "invoices_archive" ("user_id", "paid_at" DESC);
+      CREATE INDEX IF NOT EXISTS "idx_invoices_archive_type"
+        ON "invoices_archive" ("type", "paid_at" DESC);
+    `);
+
     // === Tarifs officiels Colissimo France métropolitaine avec livraison
     // à domicile, applicables au 01/04/2026 (cf. cahier tarifaire La Poste
     // particuliers). Reflète exactement la grille 9 paliers de l'opérateur.
