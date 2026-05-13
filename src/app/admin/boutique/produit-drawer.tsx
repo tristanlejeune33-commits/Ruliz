@@ -149,7 +149,7 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
 
   const onSubmit = (values: Values) => {
     startTransition(async () => {
-      // stockMax peut être "" (illimité), null, ou un entier — normalise en
+      // stockMax peut être "" (illimité), null, ou un entier · normalise en
       // null pour le serveur (cohérent avec la colonne nullable Prisma).
       const stockMaxNormalized =
         values.stockMax === "" ||
@@ -207,7 +207,7 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
             onSubmit={form.handleSubmit(onSubmit)}
             className="mt-6 space-y-5"
           >
-            {/* Image produit — upload direct R2 (bucket "boutique/"), drag,
+            {/* Image produit · upload direct R2 (bucket "boutique/"), drag,
                 copier-coller ou URL externe. Ratio 1:1 recommandé. */}
             <FormField
               control={form.control}
@@ -374,7 +374,7 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
               />
             </div>
 
-            {/* Stock max — null/vide = illimité, sinon entier ≥ 0.
+            {/* Stock max · null/vide = illimité, sinon entier ≥ 0.
                 Affichage du stock utilisé / restant en mode édition. */}
             <FormField
               control={form.control}
@@ -432,7 +432,7 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
               )}
             />
 
-            {/* Grammage produit (g) — utilisé pour calculer les frais de port
+            {/* Grammage produit (g) · utilisé pour calculer les frais de port
                 Colissimo à la commande. 0 = produit dématérialisé. */}
             <FormField
               control={form.control}
@@ -479,13 +479,13 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
                     </FormControl>
                     <SelectContent>
                       <SelectItem value="brouillon">
-                        Brouillon — invisible aux clients
+                        Brouillon · invisible aux clients
                       </SelectItem>
                       <SelectItem value="publie">
-                        Publié — visible et commandable
+                        Publié · visible et commandable
                       </SelectItem>
                       <SelectItem value="archive">
-                        Archivé — invisible mais conservé
+                        Archivé · invisible mais conservé
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -494,7 +494,7 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
               )}
             />
 
-            {/* Features — état local, pas un champ react-hook-form, donc on
+            {/* Features · état local, pas un champ react-hook-form, donc on
                 utilise <Label> standard et un <p> au lieu de FormLabel /
                 FormDescription qui exigent un <FormField> parent. */}
             <div className="space-y-2">
@@ -560,7 +560,7 @@ export function ProduitDrawer({ produit, onClose, onSaved }: ProduitDrawerProps)
                       <AlertDialogTitle>Supprimer ce produit ?</AlertDialogTitle>
                       <AlertDialogDescription>
                         Action irréversible. Si des commandes existent pour ce
-                        produit, la suppression sera refusée — archive-le à la
+                        produit, la suppression sera refusée · archive-le à la
                         place.
                       </AlertDialogDescription>
                     </AlertDialogHeader>

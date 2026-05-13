@@ -58,7 +58,7 @@ export default async function DashboardHome() {
   const firstName = session.user.name?.split(" ")[0] ?? "";
   const scansSparkline = stats.perDay.map((d) => d.scans);
 
-  // Quick actions — DS palette stricte (cyan/violet/success/danger)
+  // Quick actions · DS palette stricte (cyan/violet/success/danger)
   const quickActions = [
     {
       label: "Éditer ma carte",
@@ -113,7 +113,7 @@ export default async function DashboardHome() {
         planBadge={<PlanBadge plan={restaurant.plan as Plan} />}
       />
 
-      {/* KPI BENTO — innovation #10 light : marque de coin diagonale bleue
+      {/* KPI BENTO · innovation #10 light : marque de coin diagonale bleue
           en haut-droite des 4 KPIs principaux (inerte en dark) */}
       <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
         <KpiCard
@@ -203,7 +203,7 @@ export default async function DashboardHome() {
         <QuickActions actions={quickActions} />
       </div>
 
-      {/* LANGUES CONSULTÉES — pas d'emoji, code langue mono */}
+      {/* LANGUES CONSULTÉES · pas d'emoji, code langue mono */}
       {stats.langBreakdown.length > 0 && (
         <Card>
           <CardHeader className="flex-row items-start justify-between gap-4 space-y-0 pb-3">

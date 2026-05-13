@@ -190,7 +190,7 @@ export function ProduitDialog({
   };
 
   /**
-   * Liste plate (top-level + sous-catégories) — permet d'assigner un produit
+   * Liste plate (top-level + sous-catégories) · permet d'assigner un produit
    * directement à une sous-catégorie depuis le dialog.
    */
   const flatCategories: SerializedCategorie[] = (() => {
@@ -590,14 +590,14 @@ export function ProduitDialog({
 }
 
 /**
- * Champ liste de variantes de prix — pour les produits multi-volumes
+ * Champ liste de variantes de prix · pour les produits multi-volumes
  * (bière demi/pinte, vin verre/bouteille, planche petite/grande).
  *
  * UX :
  *   - Toggle pour activer/désactiver le mode multi-prix
  *   - Si activé : liste de (label + prix) avec bouton "+ Ajouter une taille"
  *   - Si > 0 variantes, le champ "Prix" simple devient indicatif (mais
- *     reste éditable pour rétrocompat — par ex. la planche petite peut
+ *     reste éditable pour rétrocompat · par ex. la planche petite peut
  *     être le prix par défaut et la grande une variante).
  *   - 8 variantes max (largement suffisant pour tous les cas réels)
  *

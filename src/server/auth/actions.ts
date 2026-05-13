@@ -58,7 +58,7 @@ const signupSchema = z.object({
   password: z.string().min(8, "8 caractères minimum"),
   prenom: z.string().min(1, "Requis").max(100),
   nom: z.string().min(1, "Requis").max(100),
-  /** Code pays ISO 2 (FR, IT, etc.) — sert à inférer la langue native */
+  /** Code pays ISO 2 (FR, IT, etc.) · sert à inférer la langue native */
   country: z.string().length(2).default("FR"),
 });
 

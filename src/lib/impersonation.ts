@@ -64,7 +64,7 @@ export async function getActingUserId(): Promise<{
   realUserId: number;
   /** True si on est en mode impersonation (admin acting as client) */
   isImpersonating: boolean;
-  /** Infos du user impersonné — null si non-impersonating */
+  /** Infos du user impersonné · null si non-impersonating */
   impersonatedUser: {
     id: number;
     prenom: string | null;

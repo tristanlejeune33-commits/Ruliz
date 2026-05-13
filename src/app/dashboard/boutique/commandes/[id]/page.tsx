@@ -65,7 +65,7 @@ function fmt(centimes: number, devise: string): string {
  * Numéro de facture / BC.
  * - Non payée : BC-YYYY-XXXXXX (préfixe Bon de commande, pas comptable)
  * - Payée    : FAC-YYYY-XXXXXX (préfixe Facture, série annuelle continue)
- * Le numéro reste basé sur l'ID interne — garantit l'unicité + l'ordre légal
+ * Le numéro reste basé sur l'ID interne · garantit l'unicité + l'ordre légal
  * (en France les factures doivent avoir une numérotation chronologique sans
  * trou). On préfixe avec l'année de paiement pour la lisibilité.
  */
@@ -85,7 +85,7 @@ function documentNumber(opts: {
 /**
  * Échéance par défaut sur un bon de commande non payé : 14 jours après la
  * date de création. Conforme aux pratiques B2B FR (max 60 jours date facture
- * ou 45 jours fin de mois — on reste prudent).
+ * ou 45 jours fin de mois · on reste prudent).
  */
 function dueDate(createdAt: Date): Date {
   const d = new Date(createdAt);
@@ -189,7 +189,7 @@ export default async function CommandeDetailPage({
 
   return (
     <div className="space-y-6">
-      {/* Barre de navigation — non imprimée */}
+      {/* Barre de navigation · non imprimée */}
       <div className="flex items-center justify-between gap-3 print:hidden">
         <Button asChild variant="ghost" size="sm" className="-ml-2">
           <Link href="/dashboard/settings/factures">
@@ -208,10 +208,10 @@ export default async function CommandeDetailPage({
         </div>
       </div>
 
-      {/* Bandeau retour Stripe — succès / annulation */}
+      {/* Bandeau retour Stripe · succès / annulation */}
       {sp.checkout === "success" && !commande.paidAt && (
         <Card className="border-[var(--neon-cyan)]/30 bg-[var(--neon-cyan-soft)] p-4 text-center text-sm text-[var(--text-primary)] print:hidden">
-          ✅ Paiement confirmé. La mise à jour est en cours via Stripe —
+          ✅ Paiement confirmé. La mise à jour est en cours via Stripe ·
           recharge la page dans quelques secondes si le statut n&apos;a pas
           encore changé.
         </Card>
@@ -591,7 +591,7 @@ export default async function CommandeDetailPage({
               </p>
               <p className="mt-1 text-[var(--text-secondary)] print:text-neutral-700">
                 Paiement par carte bancaire en ligne via Stripe (lien sécurisé
-                envoyé par email) ou par virement bancaire — à réception de la
+                envoyé par email) ou par virement bancaire · à réception de la
                 commande, échéance{" "}
                 {due &&
                   format(due, "d MMMM yyyy", {

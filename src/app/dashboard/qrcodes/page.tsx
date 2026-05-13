@@ -37,7 +37,7 @@ export default async function QrcodesPage() {
 
   return (
     <div className="space-y-8">
-      {/* === CTA BRILLANT — Boutique QR Made in France ===
+      {/* === CTA BRILLANT · Boutique QR Made in France ===
           Drapeau stylisé SVG : 3 bandes ondulées (wave effect) avec gradient
           vertical donnant un effet de relief, ombre portée entre bandes,
           highlight blanc au bord du blanc et shadow noir au bord du rouge
@@ -92,14 +92,14 @@ export default async function QrcodesPage() {
             </linearGradient>
           </defs>
 
-          {/* Bande BLEUE — wave bleu/blanc descend de (410,0) à (420,400)
+          {/* Bande BLEUE · wave bleu/blanc descend de (410,0) à (420,400)
               avec CPs (460,100) et (360,280) */}
           <path
             d="M 0,0 L 410,0 C 460,100 360,280 420,400 L 0,400 Z"
             fill="url(#cta-bleu)"
             filter="url(#flag-shadow)"
           />
-          {/* Bande BLANCHE — bord gauche = même courbe que bord droit du
+          {/* Bande BLANCHE · bord gauche = même courbe que bord droit du
               bleu (matchent). Bord droit = REVERSE de la courbe blanc/rouge
               du rouge → CPs swapés (750,280) puis (850,100) pour remonter
               de (790,400) à (800,0). Sans ce swap, les courbes ne fittent
@@ -109,7 +109,7 @@ export default async function QrcodesPage() {
             fill="url(#cta-blanc)"
             filter="url(#flag-shadow)"
           />
-          {/* Bande ROUGE — bord gauche descend de (800,0) à (790,400) avec
+          {/* Bande ROUGE · bord gauche descend de (800,0) à (790,400) avec
               CPs (850,100) et (750,280) */}
           <path
             d="M 800,0 C 850,100 750,280 790,400 L 1200,400 L 1200,0 Z"

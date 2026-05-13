@@ -82,7 +82,7 @@ function evolutionPct(current: number, previous: number): number | null {
   return Math.round(((current - previous) / previous) * 100);
 }
 
-/** UA fingerprint approximé (UA + pays) — pas de tracking persistant. */
+/** UA fingerprint approximé (UA + pays) · pas de tracking persistant. */
 function fingerprint(ua: string | null, pays: string | null): string {
   return createHash("md5")
     .update(`${ua ?? ""}|${pays ?? ""}`)
@@ -99,7 +99,7 @@ export interface AnalyticsResult {
     totalScansEvol: number | null;
     uniqueScans: number; // approx via UA+pays fingerprint
     uniqueScansEvol: number | null;
-    dau: number; // approx — uniques on the last day
+    dau: number; // approx · uniques on the last day
     wau: number; // last 7 days
     mau: number; // last 30 days
     newUsers: number; // fingerprints unseen in the previous range
@@ -332,7 +332,7 @@ export async function getAnalytics(
   const topQrcodes = [...qrcodeCounts.entries()]
     .map(([id, count]) => ({
       id,
-      codeUnique: qrCodeMap.get(id) ?? "—",
+      codeUnique: qrCodeMap.get(id) ?? "·",
       count,
     }))
     .sort((a, b) => b.count - a.count)
@@ -464,9 +464,9 @@ function computeInsights(input: {
   if (input.busiestHour >= 0) {
     const hourLabel = `${String(input.busiestHour).padStart(2, "0")}h`;
     if (input.busiestHour >= 12 && input.busiestHour <= 14) {
-      out.push(`🍽️ Pic à ${hourLabel} — service du midi. Assure-toi que la carte est à jour pour ce créneau.`);
+      out.push(`🍽️ Pic à ${hourLabel} · service du midi. Assure-toi que la carte est à jour pour ce créneau.`);
     } else if (input.busiestHour >= 19 && input.busiestHour <= 21) {
-      out.push(`🍷 Pic à ${hourLabel} — service du soir. Pousse les suggestions vins / desserts à ce moment-là.`);
+      out.push(`🍷 Pic à ${hourLabel} · service du soir. Pousse les suggestions vins / desserts à ce moment-là.`);
     } else {
       out.push(`⏰ Pic d'activité à ${hourLabel}. Pense à programmer tes pop-ups événements autour de ce créneau.`);
     }
@@ -480,7 +480,7 @@ function computeInsights(input: {
   // Top pays
   const topForeign = input.countries.find((c) => c.code !== "FR" && c.code !== "??");
   if (topForeign && topForeign.count >= 5) {
-    out.push(`🌍 ${topForeign.count} scans depuis ${topForeign.name} — pense à vérifier la qualité de ta traduction.`);
+    out.push(`🌍 ${topForeign.count} scans depuis ${topForeign.name} · pense à vérifier la qualité de ta traduction.`);
   }
 
   // Mobile-first ?
@@ -492,7 +492,7 @@ function computeInsights(input: {
     if (pct >= 90) {
       out.push(`📱 ${pct}% de tes scans viennent de mobiles. Ta carte est bien optimisée pour ce format.`);
     } else if (pct < 70) {
-      out.push(`💻 ${100 - pct}% de tes consultations sont sur autre chose qu'un mobile. Inhabituel pour un menu de restaurant — vérifie tes flux d'acquisition.`);
+      out.push(`💻 ${100 - pct}% de tes consultations sont sur autre chose qu'un mobile. Inhabituel pour un menu de restaurant · vérifie tes flux d'acquisition.`);
     }
   }
 

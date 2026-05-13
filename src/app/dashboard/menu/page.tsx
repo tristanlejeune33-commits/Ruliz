@@ -91,7 +91,7 @@ export default async function MenuEditorPage() {
               <span className="text-[var(--text-muted)]">produits</span>
             </div>
 
-            {/* GROS CTA "Importer ma carte par photo" — full-width mobile, inline desktop */}
+            {/* GROS CTA "Importer ma carte par photo" · full-width mobile, inline desktop */}
             <Button
               asChild
               size="sm"

@@ -5,7 +5,7 @@ import { Toaster as Sonner, type ToasterProps } from "sonner";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 
 /**
- * Toaster — wrapper Sonner aligné DS Ruliz.
+ * Toaster · wrapper Sonner aligné DS Ruliz.
  *
  * Position responsive (cf. docs/design-system-mobile.md §8 Toast) :
  *   - Mobile : `bottom-center`, offset au-dessus de la BottomNav (64px) +

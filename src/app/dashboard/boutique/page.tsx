@@ -84,7 +84,7 @@ export default async function BoutiquePage() {
             La boutique est vide pour l&apos;instant
           </p>
           <p className="text-xs text-[var(--text-tertiary)]">
-            Reviens bientôt — de nouveaux supports arrivent.
+            Reviens bientôt · de nouveaux supports arrivent.
           </p>
         </Card>
       ) : (
@@ -143,7 +143,7 @@ function ProduitCard({ produit }: ProduitCardProps) {
           isOutOfStock ? "opacity-60" : ""
         }`}
       >
-        {/* Badge stock — top right */}
+        {/* Badge stock · top right */}
         {isOutOfStock && (
           <span className="absolute right-2 top-2 z-10 rounded-md border border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-[var(--neon-danger)]">
             Rupture

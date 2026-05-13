@@ -4,7 +4,7 @@ import { getStripe } from "@/lib/stripe";
 import { getActingUserId } from "@/lib/impersonation";
 
 /**
- * Récupère les factures Stripe (invoices) du user courant — celles liées à
+ * Récupère les factures Stripe (invoices) du user courant · celles liées à
  * son abonnement Pro/Premium. Utilise stripe.invoices.list filtré par
  * customer ID stocké sur la table users.
  *

@@ -20,7 +20,7 @@ export async function trackProduitClick(produitId: string): Promise<void> {
       data: { clicCount: { increment: 1 } },
     });
   } catch (err) {
-    // Silent fail — on ne veut PAS casser l'UX si la DB est down ou si
+    // Silent fail · on ne veut PAS casser l'UX si la DB est down ou si
     // l'ID est invalide. Juste log côté serveur.
     console.warn("[trackProduitClick] failed:", err);
   }

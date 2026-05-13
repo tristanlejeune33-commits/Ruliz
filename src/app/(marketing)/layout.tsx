@@ -4,7 +4,7 @@ import { Logo } from "@/components/shared/logo";
 import { Button } from "@/components/ui/button";
 
 /**
- * Marketing layout — light mode forcé (visiteur non connecté = pas de
+ * Marketing layout · light mode forcé (visiteur non connecté = pas de
  * préférence, on lui sert l'UI accueillante claire). Pas de toggle ici :
  * il est réservé au dashboard authentifié.
  */

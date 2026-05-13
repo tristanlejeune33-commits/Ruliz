@@ -40,7 +40,7 @@ export async function sendMail({
 }: SendMailOptions) {
   const resend = getResend();
   if (!resend) {
-    console.warn(`[mail] RESEND_API_KEY absent — mail "${subject}" non envoyé à ${to}`);
+    console.warn(`[mail] RESEND_API_KEY absent · mail "${subject}" non envoyé à ${to}`);
     return { ok: false, skipped: true } as const;
   }
 

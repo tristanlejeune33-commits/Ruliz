@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Page légale consolidée — Mentions légales + CGV + Politique de
+ * Page légale consolidée · Mentions légales + CGV + Politique de
  * confidentialité + Cookies. Une seule page longue à TOC sticky parce que :
  *   - Le contenu est intrinsèquement lié (les CGV citent la confidentialité)
  *   - 1 URL = 1 source de vérité légale, facile à mettre à jour
@@ -173,7 +173,7 @@ export default function MentionsLegalesPage() {
 
             <SubSection num="5" title="Tarification et paiement">
               <p>
-                Les prix sont indiqués hors taxes (HT) — TVA non applicable,
+                Les prix sont indiqués hors taxes (HT) · TVA non applicable,
                 art. 293 B du CGI (micro-entreprise). Le paiement
                 s&apos;effectue par virement bancaire ou carte bancaire via
                 Stripe. Les services sont activés après confirmation du
@@ -659,7 +659,7 @@ export default function MentionsLegalesPage() {
             </p>
             <p className="mt-1 text-[var(--text-secondary)]">
               Écris-nous à{" "}
-              <a href="mailto:tom.rullier@ruliz.fr">tom.rullier@ruliz.fr</a> —
+              <a href="mailto:tom.rullier@ruliz.fr">tom.rullier@ruliz.fr</a> ·
               on te répond sous 48h.
             </p>
             <div className="mt-4">

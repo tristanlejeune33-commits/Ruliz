@@ -14,7 +14,7 @@
  * ========================================================================= */
 
 @theme inline {
-  /* Bridge tokens — les composants existants pointent ici, on remappe vers le DS néon */
+  /* Bridge tokens · les composants existants pointent ici, on remappe vers le DS néon */
   --color-background: var(--bg-primary);
   --color-foreground: var(--text-primary);
   --color-card: var(--bg-card);
@@ -128,7 +128,7 @@
 }
 
 /* ============================================================================
- * LIGHT MODE TOKENS — bleu signature #26438A
+ * LIGHT MODE TOKENS · bleu signature #26438A
  * Voir docs/design-system-light.md
  * Les composants ne sont pas dupliqués : ils référencent les mêmes variables
  * (bridge legacy via --neon-cyan, --bg-glass, etc.) qui prennent ces nouvelles
@@ -247,11 +247,11 @@
 }
 
 /* ============================================================================
- * UTILITAIRES — Glass + Glow
+ * UTILITAIRES · Glass + Glow
  * ========================================================================= */
 
 @layer utilities {
-  /* Surface glass — recipe principale du DS */
+  /* Surface glass · recipe principale du DS */
   .glass {
     background: var(--bg-glass);
     backdrop-filter: blur(24px) saturate(180%);
@@ -276,7 +276,7 @@
     border-color: var(--border-glass-hover);
   }
 
-  /* Glows néon — utiliser sur boutons primary, focus marquants */
+  /* Glows néon · utiliser sur boutons primary, focus marquants */
   .glow-cyan {
     box-shadow:
       0 0 24px var(--neon-cyan-glow),
@@ -328,7 +328,7 @@
     100% { background-position: -200% 0; }
   }
 
-  /* Status dot pulsant — pour indicateurs "live" */
+  /* Status dot pulsant · pour indicateurs "live" */
   .pulse-dot {
     position: relative;
   }
@@ -347,7 +347,7 @@
 }
 
 /* ============================================================================
- * AMBIENT BACKGROUND — 3 blobs néon flous fixed derrière l'app
+ * AMBIENT BACKGROUND · 3 blobs néon flous fixed derrière l'app
  * ========================================================================= */
 
 .ambient-bg {
@@ -369,7 +369,7 @@
 }
 
 .ambient-bg::before {
-  /* Cyan — top-left */
+  /* Cyan · top-left */
   top: -10%;
   left: -10%;
   width: 40rem;
@@ -378,7 +378,7 @@
 }
 
 .ambient-bg::after {
-  /* Violet — bottom-right */
+  /* Violet · bottom-right */
   bottom: -10%;
   right: -10%;
   width: 36rem;
@@ -387,7 +387,7 @@
 }
 
 .ambient-bg > .blob {
-  /* Vert — center, plus subtil */
+  /* Vert · center, plus subtil */
   top: 30%;
   left: 50%;
   transform: translateX(-50%);
@@ -398,7 +398,7 @@
 }
 
 /* ============================================================================
- * Effet Happy Hour (carte publique) — préservé du legacy
+ * Effet Happy Hour (carte publique) · préservé du legacy
  * ========================================================================= */
 
 @keyframes happy-glow {
@@ -445,7 +445,7 @@
  * Polish global
  * ========================================================================= */
 
-/* Scrollbar custom — fine et discrète */
+/* Scrollbar custom · fine et discrète */
 @media (pointer: fine) {
   ::-webkit-scrollbar {
     width: 10px;
@@ -467,7 +467,7 @@
   }
 }
 
-/* Focus ring néon cyan partout — avec offset */
+/* Focus ring néon cyan partout · avec offset */
 *:focus-visible {
   outline: 2px solid var(--neon-cyan);
   outline-offset: 2px;
@@ -518,7 +518,7 @@
 .loading-dots > *:nth-child(3) { animation-delay: 0.32s; }
 
 /* ============================================================================
- * LIGHT MODE — Utilities theme-aware overrides
+ * LIGHT MODE · Utilities theme-aware overrides
  * Voir docs/design-system-light.md
  * Les composants ne changent pas, seules les utilities CSS partagées
  * (.glass, .glow-*, .lift-hover, .ambient-bg, .pulse-dot, *:focus-visible)
@@ -619,18 +619,18 @@
 }
 
 /* ============================================================================
- * LIGHT MODE — Recipes signature (innovations #2 + #6 + #10 du DS light)
+ * LIGHT MODE · Recipes signature (innovations #2 + #6 + #10 du DS light)
  * Ces classes sont appliquées explicitement sur certains composants (ex:
- * KpiCard avec marque de coin) — elles n'ont d'effet visible qu'en light.
+ * KpiCard avec marque de coin) · elles n'ont d'effet visible qu'en light.
  * En dark, elles sont inertes (selectors filtrés).
  * ========================================================================= */
 
-/* Innovation #2 — Double-layer border : border externe + ring intérieur bleu 8% */
+/* Innovation #2 · Double-layer border : border externe + ring intérieur bleu 8% */
 [data-theme="light"] .card-double-layer {
   box-shadow: inset 0 0 0 1px rgba(38, 67, 138, 0.08), var(--shadow-card);
 }
 
-/* Innovation #10 — Marque de coin diagonale top-right (KPI principaux) */
+/* Innovation #10 · Marque de coin diagonale top-right (KPI principaux) */
 .card-coin-marker {
   position: relative;
   overflow: hidden;
@@ -652,7 +652,7 @@
   );
 }
 
-/* Innovation #6 — Status dot pulse bleu (override de .pulse-dot bg automatique
+/* Innovation #6 · Status dot pulse bleu (override de .pulse-dot bg automatique
    via le token --pulse-color qui peut être surchargé par classe parent) */
 [data-theme="light"] .status-dot-blue {
   position: relative;
@@ -672,7 +672,7 @@
   50% { opacity: 0; transform: scale(1.4); }
 }
 
-/* "Services opérationnels" pulse — dot vert avec halo expansif, utilisé en
+/* "Services opérationnels" pulse · dot vert avec halo expansif, utilisé en
    topbar des pages d'auth (light mode) pour signaler l'état du SaaS. */
 .rz-pulse {
   position: relative;
@@ -711,7 +711,7 @@ select:-webkit-autofill {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Light mode (auth pages, panels light) — HEX explicite pour ne PAS dépendre
+/* Light mode (auth pages, panels light) · HEX explicite pour ne PAS dépendre
    de la cascade var() qui peut foirer si data-theme="light" n'est pas
    propagé correctement. */
 [data-theme="light"] input:-webkit-autofill,
@@ -726,7 +726,7 @@ select:-webkit-autofill {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* Reduced motion — désactive tous les transforms / animations longues */
+/* Reduced motion · désactive tous les transforms / animations longues */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -739,7 +739,7 @@ select:-webkit-autofill {
 }
 
 /* ============================================================================
- * UTILITAIRES MOBILE — touch targets, safe areas, viewport dynamique
+ * UTILITAIRES MOBILE · touch targets, safe areas, viewport dynamique
  * (cf. docs/design-system-mobile.md §3, §4)
  * ========================================================================= */
 
@@ -757,7 +757,7 @@ select:-webkit-autofill {
   .safe-x      { padding-left:   env(safe-area-inset-left);
                   padding-right:  env(safe-area-inset-right); }
 
-  /* Variants avec minimum garanti — usage le plus fréquent */
+  /* Variants avec minimum garanti · usage le plus fréquent */
   .safe-top-min-3    { padding-top:    max(12px, env(safe-area-inset-top)); }
   .safe-bottom-min-3 { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
   .safe-bottom-min-4 { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
@@ -773,7 +773,7 @@ select:-webkit-autofill {
   .max-h-dvh-90     { max-height: 90dvh;  }
   .max-h-dvh-95     { max-height: 95dvh;  }
 
-  /* === Scroll snap horizontal — pour SegmentedControl, ScrollSnapList === */
+  /* === Scroll snap horizontal · pour SegmentedControl, ScrollSnapList === */
   .scroll-snap-x {
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
@@ -815,7 +815,7 @@ select:-webkit-autofill {
 }
 
 /* ============================================================================
- * @media print — quand l'utilisateur imprime un bon de commande / facture,
+ * @media print · quand l'utilisateur imprime un bon de commande / facture,
  * on masque tout le shell (sidebar, topbar, ambient bg) et on rend le
  * contenu en noir sur blanc lisible.
  * ========================================================================= */

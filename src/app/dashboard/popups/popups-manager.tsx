@@ -230,7 +230,7 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
-/** Jours de la semaine — bit position 0=dim, 1=lun, …, 6=sam (convention JS). */
+/** Jours de la semaine · bit position 0=dim, 1=lun, …, 6=sam (convention JS). */
 const DAYS_OF_WEEK = [
   { bit: 1, label: "Lun", full: "Lundi" },
   { bit: 2, label: "Mar", full: "Mardi" },

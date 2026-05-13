@@ -515,7 +515,7 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                     </Button>
                   </div>
 
-                  {/* Sélecteur d'emoji NATIF — utilise le picker système
+                  {/* Sélecteur d'emoji NATIF · utilise le picker système
                       (Windows Win+. / macOS Cmd+Ctrl+Space / iOS et Android
                       affichent automatiquement leur clavier emoji quand le
                       focus tombe sur un input avec inputMode="text" qui

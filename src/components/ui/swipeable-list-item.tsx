@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptic";
 
 /**
- * SwipeableListItem — wrapper qui révèle des actions au swipe horizontal.
+ * SwipeableListItem · wrapper qui révèle des actions au swipe horizontal.
  *
  * Spec : `docs/design-system-mobile.md` §8 SwipeableListItem
  *

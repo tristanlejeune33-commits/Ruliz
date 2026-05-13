@@ -31,7 +31,7 @@ import {
 } from "@/server/admin/actions";
 
 /**
- * Carte "Permissions & Plans" — admin only.
+ * Carte "Permissions & Plans" · admin only.
  *
  *   1. Toggle rôle de l'utilisateur (client ↔ admin)
  *   2. Pour chaque restaurant : bascule rapide du plan (freemium / pro / premium)
@@ -156,7 +156,7 @@ export function ClientPermissions({
         <CardHeader>
           <CardTitle>Plans des restaurants</CardTitle>
           <CardDescription>
-            Bascule manuelle des plans — bypasse Stripe. À utiliser pour offrir
+            Bascule manuelle des plans · bypasse Stripe. À utiliser pour offrir
             un upgrade gratuit, débloquer une démo, ou corriger un sub Stripe
             désynchronisé.
           </CardDescription>
@@ -294,7 +294,7 @@ function RestaurantPlanCard({
     startTransition(async () => {
       const res = await revokeOfferedPlan(restaurant.id);
       if (res.ok) {
-        toast.success("Cadeau révoqué — retour en freemium");
+        toast.success("Cadeau révoqué · retour en freemium");
         router.refresh();
       } else {
         toast.error(res.error);
@@ -311,7 +311,7 @@ function RestaurantPlanCard({
             {restaurant.nom}
           </p>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-[var(--text-tertiary)]">
-            <span>{restaurant.ville ?? "—"}</span>
+            <span>{restaurant.ville ?? "·"}</span>
             <span aria-hidden>·</span>
             <span
               className={cn(

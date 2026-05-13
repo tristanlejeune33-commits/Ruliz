@@ -32,7 +32,7 @@ type ActionSociale = "facebook" | "instagram" | "google_review";
 
 const COUNTDOWN_SECONDS = 10;
 
-// Couleurs FIXES de la roulette — indépendantes du thème restaurant.
+// Couleurs FIXES de la roulette · indépendantes du thème restaurant.
 // Le restaurateur configure couleurPrimaire pour la carte, mais la modal jeu
 // reste toujours dans la palette navy/orange Ruliz pour cohérence d'image.
 const WHEEL_BG = `repeating-conic-gradient(from 0deg at 50% 50%, #1849c9 0deg 18deg, #3b6ee8 18deg 36deg)`;
@@ -414,7 +414,7 @@ function FormStep({
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
-      {/* Titre — pr-10 pour ne pas se faire chevaucher par le bouton X */}
+      {/* Titre · pr-10 pour ne pas se faire chevaucher par le bouton X */}
       <h1 className="text-balance pr-10 text-[22px] font-bold leading-tight sm:pr-8 sm:text-[28px] md:text-[32px]">
         {ctaTitle}
       </h1>
@@ -716,7 +716,7 @@ function SocialStep({
         Votre avis ou votre abonnement n&apos;influencera pas vos chances de gagner.
       </p>
 
-      {/* Rappel CGV + confidentialité — liens permanents en bas */}
+      {/* Rappel CGV + confidentialité · liens permanents en bas */}
       <p className="text-center text-[10px] text-neutral-400">
         ✓ En participant, vous acceptez les{" "}
         <a
@@ -799,7 +799,7 @@ function CountdownStep({
         Votre avis ou votre abonnement n&apos;influencera pas vos chances de gagner.
       </p>
 
-      {/* Rappel CGV + confidentialité — liens permanents en bas */}
+      {/* Rappel CGV + confidentialité · liens permanents en bas */}
       <p className="text-center text-[10px] text-neutral-400">
         ✓ En participant, vous acceptez les{" "}
         <a
@@ -849,7 +849,7 @@ function WheelStep({
   const [phase, setPhase] = useState<"idle" | "spinning" | "stopped">("idle");
   const [finalIdx, setFinalIdx] = useState<number | null>(null);
 
-  // Hauteur d'un slot — doit être en sync avec la hauteur réelle
+  // Hauteur d'un slot · doit être en sync avec la hauteur réelle
   const SLOT_HEIGHT = 80; // px
   const VISIBLE_SLOTS = 3; // on en montre 3 (centre + haut/bas masqués par fade)
   const REPETITIONS = 8; // nb de tours complets avant l'arrêt
@@ -921,7 +921,7 @@ function WheelStep({
           ◀
         </span>
 
-        {/* Fenêtre du slot — overflow hidden, force text-black pour les lots */}
+        {/* Fenêtre du slot · overflow hidden, force text-black pour les lots */}
         <div
           className="relative mx-auto w-[260px] overflow-hidden rounded-[16px] border-2 border-[#FF9B4A] bg-white/95 text-black shadow-2xl md:w-[300px]"
           style={{ height: `${reelHeight}px` }}

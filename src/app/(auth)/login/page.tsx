@@ -34,7 +34,7 @@ export default async function LoginPage({
           className="mt-2.5 text-sm leading-relaxed"
           style={{ color: "#4A5573" }}
         >
-          Vos cartes, vos QR codes, vos statistiques — tout est resté en ordre.
+          Vos cartes, vos QR codes, vos statistiques · tout est resté en ordre.
         </p>
       </div>
       <LoginForm redirectTo={redirect} />

@@ -110,7 +110,7 @@ export async function listClients(filters: ClientListFilters = {}) {
   )) as Array<{ userId: number; totalCentimes: number }>;
   const boutiqueByUser = new Map(boutiqueRevenue.map((r) => [r.userId, r.totalCentimes]));
 
-  // Revenus SMS par restaurant (achats payés) — agrégés par user
+  // Revenus SMS par restaurant (achats payés) · agrégés par user
   const smsRevenueByResto = (await prisma.$queryRawUnsafe(
     `SELECT restaurant_id AS "restaurantId", COALESCE(SUM(price_paid_centimes), 0)::int AS "totalCentimes"
      FROM sms_credit_purchases

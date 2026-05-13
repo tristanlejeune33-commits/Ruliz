@@ -187,7 +187,7 @@ const ROLES = ["admin", "client"] as const;
  * Bascule le rôle d'un utilisateur entre `client` et `admin`.
  *
  * Garde-fou : on refuse de retirer le rôle admin si c'est le DERNIER admin
- * de la base — sinon plus personne ne pourrait gérer le SaaS.
+ * de la base · sinon plus personne ne pourrait gérer le SaaS.
  */
 export async function setUserRole(
   id: number,
@@ -436,7 +436,7 @@ export async function deleteClientAccount(
   if (!target) return { ok: false, error: "Client introuvable" };
 
   // Sécu : on refuse de supprimer un admin via cette action (faut le faire à
-  // la main en DB pour forcer la réflexion — pas de bouton "delete admin" UI)
+  // la main en DB pour forcer la réflexion · pas de bouton "delete admin" UI)
   if (target.role === "admin") {
     return {
       ok: false,

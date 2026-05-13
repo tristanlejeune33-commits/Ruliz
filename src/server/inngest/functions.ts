@@ -299,7 +299,7 @@ export const processScheduledSmsCampaigns = inngest.createFunction(
   {
     id: "process-scheduled-sms-campaigns",
     retries: 1,
-    // Toutes les minutes — granularité fine pour les SMS programmés
+    // Toutes les minutes · granularité fine pour les SMS programmés
     triggers: [{ cron: "* * * * *" }],
   },
   async ({ step }: { step: { run: <T>(name: string, fn: () => Promise<T>) => Promise<T> } }) => {

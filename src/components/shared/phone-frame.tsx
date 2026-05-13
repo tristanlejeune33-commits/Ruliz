@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * Dimensions logiques d'un iPhone 14 Pro — l'iframe rend la carte à cette
+ * Dimensions logiques d'un iPhone 14 Pro · l'iframe rend la carte à cette
  * largeur INTERNE quelle que soit la taille visuelle dans le dashboard.
  *
  * Pourquoi ? Avant ça l'iframe rendait la carte à sa largeur visuelle

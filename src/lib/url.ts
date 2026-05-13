@@ -1,6 +1,6 @@
 /**
  * Centralise la résolution de l'URL de l'app, en tolérant qu'elle soit
- * configurée sans schéma (`ruliz.up.railway.app`) — on préfixe alors `https://`.
+ * configurée sans schéma (`ruliz.up.railway.app`) · on préfixe alors `https://`.
  *
  * À utiliser PARTOUT au lieu de `process.env.NEXT_PUBLIC_APP_URL` brut.
  */

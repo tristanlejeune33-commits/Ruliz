@@ -170,7 +170,7 @@ export function BoutiqueAdminView({ produits }: BoutiqueAdminViewProps) {
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell text-xs text-[var(--text-secondary)]">
-                      {p.categorie ?? "—"}
+                      {p.categorie ?? "·"}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">
                       {(p.prixCentimes / 100).toLocaleString("fr-FR", {
@@ -231,7 +231,7 @@ export function BoutiqueAdminView({ produits }: BoutiqueAdminViewProps) {
 }
 
 /**
- * Badge stock — affiche stockUtilise / stockMax avec coloration palière :
+ * Badge stock · affiche stockUtilise / stockMax avec coloration palière :
  *   - null stockMax → "∞" gris (illimité)
  *   - rupture (restant === 0) → rouge
  *   - low stock (≤ 10) → violet warning
@@ -250,7 +250,7 @@ function StockBadge({
     return (
       <span
         className="inline-flex items-center gap-1 font-mono text-xs text-[var(--text-tertiary)]"
-        title={`${stockUtilise} unité(s) commandée(s) — stock illimité`}
+        title={`${stockUtilise} unité(s) commandée(s) · stock illimité`}
       >
         <span className="text-base leading-none">∞</span>
         <span className="tabular-nums">· {stockUtilise}</span>

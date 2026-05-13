@@ -52,7 +52,7 @@ export function PayButton({
   if (isAnnulee) {
     return (
       <span className="text-xs text-[var(--text-tertiary)]">
-        Commande annulée — paiement indisponible
+        Commande annulée · paiement indisponible
       </span>
     );
   }

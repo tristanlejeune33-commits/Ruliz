@@ -33,7 +33,7 @@ export default function NewClientPage() {
         <CardHeader>
           <CardTitle>Coordonnées</CardTitle>
           <CardDescription>
-            Le mot de passe est envoyé par email — le restaurateur peut le changer à la première connexion.
+            Le mot de passe est envoyé par email · le restaurateur peut le changer à la première connexion.
           </CardDescription>
         </CardHeader>
         <CardContent>

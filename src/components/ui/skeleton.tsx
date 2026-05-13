@@ -44,7 +44,7 @@ function SkeletonRow({ cols = 4 }: { cols?: number }) {
 }
 
 /* =============================================================================
- * Variants mobile-shaped — formes réalistes pour les listes mobile (cf. spec
+ * Variants mobile-shaped · formes réalistes pour les listes mobile (cf. spec
  * docs/design-system-mobile.md §8 Skeleton).
  * ===========================================================================*/
 

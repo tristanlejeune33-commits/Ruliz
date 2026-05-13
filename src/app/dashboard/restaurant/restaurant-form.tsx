@@ -310,7 +310,7 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
               </CardContent>
             </Card>
 
-            {/* HORAIRES DE SERVICE — utilisés pour les créneaux carte midi/soir/HH */}
+            {/* HORAIRES DE SERVICE · utilisés pour les créneaux carte midi/soir/HH */}
             <Card>
               <CardHeader>
                 <CardTitle>Horaires de service</CardTitle>
@@ -697,7 +697,7 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
           </TabsContent>
         </Tabs>
 
-        {/* Auto-save 100% silencieux — la sauvegarde se déclenche 1.5s
+        {/* Auto-save 100% silencieux · la sauvegarde se déclenche 1.5s
             après chaque modification. La bar visuelle a été retirée car
             elle était quasi-vide (juste un statut idle invisible). En cas
             d'erreur, l'AutoSaveErrorToast affiche un toast Sonner rouge. */}

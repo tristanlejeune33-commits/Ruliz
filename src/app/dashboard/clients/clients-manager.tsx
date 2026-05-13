@@ -227,7 +227,7 @@ function ClientRow({
               ? "Manuel"
               : client.source === "roulette"
                 ? "Roulette"
-                : client.source ?? "—"}
+                : client.source ?? "·"}
           </Badge>
           {!client.optInSms && (
             <Badge variant="destructive" className="text-[10px]">

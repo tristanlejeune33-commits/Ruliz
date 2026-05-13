@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptic";
 
 /**
- * MobileTopBar — barre supérieure mobile, rétractable au scroll.
+ * MobileTopBar · barre supérieure mobile, rétractable au scroll.
  *
  * Spec : `docs/design-system-mobile.md` §9 Top Bar
  *
@@ -36,14 +36,14 @@ import { haptic } from "@/lib/haptic";
 interface MobileTopBarProps {
   /** Affiche le bouton retour à gauche (push history.back). */
   showBack?: boolean;
-  /** Slot gauche custom (ex: RestaurantSwitcher) — ignoré si showBack=true. */
+  /** Slot gauche custom (ex: RestaurantSwitcher) · ignoré si showBack=true. */
   leftSlot?: React.ReactNode;
   /** Titre centré, tronqué si trop long. */
   title?: string;
   /** Affiche l'icône loupe à droite. */
   showSearch?: boolean;
   onSearchClick?: () => void;
-  /** Slot droit custom — ignoré si showSearch=true. */
+  /** Slot droit custom · ignoré si showSearch=true. */
   rightSlot?: React.ReactNode;
 }
 

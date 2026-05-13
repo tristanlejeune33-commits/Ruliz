@@ -20,7 +20,7 @@ interface CategoryAccordionProps {
 }
 
 /**
- * Liste des catégories en accordéon empilé — réplique de l'ancien #list-menu.
+ * Liste des catégories en accordéon empilé · réplique de l'ancien #list-menu.
  *
  * Catégorie top-level :
  *  - barre `btn-collapsed` navy primary, radius 10, padding 15

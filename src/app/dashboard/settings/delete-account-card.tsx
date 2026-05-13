@@ -31,13 +31,13 @@ interface DeleteAccountCardProps {
 }
 
 /**
- * Carte "Zone dangereuse" — suppression de compte self-service (RGPD).
+ * Carte "Zone dangereuse" · suppression de compte self-service (RGPD).
  *
  * Double confirmation (anti-fat-finger) :
  *   1. Dialog explicite avec warning rouge listant tout ce qui va être supprimé
  *   2. Re-tape ton email exact
  *   3. Tape "SUPPRIMER" en majuscules
- *   4. Bouton "Supprimer définitivement" — disabled tant que pas confirmé
+ *   4. Bouton "Supprimer définitivement" · disabled tant que pas confirmé
  *
  * Après succès → redirige vers la landing avec un toast d'au revoir.
  */

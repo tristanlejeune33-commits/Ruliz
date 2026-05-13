@@ -4,7 +4,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
- * Button — variants alignés sur le DS Ruliz (glass + néon).
+ * Button · variants alignés sur le DS Ruliz (glass + néon).
  *
  * - `default` (primary) : fond néon-cyan-soft + ring néon + glow cyan, label primary
  * - `secondary` : glass + border glass + hover glass-hover

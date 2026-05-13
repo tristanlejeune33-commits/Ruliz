@@ -23,7 +23,7 @@ interface TopProduitsCardProps {
  *  - Ce qui attire l'attention (top 3 = à mettre en avant)
  *  - Ce qui passe inaperçu (queue de classement = à supprimer ou modifier)
  *
- * Server Component — lit Prisma directement, pas de fetch côté client.
+ * Server Component · lit Prisma directement, pas de fetch côté client.
  */
 export async function TopProduitsCard({
   restaurantId,

@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
           className="mt-2.5 text-sm leading-relaxed"
           style={{ color: "#4A5573" }}
         >
-          Tape ton email — on t&apos;envoie un lien pour choisir un nouveau
+          Tape ton email · on t&apos;envoie un lien pour choisir un nouveau
           mot de passe (valable 1h).
         </p>
       </div>

@@ -139,13 +139,13 @@ export const UI = {
     zh: "技术支持",
   },
   tradPartielle: {
-    fr: "🇫🇷 Traduction en cours — quelques éléments restent en français.",
-    en: "🇫🇷 Translation in progress — some items remain in French.",
-    es: "🇫🇷 Traducción en curso — algunos elementos siguen en francés.",
-    de: "🇫🇷 Übersetzung im Gange — einige Elemente sind noch auf Französisch.",
-    it: "🇫🇷 Traduzione in corso — alcuni elementi sono ancora in francese.",
-    pt: "🇫🇷 Tradução em curso — alguns elementos permanecem em francês.",
-    zh: "🇫🇷 翻译进行中 — 部分内容仍为法语。",
+    fr: "🇫🇷 Traduction en cours · quelques éléments restent en français.",
+    en: "🇫🇷 Translation in progress · some items remain in French.",
+    es: "🇫🇷 Traducción en curso · algunos elementos siguen en francés.",
+    de: "🇫🇷 Übersetzung im Gange · einige Elemente sind noch auf Französisch.",
+    it: "🇫🇷 Traduzione in corso · alcuni elementi sono ancora in francese.",
+    pt: "🇫🇷 Tradução em curso · alguns elementos permanecem em francês.",
+    zh: "🇫🇷 翻译进行中 · 部分内容仍为法语。",
   },
 } satisfies Dict<string>;
 
@@ -247,7 +247,7 @@ export function vignetteLabel(
 // ---------------------------------------------------------------------------
 
 /**
- * Emoji par allergène — pour rendre la liste plus visuelle/sympa.
+ * Emoji par allergène · pour rendre la liste plus visuelle/sympa.
  */
 export const ALLERGENE_EMOJI: Record<string, string> = {
   gluten: "🌾",
@@ -267,7 +267,7 @@ export const ALLERGENE_EMOJI: Record<string, string> = {
 };
 
 /**
- * Emoji par vignette — pour les pills colorées.
+ * Emoji par vignette · pour les pills colorées.
  */
 export const VIGNETTE_EMOJI: Record<string, string> = {
   vegetarien: "🥗",

@@ -148,7 +148,7 @@ export function ClientActions({ id, email, statut, demoActive }: ClientActionsPr
             </AlertDialogContent>
           </AlertDialog>
 
-          {/* Suppression définitive (RGPD) — purge images R2 + anonymise PII +
+          {/* Suppression définitive (RGPD) · purge images R2 + anonymise PII +
               annule Stripe + empêche tout futur login. Action irréversible. */}
           <AlertDialog>
             <AlertDialogTrigger asChild>

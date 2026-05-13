@@ -42,7 +42,7 @@ interface ShippingEditorProps {
 }
 
 /**
- * Éditeur des frais de port — modèle par paliers de poids (Colissimo).
+ * Éditeur des frais de port · modèle par paliers de poids (Colissimo).
  *
  * - Active : on/off global
  * - Seuil livraison offerte (€) : 0 = désactivé
@@ -173,7 +173,7 @@ export function ShippingEditor({ initial }: ShippingEditorProps) {
             <div>
               <Label className="text-xs">
                 Seuil livraison offerte (€){" "}
-                <span className="text-[var(--text-tertiary)]">— optionnel</span>
+                <span className="text-[var(--text-tertiary)]">· optionnel</span>
               </Label>
               <Input
                 type="number"
@@ -211,7 +211,7 @@ export function ShippingEditor({ initial }: ShippingEditorProps) {
             <Label className="text-xs">
               Tarif forfaitaire de secours (€){" "}
               <span className="text-[var(--text-tertiary)]">
-                — utilisé uniquement si aucun palier défini
+                · utilisé uniquement si aucun palier défini
               </span>
             </Label>
             <Input
@@ -252,7 +252,7 @@ export function ShippingEditor({ initial }: ShippingEditorProps) {
 
             {sortedTiers.length === 0 ? (
               <div className="rounded-lg border border-dashed border-[var(--border-glass)] p-4 text-center text-xs text-[var(--text-tertiary)]">
-                Aucun palier — c&apos;est le tarif forfaitaire au-dessus qui
+                Aucun palier · c&apos;est le tarif forfaitaire au-dessus qui
                 sera appliqué à toute commande.
               </div>
             ) : (

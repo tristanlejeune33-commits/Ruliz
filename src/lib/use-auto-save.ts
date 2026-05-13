@@ -15,21 +15,21 @@ import type { UseFormReturn, FieldValues } from "react-hook-form";
  *    pour clear l'état dirty (sinon ça boucle)
  *
  * Retourne `{ status }` :
- *  - "idle" — pas de modification en cours
- *  - "pending" — modification en cours, va sauvegarder dans Xms
- *  - "saving" — sauvegarde en cours
- *  - "saved" — dernière sauvegarde réussie (revient à "idle" après 2s)
- *  - "error" — dernière sauvegarde a échoué (avec err message)
+ *  - "idle" · pas de modification en cours
+ *  - "pending" · modification en cours, va sauvegarder dans Xms
+ *  - "saving" · sauvegarde en cours
+ *  - "saved" · dernière sauvegarde réussie (revient à "idle" après 2s)
+ *  - "error" · dernière sauvegarde a échoué (avec err message)
  *
  * Le composant peut afficher un indicateur ("Sauvegardé ✓", "Erreur",
  * "Sauvegarde en cours...") basé sur ce status.
  *
  * IMPORTANT :
  *  - Ne PAS utiliser sur des forms dont le submit fait du redirect
- *    (login, etc.) — ce serait redirect après chaque keystroke
+ *    (login, etc.) · ce serait redirect après chaque keystroke
  *  - L'auto-save N'EST PAS déclenché au mount (pour éviter de save un
  *    form à peine ouvert)
- *  - Si le form est invalide (Zod errors), on ne save pas — l'utilisateur
+ *  - Si le form est invalide (Zod errors), on ne save pas · l'utilisateur
  *    voit les erreurs dans les FormMessage normalement
  */
 export type AutoSaveStatus = "idle" | "pending" | "saving" | "saved" | "error";

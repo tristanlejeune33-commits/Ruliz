@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Input — glass DS Ruliz.
+ * Input · glass DS Ruliz.
  * - bg glass + border glass
  * - hover : border glass-hover
  * - focus : border néon-cyan + ring néon-cyan/30

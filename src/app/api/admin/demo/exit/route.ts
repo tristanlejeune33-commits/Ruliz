@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/session";
 import { ADMIN_DEMO_COOKIE } from "@/lib/admin-demo";
 
 /**
- * GET /api/admin/demo/exit — sortie du mode démo admin.
+ * GET /api/admin/demo/exit · sortie du mode démo admin.
  *
  * Clear les deux cookies (admin_demo + active_restaurant) directement sur la
  * response, puis redirige vers /admin avec une URL construite via les headers

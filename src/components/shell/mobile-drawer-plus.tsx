@@ -28,7 +28,7 @@ import { haptic } from "@/lib/haptic";
 import { cn } from "@/lib/utils";
 
 /**
- * MobileDrawerPlus — bottom sheet "Plus" qui regroupe tout le contenu
+ * MobileDrawerPlus · bottom sheet "Plus" qui regroupe tout le contenu
  * secondaire qui ne tient pas dans la BottomNav (5 items max).
  *
  * Spec : `docs/design-system-mobile.md` §9 Drawer "Plus"

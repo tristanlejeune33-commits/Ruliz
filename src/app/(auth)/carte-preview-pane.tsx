@@ -33,7 +33,7 @@ interface CartePreviewPaneProps {
  *   - Soit un mockup statique fidèle au composant carte-public.tsx
  *
  * Le bouton "Brancher ma carte" en haut à droite ouvre un popover pour coller
- * une URL — utile en démo / onboarding. Si la prod renvoie `X-Frame-Options:
+ * une URL · utile en démo / onboarding. Si la prod renvoie `X-Frame-Options:
  * DENY`, l'iframe affichera blanc → fallback mockup automatique.
  */
 export function CartePreviewPane({ defaultCarteUrl }: CartePreviewPaneProps = {}) {
@@ -174,7 +174,7 @@ export function CartePreviewPane({ defaultCarteUrl }: CartePreviewPaneProps = {}
                   }}
                 />
                 <div className="mt-2 text-[11px] leading-snug text-white/60">
-                  Collez l&apos;URL — ex&nbsp;:{" "}
+                  Collez l&apos;URL · ex&nbsp;:{" "}
                   <code
                     className="text-[10.5px] text-white/85"
                     style={{ fontFamily: "var(--font-mono)" }}
@@ -241,7 +241,7 @@ export function CartePreviewPane({ defaultCarteUrl }: CartePreviewPaneProps = {}
             Une carte qui parle 14 langues.
           </h2>
           <p className="mt-3 text-sm leading-relaxed text-white/80">
-            Prix, allergènes, photos, traduction automatique — sur le téléphone
+            Prix, allergènes, photos, traduction automatique · sur le téléphone
             de chaque client, en un scan.
           </p>
         </div>

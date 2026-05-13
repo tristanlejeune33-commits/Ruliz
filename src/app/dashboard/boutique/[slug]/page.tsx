@@ -161,7 +161,7 @@ export default async function BoutiqueProduitPage({ params }: PageProps) {
             </Card>
           )}
 
-          {/* Features list — design amélioré */}
+          {/* Features list · design amélioré */}
           {features.length > 0 && (
             <div>
               <h2 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--text-tertiary)]">
@@ -207,7 +207,7 @@ export default async function BoutiqueProduitPage({ params }: PageProps) {
                   <strong className="text-[var(--text-primary)]">
                     Imprimé en France
                   </strong>{" "}
-                  par un partenaire local — circuit court, emploi français
+                  par un partenaire local · circuit court, emploi français
                 </span>
               </li>
               <li className="flex items-start gap-2">

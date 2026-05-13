@@ -214,7 +214,7 @@ export default async function AdminBillingPage() {
         </Card>
       </div>
 
-      {/* CA généré — palette DS stricte (success soft + glow subtil) */}
+      {/* CA généré · palette DS stricte (success soft + glow subtil) */}
       <Card className="relative overflow-hidden border-[var(--neon-success)]/30 bg-[var(--neon-success-soft)]">
         <CardHeader>
           <div className="flex items-start justify-between">
@@ -279,7 +279,7 @@ export default async function AdminBillingPage() {
                       <div className="flex flex-col">
                         <span className="font-medium">{r.nom}</span>
                         <span className="text-xs text-[var(--text-muted)]">
-                          {r.ville ?? "—"}
+                          {r.ville ?? "·"}
                         </span>
                       </div>
                     </TableCell>
@@ -305,7 +305,7 @@ export default async function AdminBillingPage() {
                         </span>
                       ) : (
                         <span className="text-xs text-[var(--text-muted)]">
-                          —
+                          ·
                         </span>
                       )}
                     </TableCell>
@@ -325,14 +325,14 @@ export default async function AdminBillingPage() {
                     <TableCell className="text-right tabular-nums">
                       {planMeta?.monthlyPriceHT
                         ? formatPriceEuro(planMeta.monthlyPriceHT)
-                        : "—"}
+                        : "·"}
                     </TableCell>
                     <TableCell className="text-xs text-[var(--text-muted)]">
                       {r.stripeCurrentPeriodEnd
                         ? format(r.stripeCurrentPeriodEnd, "d MMM yyyy", {
                             locale: fr,
                           })
-                        : "—"}
+                        : "·"}
                     </TableCell>
                   </TableRow>
                 );

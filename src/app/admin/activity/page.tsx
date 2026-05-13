@@ -23,7 +23,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Page /admin/activity — flux d'activité temps réel : derniers signups,
+ * Page /admin/activity · flux d'activité temps réel : derniers signups,
  * dernières commandes boutique, derniers scans QR notables. Vue compacte
  * pour avoir un pouls instantané du SaaS.
  */

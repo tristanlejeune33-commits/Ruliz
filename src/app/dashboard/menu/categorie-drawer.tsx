@@ -397,7 +397,7 @@ export function CategorieDrawer({
               )}
             />
 
-            {/* CRÉNEAU D'AFFICHAGE — carte midi, soir, happy hour, custom */}
+            {/* CRÉNEAU D'AFFICHAGE · carte midi, soir, happy hour, custom */}
             <FormField
               control={form.control}
               name="scheduleType"

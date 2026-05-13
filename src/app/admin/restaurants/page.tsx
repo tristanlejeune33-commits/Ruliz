@@ -74,7 +74,7 @@ export default async function AdminRestaurantsPage() {
                   <div className="flex flex-col">
                     <span className="font-medium">{r.nom}</span>
                     <span className="text-xs text-[var(--text-muted)]">
-                      {r.ville ?? "—"}
+                      {r.ville ?? "·"}
                     </span>
                   </div>
                 </TableCell>

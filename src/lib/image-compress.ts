@@ -9,13 +9,13 @@
  * serveur. Le browser fait le boulot localement avant d'envoyer le fichier.
  *
  * Fallback : si la compression échoue (browser exotique, fichier corrompu),
- * on renvoie le fichier original — l'upload procède normalement.
+ * on renvoie le fichier original · l'upload procède normalement.
  */
 
 export type ImageKind = "logo" | "banniere" | "produit" | "boutique" | "qrcode";
 
 interface CompressRule {
-  /** Dimension max (px) — l'image est resize pour rentrer dans un carré
+  /** Dimension max (px) · l'image est resize pour rentrer dans un carré
    *  de cette taille, en conservant l'aspect ratio. */
   maxSize: number;
   /** Quality JPEG (0-1). Ignoré pour PNG. */
@@ -48,7 +48,7 @@ function hasTransparency(
 ): boolean {
   try {
     // Échantillonne pour pas exploser sur les grandes images : on regarde
-    // 1 pixel sur 10 lignes/colonnes — assez pour détecter une bordure
+    // 1 pixel sur 10 lignes/colonnes · assez pour détecter une bordure
     // transparente de logo.
     const step = Math.max(1, Math.floor(Math.min(w, h) / 50));
     const data = ctx.getImageData(0, 0, w, h).data;

@@ -20,7 +20,7 @@ const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://ruliz-panel.fr";
 const LOGO_URL = `${APP_URL}/brand/logo-full.png`;
 
 /* ============================================================
- * COULEURS — synchronisées avec le DS light (#26438A signature)
+ * COULEURS · synchronisées avec le DS light (#26438A signature)
  * ============================================================ */
 const C = {
   bg: "#FAFBFD",
@@ -49,7 +49,7 @@ export interface EmailLayoutOpts {
   eyebrow?: string;
   /** Corps du message en HTML (sera enrobé dans le container). */
   body: string;
-  /** Call-to-action principal — bouton bleu plein. */
+  /** Call-to-action principal · bouton bleu plein. */
   cta?: { label: string; url: string };
   /** Note de bas de page (ex: "Si tu n'es pas à l'origine de cette demande…"). */
   footnote?: string;
@@ -148,7 +148,7 @@ ${
           <td align="center" style="padding:24px 16px 0;font-size:12px;line-height:1.6;color:${C.textMuted};">
             <p style="margin:0 0 8px;">
               <strong style="color:${C.textSecondary};">Ruliz</strong>
-              — Menus digitaux pour restaurants ambitieux
+              · Menus digitaux pour restaurants ambitieux
             </p>
             <p style="margin:0 0 12px;">
               <a href="${APP_URL}/legal/mentions-legales" style="color:${C.brand};text-decoration:none;">CGV</a>

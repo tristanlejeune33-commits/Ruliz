@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptic";
 
 /**
- * PullToRefresh — pull-down sur scroll-top pour déclencher un refresh.
+ * PullToRefresh · pull-down sur scroll-top pour déclencher un refresh.
  *
  * Spec : `docs/design-system-mobile.md` §8 Patterns natifs
  *
@@ -145,7 +145,7 @@ export function PullToRefresh({
       </motion.div>
 
       {/* Le contenu n'est pas déplacé visuellement (pas de translate sur la page
-          entière — UX plus stable que iOS native). Le spinner suffit comme feedback. */}
+          entière · UX plus stable que iOS native). Le spinner suffit comme feedback. */}
       {children}
     </div>
   );

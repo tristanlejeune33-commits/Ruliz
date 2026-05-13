@@ -58,7 +58,7 @@ interface VignetteIconProps {
   /**
    * Enrobe l'icône dans une bulle blanche circulaire avec ombre légère.
    * Indispensable quand l'icône est rendue directement sur le fond du resto
-   * (qui peut être sombre, coloré ou photo) — sans la bulle, l'icône
+   * (qui peut être sombre, coloré ou photo) · sans la bulle, l'icône
    * disparaît visuellement.
    *
    * Mettre à `false` UNIQUEMENT quand l'icône est déjà dans un container

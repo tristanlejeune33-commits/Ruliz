@@ -53,7 +53,7 @@ interface CartItemView {
     imageUrl: string | null;
     prixCentimes: number;
     devise: string;
-    /** Grammage (g) du produit — passé par la query côté serveur. */
+    /** Grammage (g) du produit · passé par la query côté serveur. */
     weightGrams?: number;
   };
 }
@@ -127,7 +127,7 @@ export function CartView({
   );
 
   // Calcul shipping côté client (mirror exact du calcShippingCentimes
-  // serveur — paliers triés par poids croissant, on prend le 1er dont
+  // serveur · paliers triés par poids croissant, on prend le 1er dont
   // maxGrams ≥ poids total, sinon le dernier palier).
   const shippingCentimes = useMemo(() => {
     if (!shipping.active) return 0;

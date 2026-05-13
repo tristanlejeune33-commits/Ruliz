@@ -53,7 +53,7 @@ export default async function EmailTestPage() {
               <span className="text-[var(--neon-success)]">✓ Définie</span>
             ) : (
               <span className="text-[var(--neon-danger)]">
-                ✗ Absente — ajoute-la dans Railway Variables avant de tester
+                ✗ Absente · ajoute-la dans Railway Variables avant de tester
               </span>
             )}
           </div>

@@ -85,7 +85,7 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* Didacticiel / Tour guidé — relance la bulle d'onboarding */}
+          {/* Didacticiel / Tour guidé · relance la bulle d'onboarding */}
           <Card className="lift-hover">
             <CardHeader>
               <div className="flex items-start gap-3">
@@ -108,7 +108,7 @@ export default async function SettingsPage() {
           </Card>
 
           {/* === Informations légales ===
-              Liens vers les pages publiques /legal/* — toujours accessibles
+              Liens vers les pages publiques /legal/* · toujours accessibles
               depuis le dropdown utilisateur en sidebar, mais on les remet
               ici en évidence pour que ce soit trouvable. Ouverture en
               nouvel onglet (rel="noopener" auto sur target=_blank). */}
@@ -153,7 +153,7 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* === Zone dangereuse — suppression de compte (RGPD) === */}
+          {/* === Zone dangereuse · suppression de compte (RGPD) === */}
           <DeleteAccountCard userEmail={session.user.email} />
         </TabsContent>
 
@@ -178,7 +178,7 @@ export default async function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="billing" className="space-y-4">
-          {/* Plan actuel — résumé + lien vers /dashboard/billing */}
+          {/* Plan actuel · résumé + lien vers /dashboard/billing */}
           <Card className="lift-hover">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -201,7 +201,7 @@ export default async function SettingsPage() {
             </CardContent>
           </Card>
 
-          {/* BC / Factures — bons de commande + factures d'abonnement */}
+          {/* BC / Factures · bons de commande + factures d'abonnement */}
           <Card className="lift-hover">
             <CardHeader>
               <div className="flex items-start justify-between gap-3">

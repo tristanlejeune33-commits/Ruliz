@@ -5,7 +5,7 @@ import { Drawer as Vaul } from "vaul";
 import { cn } from "@/lib/utils";
 
 /**
- * BottomSheet — wrapper sobre autour de Vaul, aligné sur le DS Ruliz
+ * BottomSheet · wrapper sobre autour de Vaul, aligné sur le DS Ruliz
  * (glass + tokens néon/light) et la spec mobile (drag handle, snap points,
  * safe-area-bottom, hauteur dynamique).
  *
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
  *     </BottomSheetFooter>
  *   </BottomSheet>
  *
- * Sur desktop (≥ lg) : Vaul auto-bascule en modal centrée — pas besoin de
+ * Sur desktop (≥ lg) : Vaul auto-bascule en modal centrée · pas besoin de
  * gérer manuellement.
  */
 
@@ -96,7 +96,7 @@ export function BottomSheet({
   );
 }
 
-/** Trigger sémantique — wrapper Vaul.Trigger. */
+/** Trigger sémantique · wrapper Vaul.Trigger. */
 export const BottomSheetTrigger = Vaul.Trigger;
 
 /** Header structuré : titre + description optionnelle, padding harmonisé. */

@@ -28,14 +28,14 @@ function buzz(pattern: number | number[]) {
 }
 
 export const haptic = {
-  /** Tap léger (10ms) — FAB, toggle, sélection rapide. */
+  /** Tap léger (10ms) · FAB, toggle, sélection rapide. */
   light: () => buzz(10),
-  /** Tap moyen (15ms) — confirmation long press, item sélectionné. */
+  /** Tap moyen (15ms) · confirmation long press, item sélectionné. */
   medium: () => buzz(15),
-  /** Pattern sélection (5/10/5) — défilement segmenté, picker. */
+  /** Pattern sélection (5/10/5) · défilement segmenté, picker. */
   selection: () => buzz([5, 10, 5]),
-  /** Pattern succès (10/50/10) — save validé, optimistic update OK. */
+  /** Pattern succès (10/50/10) · save validé, optimistic update OK. */
   success: () => buzz([10, 50, 10]),
-  /** Pattern erreur (50/30/50) — rollback, validation refusée. */
+  /** Pattern erreur (50/30/50) · rollback, validation refusée. */
   error: () => buzz([50, 30, 50]),
 };

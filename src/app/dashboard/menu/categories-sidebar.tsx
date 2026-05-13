@@ -209,7 +209,7 @@ function CategorieItem({
 
   return (
     <li ref={setNodeRef} style={style} className="touch-none">
-      {/* CATÉGORIE PARENTE — devient drop target néon quand un produit est draggé dessus */}
+      {/* CATÉGORIE PARENTE · devient drop target néon quand un produit est draggé dessus */}
       <div
         className={cn(
           "group flex items-center gap-1 rounded-md border-l-[3px] transition-all duration-150",
@@ -278,10 +278,10 @@ function CategorieItem({
         </button>
       </div>
 
-      {/* SOUS-CATÉGORIES — indentées, accent jaune (#ead04d) à gauche
+      {/* SOUS-CATÉGORIES · indentées, accent jaune (#ead04d) à gauche
           Chaque liste enfants a son propre SortableContext pour permettre
           le drag&drop entre siblings UNIQUEMENT (un sub-cat ne peut pas
-          être drop dans un autre parent — gardé simple en MVP). */}
+          être drop dans un autre parent · gardé simple en MVP). */}
       {children.length > 0 && (
         <SortableContext
           items={children.map((c) => c.id)}
@@ -339,7 +339,7 @@ function SubCategorieItem({
               : "text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]",
         )}
       >
-        {/* Drag handle (apparait au hover) — remplace le simple chevron statique */}
+        {/* Drag handle (apparait au hover) · remplace le simple chevron statique */}
         <button
           {...attributes}
           {...listeners}

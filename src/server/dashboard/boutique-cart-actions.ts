@@ -40,7 +40,7 @@ type ActionResult = { ok: true } | { ok: false; error: string };
  *
  * Le stock restant = stockMax - somme(items.quantite des commandes non
  * annulées). Les items du panier en cours ne sont pas décomptés (ils ne sont
- * pas encore "commandés" — on les ajoute virtuellement à la quantité demandée
+ * pas encore "commandés" · on les ajoute virtuellement à la quantité demandée
  * pour éviter qu'un user dépasse le stock à la création de la commande).
  */
 async function checkStock(

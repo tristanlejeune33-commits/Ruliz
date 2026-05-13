@@ -6,7 +6,7 @@ import { getR2Client, isR2Configured } from "@/lib/r2";
 const R2_BUCKET = process.env.R2_BUCKET_NAME;
 
 /**
- * Archive locale des factures Ruliz — obligation comptable 10 ans
+ * Archive locale des factures Ruliz · obligation comptable 10 ans
  * (article L123-22 Code de commerce).
  *
  * Pour chaque facture émise (abonnement / SMS / boutique), on snapshot
@@ -20,7 +20,7 @@ const R2_BUCKET = process.env.R2_BUCKET_NAME;
  *
  * Le webhook Stripe trigger archiveInvoice() en best-effort après chaque
  * paiement réussi. Si l'archivage échoue, on log mais on bloque pas le
- * webhook — le paiement reste enregistré, on pourra reprocesser plus tard.
+ * webhook · le paiement reste enregistré, on pourra reprocesser plus tard.
  */
 
 export type InvoiceType = "subscription" | "sms" | "boutique";
@@ -124,7 +124,7 @@ export async function archiveInvoice(
     // Best-effort : télécharge le PDF Stripe et stocke en R2. Si ça plante,
     // l'archive en DB est déjà OK, on peut retry plus tard via un script.
     if (input.invoicePdfUrl) {
-      // Fire-and-forget — n'attend pas la fin pour return.
+      // Fire-and-forget · n'attend pas la fin pour return.
       // (Le webhook Stripe a un timeout de 30s, on n'aggrave pas.)
       downloadAndStoreInvoicePdf({
         archiveId,
@@ -218,7 +218,7 @@ async function downloadAndStoreInvoicePdf(opts: {
 
 /**
  * Liste les factures archivées d'un user (utilisée par /dashboard/settings/factures).
- * Pas de filtrage type ici — laisse le caller filtrer.
+ * Pas de filtrage type ici · laisse le caller filtrer.
  */
 export async function listArchivedInvoices(userId: number) {
   return (await prisma.$queryRawUnsafe(

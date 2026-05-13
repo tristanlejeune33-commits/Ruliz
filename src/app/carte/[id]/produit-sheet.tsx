@@ -29,7 +29,7 @@ interface ProduitSheetProps {
 }
 
 /**
- * Modal de détail produit — réplique de l'ancien `.modal-content` :
+ * Modal de détail produit · réplique de l'ancien `.modal-content` :
  *   - bg blanc card-body, padding 15, radius 10, shadow soft
  *   - max-h 80vh, max-w 80% mobile / 60% desktop
  *   - dish-detail : titre Magra 25px, prix 20px, ingredients 300, image 300px
@@ -100,7 +100,7 @@ export function ProduitSheet({
               <X className="size-5" strokeWidth={2} />
             </button>
 
-            {/* Zone scrollable interne — séparée du button X pour qu'il
+            {/* Zone scrollable interne · séparée du button X pour qu'il
                 reste visible et cliquable en permanence. */}
             <div className="flex-1 overflow-y-auto p-[15px]">
               <DishDetail
@@ -181,7 +181,7 @@ function DishDetail({
         )}
       </div>
 
-      {/* Prix — tableau de variantes si défini, sinon prix simple */}
+      {/* Prix · tableau de variantes si défini, sinon prix simple */}
       {produit.prixVariantes && produit.prixVariantes.length > 0 ? (
         <div>
           <ul className="flex flex-col gap-1.5">
@@ -268,7 +268,7 @@ function DishDetail({
               return (
                 <li
                   key={a.code}
-                  // Fond blanc opaque + texte noir TOUJOURS — info légale
+                  // Fond blanc opaque + texte noir TOUJOURS · info légale
                   // critique, doit rester 100% lisible sur N'IMPORTE quel
                   // thème resto (sombre, photo, fond custom jaune, etc.)
                   className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-medium shadow-sm"
@@ -287,7 +287,7 @@ function DishDetail({
         </div>
       )}
 
-      {/* Tags / vignettes pills (icône + emoji fallback) — fond blanc + texte
+      {/* Tags / vignettes pills (icône + emoji fallback) · fond blanc + texte
           noir TOUJOURS pour rester lisibles peu importe le thème resto
           (cardBody dynamique pouvait donner un fond jaune/marron illisible). */}
       {produit.vignettes.length > 0 && (

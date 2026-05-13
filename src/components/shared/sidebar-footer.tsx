@@ -51,7 +51,7 @@ function initials(value: string | null | undefined, fallback: string) {
 }
 
 /**
- * Carte utilisateur en bas de sidebar — avatar gradient cyan→violet, status
+ * Carte utilisateur en bas de sidebar · avatar gradient cyan→violet, status
  * dot success, dropdown profil/settings/logout. En mode collapsed : avatar
  * seul + tooltip du nom.
  */

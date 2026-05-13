@@ -29,7 +29,7 @@ async function assertAdmin(): Promise<boolean> {
 }
 
 /**
- * Re-traduit le menu d'un restaurant — version admin (peut viser n'importe
+ * Re-traduit le menu d'un restaurant · version admin (peut viser n'importe
  * quel restaurant, pas juste le sien). Synchrone et bloque jusqu'à fin.
  */
 export async function adminRetranslateRestaurant(

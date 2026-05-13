@@ -581,7 +581,7 @@ function CommandeCard({ commande }: CommandeCardProps) {
         </div>
       </div>
 
-      {/* Stepper 4 étapes — ou bandeau "Annulée" */}
+      {/* Stepper 4 étapes · ou bandeau "Annulée" */}
       {isCancelled ? (
         <div className="flex items-center gap-2 border-t border-[var(--neon-danger)]/30 bg-[var(--neon-danger-soft)] px-4 py-2.5 text-sm font-medium text-[var(--neon-danger)]">
           <XCircle className="size-4" strokeWidth={1.75} />

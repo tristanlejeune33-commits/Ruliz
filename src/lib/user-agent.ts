@@ -1,7 +1,7 @@
 /**
  * Parser user-agent ultra-light, sans dépendance.
  * Couvre les 95% des cas pour un dashboard analytics restaurant.
- * Pas de précision niveau version mineure — on n'en a pas besoin.
+ * Pas de précision niveau version mineure · on n'en a pas besoin.
  */
 
 export type Device = "mobile" | "tablet" | "desktop" | "bot" | "other";
@@ -61,7 +61,7 @@ export function parseUserAgent(ua: string | null | undefined): ParsedUA {
   else if (u.includes("cros")) os = "chromeos";
   else if (u.includes("linux")) os = "linux";
 
-  // Browser — order matters (UAs often contain multiple keywords)
+  // Browser · order matters (UAs often contain multiple keywords)
   let browser: Browser = "other";
   if (u.includes("fbav") || u.includes("fban") || u.includes("fbios")) browser = "facebook";
   else if (u.includes("instagram")) browser = "instagram";

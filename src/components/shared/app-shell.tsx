@@ -10,7 +10,7 @@ import { SidebarCollapseProvider } from "./sidebar-collapse-context";
 import { Topbar } from "./topbar";
 
 /**
- * AppShell — orchestrateur responsive mobile/desktop.
+ * AppShell · orchestrateur responsive mobile/desktop.
  *
  * Spec : `docs/design-system-mobile.md` §10 Shell responsive
  *
@@ -18,7 +18,7 @@ import { Topbar } from "./topbar";
  *   - `{children}` est rendu UNE SEULE FOIS dans un <main> partagé avec
  *     padding adaptatif. Évite le double-mount de PageTransition (Framer
  *     Motion AnimatePresence) qui causait un blocage de page après plusieurs
- *     navigations rapides — les 2 AnimatePresence se battaient sur le
+ *     navigations rapides · les 2 AnimatePresence se battaient sur le
  *     exit/enter.
  *   - La sidebar desktop est fixed à gauche, la mobile-top-bar/bottom-nav
  *     sont aussi fixed (déjà). Le main gère l'offset via padding/margin
@@ -44,7 +44,7 @@ interface AppShellProps {
   mobileTitle?: string;
   /** Slot gauche mobile (ex: switcher resto compact, fallback sur back si non défini ET pas racine). */
   mobileLeftSlot?: React.ReactNode;
-  /** ID du resto actif (scope dashboard uniquement) — alimente l'item central
+  /** ID du resto actif (scope dashboard uniquement) · alimente l'item central
       de la BottomNav qui ouvre la carte publique en nouvel onglet. */
   activeRestaurantId?: string | null;
   children: React.ReactNode;
@@ -142,7 +142,7 @@ export function AppShell({
 
           {/* Colonne main : topbar desktop + content + PageTransition unique */}
           <div className="flex min-w-0 flex-col">
-            {/* Topbar desktop only — hidden mobile */}
+            {/* Topbar desktop only · hidden mobile */}
             <div className="hidden lg:block">
               <Topbar
                 user={user}

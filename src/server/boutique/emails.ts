@@ -26,7 +26,7 @@ interface CommandeEmailData {
   notesClient?: string | null;
 }
 
-/** Email envoyé au CLIENT — confirmation de commande. */
+/** Email envoyé au CLIENT · confirmation de commande. */
 export async function sendCommandeConfirmationToClient(data: CommandeEmailData) {
   const html = emailLayout({
     title: `Commande #${data.commandeId} confirmée`,
@@ -71,7 +71,7 @@ export async function sendCommandeConfirmationToClient(data: CommandeEmailData) 
   });
 }
 
-/** Email envoyé à l'ADMIN — notification d'une nouvelle commande à traiter. */
+/** Email envoyé à l'ADMIN · notification d'une nouvelle commande à traiter. */
 export async function sendCommandeNotificationToAdmin(
   data: CommandeEmailData & { adminEmail: string },
 ) {
@@ -110,7 +110,7 @@ export async function sendCommandeNotificationToAdmin(
 
   return sendMail({
     to: data.adminEmail,
-    subject: `[Boutique] Nouvelle commande #${data.commandeId} — ${data.totalEuros}`,
+    subject: `[Boutique] Nouvelle commande #${data.commandeId} · ${data.totalEuros}`,
     html,
   });
 }

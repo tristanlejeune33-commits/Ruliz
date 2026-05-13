@@ -4,7 +4,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "./db";
 
 /**
- * "Mode démo admin" — restaurant fictif lié au compte admin pour préparer
+ * "Mode démo admin" · restaurant fictif lié au compte admin pour préparer
  * des démos prospects (carte complète qui démontre 100% des features Ruliz).
  *
  * Flow :
@@ -82,7 +82,7 @@ export async function ensureAdminDemoRestaurant(adminUserId: number) {
 }
 
 // ===========================================================================
-// PHOTOS UNSPLASH — URLs stables. Si une casse, carte-public fallback OK.
+// PHOTOS UNSPLASH · URLs stables. Si une casse, carte-public fallback OK.
 // ===========================================================================
 const PHOTO = {
   banniere:
@@ -140,7 +140,7 @@ const PHOTO = {
 } as const;
 
 /**
- * Crée le Bistrot Ruliz complet — démo end-to-end de toutes les features.
+ * Crée le Bistrot Ruliz complet · démo end-to-end de toutes les features.
  */
 async function createRichDemoRestaurant(adminUserId: number) {
   // Récupère les IDs des vignettes & allergènes (seedés au boot, idempotent
@@ -169,7 +169,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
         statut: "actif",
         deviseDefault: "€",
         description:
-          "Une démo vivante de Ruliz — cette carte illustre TOUTES les features : photos, allergènes, suggestions d'accompagnement, traductions 14 langues, jeu d'avis Google, pop-ups Happy Hour, sous-catégories.",
+          "Une démo vivante de Ruliz · cette carte illustre TOUTES les features : photos, allergènes, suggestions d'accompagnement, traductions 14 langues, jeu d'avis Google, pop-ups Happy Hour, sous-catégories.",
         theme: "light",
         fontStyle: "editorial",
         couleurPrimaire: "#26438A",
@@ -245,7 +245,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
       return produit;
     }
 
-    // ============== CATÉGORIE 1 — APÉRITIFS & VINS ==============
+    // ============== CATÉGORIE 1 · APÉRITIFS & VINS ==============
     const aperitifs = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -297,7 +297,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
       allergeneCodes: ["sulfites"],
     });
 
-    // ============== CATÉGORIE 2 — ENTRÉES ==============
+    // ============== CATÉGORIE 2 · ENTRÉES ==============
     const entrees = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -350,13 +350,13 @@ async function createRichDemoRestaurant(adminUserId: number) {
       prix: "9.00",
       position: 3,
       titreRemarque: "Plat végétarien",
-      descriptionRemarque: "Disponible sans gluten — précise-le au serveur",
+      descriptionRemarque: "Disponible sans gluten · précise-le au serveur",
       imageUrl: PHOTO.veloute,
       vignetteCodes: ["vegetarien", "bio", "fait_maison"],
       allergeneCodes: ["lait", "fruits_a_coque"],
     });
 
-    // ============== CATÉGORIE 3 — PLATS (avec SOUS-CATÉGORIES) ==============
+    // ============== CATÉGORIE 3 · PLATS (avec SOUS-CATÉGORIES) ==============
     const plats = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -443,7 +443,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
       allergeneCodes: ["lait", "sulfites"],
     });
 
-    // ============== CATÉGORIE 4 — DESSERTS ==============
+    // ============== CATÉGORIE 4 · DESSERTS ==============
     const desserts = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -496,7 +496,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
       allergeneCodes: ["lait", "oeufs", "gluten", "fruits_a_coque"],
     });
 
-    // ============== CATÉGORIE 5 — HAPPY HOUR 🍺 ==============
+    // ============== CATÉGORIE 5 · HAPPY HOUR 🍺 ==============
     // Démontre la feature `prixVariantes` (JSON) : un seul produit avec
     // plusieurs volumes/prix (Demi 25cl / Pinte 50cl), c'est ce qui permet
     // d'afficher proprement les bières d'un bar sans dupliquer les fiches.
@@ -583,7 +583,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
       allergeneCodes: ["gluten"],
     });
 
-    // ============== CATÉGORIE 6 — BOISSONS ==============
+    // ============== CATÉGORIE 6 · BOISSONS ==============
     const boissons = await tx.categorie.create({
       data: {
         restaurantId: resto.id,
@@ -647,7 +647,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
       ],
     });
 
-    // ============== JEU — ROULETTE D'AVIS GOOGLE ==============
+    // ============== JEU · ROULETTE D'AVIS GOOGLE ==============
     await tx.jeu.create({
       data: {
         restaurantId: resto.id,
@@ -656,7 +656,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
         autoPopup: false,
         autoPopupDelaySec: 5,
         configJson: {
-          cta: "Laisse-nous un avis Google et tente ta chance — 1 lot offert à chaque participation !",
+          cta: "Laisse-nous un avis Google et tente ta chance · 1 lot offert à chaque participation !",
           require_google_review: true,
           lots: [
             { label: "Café offert ☕", probabilite: 50 },
@@ -676,7 +676,7 @@ async function createRichDemoRestaurant(adminUserId: number) {
         restaurantId: resto.id,
         titre: "Happy Hour 🍸",
         description:
-          "Cocktail maison + tapas du jour à 12€ — tous les jours de 18h à 20h. Le moment idéal pour découvrir notre carte.",
+          "Cocktail maison + tapas du jour à 12€ · tous les jours de 18h à 20h. Le moment idéal pour découvrir notre carte.",
         imageUrl: PHOTO.cocktail,
         ctaLabel: "Voir les apéritifs",
         actif: true,

@@ -8,11 +8,11 @@ interface SubscriptionBannerProps {
   status: string | null;
   /** Statut métier du restaurant (suspendu / actif) */
   restaurantStatut: string;
-  /** Plan actuel — utile pour différencier essai vs payant */
+  /** Plan actuel · utile pour différencier essai vs payant */
   currentPlan?: "freemium" | "pro" | "premium" | string;
   /** Date d'expiration du plan offert (essai 14j ou cadeau admin) */
   trialExpiresAt?: Date | string | null;
-  /** Statut Stripe — si actif, on ne montre pas le bandeau d'essai */
+  /** Statut Stripe · si actif, on ne montre pas le bandeau d'essai */
   hasStripeSubscription?: boolean;
 }
 
@@ -20,7 +20,7 @@ interface SubscriptionBannerProps {
  * Bandeau warning/error en haut du dashboard si le paiement Stripe pose
  * problème (past_due, unpaid, canceled, restaurant suspendu).
  *
- * Affichage conditionnel — null si tout va bien.
+ * Affichage conditionnel · null si tout va bien.
  */
 export function SubscriptionBanner({
   status,

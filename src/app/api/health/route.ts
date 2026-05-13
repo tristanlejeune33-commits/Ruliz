@@ -10,7 +10,7 @@ export const runtime = "nodejs";
  * être redémarrée. On vérifie les dépendances critiques :
  *
  *   - DB Postgres : SELECT 1 (timeout 2s)
- *   - Redis : PING (timeout 1s, optionnel — Redis peut être down sans
+ *   - Redis : PING (timeout 1s, optionnel · Redis peut être down sans
  *     casser l'app, mais on remonte l'info en `checks`)
  *
  * Statut HTTP :

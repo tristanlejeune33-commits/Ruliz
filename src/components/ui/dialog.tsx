@@ -27,7 +27,7 @@ const DialogOverlay = React.forwardRef<
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 /**
- * DialogContent — responsive :
+ * DialogContent · responsive :
  *   - Mobile (< lg) : bottom sheet plein-largeur, slide-up depuis le bas,
  *     max 92dvh avec scroll interne, padding-bottom safe-area, drag handle
  *     visuel en haut. Touch target Close 44×44.
@@ -63,7 +63,7 @@ const DialogContent = React.forwardRef<
       )}
       {...props}
     >
-      {/* Drag handle visuel mobile (purement décoratif — Radix gère pas le drag) */}
+      {/* Drag handle visuel mobile (purement décoratif · Radix gère pas le drag) */}
       <div className="mx-auto mb-2 flex h-3 w-full items-center justify-center lg:hidden">
         <div className="drag-handle" aria-hidden />
       </div>

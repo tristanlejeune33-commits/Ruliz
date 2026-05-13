@@ -403,7 +403,7 @@ export function CommandesAdminView({
                           </div>
                         </>
                       ) : (
-                        <span className="text-[var(--text-tertiary)]">—</span>
+                        <span className="text-[var(--text-tertiary)]">·</span>
                       )}
                     </TableCell>
                     <TableCell className="text-right font-mono text-sm tabular-nums">

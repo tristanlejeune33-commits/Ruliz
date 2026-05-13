@@ -105,7 +105,7 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
               url: `${appUrl}/reset-password?token=demo-test-token`,
             },
             footnote:
-              "Tu n'es pas à l'origine de cette demande ? Ignore cet email — ton compte reste sûr.",
+              "Tu n'es pas à l'origine de cette demande ? Ignore cet email · ton compte reste sûr.",
           }),
         });
         return res.ok ? { ok: true } : { ok: false, error: res.error ?? "Échec" };
@@ -173,7 +173,7 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
       case "jeu-gain": {
         const res = await sendMail({
           to,
-          subject: "🎉 Tu as gagné — Roulette du Bistrot Ruliz",
+          subject: "🎉 Tu as gagné · Roulette du Bistrot Ruliz",
           html: emailLayout({
             title: "Bravo, tu as gagné !",
             eyebrow: "Roulette d'avis Google",
@@ -189,7 +189,7 @@ export async function sendTestEmail(input: unknown): Promise<ActionResult> {
               })}
               ${p(`Ton code à présenter à l'équipe : ${code("RULIZ-DEMO-9X4K")}`)}
               ${warnBox(
-                "<strong>Important :</strong> Présente ce mail (ou juste le code) au serveur lors de ta prochaine visite. Le code est unique et personnel — non transférable.",
+                "<strong>Important :</strong> Présente ce mail (ou juste le code) au serveur lors de ta prochaine visite. Le code est unique et personnel · non transférable.",
               )}
             `,
             footnote:

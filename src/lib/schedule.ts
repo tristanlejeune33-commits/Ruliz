@@ -101,8 +101,8 @@ interface CategorieSchedule {
  *    2. L'heure courante est entre start et end (de la preset OU custom)
  *
  * @param categorie - Le créneau de la catégorie/produit
- * @param now (optionnel) — Date à utiliser comme "maintenant", utile pour les tests
- * @param restoHours (optionnel) — Horaires customisés du restaurant pour les presets
+ * @param now (optionnel) · Date à utiliser comme "maintenant", utile pour les tests
+ * @param restoHours (optionnel) · Horaires customisés du restaurant pour les presets
  */
 export function isCategorieVisibleNow(
   categorie: CategorieSchedule,

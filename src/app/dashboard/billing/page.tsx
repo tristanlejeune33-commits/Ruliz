@@ -74,7 +74,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
           <>
             Plan associé à{" "}
             <strong className="text-[var(--text-primary)]">{restaurant.nom}</strong>.
-            Géré via Stripe — résiliation et changement à tout moment.
+            Géré via Stripe · résiliation et changement à tout moment.
           </>
         }
       />
@@ -116,7 +116,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
         </Card>
       )}
 
-      {/* Plan actuel — status enriched */}
+      {/* Plan actuel · status enriched */}
       <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
         <SubscriptionStatusCard
           plan={restaurant.plan as Plan}

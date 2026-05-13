@@ -21,10 +21,10 @@ export const metadata: Metadata = {
 };
 
 /**
- * Page /admin/settings — paramètres et infos système pour l'admin.
+ * Page /admin/settings · paramètres et infos système pour l'admin.
  *
  * Phase 1 : status check des intégrations (Stripe, Anthropic, R2, Resend, Brevo,
- * Redis, DB) + infos build. Pas d'édition pour l'instant — les configs passent
+ * Redis, DB) + infos build. Pas d'édition pour l'instant · les configs passent
  * par les env vars Railway.
  *
  * Phase 2 (ouverte) : édition des messages email globaux, prix par défaut,
@@ -107,7 +107,7 @@ export default async function AdminSettingsPage() {
           </HeroEyebrow>
         }
         title="Paramètres système"
-        description="Status des intégrations, infos de build et configuration globale. Les valeurs sensibles passent par les env vars Railway — cette page est read-only."
+        description="Status des intégrations, infos de build et configuration globale. Les valeurs sensibles passent par les env vars Railway · cette page est read-only."
       />
 
       {/* === INTÉGRATIONS === */}
@@ -203,7 +203,7 @@ export default async function AdminSettingsPage() {
             <Info label="Environnement" value={env} mono />
             <Info
               label="Version Node"
-              value={process.version ?? "—"}
+              value={process.version ?? "·"}
               mono
             />
             <Info
@@ -231,12 +231,12 @@ export default async function AdminSettingsPage() {
             Roadmap admin
           </CardTitle>
           <CardDescription>
-            Améliorations prévues sur cette page — pour l&apos;instant ces
+            Améliorations prévues sur cette page · pour l&apos;instant ces
             paramètres sont configurables uniquement via les variables
             d&apos;environnement Railway.
             <ul className="mt-2 list-inside list-disc space-y-0.5">
-              <li>Édition des templates email (Resend) — confirmation client, notification admin</li>
-              <li>Limites par plan (max produits, max QR codes, etc.) — codé pour l&apos;instant dans <code className="font-mono text-[10px]">src/lib/plans.ts</code></li>
+              <li>Édition des templates email (Resend) · confirmation client, notification admin</li>
+              <li>Limites par plan (max produits, max QR codes, etc.) · codé pour l&apos;instant dans <code className="font-mono text-[10px]">src/lib/plans.ts</code></li>
               <li>Liste des langues activées globalement</li>
               <li>Réset du cache Redis depuis le dashboard</li>
             </ul>

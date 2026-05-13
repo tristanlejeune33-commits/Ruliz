@@ -1,7 +1,7 @@
 import type { PublicMenu } from "@/server/public/menu";
 
 /**
- * Theme de la carte publique — réplique exacte de l'ancien template Ruliz.
+ * Theme de la carte publique · réplique exacte de l'ancien template Ruliz.
  *
  * Palette par défaut (light mode) :
  *   --primary       : #011255  (navy bleu marine, accordéons fermés + titres)
@@ -17,13 +17,13 @@ import type { PublicMenu } from "@/server/public/menu";
  */
 export interface CarteTheme {
   isDark: boolean;
-  /** Bleu marine — accordéons catégories, h1 du restaurant */
+  /** Bleu marine · accordéons catégories, h1 du restaurant */
   primary: string;
   textOnPrimary: string;
-  /** Jaune — accordéons sous-catégories */
+  /** Jaune · accordéons sous-catégories */
   bgSubcat: string;
   textOnSubcat: string;
-  /** Tag "Nouveau" — fond noir / texte blanc */
+  /** Tag "Nouveau" · fond noir / texte blanc */
   bgTag: string;
   textTag: string;
   /** Page background */

@@ -9,7 +9,7 @@ import { usePanelLang } from "./panel-lang-context";
 interface ImpersonationBannerProps {
   /** Nom complet (prénom + nom) du user impersonné. */
   targetName: string;
-  /** Email du user impersonné — affiché en mono pour clarification. */
+  /** Email du user impersonné · affiché en mono pour clarification. */
   targetEmail: string;
 }
 

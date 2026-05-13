@@ -82,7 +82,7 @@ function highestPlan(c: ClientRow): { name: string; rank: number } {
     name: r.plan,
     rank: PLAN_RANK[r.plan] ?? 0,
   }));
-  if (ranks.length === 0) return { name: "—", rank: 0 };
+  if (ranks.length === 0) return { name: "·", rank: 0 };
   return ranks.reduce((a, b) => (b.rank > a.rank ? b : a));
 }
 
@@ -279,7 +279,7 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
               <TableCell>
                 <div className="flex flex-col gap-1">
                   {client.restaurants.length === 0 && (
-                    <span className="text-xs text-[var(--text-muted)]">—</span>
+                    <span className="text-xs text-[var(--text-muted)]">·</span>
                   )}
                   {client.restaurants.slice(0, 2).map((r) => (
                     <div key={r.id} className="flex items-center gap-2">
@@ -307,7 +307,7 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
                 >
                   {(client.revenueCentimes ?? 0) > 0
                     ? `${((client.revenueCentimes ?? 0) / 100).toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 })}`
-                    : "—"}
+                    : "·"}
                 </span>
               </TableCell>
               <TableCell className="text-right">
@@ -320,7 +320,7 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
                 >
                   {(client.scansUniques ?? 0) > 0
                     ? (client.scansUniques ?? 0).toLocaleString("fr-FR")
-                    : "—"}
+                    : "·"}
                 </span>
               </TableCell>
               <TableCell className="text-right">
@@ -333,7 +333,7 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
                 >
                   {(client.scansTotal ?? 0) > 0
                     ? (client.scansTotal ?? 0).toLocaleString("fr-FR")
-                    : "—"}
+                    : "·"}
                 </span>
               </TableCell>
               <TableCell>
@@ -345,7 +345,7 @@ export function ClientsTable({ clients, initialFilters }: ClientsTableProps) {
                     <Sparkles className="size-3" /> Active
                   </span>
                 ) : (
-                  <span className="text-xs text-[var(--text-muted)]">—</span>
+                  <span className="text-xs text-[var(--text-muted)]">·</span>
                 )}
               </TableCell>
               <TableCell>
@@ -449,11 +449,11 @@ function RowActions({
 }
 
 /**
- * PlanSwitcher — PlanBadge cliquable qui ouvre un popover avec 3 boutons
+ * PlanSwitcher · PlanBadge cliquable qui ouvre un popover avec 3 boutons
  * Free / Pro / Premium pour basculer le plan du restaurant en un click.
  *
  * Server action : setRestaurantPlanByStringId (déjà admin-protected).
- * Bypasse Stripe — utile pour offrir un upgrade gratuit, débloquer une démo,
+ * Bypasse Stripe · utile pour offrir un upgrade gratuit, débloquer une démo,
  * ou corriger un sub Stripe désynchronisé.
  */
 function PlanSwitcher({

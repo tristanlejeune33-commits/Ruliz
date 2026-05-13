@@ -33,7 +33,7 @@ export const auth = betterAuth({
           `,
           cta: { label: "Choisir un nouveau mot de passe", url },
           footnote:
-            "Tu n'es pas à l'origine de cette demande ? Ignore cet email — ton compte reste sûr, aucun changement n'a été fait.",
+            "Tu n'es pas à l'origine de cette demande ? Ignore cet email · ton compte reste sûr, aucun changement n'a été fait.",
         }),
       });
     },

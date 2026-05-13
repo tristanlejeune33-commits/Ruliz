@@ -39,7 +39,7 @@ export function UserMenu({ user, signOutRedirect = "/login" }: UserMenuProps) {
 
   async function handleSignOut() {
     // Nettoie cookies session-scoped (active resto, impersonation) avant le
-    // signOut Better-Auth — évite qu'ils survivent au changement de compte.
+    // signOut Better-Auth · évite qu'ils survivent au changement de compte.
     await clearSessionCookies().catch(() => null);
     await authClient.signOut();
     router.push(signOutRedirect);

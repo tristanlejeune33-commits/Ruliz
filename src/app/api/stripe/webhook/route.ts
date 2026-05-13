@@ -40,7 +40,7 @@ export async function POST(req: Request) {
 
   // === Idempotence : Stripe peut envoyer le même event plusieurs fois
   // (retry sur timeout réseau, replay manuel depuis le dashboard, etc.).
-  // On vérifie en DB qu'on ne l'a pas déjà traité — sinon on renvoie 200
+  // On vérifie en DB qu'on ne l'a pas déjà traité · sinon on renvoie 200
   // immédiatement pour acquitter sans rejouer le handler.
   await ensureRuntimeSchema();
   try {
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     // Si la table n'existe pas encore (schema drift), on log et on continue
-    // — perdre l'idempotence est moins grave que de manquer un webhook.
+    // · perdre l'idempotence est moins grave que de manquer un webhook.
     console.warn(
       "[stripe.webhook] idempotence check failed, processing anyway:",
       err,
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     console.error(`[stripe.webhook] handler error for ${event.type}:`, err);
-    // On NE marque PAS comme traité si le handler a échoué — Stripe va
+    // On NE marque PAS comme traité si le handler a échoué · Stripe va
     // retry, et l'idempotence n'empêchera pas le retry de fonctionner.
     return NextResponse.json(
       { error: "Erreur de traitement" },
@@ -284,7 +284,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 async function handleInvoicePaid(invoice: Stripe.Invoice) {
   // Récupère le restaurant via la subscription metadata.
   // `invoice.subscription` est déprécié dans Stripe SDK 22.x mais existe
-  // encore au runtime — on fait un cast défensif pour rester compatible.
+  // encore au runtime · on fait un cast défensif pour rester compatible.
   const invAny = invoice as unknown as {
     subscription?: string | { id?: string } | null;
   };
@@ -292,7 +292,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
   const subId =
     typeof rawSub === "string" ? rawSub : rawSub?.id ?? null;
   if (!subId) {
-    // Invoice one-shot (boutique / SMS) — déjà archivée via checkout.session.completed
+    // Invoice one-shot (boutique / SMS) · déjà archivée via checkout.session.completed
     return;
   }
 
@@ -334,7 +334,7 @@ async function handleInvoicePaid(invoice: Stripe.Invoice) {
     status: invoice.status === "paid" ? "paid" : "open",
     description:
       invoice.lines.data[0]?.description ??
-      `Abonnement ${resto.plan} — ${resto.nom}`,
+      `Abonnement ${resto.plan} · ${resto.nom}`,
     hostedInvoiceUrl: invoice.hosted_invoice_url ?? null,
     invoicePdfUrl: invoice.invoice_pdf ?? null,
     issuedAt: invoice.created ? new Date(invoice.created * 1000) : null,

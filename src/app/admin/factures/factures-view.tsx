@@ -80,7 +80,7 @@ const INVOICE_STATUS_TONE: Record<string, { label: string; classes: string }> =
     },
   };
 
-// 4 statuts BC avec couleurs distinctes + icônes — éditable inline.
+// 4 statuts BC avec couleurs distinctes + icônes · éditable inline.
 type StatutKey =
   | "en_attente"
   | "en_preparation"
@@ -398,7 +398,7 @@ export function FacturesAdminView({
             />
             <p className="text-sm text-[var(--text-secondary)]">
               {invoices.length === 0
-                ? "Aucune facture Stripe — vérifie ta config STRIPE_SECRET_KEY."
+                ? "Aucune facture Stripe · vérifie ta config STRIPE_SECRET_KEY."
                 : "Aucune facture ne matche les filtres."}
             </p>
           </Card>
@@ -444,7 +444,7 @@ export function FacturesAdminView({
                           </Link>
                         ) : (
                           <span className="text-xs text-[var(--text-tertiary)]">
-                            — (customer Stripe inconnu)
+                            · (customer Stripe inconnu)
                           </span>
                         )}
                       </TableCell>
@@ -458,7 +458,7 @@ export function FacturesAdminView({
                             })} – ${format(new Date(inv.periodEnd), "d MMM yyyy", {
                               locale: fr,
                             })}`
-                          : "—"}
+                          : "·"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm tabular-nums">
                         {(inv.amountPaidCentimes / 100).toLocaleString(
@@ -569,7 +569,7 @@ export function FacturesAdminView({
               strokeWidth={1.5}
             />
             <p className="text-sm text-[var(--text-secondary)]">
-              Aucun bon de commande en cours — toutes les commandes sont livrées
+              Aucun bon de commande en cours · toutes les commandes sont livrées
               ou annulées.
             </p>
           </Card>
@@ -668,7 +668,7 @@ export function FacturesAdminView({
                       <TableCell className="hidden md:table-cell text-xs text-[var(--text-tertiary)]">
                         {c.livraisonVille
                           ? `${c.livraisonCodePostal ?? ""} ${c.livraisonVille}`.trim()
-                          : "—"}
+                          : "·"}
                       </TableCell>
                       <TableCell className="text-right font-mono text-sm tabular-nums">
                         {(c.totalCentimes / 100).toLocaleString("fr-FR", {

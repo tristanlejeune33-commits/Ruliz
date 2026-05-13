@@ -7,7 +7,7 @@ export type ScrollDirection = "up" | "down" | "idle";
 /**
  * Détecte la direction de scroll vertical de la fenêtre.
  *
- * Usage type — cacher le FAB et la top bar collapsible au scroll-down,
+ * Usage type · cacher le FAB et la top bar collapsible au scroll-down,
  * réafficher au scroll-up (pattern iOS Mail / Twitter) :
  *
  *   const dir = useScrollDirection({ threshold: 8 });

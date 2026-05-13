@@ -239,7 +239,7 @@ export function SmsBlastForm({
               )}
             />
 
-            {/* Nom expéditeur — affiché sur le téléphone du client */}
+            {/* Nom expéditeur · affiché sur le téléphone du client */}
             <FormField
               control={form.control}
               name="sender"

@@ -5,7 +5,7 @@ import { Eye } from "lucide-react";
 import { FAB } from "@/components/ui/fab";
 
 /**
- * MenuFab — FAB mobile pour ouvrir la carte publique en preview.
+ * MenuFab · FAB mobile pour ouvrir la carte publique en preview.
  *
  * Le bouton inline "Voir la carte publique" est `hidden lg:inline-flex`
  * donc invisible sur mobile. Le FAB le remplace pour rester accessible

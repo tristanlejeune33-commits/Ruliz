@@ -1,7 +1,7 @@
 /**
  * Mapping ISO-2 country codes → name + emoji flag.
  * Couvre les 50+ pays les plus probables sur la carte d'un restaurant FR.
- * Fallback "🌐 — code" pour les autres.
+ * Fallback "🌐 · code" pour les autres.
  */
 
 const COUNTRIES: Record<string, { name: string; flag: string }> = {

@@ -15,7 +15,7 @@ interface DonutCardProps {
 }
 
 /**
- * Palette graphique — DS Ruliz strict (cyan / violet / success / danger)
+ * Palette graphique · DS Ruliz strict (cyan / violet / success / danger)
  * + tonalités cyan dérivées pour les segments supplémentaires.
  */
 const COLORS = [

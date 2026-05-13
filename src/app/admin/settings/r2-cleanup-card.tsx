@@ -82,7 +82,7 @@ export function R2CleanupCard() {
             <HardDrive className="size-5" strokeWidth={1.75} />
           </span>
           <div>
-            <CardTitle>Cleanup R2 — images orphelines</CardTitle>
+            <CardTitle>Cleanup R2 · images orphelines</CardTitle>
             <CardDescription className="mt-1">
               Identifie et supprime les images stockées dans Cloudflare R2 qui
               ne sont plus référencées dans la base de données (anciennes
