@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AdminDemoBanner } from "@/components/shared/admin-demo-banner";
 import { AppShell } from "@/components/shared/app-shell";
 import { Logo } from "@/components/shared/logo";
 import {
@@ -64,6 +65,7 @@ export default async function DashboardLayout({
         <RestaurantSwitcher restaurants={restaurants} activeId={activeId} />
       }
     >
+      <AdminDemoBanner />
       {children}
     </AppShell>
   );

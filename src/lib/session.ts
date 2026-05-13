@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "./auth";
 import { prisma } from "./db";
+import { getAdminDemoFlag } from "./admin-demo";
 
 export type UserRole = "admin" | "client" | "team";
 
@@ -36,9 +37,15 @@ export async function requireAdmin() {
 }
 
 export async function requireDashboard() {
-  // Dashboard est accessible aux rôles client + team. Les admin sont redirigés vers /admin.
+  // Dashboard est accessible aux rôles client + team. Les admin sont
+  // redirigés vers /admin, SAUF en "mode démo admin" (cookie set par
+  // /admin/demo) qui leur autorise l'accès au dashboard avec leur resto
+  // fictif. Cf. src/lib/admin-demo.ts.
   const session = await requireSession();
   const role = await getRole(session.user.id);
-  if (role === "admin") redirect("/admin");
+  if (role === "admin") {
+    const demoMode = await getAdminDemoFlag();
+    if (!demoMode) redirect("/admin");
+  }
   return session;
 }
