@@ -1,4 +1,4 @@
-import { FlaskConical, LogOut, RefreshCw } from "lucide-react";
+import { FlaskConical, LogOut } from "lucide-react";
 import { getAdminDemoFlag } from "@/lib/admin-demo";
 
 /**
@@ -25,27 +25,14 @@ export async function AdminDemoBanner() {
           </p>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        {/* Bouton "Régénérer" : drop le resto démo et recrée depuis le seed
-            actuel. Utile après un déploiement qui ajoute de nouvelles
-            features (vignettes, jeu, pop-ups) au seed. */}
-        <a
-          href="/admin/demo?force=1"
-          className="inline-flex items-center gap-2 rounded-md border border-amber-500/40 bg-white/40 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-white/70 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
-          title="Drop & recrée la carte démo avec le dernier seed (toutes features)"
-        >
-          <RefreshCw className="size-3.5" strokeWidth={2} />
-          Régénérer la démo
-        </a>
-        {/* <a> natif (pas <Link>) car /api/admin/demo/exit est un Route Handler. */}
-        <a
-          href="/api/admin/demo/exit"
-          className="inline-flex items-center gap-2 rounded-md border border-amber-500/40 bg-white/40 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-white/70 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
-        >
-          <LogOut className="size-3.5" strokeWidth={2} />
-          Retour à l&apos;admin
-        </a>
-      </div>
+      {/* <a> natif (pas <Link>) car /api/admin/demo/exit est un Route Handler. */}
+      <a
+        href="/api/admin/demo/exit"
+        className="inline-flex shrink-0 items-center gap-2 rounded-md border border-amber-500/40 bg-white/40 px-3 py-1.5 text-xs font-medium text-amber-800 transition hover:bg-white/70 dark:bg-amber-950/30 dark:text-amber-200 dark:hover:bg-amber-950/50"
+      >
+        <LogOut className="size-3.5" strokeWidth={2} />
+        Retour à l&apos;admin
+      </a>
     </div>
   );
 }
