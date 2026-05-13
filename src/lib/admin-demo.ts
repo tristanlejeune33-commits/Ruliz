@@ -49,6 +49,8 @@ export async function ensureAdminDemoRestaurant(adminUserId: number) {
     where: { userId: adminUserId },
     include: {
       categories: { include: { produits: { select: { id: true } } } },
+      jeux: { select: { id: true } },
+      popups: { select: { id: true } },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -58,13 +60,21 @@ export async function ensureAdminDemoRestaurant(adminUserId: number) {
       (sum, c) => sum + c.produits.length,
       0,
     );
-    if (totalProduits >= 8) {
+    const hasJeu = existing.jeux.length > 0;
+    const hasPopup = existing.popups.length > 0;
+
+    // "Seed complet" = au moins 8 produits + 1 jeu + 1 popup. Tant que les
+    // 3 critères sont remplis, on assume que l'admin a customisé et on garde
+    // intact. Si l'un manque, on régénère TOUT pour rattraper les features
+    // ajoutées dans les commits récents (jeu, popups, vignettes…).
+    if (totalProduits >= 8 && hasJeu && hasPopup) {
       const fresh = await prisma.restaurant.findUnique({
         where: { id: existing.id },
       });
       return fresh!;
     }
-    // Seed pauvre ou intermédiaire → régénère tout
+    // Seed incomplet → on drop le resto entier (cascade catégories, produits,
+    // jeux, popups, qrcodes, base_clients) et on régénère depuis zéro.
     await prisma.restaurant.delete({ where: { id: existing.id } });
   }
 
