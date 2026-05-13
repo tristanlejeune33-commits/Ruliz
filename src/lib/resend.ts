@@ -9,6 +9,18 @@ export function getResend() {
   return cached;
 }
 
+/**
+ * Expéditeur par défaut des emails transactionnels. Configurable via la
+ * variable d'environnement `MAIL_FROM` (recommandé en prod).
+ * Format attendu : "Ruliz <noreply@ruliz-panel.fr>".
+ *
+ * Le domaine de l'email doit être **vérifié chez Resend** (DNS SPF + DKIM
+ * configurés chez le registrar) sinon les envois plantent en
+ * "domain not verified".
+ */
+const DEFAULT_FROM =
+  process.env.MAIL_FROM ?? "Ruliz <noreply@ruliz-panel.fr>";
+
 interface SendMailOptions {
   to: string;
   subject: string;
@@ -24,7 +36,7 @@ export async function sendMail({
   to,
   subject,
   html,
-  from = "Ruliz <noreply@ruliz.app>",
+  from = DEFAULT_FROM,
 }: SendMailOptions) {
   const resend = getResend();
   if (!resend) {
