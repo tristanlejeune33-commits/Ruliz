@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/session";
 import { clearAdminDemoFlag } from "@/lib/admin-demo";
 import { clearActiveRestaurantCookie } from "@/lib/active-restaurant";
@@ -7,12 +7,12 @@ import { clearActiveRestaurantCookie } from "@/lib/active-restaurant";
  * GET /api/admin/demo/exit — sortie du mode démo admin.
  *
  * Clear les deux cookies (admin_demo + active_restaurant) puis redirige
- * vers /admin. Appelé depuis le bouton "Retour à l'admin" du bandeau
- * affiché dans le dashboard.
+ * vers /admin avec un path relatif (cf. note dans /admin/demo/route.ts
+ * sur le proxy localhost:8080 → 3000).
  */
-export async function GET(request: Request) {
+export async function GET() {
   await requireAdmin();
   await clearAdminDemoFlag();
   await clearActiveRestaurantCookie();
-  return NextResponse.redirect(new URL("/admin", request.url));
+  redirect("/admin");
 }

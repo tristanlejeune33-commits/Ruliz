@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import {
@@ -15,10 +15,13 @@ import { setActiveRestaurantCookie } from "@/lib/active-restaurant";
  * - Set les cookies (admin_demo + active_restaurant).
  * - Redirige vers /dashboard.
  *
- * On GET (vs POST) car appelé depuis un <Link> sidebar. Idempotent côté
- * DB (ensureAdminDemoRestaurant), donc safe à invoquer plusieurs fois.
+ * Important : on utilise `redirect()` de next/navigation qui produit un
+ * redirect avec path RELATIF (header `Location: /dashboard` au lieu d'une
+ * URL absolue). Le browser conserve son origin actuel — utile si le dev
+ * tourne derrière un proxy (localhost:8080 → Next.js sur 3000) où une URL
+ * absolue construite avec request.url casserait la nav.
  */
-export async function GET(request: Request) {
+export async function GET() {
   const session = await requireAdmin();
 
   const authUser = await prisma.authUser.findUnique({
@@ -26,12 +29,12 @@ export async function GET(request: Request) {
     select: { userId: true },
   });
   if (!authUser?.userId) {
-    return NextResponse.redirect(new URL("/admin", request.url));
+    redirect("/admin");
   }
 
   const restaurant = await ensureAdminDemoRestaurant(authUser.userId);
   await setAdminDemoFlag();
   await setActiveRestaurantCookie(restaurant.id);
 
-  return NextResponse.redirect(new URL("/dashboard", request.url));
+  redirect("/dashboard");
 }
