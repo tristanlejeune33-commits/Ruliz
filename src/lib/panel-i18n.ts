@@ -298,6 +298,15 @@ const DICT: Record<string, LangDict> = {
     pt: "Testar emails",
     zh: "测试邮件",
   },
+  "nav.admin.outreach": {
+    fr: "Campagne outreach",
+    en: "Outreach campaign",
+    es: "Campaña outreach",
+    de: "Outreach-Kampagne",
+    it: "Campagna outreach",
+    pt: "Campanha outreach",
+    zh: "外联活动",
+  },
   "nav.section.outils": {
     fr: "Outils",
     en: "Tools",

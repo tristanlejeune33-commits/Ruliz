@@ -10,6 +10,11 @@ import {
   translateRestaurantMenu,
 } from "@/server/translation/service";
 import { inngest } from "./client";
+import {
+  cronOutreachEnqueueQueued,
+  onProspectEnrich,
+  onProspectGenerate,
+} from "./outreach-functions";
 
 const TARGET_LANGS = SUPPORTED_LANGS.filter((l) => l !== "fr");
 
@@ -344,4 +349,8 @@ export const allFunctions = [
   onCacheInvalidate,
   dailySmsBirthdayAutomation,
   processScheduledSmsCampaigns,
+  // ─── Outreach campaign ──────────────────────────────────────────────
+  onProspectEnrich,
+  onProspectGenerate,
+  cronOutreachEnqueueQueued,
 ];

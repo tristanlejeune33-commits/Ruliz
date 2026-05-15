@@ -868,3 +868,131 @@ model SmsAutomation {
   @@index([triggerType, active], map: "idx_sms_auto_trigger_active")
   @@map("sms_automations")
 }
+
+// ============================================
+// OUTREACH (cold email campaign — prospects pré-générés)
+// ============================================
+
+/**
+ * Prospect = restaurant scrapé (TripAdvisor + enrichissement Google Places)
+ * pour lequel on génère une carte "fantôme" avant tout contact.
+ *
+ * Le Restaurant métier n'est créé qu'à l'activation réelle (signup du resto),
+ * pour éviter de polluer la table principale avec 2000+ entrées inactives.
+ *
+ * Workflow status : queued → enriched → generated → sent → opened → clicked → converted | failed
+ */
+model ProspectRestaurant {
+  id    BigInt @id @default(autoincrement())
+  /** Identifiant de campagne ou batch (ex: "pilote-2k-2026-05") */
+  source String @db.VarChar(50)
+
+  // ─── Données brutes du CSV initial ─────────────────────────────────────
+  email         String  @unique @db.VarChar(255)
+  nom           String  @db.VarChar(255)
+  ville         String? @db.VarChar(120)
+  codePostal    String? @map("code_postal") @db.VarChar(20)
+  adresse       String? @db.Text
+  telephone     String? @db.VarChar(30)
+  siteWeb       String? @map("site_web") @db.Text
+  rating        Float?
+  nbReviews     Int?    @map("nb_reviews")
+  niveauPrix    String? @map("niveau_prix") @db.VarChar(10)
+  photoCover    String? @map("photo_cover") @db.Text
+  googlePlaceId String? @map("google_place_id") @db.VarChar(120)
+
+  // ─── Enrichissement automatique (workers Inngest) ──────────────────────
+  logoUrl          String? @map("logo_url") @db.Text
+  couleurDominante String? @map("couleur_dominante") @db.VarChar(20)
+  menuSourceUrl    String? @map("menu_source_url") @db.Text
+  /** "pdf" | "html" | "image" | null */
+  menuSourceType   String? @map("menu_source_type") @db.VarChar(10)
+
+  // ─── Carte générée (avant insertion en tables relationnelles) ──────────
+  /** Arbre catégories + produits — dénormalisé en Categorie/Produit à l'activation */
+  cardJson  Json?   @map("card_json")
+  /** Token aléatoire pour URL preview /preview/{token} */
+  cardToken String? @unique @map("card_token") @db.VarChar(40)
+
+  // ─── Workflow ──────────────────────────────────────────────────────────
+  status       String    @default("queued") @db.VarChar(20)
+  enrichedAt   DateTime? @map("enriched_at") @db.Timestamptz()
+  generatedAt  DateTime? @map("generated_at") @db.Timestamptz()
+  sentAt       DateTime? @map("sent_at") @db.Timestamptz()
+  openedAt     DateTime? @map("opened_at") @db.Timestamptz()
+  clickedAt    DateTime? @map("clicked_at") @db.Timestamptz()
+  convertedAt  DateTime? @map("converted_at") @db.Timestamptz()
+  errorMessage String?   @map("error_message") @db.Text
+
+  // ─── Tracking / A-B test ───────────────────────────────────────────────
+  emailVariant  String? @map("email_variant") @db.VarChar(10)
+  followupCount Int     @default(0) @map("followup_count")
+
+  // ─── Si converti, lien vers le Restaurant créé ─────────────────────────
+  restaurantId BigInt? @map("restaurant_id")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  events OutreachEvent[]
+
+  @@index([status], map: "idx_prospect_status")
+  @@index([source], map: "idx_prospect_source")
+  @@index([cardToken], map: "idx_prospect_token")
+  @@index([ville], map: "idx_prospect_ville")
+  @@map("prospect_restaurants")
+}
+
+/**
+ * Événements de tracking sur la séquence de cold email :
+ * envois, ouvertures, clics, replies, bounces, désinscriptions.
+ */
+model OutreachEvent {
+  id         BigInt @id @default(autoincrement())
+  prospectId BigInt @map("prospect_id")
+  /** "sent" | "open" | "click" | "reply" | "bounce" | "unsubscribe" | "spam" */
+  type       String @db.VarChar(20)
+  /** ip, userAgent, link cliqué, sujet, etc. */
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  prospect ProspectRestaurant @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+
+  @@index([prospectId, type], map: "idx_outreach_prospect_type")
+  @@index([createdAt], map: "idx_outreach_created")
+  @@map("outreach_events")
+}
+
+/**
+ * Variants d'emails A/B testés (générés par AI marketer ou Tristan).
+ * Le bandit Thompson Sampling choisit le variant à envoyer en pondérant
+ * par le taux de conversion observé.
+ */
+model EmailVariant {
+  id          BigInt   @id @default(autoincrement())
+  /** "pilote-2k-2026-05" — même clé que ProspectRestaurant.source */
+  campaign    String   @db.VarChar(50)
+  /** 1 = J+0 (initial), 2 = J+3, 3 = J+7, 4 = J+14 */
+  step        Int
+  /** "A", "B", "C", … — unique par (campaign, step) */
+  variant     String   @db.VarChar(5)
+  subject     String   @db.VarChar(255)
+  bodyHtml    String   @map("body_html") @db.Text
+  /** "ai" | "human" — qui a généré ce variant */
+  generatedBy String   @default("ai") @map("generated_by") @db.VarChar(10)
+
+  // ─── Stats live (mises à jour par worker analytics) ────────────────────
+  sent      Int @default(0)
+  opened    Int @default(0)
+  clicked   Int @default(0)
+  replied   Int @default(0)
+  converted Int @default(0)
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@unique([campaign, step, variant], map: "uniq_email_variant")
+  @@index([campaign, active], map: "idx_email_variant_active")
+  @@map("email_variants")
+}

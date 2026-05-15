@@ -118,6 +118,11 @@ const ADMIN_NAV: SidebarNavSection[] = [
         href: "/admin/email-test",
         icon: Mail,
       },
+      {
+        labelKey: "nav.admin.outreach",
+        href: "/admin/outreach",
+        icon: Megaphone,
+      },
     ],
   },
   {

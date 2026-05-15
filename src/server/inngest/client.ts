@@ -24,4 +24,17 @@ export type RulizEvent =
   | {
       name: "carte/cache.invalidate";
       data: { restaurantId: string };
+    }
+  // ─── Outreach pipeline ────────────────────────────────────────────────
+  | {
+      name: "prospect/enrich.requested";
+      data: { prospectId: string };
+    }
+  | {
+      name: "prospect/generate.requested";
+      data: { prospectId: string };
+    }
+  | {
+      name: "prospect/outreach.requested";
+      data: { prospectId: string };
     };
