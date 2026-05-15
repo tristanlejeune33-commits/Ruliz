@@ -60,13 +60,18 @@ const signupSchema = z.object({
   nom: z.string().min(1, "Requis").max(100),
   /** Code pays ISO 2 (FR, IT, etc.) sert à inférer la langue native */
   country: z.string().length(2).default("FR"),
+  /** Si défini : token prospect → active sa carte pré-générée après signup */
+  prospectToken: z.string().min(8).max(64).optional(),
 });
 
 /**
  * Self-service signup : crée un User métier + un AuthUser (Better-Auth) liés.
  * Better-Auth `autoSignIn: true` ouvre une session automatiquement.
+ *
+ * Si `prospectToken` est fourni, on déclenche aussi l'activation de la carte
+ * pré-générée par la campagne outreach (création Restaurant + arbre menu).
  */
-export async function signupClient(input: unknown): Promise<ActionResult> {
+export async function signupClient(input: unknown): Promise<ActionResult<{ activatedProspect: boolean }>> {
   const parsed = signupSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -119,5 +124,31 @@ export async function signupClient(input: unknown): Promise<ActionResult> {
     return { ok: false, error: "Impossible de créer le compte." };
   }
 
-  return { ok: true };
+  // ─── Activation prospect si token fourni ─────────────────────────────
+  let activatedProspect = false;
+  if (data.prospectToken) {
+    try {
+      const { activateProspect } = await import(
+        "@/server/outreach/activate-prospect"
+      );
+      const result = await activateProspect({
+        userId: user.id,
+        prospectToken: data.prospectToken,
+      });
+      if (result.ok) {
+        activatedProspect = true;
+      } else {
+        console.warn(
+          "[signup] prospect activation failed:",
+          result.error,
+        );
+      }
+    } catch (err) {
+      // L'activation prospect ne doit JAMAIS bloquer le signup.
+      // L'user peut toujours créer son resto manuellement.
+      console.error("[signup] prospect activation crashed:", err);
+    }
+  }
+
+  return { ok: true, data: { activatedProspect } };
 }

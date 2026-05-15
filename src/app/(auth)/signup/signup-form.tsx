@@ -27,9 +27,18 @@ const schema = z.object({
   email: z.email("Email invalide"),
   password: z.string().min(8, "8 caractères minimum"),
   country: z.string().length(2),
+  prospectToken: z.string().optional(),
 });
 
 type Values = z.infer<typeof schema>;
+
+interface SignupFormProps {
+  /** Pré-remplissage si l'user arrive depuis /preview/[token] */
+  prefill?: {
+    email: string;
+    prospectToken: string;
+  };
+}
 
 const INPUT_STYLE: React.CSSProperties = {
   width: "100%",
@@ -60,7 +69,7 @@ const blurFx = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
   e.currentTarget.style.boxShadow = "none";
 };
 
-export function SignupForm() {
+export function SignupForm({ prefill }: SignupFormProps = {}) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -69,9 +78,10 @@ export function SignupForm() {
     defaultValues: {
       prenom: "",
       nom: "",
-      email: "",
+      email: prefill?.email ?? "",
       password: "",
       country: "FR",
+      prospectToken: prefill?.prospectToken,
     },
   });
 
@@ -92,7 +102,12 @@ export function SignupForm() {
     // session (active restaurant, impersonation) avant de naviguer.
     await clearSessionCookies().catch(() => null);
 
-    toast.success("Compte créé. Bienvenue !");
+    // Message contextuel selon activation prospect ou pas
+    if (res.data?.activatedProspect) {
+      toast.success("Compte créé et carte activée !");
+    } else {
+      toast.success("Compte créé. Bienvenue !");
+    }
     router.push("/dashboard");
     router.refresh();
   }
