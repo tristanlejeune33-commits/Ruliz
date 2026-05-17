@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { inngest } from "@/server/inngest/client";
 import type { GeneratedCard } from "./generate-card";
+import { sendActivationWelcomeEmail } from "./welcome-email";
 
 /**
  * Active un prospect → crée le Restaurant + Categories + Produits à partir
@@ -139,6 +140,24 @@ export async function activateProspect(opts: {
     });
   } catch (err) {
     console.warn("[activate-prospect] inngest send failed:", err);
+  }
+
+  // ─── Email de bienvenue post-activation (non bloquant) ──────────────
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { prenom: true, nom: true },
+    });
+    if (user) {
+      await sendActivationWelcomeEmail({
+        to: prospect.email,
+        prenom: user.prenom ?? "bonjour",
+        restaurantNom: prospect.nom,
+        restaurantId: result.id,
+      });
+    }
+  } catch (err) {
+    console.warn("[activate-prospect] welcome email failed:", err);
   }
 
   return { ok: true, restaurantId: result.id };

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
+import { classifyReply } from "@/server/outreach/ai-marketer";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ type SmartleadEvent = {
   email?: string;
   campaign_id?: string;
   sequence_step?: number;
+  reply_text?: string;
   metadata?: Record<string, unknown>;
 };
 
@@ -80,7 +82,13 @@ export async function POST(req: Request) {
 
   const prospect = await prisma.prospectRestaurant.findUnique({
     where: { email },
-    select: { id: true, status: true },
+    select: {
+      id: true,
+      status: true,
+      nom: true,
+      ville: true,
+      cardToken: true,
+    },
   });
 
   if (!prospect) {
@@ -88,12 +96,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, unknownProspect: true });
   }
 
+  // ─── Si reply : classifie via AI marketer ─────────────────────────────
+  let aiClassification: object | null = null;
+  if (type === "reply" && payload.reply_text) {
+    try {
+      const classification = await classifyReply({
+        replyText: payload.reply_text,
+        prospectNom: prospect.nom,
+        prospectVille: prospect.ville,
+        previewUrl: prospect.cardToken
+          ? `https://ruliz-panel.fr/preview/${prospect.cardToken}`
+          : undefined,
+      });
+      if (classification.ok) {
+        aiClassification = classification.data as unknown as object;
+      }
+    } catch (err) {
+      console.warn("[outreach-event] classifyReply failed:", err);
+    }
+  }
+
   // ─── Insère l'événement (history complet) ─────────────────────────────
   await prisma.outreachEvent.create({
     data: {
       prospectId: prospect.id,
       type,
-      metadata: (payload.metadata ?? {}) as object,
+      metadata: {
+        ...(payload.metadata ?? {}),
+        ...(payload.reply_text ? { replyText: payload.reply_text } : {}),
+        ...(aiClassification ? { aiClassification } : {}),
+      } as object,
     },
   });
 

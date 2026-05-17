@@ -8,6 +8,7 @@ import {
   MailCheck,
   MailOpen,
   Megaphone,
+  MessageCircle,
   MousePointerClick,
   Sparkles,
   Users,
@@ -107,15 +108,15 @@ export default async function AdminOutreachPage({ searchParams }: PageProps) {
         actions={
           <div className="flex gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href="/admin/outreach/variants">
+              <Link href={`/admin/outreach/variants?campaign=${campaign}`}>
                 <Sparkles className="size-3.5" />
-                Variants emails
+                Variants
               </Link>
             </Button>
-            <Button asChild size="sm">
-              <Link href="/admin/outreach/upload">
-                <Users className="size-3.5" />
-                Importer prospects
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/outreach/replies?campaign=${campaign}`}>
+                <MessageCircle className="size-3.5" />
+                Replies
               </Link>
             </Button>
           </div>

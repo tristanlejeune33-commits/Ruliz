@@ -11,6 +11,7 @@ import {
 } from "@/server/translation/service";
 import { inngest } from "./client";
 import {
+  cronAiMarketer,
   cronOutreachEnqueueQueued,
   onProspectEnrich,
   onProspectGenerate,
@@ -353,4 +354,5 @@ export const allFunctions = [
   onProspectEnrich,
   onProspectGenerate,
   cronOutreachEnqueueQueued,
+  cronAiMarketer,
 ];
