@@ -34,6 +34,8 @@ import {
   listProspects,
 } from "@/server/admin/outreach-queries";
 import { serialize } from "@/lib/serialize";
+import { prisma } from "@/lib/db";
+import { OutreachActions } from "./outreach-actions";
 
 // Toujours frais : la campagne évolue en temps réel pendant l'enrichissement.
 export const dynamic = "force-dynamic";
@@ -78,10 +80,11 @@ export default async function AdminOutreachPage({ searchParams }: PageProps) {
   const limit = 50;
   const offset = (page - 1) * limit;
 
-  const [stats, campaignsList, prospectsRaw] = await Promise.all([
+  const [stats, campaignsList, prospectsRaw, variantsCount] = await Promise.all([
     getOutreachStats(campaign),
     listCampaigns(),
     listProspects({ campaign, status, search, limit, offset }),
+    prisma.emailVariant.count({ where: { campaign } }),
   ]);
 
   const prospects = serialize(prospectsRaw.items);
@@ -163,6 +166,14 @@ export default async function AdminOutreachPage({ searchParams }: PageProps) {
             />
           </>
         }
+      />
+
+      {/* Actions pilotage one-shot (upload / seed / trigger / export) */}
+      <OutreachActions
+        campaign={campaign}
+        queuedCount={stats.counts.queued}
+        generatedCount={stats.counts.generated}
+        hasVariants={variantsCount > 0}
       />
 
       {/* Pipeline funnel */}
