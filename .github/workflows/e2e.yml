@@ -1,0 +1,122 @@
+name: E2E Tests
+
+# Lance les tests Playwright à chaque push sur main + chaque PR.
+# Aussi exécutable manuellement via workflow_dispatch (bouton sur GitHub UI).
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Base URL à tester (défaut: prod)"
+        required: false
+        default: "https://ruliz-panel.fr"
+      filter:
+        description: "Filtre tests (ex: 'smoke', 'visual')"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright E2E (${{ matrix.shard }}/${{ matrix.total_shards }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    # On exécute en parallèle 2 shards pour aller plus vite
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+        total_shards: [2]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run E2E tests (shard ${{ matrix.shard }}/${{ matrix.total_shards }})
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://ruliz-panel.fr' }}
+          CI: true
+        run: |
+          pnpm exec playwright test \
+            --shard=${{ matrix.shard }}/${{ matrix.total_shards }} \
+            ${{ github.event.inputs.filter }}
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-shard-${{ matrix.shard }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload test results (videos, screenshots)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-failures-shard-${{ matrix.shard }}
+          path: test-results/
+          retention-days: 14
+
+  # Job final qui agrège les rapports des shards
+  report:
+    name: Combine reports
+    if: always()
+    needs: [e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: playwright-report-shard-*
+          merge-multiple: true
+          path: playwright-report
+
+      - name: Upload combined report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-combined
+          path: playwright-report/
+          retention-days: 30
