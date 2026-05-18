@@ -32,8 +32,10 @@ test.describe("Smoke — API publiques", () => {
   test("API /api/health retourne 200", async ({ request }) => {
     const res = await request.get("/api/health");
     expect(res.status()).toBe(200);
-    const body = await res.json();
-    expect(body).toHaveProperty("ok");
+    const body = (await res.json()) as { status?: string; checks?: unknown };
+    // L'API renvoie { status: "ok", checks: {...}, service, timestamp, uptime }
+    expect(body.status).toBe("ok");
+    expect(body.checks).toBeDefined();
   });
 
   test("API /api/inngest GET répond (sans crash)", async ({ request }) => {

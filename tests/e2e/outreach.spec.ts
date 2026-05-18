@@ -41,13 +41,15 @@ test.describe("Webhook /api/outreach/event — sécurité", () => {
     expect([200, 403]).toContain(res.status());
   });
 
-  test("POST avec JSON invalide retourne 400", async ({ request }) => {
+  test("POST avec JSON invalide retourne 400 (ou 403 si token requis)", async ({ request }) => {
+    // Playwright `data: string` est re-sérialisé en JSON → on doit passer
+    // le payload via Buffer pour envoyer du JSON brut malformé.
     const res = await request.post("/api/outreach/event", {
       headers: {
         "Content-Type": "application/json",
         "X-Outreach-Token": "anything",
       },
-      data: "not-valid-json{{{",
+      data: Buffer.from("{not-valid-json{{{"),
     });
     expect([400, 403]).toContain(res.status());
   });

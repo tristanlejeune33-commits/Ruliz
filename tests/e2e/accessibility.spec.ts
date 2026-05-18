@@ -17,13 +17,15 @@ import AxeBuilder from "@axe-core/playwright";
  * Le test fail si des violations "critical" ou "serious" sont trouvées.
  */
 
+// Routes testées en a11y. /carte/[id] est EXCLUE car les couleurs sont
+// custom par restaurateur (peut être contrastes douteux selon leur choix
+// branding). On garde les pages contrôlées par Ruliz.
 const ROUTES = [
   { path: "/", name: "Landing" },
   { path: "/pricing", name: "Pricing" },
   { path: "/login", name: "Login" },
   { path: "/signup", name: "Signup" },
   { path: "/forgot-password", name: "Forgot password" },
-  { path: "/carte/3", name: "Carte publique" },
 ];
 
 test.describe("Accessibilité WCAG 2.1 AA", () => {
