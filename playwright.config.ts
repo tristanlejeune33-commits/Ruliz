@@ -62,20 +62,27 @@ export default defineConfig({
       },
     },
 
-    // ─── Tests Mobile ──────────────────────────────────────────────────
+    // ─── Tests Mobile (Chromium avec viewport iPhone) ───────────────────
+    // NB : devices["iPhone 14"] utilise WebKit par défaut. On override pour
+    // utiliser Chromium → évite d'installer WebKit en CI (gain ~150 MB +
+    // ~30s setup). Le viewport + userAgent restent ceux de l'iPhone 14.
     {
       name: "chromium-mobile",
       use: {
         ...devices["iPhone 14"],
+        defaultBrowserType: "chromium",
+        browserName: "chromium",
       },
       testMatch: /carte-publique|responsive|visual\.spec\.ts/,
     },
 
-    // ─── Tests Tablet ──────────────────────────────────────────────────
+    // ─── Tests Tablet (Chromium avec viewport iPad) ────────────────────
     {
       name: "chromium-tablet",
       use: {
         ...devices["iPad Mini"],
+        defaultBrowserType: "chromium",
+        browserName: "chromium",
       },
       testMatch: /responsive\.spec\.ts/,
     },

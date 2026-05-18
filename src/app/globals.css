@@ -221,6 +221,16 @@
     font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+  /* Re-applique `color` et `background` sur les sous-arbres qui basculent
+     data-theme="light|dark". Sinon la couleur calculée du body (dark mode
+     par défaut) est héritée et la cascade CSS variables ne suffit pas à
+     forcer le re-render (cf. bug a11y contraste sur landing).
+     Cf. WCAG 2.1 AA color-contrast — règle axe-core. */
+  [data-theme="light"],
+  [data-theme="dark"] {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
     /* Anti-frictions mobiles : pas de flash bleu Android, pas de delay 300ms,
        pas d'overflow horizontal accidentel */
     -webkit-tap-highlight-color: transparent;

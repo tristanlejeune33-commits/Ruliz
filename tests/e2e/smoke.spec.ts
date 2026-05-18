@@ -36,10 +36,14 @@ test.describe("Smoke — API publiques", () => {
     expect(body).toHaveProperty("ok");
   });
 
-  test("API /api/inngest GET retourne 200 (introspection)", async ({ request }) => {
+  test("API /api/inngest GET répond (sans crash)", async ({ request }) => {
     const res = await request.get("/api/inngest");
-    // Inngest peut retourner 200 ou 405 (Method Not Allowed) selon version
-    expect([200, 405]).toContain(res.status());
+    // Inngest peut retourner :
+    //   - 200 si introspection autorisée
+    //   - 401 si signing key requis et absent (cas par défaut en prod)
+    //   - 405 si la version n'accepte pas GET
+    // L'important = ne pas crasher (500).
+    expect([200, 401, 405]).toContain(res.status());
   });
 });
 
