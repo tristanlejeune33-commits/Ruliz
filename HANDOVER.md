@@ -1,7 +1,14 @@
-# 🤝 HANDOVER — État complet du projet Ruliz
+# 🤝 HANDOVER — Historique passation Ruliz
 
-> Document de passation. Lis ceci en entier si tu reprends ce projet à froid.
+> ⚠️ **Ce document est historique** (état 2026-05-13).
+> Pour le plan de vol courant, lis **[`AGENT.md`](./AGENT.md)** d'abord — il intègre
+> tout ce qui est ici + les chantiers récents (pipeline outreach 2k, etc.).
+>
+> Ce HANDOVER reste utile pour les **détails historiques** (bugs résolus, décisions
+> phase par phase, première mise en prod).
+>
 > Dernière mise à jour : 2026-05-13 (commit `5e66e1a`)
+> Compléments depuis : voir AGENT.md § 3 "Phase 7+ Travaux 2026-05-15 à 18"
 
 ---
 
