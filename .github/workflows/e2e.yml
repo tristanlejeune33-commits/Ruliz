@@ -78,18 +78,35 @@ jobs:
         # On exclut visual.spec.ts par défaut car les snapshots n'existent pas
         # encore (à générer en local via `pnpm test:e2e -- visual --update-snapshots`).
         # Si un filtre custom est fourni via workflow_dispatch, on l'utilise tel quel.
+        # `|| true` pour ne pas fail le job — on récupère les artifacts pour
+        # voir où ça plante, et on fail explicitement plus bas avec un summary.
         run: |
           FILTER="${{ github.event.inputs.filter }}"
           if [ -z "$FILTER" ]; then
             pnpm exec playwright test \
               --shard=${{ matrix.shard }}/${{ matrix.total_shards }} \
               --ignore-snapshots \
-              --grep-invert "Visual regression|visual\\."
+              --grep-invert "Visual regression" \
+              || echo "TESTS_FAILED=1" >> $GITHUB_ENV
           else
             pnpm exec playwright test \
               --shard=${{ matrix.shard }}/${{ matrix.total_shards }} \
-              "$FILTER"
+              "$FILTER" \
+              || echo "TESTS_FAILED=1" >> $GITHUB_ENV
           fi
+
+      # Debug : vérifie qu'on a bien généré le rapport HTML
+      - name: Debug — list playwright-report dir
+        if: always()
+        run: |
+          echo "=== Working directory ==="
+          pwd
+          echo "=== Liste playwright-report ==="
+          ls -la playwright-report/ || echo "playwright-report/ doesn't exist"
+          echo "=== Liste test-results ==="
+          ls -la test-results/ || echo "test-results/ doesn't exist"
+          echo "=== Disk space ==="
+          df -h | head -5
 
       - name: Upload HTML report
         if: always()
@@ -98,14 +115,24 @@ jobs:
           name: playwright-report-shard-${{ matrix.shard }}
           path: playwright-report/
           retention-days: 14
+          if-no-files-found: warn
 
       - name: Upload test results (videos, screenshots)
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: test-failures-shard-${{ matrix.shard }}
           path: test-results/
           retention-days: 14
+          if-no-files-found: warn
+
+      # Fail le job explicitement si des tests ont échoué.
+      # Permet d'avoir les artifacts uploadés AVANT de signaler l'échec.
+      - name: Fail if tests failed
+        if: env.TESTS_FAILED == '1'
+        run: |
+          echo "::error::Des tests Playwright ont échoué. Voir l'artifact playwright-report-shard-${{ matrix.shard }} pour les détails."
+          exit 1
 
   # Job final qui agrège les rapports des shards
   report:
