@@ -253,7 +253,7 @@ export function SignupForm({ prefill }: SignupFormProps = {}) {
               </FormControl>
               <p
                 className="mt-1.5 text-xs leading-snug"
-                style={{ color: "#6b7791" }}
+                style={{ color: "#5e6b85" }}
               >
                 Détecte automatiquement la langue de ta carte (
                 <strong style={{ color: "#26438A" }}>

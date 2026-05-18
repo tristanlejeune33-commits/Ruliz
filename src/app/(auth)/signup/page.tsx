@@ -100,7 +100,7 @@ export default async function SignupPage({ searchParams }: PageProps) {
               {prospect.ville && (
                 <span
                   className="ml-2 text-xs font-normal"
-                  style={{ color: "#6b7791" }}
+                  style={{ color: "#5e6b85" }}
                 >
                   · {prospect.ville}
                 </span>

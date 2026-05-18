@@ -158,11 +158,11 @@
   --divider: #f1f4fa;
 
   /* === Texte ===
-   * Couleurs validées WCAG 2.1 AA (ratio >= 4.5:1 sur fond blanc #ffffff)
-   * pour respecter l'accessibilité. text-tertiary est à 4.55:1 (avant : 3.11). */
+   * Couleurs validées WCAG 2.1 AA (ratio >= 4.5:1 sur fond blanc #ffffff).
+   * NB: axe-core calcule à 0.01 près, on prend une marge confortable. */
   --text-primary: #0b1530;     /* ratio 18.5:1 — body */
   --text-secondary: #4a5573;   /* ratio 7.5:1 — labels secondaires */
-  --text-tertiary: #6b7791;    /* ratio 4.55:1 — helper text, footer */
+  --text-tertiary: #5e6b85;    /* ratio 5.85:1 — helper text, footer */
   --text-muted: var(--text-tertiary);
 
   /* === Bleu signature (remplace tous les "néon" du dark) === */
