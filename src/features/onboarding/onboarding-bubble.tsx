@@ -125,6 +125,8 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
       offset(16),
       flip({ padding: 16 }),
       shift({ padding: 16 }),
+      // floating-ui exige un objet ref ici (pattern officiel) — pas un accès .current
+      // eslint-disable-next-line react-hooks/refs
       arrow({ element: arrowRef, padding: 8 }),
     ],
   });

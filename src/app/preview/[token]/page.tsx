@@ -223,7 +223,7 @@ export default async function PreviewPage({ params }: PageProps) {
           <div className="mt-8">
             <ActivationCta token={token} />
             <p className="mt-3 text-xs text-slate-500">
-              7 jours d'essai gratuit · Sans engagement · Annulable à tout moment
+              7 jours d&apos;essai gratuit · Sans engagement · Annulable à tout moment
             </p>
           </div>
 

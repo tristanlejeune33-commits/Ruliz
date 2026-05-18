@@ -209,7 +209,7 @@ export default async function RepliesPage({ searchParams }: PageProps) {
                 {ai?.shouldReply && ai.replyText && (
                   <div>
                     <p className="text-xs uppercase tracking-wide text-emerald-400">
-                      💬 Réponse suggérée par l'IA
+                      💬 Réponse suggérée par l&apos;IA
                     </p>
                     <p className="mt-1 whitespace-pre-wrap rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3 text-sm">
                       {ai.replyText}
@@ -219,7 +219,7 @@ export default async function RepliesPage({ searchParams }: PageProps) {
                 {ai && !ai.shouldReply && (
                   <p className="text-xs text-[var(--text-muted)]">
                     <XCircle className="mr-1 inline size-3" />
-                    L'IA ne suggère pas de réponse pour ce cas.
+                    L&apos;IA ne suggère pas de réponse pour ce cas.
                   </p>
                 )}
               </CardContent>
@@ -230,7 +230,7 @@ export default async function RepliesPage({ searchParams }: PageProps) {
         {items.length === 0 && (
           <Card>
             <CardContent className="py-12 text-center text-sm text-[var(--text-muted)]">
-              Aucune réponse reçue pour cette campagne pour l'instant.
+              Aucune réponse reçue pour cette campagne pour l&apos;instant.
             </CardContent>
           </Card>
         )}

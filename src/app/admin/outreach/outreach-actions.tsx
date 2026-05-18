@@ -170,7 +170,7 @@ export function OutreachActions({
           Pilotage de la campagne
         </CardTitle>
         <CardDescription>
-          Lance les opérations one-shot depuis l'admin (zéro terminal nécessaire).
+          Lance les opérations one-shot depuis l&apos;admin (zéro terminal nécessaire).
         </CardDescription>
       </CardHeader>
       <CardContent>
