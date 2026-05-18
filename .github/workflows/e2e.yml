@@ -43,10 +43,10 @@ jobs:
         with:
           node-version: "22"
 
+      # pnpm version lue depuis package.json#packageManager (pas version: ici
+      # sinon pnpm/action-setup@v4 plante "Multiple versions of pnpm specified")
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 11
 
       - name: Get pnpm store directory
         shell: bash
