@@ -20,6 +20,11 @@
     "seed": "dotenv -e .env.local -e .env -- tsx prisma/seed.ts",
     "test:anthropic": "dotenv -e .env.local -e .env -- tsx scripts/anthropic-test.ts",
     "test:r2": "dotenv -e .env.local -e .env -- tsx scripts/r2-test.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:install": "playwright install --with-deps chromium",
     "auth:generate": "npx @better-auth/cli generate"
   },
   "packageManager": "pnpm@11.0.8",
@@ -82,6 +87,8 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.1",
+    "@playwright/test": "^1.49.1",
     "@tailwindcss/postcss": "^4.2.4",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^25.6.0",
