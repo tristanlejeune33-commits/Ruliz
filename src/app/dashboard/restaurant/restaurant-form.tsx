@@ -44,6 +44,7 @@ import { ImageUploader } from "@/components/shared/image-uploader";
 import { AutoSaveIndicator } from "@/components/shared/auto-save-indicator";
 import { FlagIcon } from "@/components/shared/flag-icon";
 import { LANG_META, SUPPORTED_LANGS } from "@/lib/langs";
+import { groupTimezonesByRegion } from "@/lib/timezones";
 import { useAutoSave } from "@/lib/use-auto-save";
 import { updateRestaurant } from "@/server/dashboard/actions";
 
@@ -61,6 +62,8 @@ const schema = z.object({
   pays: z.string().max(100),
   deviseDefault: z.string().max(5),
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]),
+  /** Fuseau horaire IANA (ex: "Europe/Paris", "Pacific/Auckland"). */
+  timezone: z.string().max(64),
   // Horaires de service (presets pour les créneaux de catégories)
   lunchStart: z.string().max(5),
   lunchEnd: z.string().max(5),
@@ -302,6 +305,48 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                       <FormDescription className="text-[10px]">
                         La langue dans laquelle tu écris ta carte. Anthropic
                         traduit automatiquement vers les autres langues.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {/* Sélecteur fuseau horaire — utilisé pour les créneaux midi/soir/HH */}
+                <FormField
+                  control={form.control}
+                  name="timezone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Fuseau horaire du restaurant</FormLabel>
+                      <Select
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(groupTimezonesByRegion()).map(
+                            ([region, tzs]) => (
+                              <div key={region}>
+                                <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+                                  {region}
+                                </div>
+                                {tzs.map((tz) => (
+                                  <SelectItem key={tz.value} value={tz.value}>
+                                    {tz.label}
+                                  </SelectItem>
+                                ))}
+                              </div>
+                            ),
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-[10px]">
+                        Détermine quand tes créneaux (carte midi, happy hour,
+                        carte soir, personnalisé) sont actifs. Important si tu
+                        as des clients hors fuseau France métropolitaine.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

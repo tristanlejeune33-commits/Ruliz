@@ -54,6 +54,8 @@ const restaurantSchema = z.object({
   pays: z.string().max(100).optional().or(z.literal("")),
   deviseDefault: z.string().max(5).optional().or(z.literal("")),
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]).optional(),
+  // IANA timezone (validated min-only — Intl.DateTimeFormat valide en runtime)
+  timezone: z.string().max(64).optional(),
   // Horaires customisés
   lunchStart: z.string().max(5).optional(),
   lunchEnd: z.string().max(5).optional(),
@@ -177,6 +179,7 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         pays: empty(data.pays),
         deviseDefault: empty(data.deviseDefault) ?? "€",
         langueNative: data.langueNative ?? "fr",
+        timezone: data.timezone || "Europe/Paris",
         lunchStart,
         lunchEnd,
         dinnerStart,
@@ -218,6 +221,7 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
       ["pays", empty(data.pays)],
       ["devise_default", empty(data.deviseDefault) ?? "€"],
       ["langue_native", data.langueNative ?? "fr"],
+      ["timezone", data.timezone || "Europe/Paris"],
       ["lunch_start", lunchStart],
       ["lunch_end", lunchEnd],
       ["dinner_start", dinnerStart],

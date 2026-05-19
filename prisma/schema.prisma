@@ -220,6 +220,14 @@ model Restaurant {
    * Default "fr" pour rétrocompat avec l'existant. ISO 639-1.
    */
   langueNative             String    @default("fr") @map("langue_native") @db.VarChar(2)
+  /**
+   * Fuseau horaire IANA du restaurant (ex: "Europe/Paris", "Pacific/Auckland",
+   * "America/New_York"). Utilisé pour calculer "MAINTENANT" dans le bon TZ
+   * pour les créneaux d'affichage (happy hour, midi, soir, custom).
+   * Default Europe/Paris pour rétrocompat. Modifiable par le restaurateur
+   * dans /dashboard/restaurant.
+   */
+  timezone                 String    @default("Europe/Paris") @db.VarChar(64)
   // ----- Horaires de service personnalisables (par resto) -----
   // Permet de customiser les créneaux "lunch" / "dinner" / "happy_hour"
   // utilisés par le filtrage des catégories sur la carte publique.

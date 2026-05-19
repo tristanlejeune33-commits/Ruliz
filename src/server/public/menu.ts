@@ -344,6 +344,10 @@ export async function getPublicMenu(
     happyHourStart: restaurant.happyHourStart,
     happyHourEnd: restaurant.happyHourEnd,
   };
+  // Fuseau horaire du resto (Europe/Paris si pas défini = rétrocompat)
+  const restoTimezone =
+    (restaurant as { timezone?: string }).timezone || "Europe/Paris";
+
   const categoriesRaw = allCategoriesRaw.filter((cat) =>
     isCategorieVisibleNow(
       {
@@ -354,6 +358,7 @@ export async function getPublicMenu(
       },
       undefined,
       restoHours,
+      restoTimezone,
     ),
   );
 
@@ -389,6 +394,7 @@ export async function getPublicMenu(
             },
             undefined,
             restoHours,
+            restoTimezone,
           ),
         )
         .map((p) => {

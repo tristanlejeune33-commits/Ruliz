@@ -100,6 +100,9 @@ export default async function RestaurantPage() {
               | "it"
               | "pt"
               | "zh") ?? "fr",
+          // Fuseau horaire IANA — default Europe/Paris (rétrocompat)
+          timezone:
+            (data as { timezone?: string }).timezone ?? "Europe/Paris",
           // String vide si null en DB (au lieu de forcer la valeur par défaut)
           // → permet à l'user de "vider" un horaire pour signaler qu'il n'a
           // pas ce créneau de service (pas de lunch / pas de happy hour).

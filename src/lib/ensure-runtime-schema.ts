@@ -453,6 +453,37 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ON "email_variants" ("campaign", "active");
     `);
 
+    // === Catégories — créneaux d'affichage (lunch/dinner/happy_hour/custom) ===
+    // Colonnes ajoutées tardivement, certains environnements ne les ont pas.
+    // Cf. modèle Categorie dans schema.prisma + lib/schedule.ts pour la logique.
+    // SANS ces colonnes, le mode "Créneau personnalisé" plante silencieusement
+    // (le UPDATE Prisma fail mais l'UI affiche un succès sans rien sauvegarder).
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "categories"
+        ADD COLUMN IF NOT EXISTS "schedule_type" VARCHAR(20) NOT NULL DEFAULT 'always',
+        ADD COLUMN IF NOT EXISTS "schedule_start" VARCHAR(5),
+        ADD COLUMN IF NOT EXISTS "schedule_end" VARCHAR(5),
+        ADD COLUMN IF NOT EXISTS "schedule_days" VARCHAR(7) NOT NULL DEFAULT '1234567',
+        ADD COLUMN IF NOT EXISTS "couleur" VARCHAR(7);
+    `);
+
+    // === Produits — créneaux d'affichage (idem catégories) ===
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "produits"
+        ADD COLUMN IF NOT EXISTS "schedule_type" VARCHAR(20) NOT NULL DEFAULT 'always',
+        ADD COLUMN IF NOT EXISTS "schedule_start" VARCHAR(5),
+        ADD COLUMN IF NOT EXISTS "schedule_end" VARCHAR(5),
+        ADD COLUMN IF NOT EXISTS "schedule_days" VARCHAR(7) NOT NULL DEFAULT '1234567';
+    `);
+
+    // === Restaurant — timezone IANA pour calcul créneaux ===
+    // Default Europe/Paris. Permet aux restos NZ, USA, Asie, etc. d'avoir
+    // leurs créneaux happy hour/midi/soir calculés dans LEUR fuseau horaire.
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "timezone" VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';
+    `);
+
     // === Panel auto-translate cache ===
     // Cache à vie des traductions du panel client/admin (sidebar, pages,
     // formulaires, etc.). Quand un user change la lang vers EN/ES/etc., le

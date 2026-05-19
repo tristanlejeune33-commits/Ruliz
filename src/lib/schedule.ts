@@ -92,29 +92,71 @@ interface CategorieSchedule {
 }
 
 /**
- * Retourne true si la catégorie doit être visible MAINTENANT.
+ * Convertit une Date UTC en composantes locales dans un fuseau horaire IANA.
+ * Utilise Intl.DateTimeFormat natif (gère DST automatique).
+ */
+function getLocalTimeInTimezone(
+  date: Date,
+  timeZone: string,
+): { hour: number; minute: number; isoDay: number } {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      hour: "2-digit",
+      minute: "2-digit",
+      weekday: "short",
+      hour12: false,
+    });
+    const parts = formatter.formatToParts(date);
+    const hourPart = parts.find((p) => p.type === "hour")?.value;
+    const minutePart = parts.find((p) => p.type === "minute")?.value;
+    const weekdayPart = parts.find((p) => p.type === "weekday")?.value;
+
+    const hour = hourPart ? parseInt(hourPart, 10) : 0;
+    const minute = minutePart ? parseInt(minutePart, 10) : 0;
+
+    const weekdayMap: Record<string, number> = {
+      Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7,
+    };
+    const isoDay = weekdayPart ? weekdayMap[weekdayPart] ?? 1 : 1;
+
+    return { hour, minute, isoDay };
+  } catch {
+    // Si TZ invalide → fallback sur le local serveur
+    const jsDay = date.getDay();
+    return {
+      hour: date.getHours(),
+      minute: date.getMinutes(),
+      isoDay: jsDay === 0 ? 7 : jsDay,
+    };
+  }
+}
+
+/**
+ * Retourne true si la catégorie doit être visible MAINTENANT dans le TZ resto.
  *
  * Règles :
  *  - "always" → toujours visible
  *  - autre → vérifie que :
- *    1. Le jour courant est dans scheduleDays (ISO weekday "1"-"7", Mon=1)
- *    2. L'heure courante est entre start et end (de la preset OU custom)
+ *    1. Le jour courant (dans TZ resto) est dans scheduleDays
+ *    2. L'heure courante (dans TZ resto) est entre start et end
  *
  * @param categorie - Le créneau de la catégorie/produit
- * @param now (optionnel) Date à utiliser comme "maintenant", utile pour les tests
- * @param restoHours (optionnel) Horaires customisés du restaurant pour les presets
+ * @param now (optionnel) Date à utiliser comme "maintenant" (default: Date())
+ * @param restoHours (optionnel) Horaires customisés du restaurant
+ * @param timezone (optionnel) IANA TZ du resto (default: "Europe/Paris")
  */
 export function isCategorieVisibleNow(
   categorie: CategorieSchedule,
   now: Date = new Date(),
   restoHours?: RestaurantPresetHours,
+  timezone: string = "Europe/Paris",
 ): boolean {
   if (categorie.scheduleType === "always") return true;
 
-  // Jour de la semaine ISO : 1 (lundi) ... 7 (dimanche)
-  // JS getDay() : 0 (dim) ... 6 (sam) → on remappe
-  const jsDay = now.getDay();
-  const isoDay = jsDay === 0 ? 7 : jsDay;
+  // Calcule heure locale dans le TZ du resto (gère DST automatique)
+  const { hour, minute, isoDay } = getLocalTimeInTimezone(now, timezone);
+
   if (!categorie.scheduleDays.includes(String(isoDay))) return false;
 
   // Heures de début / fin
@@ -137,8 +179,8 @@ export function isCategorieVisibleNow(
 
   if (!start || !end) return true; // si schedule mal configuré, on affiche par défaut
 
-  // Compare au format HH:MM (string compare est valide en lex order pour ce format)
-  const currentTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  // Compare au format HH:MM (string compare valide en lex order)
+  const currentTime = `${pad(hour)}:${pad(minute)}`;
 
   // Si end < start, on suppose que le créneau passe minuit (ex: 22:00 → 02:00)
   if (end < start) {
