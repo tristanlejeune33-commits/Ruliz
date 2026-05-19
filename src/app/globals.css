@@ -216,6 +216,10 @@
     /* Anti-zoom landscape iOS, base globale pour le panel mobile */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* Réserve toujours la gouttière scrollbar pour éviter le "scrollbar shift"
+       quand un modal ouvre/ferme et bloque le scroll body. Sans ça le header
+       sticky paraît glisser vers la droite à chaque ouverture de modal. */
+    scrollbar-gutter: stable;
   }
   body {
     background-color: var(--bg-primary);

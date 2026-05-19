@@ -1,18 +1,25 @@
 import "server-only";
 
 /**
- * Variants d'emails initiaux pour la campagne pilote 2 000.
+ * Variants d'emails pour la campagne pilote 2 000 — REFONTE PRO.
  *
- * 3 variants × 4 steps = 12 emails au total.
- * Les variables {{...}} sont remplacées par Smartlead.ai au moment de l'envoi
- * depuis le CSV des prospects (custom fields).
+ * Principes de copywriting cold email pro 2026 :
+ *  - Tutoiement (créer la proximité, démarquer des agences corporate)
+ *  - Phrases courtes (5-12 mots)
+ *  - Imperfections volontaires (parfois pas de majuscule, ton décontracté)
+ *  - Pas de structure marketing visible (pas de bullets, pas de gras spammy)
+ *  - Une seule idée par mail
+ *  - Question ouverte à la fin pour déclencher reply
+ *  - Personnalisation profonde via {{nom}}, {{ville}}, {{preview_url}}
+ *  - Pas de tracking link sauf preview_url (anti spam filter)
+ *  - HTML minimal (sonne moins corporate qu'un email stylé)
  *
- * Variables disponibles côté Smartlead :
- *   {{nom}}           Nom du restaurant
- *   {{ville}}         Ville
- *   {{first_name}}    Prénom propriétaire (best-effort depuis email)
- *   {{preview_url}}   https://ruliz-panel.fr/preview/{cardToken}
- *   {{unsubscribe}}   Lien désabonnement
+ * Variables Smartlead disponibles :
+ *   {{nom}}           → nom du restaurant
+ *   {{ville}}         → ville
+ *   {{first_name}}    → prénom propriétaire (best-effort)
+ *   {{preview_url}}   → https://ruliz-panel.fr/preview/{cardToken}
+ *   {{unsubscribe}}   → lien désabonnement légal
  */
 
 export type EmailVariantSeed = {
@@ -26,313 +33,305 @@ export type EmailVariantSeed = {
 
 const CAMPAIGN = "pilote-2k-2026-05";
 
-// Wrap commun pour tous les emails (signature + footer légal)
+/**
+ * Wrap MINIMAL — pas de signature corporate, pas de logo branded.
+ * Juste le contenu + une signature humaine + unsubscribe légal en bas.
+ *
+ * Plain HTML = paraît plus humain (les outils SaaS génèrent du HTML stylé,
+ * un vrai humain envoie souvent du texte simple via Gmail).
+ */
 function wrap(content: string): string {
   return `<!DOCTYPE html>
-<html lang="fr"><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.6;color:#1a1a1a;max-width:560px;margin:0 auto;padding:24px;">
+<html><body style="font-family:Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;color:#222;max-width:580px;">
 ${content}
-<p style="margin-top:32px;color:#555;font-size:14px;">
-  Bien à vous,<br/>
-  <strong>Tristan</strong> — fondateur de Ruliz<br/>
-  <a href="https://ruliz-panel.fr" style="color:#26438A;">ruliz-panel.fr</a>
+<p style="margin-top:18px;font-size:15px;color:#222;">
+Tristan
 </p>
-<hr style="margin-top:32px;border:none;border-top:1px solid #eee;"/>
-<p style="color:#999;font-size:12px;margin-top:16px;">
-  Vous recevez cet email car votre établissement est référencé sur les annuaires gastronomiques publics français.
-  <a href="{{unsubscribe}}" style="color:#999;">Se désinscrire de ces communications</a>
+<p style="margin-top:20px;color:#999;font-size:11px;line-height:1.4;">
+PS — Si tu reçois pas ces mails à l'avenir, <a href="{{unsubscribe}}" style="color:#999;">clique ici</a>. Tu es contacté car ton resto est référencé sur les annuaires gastronomiques publics français.
 </p>
 </body></html>`;
 }
 
 export const EMAIL_VARIANTS_SEED: EmailVariantSeed[] = [
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
   // STEP 1 — J+0 (initial)
-  // ═══════════════════════════════════════════════════════════════════════
+  // 3 angles : curiosité personnalisée / observation directe / question simple
+  // ═══════════════════════════════════════════════════════════════════════════
+
   {
     campaign: CAMPAIGN,
     step: 1,
     variant: "A",
-    subject: "{{nom}}, votre carte digitale est prête (5 min)",
+    subject: "rapide question {{nom}}",
     bodyHtml: wrap(`
-<p>Bonjour {{first_name}},</p>
+<p>Salut {{first_name}},</p>
 
-<p>J'ai créé une démo de la carte digitale de <strong>{{nom}}</strong> en partant de votre site.
-Vous pouvez la voir telle qu'elle apparaîtra à vos clients qui scanneront le QR code à table :</p>
+<p>J'ai vu {{nom}} hier en cherchant un resto sur {{ville}}.<br/>
+Bonne carte d'ailleurs.</p>
 
-<p style="text-align:center;margin:24px 0;">
-  <a href="{{preview_url}}" style="background:#26438A;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:600;display:inline-block;">
-    👀 Voir ma carte digitale
-  </a>
-</p>
+<p>Je te pose une question simple : tu as combien de touristes qui viennent chez toi par semaine ? Allemands, anglais, italiens.</p>
 
-<p>Elle inclut :</p>
-<ul>
-  <li><strong>Traduction automatique</strong> en 7 langues (touristes anglais, allemands, italiens...)</li>
-  <li><strong>QR code à imprimer</strong> pour les tables</li>
-  <li><strong>Photos + allergènes</strong> pour chaque plat</li>
-  <li><strong>Modification en 2 clics</strong> depuis votre téléphone</li>
-</ul>
+<p>Je te demande ça parce qu'on a un truc qui peut potentiellement t'intéresser. Une carte digitale scannable QR code, traduite automatiquement en 7 langues. Tes serveurs gagnent du temps, les clients étrangers commandent plus.</p>
 
-<p>Si ça vous parle, activez votre compte directement depuis la page (29,90 €/mois, 7 jours gratuits).
-Si ça ne vous parle pas, dites-le moi et je vous laisse tranquille.</p>
-    `),
+<p>Comme c'est plus simple à montrer qu'à expliquer, j'ai pris ton menu en ligne et j'ai fait une démo pour {{nom}}.</p>
+
+<p>30 secondes pour regarder :<br/>
+<a href="{{preview_url}}" style="color:#26438A;text-decoration:underline;">{{preview_url}}</a></p>
+
+<p>Si ça te parle on en discute. Si non répond moi "pas intéressé" et je te laisse tranquille.</p>
+`),
     generatedBy: "human",
   },
+
   {
     campaign: CAMPAIGN,
     step: 1,
     variant: "B",
-    subject: "J'ai refait votre carte (en 7 langues)",
+    subject: "j'ai refait ta carte {{first_name}}",
     bodyHtml: wrap(`
-<p>Bonjour {{first_name}},</p>
+<p>Hello {{first_name}},</p>
 
-<p>Je suis allé sur votre site de <strong>{{nom}}</strong> à {{ville}}. J'ai pris votre menu
-et j'en ai fait une carte digitale moderne, scannable par QR code, traduite en 7 langues :</p>
+<p>Sur le coup ça va paraitre bizarre mais j'ai pris ta carte sur ton site et j'en ai fait une version digitale.</p>
 
-<p style="text-align:center;margin:24px 0;">
-  <a href="{{preview_url}}" style="background:#26438A;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:600;display:inline-block;">
-    👉 Voir le résultat
-  </a>
-</p>
+<p>C'est ici → <a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
 
-<p>C'est 100% personnalisable une fois activé : photos, descriptions, prix, allergènes.</p>
+<p>(scannable sur mobile, traduite 7 langues, le client clique sur un plat il voit la photo + les allergènes).</p>
 
-<p>Le scénario type :</p>
-<ul>
-  <li>Un client allemand entre, scanne le QR sur la table</li>
-  <li>Il voit votre carte traduite (sans Google Translate moche)</li>
-  <li>Il commande 18% de plus en moyenne — il comprend mieux</li>
-</ul>
+<p>Le but c'est de te montrer à quoi ça ressemblerait chez {{nom}}. Si tu veux l'activer pour de vrai c'est 30 secondes, sinon je supprime la démo dans 15 jours.</p>
 
-<p>29,90 €/mois, 7 jours d'essai. Si ça ne vous intéresse pas, ignorez ce mail.</p>
-    `),
+<p>Tu en penses quoi ?</p>
+`),
     generatedBy: "human",
   },
+
   {
     campaign: CAMPAIGN,
     step: 1,
     variant: "C",
-    subject: "+18% de tickets moyens grâce à votre carte traduite",
+    subject: "{{ville}} = beaucoup de touristes pour {{nom}} ?",
     bodyHtml: wrap(`
 <p>Bonjour {{first_name}},</p>
 
-<p>Question rapide : combien de touristes étrangers passent chez <strong>{{nom}}</strong> chaque semaine ?</p>
+<p>Tristan, fondateur de Ruliz.</p>
 
-<p>Si la réponse est "plusieurs", il y a une statistique qui devrait vous intéresser :
-les restaurants avec carte traduite à table voient leur <strong>ticket moyen monter de 15 à 22%</strong>
-sur la clientèle étrangère (étude Toast 2024).</p>
+<p>Je contacte les restos {{ville}} parce qu'on bosse beaucoup avec des établissements qui ont une clientèle internationale.</p>
 
-<p>J'ai préparé une démo de votre carte digitale Ruliz avec traduction en 7 langues
-+ QR code à table. Ça prend 30 secondes à regarder :</p>
+<p>L'idée c'est simple : QR code sur ta table → ton client scanne avec son tel → il voit ta carte en allemand, italien, espagnol, etc. Photos, allergènes, prix.</p>
 
-<p style="text-align:center;margin:24px 0;">
-  <a href="{{preview_url}}" style="background:#26438A;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:600;display:inline-block;">
-    📱 Voir ma carte (démo)
-  </a>
-</p>
+<p>J'ai préparé un exemple personnalisé pour {{nom}} pour que tu voies à quoi ça ressemble :<br/>
+<a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
 
-<p>Si vous décidez d'activer, c'est 29,90 €/mois (annulable n'importe quand).
-Sinon, no hard feelings — je ne vous relancerai qu'une fois.</p>
-    `),
+<p>Pas besoin de me répondre si ça te parle pas. Si oui dis-moi simplement "ok" et je t'explique en 2 phrases.</p>
+`),
     generatedBy: "human",
   },
 
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
   // STEP 2 — J+3 (relance soft)
-  // ═══════════════════════════════════════════════════════════════════════
+  // Court, non-agressif, on assume qu'il a pas eu le temps
+  // ═══════════════════════════════════════════════════════════════════════════
+
   {
     campaign: CAMPAIGN,
     step: 2,
     variant: "A",
-    subject: "Re: {{nom}}, votre carte digitale",
+    subject: "re: rapide question {{nom}}",
     bodyHtml: wrap(`
 <p>{{first_name}},</p>
 
-<p>Je vous remontre ça au cas où mon premier message serait passé sous votre coude.</p>
+<p>Je remonte le mail d'avant.<br/>
+T'as eu le temps de regarder la démo de ta carte ?</p>
 
-<p>Votre carte digitale (prête, en 7 langues, scannable par QR) :</p>
+<p><a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
 
-<p style="text-align:center;margin:24px 0;">
-  <a href="{{preview_url}}" style="background:#26438A;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:600;display:inline-block;">
-    Voir ma carte
-  </a>
+<p>Si non-intéressé tu me dis, je continue ma vie.</p>
+`),
+    generatedBy: "human",
+  },
+
+  {
+    campaign: CAMPAIGN,
+    step: 2,
+    variant: "B",
+    subject: "petit retour sur ta démo ?",
+    bodyHtml: wrap(`
+<p>Hello {{first_name}},</p>
+
+<p>Quick follow-up : t'as pu jeter un œil ?</p>
+
+<p><a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
+
+<p>2 questions :</p>
+<p>1. T'as une carte papier ou QR code actuellement chez {{nom}} ?<br/>
+2. Tes serveurs parlent les langues étrangères ?</p>
+
+<p>Je te demande ça pour savoir si on perd ton temps ou pas.</p>
+`),
+    generatedBy: "human",
+  },
+
+  {
+    campaign: CAMPAIGN,
+    step: 2,
+    variant: "C",
+    subject: "{{nom}}",
+    bodyHtml: wrap(`
+<p>{{first_name}},</p>
+
+<p>Je sais que tu reçois 100 mails par jour donc je fais court.</p>
+
+<p>Ta démo Ruliz est toujours là :<br/>
+<a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
+
+<p>30 secondes pour voir, 2 min pour activer si ça te parle. Je te laisse tranquille sinon.</p>
+`),
+    generatedBy: "human",
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STEP 3 — J+7 (storytelling / proof / offre)
+  // On donne du contexte + témoignage pour rassurer
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  {
+    campaign: CAMPAIGN,
+    step: 3,
+    variant: "A",
+    subject: "un patron Lyonnais m'a dit ça hier",
+    bodyHtml: wrap(`
+<p>{{first_name}},</p>
+
+<p>Petite histoire vraie.</p>
+
+<p>Hier un client (bistrot lyonnais, 40 couverts) m'a envoyé un message :</p>
+
+<p style="border-left:3px solid #26438A;padding:0 16px;margin:16px 0;color:#444;font-style:italic;">
+"Sur 100 tables ce week-end, 73 ont scanné le QR au lieu de demander la carte. Mes serveurs ont gagné 2h de service. Et les Allemands commandent enfin du vin au verre."
 </p>
 
-<p>Vous n'avez littéralement rien à faire : je l'ai déjà construite. Vous l'activez (29,90 €/mois),
-vous modifiez ce qui ne vous plaît pas, vous imprimez le QR. Total ~10 minutes.</p>
-    `),
-    generatedBy: "human",
-  },
-  {
-    campaign: CAMPAIGN,
-    step: 2,
-    variant: "B",
-    subject: "Vous avez vu votre démo ?",
-    bodyHtml: wrap(`
-<p>Bonjour {{first_name}},</p>
+<p>C'est ça que ça fait Ruliz concrètement.</p>
 
-<p>Petit suivi : avez-vous eu 30 secondes pour voir la démo de votre carte Ruliz ?</p>
+<p>Et ta démo pour {{nom}} est toujours en ligne :<br/>
+<a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
 
-<p><a href="{{preview_url}}">👉 Lien de votre démo</a></p>
-
-<p>Si ça ne vous parle pas, je le respecte — répondez juste "pas intéressé" et je ne vous écrirai plus.</p>
-
-<p>Sinon, l'activation prend littéralement 2 minutes.</p>
-    `),
-    generatedBy: "human",
-  },
-  {
-    campaign: CAMPAIGN,
-    step: 2,
-    variant: "C",
-    subject: "{{nom}} → vos concurrents l'ont déjà",
-    bodyHtml: wrap(`
-<p>{{first_name}},</p>
-
-<p>Je relance parce que de plus en plus de restaurants à {{ville}} adoptent les cartes digitales.
-Les clients touristes prennent l'habitude de scanner les QR codes — ne pas en avoir devient un signal négatif.</p>
-
-<p>Votre démo Ruliz est toujours disponible : <a href="{{preview_url}}">cliquez ici</a>.</p>
-
-<p>Activez-la en 2 minutes pour ne pas perdre le train.</p>
-    `),
+<p>Tu veux qu'on en discute 10 min en visio cette semaine ?</p>
+`),
     generatedBy: "human",
   },
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // STEP 3 — J+7 (témoignage + offre)
-  // ═══════════════════════════════════════════════════════════════════════
-  {
-    campaign: CAMPAIGN,
-    step: 3,
-    variant: "A",
-    subject: "Un patron de bistrot lyonnais m'a dit ça hier",
-    bodyHtml: wrap(`
-<p>{{first_name}},</p>
-
-<p>Hier, un patron de bistrot lyonnais (Pro depuis 3 mois) m'a écrit :</p>
-
-<blockquote style="border-left:3px solid #26438A;padding-left:16px;color:#555;font-style:italic;">
-  "Sur 100 tables ce week-end, 73 ont scanné le QR au lieu de demander la carte. Mes serveuses
-  ont gagné 2h de service. Et les Allemands commandent enfin du vin au verre."
-</blockquote>
-
-<p>Le truc bête c'est que c'est exactement ce que Ruliz fait. Et votre démo est toujours là :</p>
-
-<p><a href="{{preview_url}}" style="color:#26438A;font-weight:600;">→ Réouvrir ma démo</a></p>
-
-<p>Offre spéciale outreach : le <strong>1er mois est offert</strong> si vous activez cette semaine.
-Code promo automatique sur la page d'activation.</p>
-    `),
-    generatedBy: "human",
-  },
   {
     campaign: CAMPAIGN,
     step: 3,
     variant: "B",
-    subject: "1er mois gratuit pour {{nom}}",
+    subject: "ton premier mois gratuit chez {{nom}}",
     bodyHtml: wrap(`
-<p>Bonjour {{first_name}},</p>
+<p>{{first_name}},</p>
 
-<p>Pour vous remercier d'avoir reçu mes mails (et ne pas les avoir signalés en spam 😅),
-je vous offre le <strong>1er mois gratuit</strong> sur Ruliz Pro.</p>
+<p>Bon, j'ai compris, tu reçois beaucoup de prospection.</p>
 
-<p>Aucun code à entrer, c'est appliqué automatiquement quand vous activez depuis cette URL :</p>
+<p>Pour te remercier d'avoir pas signalé mes mails en spam, je t'offre <strong>le premier mois gratuit</strong> sur Ruliz si tu actives cette semaine.</p>
 
-<p style="text-align:center;margin:24px 0;">
-  <a href="{{preview_url}}" style="background:#26438A;color:#fff;padding:14px 28px;text-decoration:none;border-radius:8px;font-weight:600;display:inline-block;">
-    Activer (1er mois offert)
-  </a>
-</p>
+<p>Aucun code promo, c'est appliqué automatiquement quand tu actives ici :<br/>
+<a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
 
-<p>Au pire vous payez 0 € le premier mois. Au mieux vous gagnez des tickets moyens. Pile-face.</p>
-    `),
+<p>Au pire tu paies 0 € le premier mois. Si tu détestes tu annules. Si tu kiffes tu continues à 29,90 €/mois.</p>
+
+<p>Pile-face. T'as rien à perdre.</p>
+`),
     generatedBy: "human",
   },
+
   {
     campaign: CAMPAIGN,
     step: 3,
     variant: "C",
-    subject: "On a un problème, {{first_name}}",
+    subject: "j'ai un problème avec ta démo",
     bodyHtml: wrap(`
 <p>{{first_name}},</p>
 
-<p>Sincèrement, j'ai un petit problème : j'ai passé du temps à préparer votre démo
-spécifiquement pour <strong>{{nom}}</strong>, et je vois qu'elle n'a pas été ouverte.</p>
+<p>OK je te dis la vérité.</p>
 
-<p>Ce n'est pas grave — peut-être que ce n'est pas le bon moment, ou pas le bon outil.</p>
+<p>J'ai passé 30 min à préparer la démo personnalisée pour {{nom}}. Ton logo, ton menu, tes plats. Et je vois que tu l'as pas ouverte.</p>
 
-<p>Mais avant de la supprimer définitivement, je vous laisse une dernière chance de la regarder :</p>
+<p>C'est pas grave hein, peut-être que c'est pas le bon timing.</p>
 
-<p><a href="{{preview_url}}" style="color:#26438A;font-weight:600;">👉 Voir ma démo (30 secondes)</a></p>
+<p>Mais avant que je supprime tout :<br/>
+<a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
 
-<p>Si après 30 secondes ça ne vous parle pas, supprimez ce mail et je vous laisse tranquille pour de bon.</p>
-    `),
+<p>30 secondes. Si tu trouves ça nul après 30 secondes je supprime et tu n'entendras plus jamais parler de moi.</p>
+`),
     generatedBy: "human",
   },
 
-  // ═══════════════════════════════════════════════════════════════════════
-  // STEP 4 — J+14 (dernière relance, breakup)
-  // ═══════════════════════════════════════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // STEP 4 — J+14 (breakup poli)
+  // Le but : récupérer ceux qui ont scrollé sans répondre
+  // ═══════════════════════════════════════════════════════════════════════════
+
   {
     campaign: CAMPAIGN,
     step: 4,
     variant: "A",
-    subject: "Dernière relance — je supprime votre démo demain",
+    subject: "dernière fois {{first_name}}",
     bodyHtml: wrap(`
 <p>{{first_name}},</p>
 
-<p>Pas de réponse depuis 14 jours → je suppose que ça ne vous intéresse pas.</p>
+<p>Bon, je laisse tomber après ce mail.</p>
 
-<p>Je vais supprimer la démo de {{nom}} demain à minuit pour libérer la place
-pour d'autres prospects.</p>
+<p>Pas de réponse depuis 2 semaines = pas le bon timing. Aucun souci.</p>
 
-<p>Si vous changez d'avis dans les prochaines heures :</p>
+<p>Ta démo reste en ligne 48h, après je la supprime :<br/>
+<a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
 
-<p><a href="{{preview_url}}">→ Ouvrir ma démo une dernière fois</a></p>
+<p>Si dans 6 mois tu te dis "tiens, ce truc de carte digitale, j'aurais dû essayer", mon mail c'est <a href="mailto:tristan@ruliz-panel.fr" style="color:#26438A;">tristan@ruliz-panel.fr</a>.</p>
 
-<p>Sinon, je vous souhaite une belle continuation. Pas de hard feelings 🙂</p>
-    `),
+<p>Belle continuation à {{nom}} 👨‍🍳</p>
+`),
     generatedBy: "human",
   },
+
   {
     campaign: CAMPAIGN,
     step: 4,
     variant: "B",
-    subject: "On se quitte bons amis ? 🤝",
+    subject: "on se quitte bons amis ?",
     bodyHtml: wrap(`
-<p>Bonjour {{first_name}},</p>
+<p>{{first_name}},</p>
 
-<p>C'est mon 4e et dernier message. Si je ne reçois pas de signal de vie d'ici demain,
-je vous retire de ma liste de contacts définitivement.</p>
+<p>C'est mon 4e et dernier mail.</p>
 
-<p>Aucune rancune — chacun gère son temps, et j'imagine que vous gérez un restaurant, donc je comprends.</p>
+<p>Si tu réponds pas d'ici demain je te retire de ma liste pour de bon, promis.</p>
 
-<p>Si malgré tout vous voulez juste jeter un œil à ce que ça donnait pour vous :</p>
+<p>Si jamais ta curiosité te démange :<br/>
+<a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
 
-<p><a href="{{preview_url}}" style="color:#26438A;">Lien de votre démo (valide jusqu'à demain)</a></p>
-
-<p>Sinon, belle continuation et bon service ! 👨‍🍳</p>
-    `),
+<p>Sinon, sincèrement, bonne continuation. Ton resto a l'air bien.</p>
+`),
     generatedBy: "human",
   },
+
   {
     campaign: CAMPAIGN,
     step: 4,
     variant: "C",
-    subject: "Je laisse tomber",
+    subject: "ça t'arrive de répondre à un mail froid ?",
     bodyHtml: wrap(`
 <p>{{first_name}},</p>
 
-<p>OK je laisse tomber. C'était mon dernier mail.</p>
+<p>Question sincère : ça t'arrive de répondre à un cold email ?</p>
 
-<p>Si jamais dans 6 mois vous vous souvenez que quelqu'un vous avait préparé une carte digitale
-et que vous voulez retenter, mon email c'est <a href="mailto:tristan@ruliz-panel.fr">tristan@ruliz-panel.fr</a>.</p>
+<p>Moi quand je reçois un mail comme le mien je le supprime souvent. Donc je comprends totalement.</p>
 
-<p>D'ici là, votre démo reste accessible quelques jours : <a href="{{preview_url}}">cliquez ici</a>.</p>
+<p>Mais juste pour ma stat perso, si tu réponds 1 mot ça m'aiderait :</p>
 
-<p>Bonne continuation et bons services à {{nom}}.</p>
-    `),
+<p>- "intéressé" = on en discute<br/>
+- "pas le bon moment" = je te recontacte dans 6 mois<br/>
+- "stop" = tu n'entendras plus parler de moi</p>
+
+<p>Et au cas où tu veuilles voir ta démo :<br/>
+<a href="{{preview_url}}" style="color:#26438A;">{{preview_url}}</a></p>
+`),
     generatedBy: "human",
   },
 ];
