@@ -7,6 +7,7 @@ import { AppShell, COLLAPSED_COOKIE } from "@/components/shared/app-shell";
 export const dynamic = "force-dynamic";
 import { AdminDemoBanner } from "@/components/shared/admin-demo-banner";
 import { ImpersonationBanner } from "@/components/shared/impersonation-banner";
+import { AutoTranslateWrapper } from "@/components/shared/auto-translate-wrapper";
 import {
   PanelLangProvider,
   PANEL_LANG_COOKIE,
@@ -168,6 +169,7 @@ export default async function DashboardLayout({
 
   return (
     <PanelLangProvider initialLang={panelLang}>
+     <AutoTranslateWrapper>
       {acting?.isImpersonating && acting.impersonatedUser && (
         <ImpersonationBanner
           targetName={impersonatedTargetName ?? acting.impersonatedUser.email}
@@ -214,6 +216,7 @@ export default async function DashboardLayout({
       {showOnboarding && onboardingState && (
         <OnboardingBubble initialStep={onboardingState.step} />
       )}
+     </AutoTranslateWrapper>
     </PanelLangProvider>
   );
 }

@@ -453,6 +453,28 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ON "email_variants" ("campaign", "active");
     `);
 
+    // === Panel auto-translate cache ===
+    // Cache à vie des traductions du panel client/admin (sidebar, pages,
+    // formulaires, etc.). Quand un user change la lang vers EN/ES/etc., le
+    // composant <T> appelle translatePanelString() qui :
+    //  1. Check ce cache → si miss → Anthropic Haiku → cache
+    //  2. Tous les users de la même lang bénéficient du même cache
+    // Hash SHA-256 pour gérer les longs textes (PK contrainte 1500 octets).
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "panel_translations_cache" (
+        "text_hash" CHAR(64) NOT NULL,
+        "lang" VARCHAR(2) NOT NULL,
+        "source_text" TEXT NOT NULL,
+        "translated" TEXT NOT NULL,
+        "created_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY ("text_hash", "lang")
+      );
+    `);
+    await prisma.$executeRawUnsafe(`
+      CREATE INDEX IF NOT EXISTS "idx_panel_trad_created"
+        ON "panel_translations_cache" ("created_at");
+    `);
+
     runtimeSchemaEnsured = true;
   } catch (err) {
     console.warn(
