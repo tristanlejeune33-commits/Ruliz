@@ -47,25 +47,33 @@ export function HeaderPublic({
   return (
     <header
       id="header"
-      className="fixed inset-x-0 top-0 z-[100] py-5 transition-colors"
+      className="fixed top-0 z-[100] py-5 transition-colors"
       style={{
+        // Force la largeur à 100% du viewport STABLE (pas inset-x-0 qui peut
+        // bouger avec la scrollbar). Padding latéral fixe en plus pour s'assurer
+        // que les éléments ne sortent jamais de l'écran.
+        left: 0,
+        right: 0,
+        width: "100%",
+        paddingLeft: "16px",
+        paddingRight: "16px",
         backgroundColor: scrolled ? theme.navbar : "transparent",
         boxShadow: scrolled
           ? "0px 10px 15px -3px rgba(0, 0, 0, 0.1)"
           : undefined,
       }}
     >
-      <div className="relative mx-auto flex w-[90%] items-center justify-between xl:w-[70%]">
+      <div className="relative mx-auto flex w-full max-w-7xl items-center justify-between gap-2 xl:w-[70%]">
         {/* Titre à gauche (remplace l'ancien burger menu) */}
         <span
-          className="font-bold text-white"
+          className="shrink-0 font-bold text-white"
           style={{ fontFamily: "var(--font-display)" }}
         >
           {t("notreCarte", lang)}
         </span>
 
-        {/* Right side : gift + lang */}
-        <div className="relative flex items-center gap-2">
+        {/* Right side : gift + lang (shrink-0 = ne se compresse jamais) */}
+        <div className="relative flex shrink-0 items-center gap-2">
           {hasJeu && onSpinClick && (
             <button
               type="button"

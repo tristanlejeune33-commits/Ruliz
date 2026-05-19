@@ -104,11 +104,13 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
 
   return (
     <div
-      className="relative min-h-screen"
+      className="relative min-h-screen overflow-x-hidden"
       style={{
         background: theme.bgBody,
         color: theme.textBody,
         fontFamily: "var(--font-body), 'Roboto', system-ui, sans-serif",
+        // Force la largeur max au viewport pour bloquer tout overflow
+        maxWidth: "100vw",
       }}
       data-preview={preview ? "true" : undefined}
     >
