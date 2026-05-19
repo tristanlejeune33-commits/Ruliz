@@ -134,7 +134,26 @@ export function canUseFeature(plan: Plan, feature: keyof PlanFeatures): boolean 
   return typeof v === "boolean" ? v : v !== 0;
 }
 
+/**
+ * Format un prix de PLAN (Freemium = "Gratuit", Pro = "29,90 €").
+ * À utiliser UNIQUEMENT pour les cartes "tarif d'un plan", pas pour des
+ * montants financiers où "0 €" doit s'afficher en chiffres (cf. formatEuro).
+ */
 export function formatPriceEuro(priceHT: number): string {
   if (priceHT === 0) return "Gratuit";
   return `${priceHT.toFixed(2).replace(".", ",")} €`;
+}
+
+/**
+ * Format un MONTANT financier brut (MRR, ARR, CA, factures).
+ * Toujours en chiffres + symbole €, jamais "Gratuit" même si 0.
+ * Ex: 0 → "0,00 €" ; 29.9 → "29,90 €" ; 1234.5 → "1 234,50 €"
+ */
+export function formatEuro(amount: number): string {
+  const sign = amount < 0 ? "-" : "";
+  const abs = Math.abs(amount);
+  const [intPart, decPart] = abs.toFixed(2).split(".");
+  // Sépare les milliers par espace (style FR)
+  const intWithSpaces = (intPart ?? "0").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${sign}${intWithSpaces},${decPart ?? "00"} €`;
 }

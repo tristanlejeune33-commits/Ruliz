@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table";
 import { PlanBadge, type Plan } from "@/components/shared/status-badge";
 import { prisma } from "@/lib/db";
-import { PLANS, formatPriceEuro } from "@/lib/plans";
+import { PLANS, formatEuro, formatPriceEuro } from "@/lib/plans";
 
 export const metadata: Metadata = {
   title: "Facturation Admin Ruliz",
@@ -149,7 +149,7 @@ export default async function AdminBillingPage() {
           </CardHeader>
           <CardContent>
             <CardTitle className="text-3xl tabular-nums">
-              {formatPriceEuro(mrr)}
+              {formatEuro(mrr)}
             </CardTitle>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
               Somme des abonnements actifs sur 1 mois
@@ -164,7 +164,7 @@ export default async function AdminBillingPage() {
           </CardHeader>
           <CardContent>
             <CardTitle className="text-3xl tabular-nums">
-              {formatPriceEuro(arr)}
+              {formatEuro(arr)}
             </CardTitle>
             <p className="mt-1 text-xs text-[var(--text-muted)]">
               Revenu mensuel × 12
@@ -221,7 +221,7 @@ export default async function AdminBillingPage() {
             <div>
               <CardDescription>CA généré (estimation)</CardDescription>
               <CardTitle className="mt-1 text-4xl tabular-nums">
-                {formatPriceEuro(totalGenerated)}
+                {formatEuro(totalGenerated)}
               </CardTitle>
               <p className="mt-2 text-xs text-[var(--text-muted)]">
                 Estimation sur la base du revenu mensuel × ancienneté des
