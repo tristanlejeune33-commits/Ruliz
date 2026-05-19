@@ -19,11 +19,58 @@ import { prisma } from "./db";
 
 let runtimeSchemaEnsured = false;
 
+/**
+ * Helper qui execute une raw SQL et CATCH les erreurs individuellement.
+ * Permet de ne pas interrompre la chaîne d'ALTERs si UN seul plante.
+ * (par exemple : table renommée, FK qui crée un conflit, etc.)
+ */
+async function safeExec(sql: string, label: string): Promise<void> {
+  try {
+    await prisma.$executeRawUnsafe(sql);
+  } catch (err) {
+    console.warn(`[ensureRuntimeSchema] ${label} failed (continuing):`, err);
+  }
+}
+
+/**
+ * Force-run TOUS les ALTERs sans cache. Utilisé par la route admin
+ * /api/admin/repair-schema pour repair manuel quand un ALTER n'a pas tourné.
+ */
+export async function repairRuntimeSchema(): Promise<{ ok: true }> {
+  runtimeSchemaEnsured = false;
+  await ensureRuntimeSchema();
+  return { ok: true };
+}
+
 export async function ensureRuntimeSchema(): Promise<void> {
   if (runtimeSchemaEnsured) return;
 
   try {
     // === restaurants : colonnes ajoutées tardivement ===
+    // SAFE_EXEC explicite pour ALTER timezone critique
+    await safeExec(
+      `ALTER TABLE "restaurants" ADD COLUMN IF NOT EXISTS "timezone" VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';`,
+      "restaurants.timezone",
+    );
+    // Idem catégories/produits — colonnes créneaux critiques
+    await safeExec(
+      `ALTER TABLE "categories"
+        ADD COLUMN IF NOT EXISTS "schedule_type" VARCHAR(20) NOT NULL DEFAULT 'always',
+        ADD COLUMN IF NOT EXISTS "schedule_start" VARCHAR(5),
+        ADD COLUMN IF NOT EXISTS "schedule_end" VARCHAR(5),
+        ADD COLUMN IF NOT EXISTS "schedule_days" VARCHAR(7) NOT NULL DEFAULT '1234567',
+        ADD COLUMN IF NOT EXISTS "couleur" VARCHAR(7);`,
+      "categories.schedule_*",
+    );
+    await safeExec(
+      `ALTER TABLE "produits"
+        ADD COLUMN IF NOT EXISTS "schedule_type" VARCHAR(20) NOT NULL DEFAULT 'always',
+        ADD COLUMN IF NOT EXISTS "schedule_start" VARCHAR(5),
+        ADD COLUMN IF NOT EXISTS "schedule_end" VARCHAR(5),
+        ADD COLUMN IF NOT EXISTS "schedule_days" VARCHAR(7) NOT NULL DEFAULT '1234567';`,
+      "produits.schedule_*",
+    );
+
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "restaurants"
         ADD COLUMN IF NOT EXISTS "sms_sender" VARCHAR(11);
