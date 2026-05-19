@@ -216,10 +216,15 @@
     /* Anti-zoom landscape iOS, base globale pour le panel mobile */
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    /* Réserve toujours la gouttière scrollbar pour éviter le "scrollbar shift"
-       quand un modal ouvre/ferme et bloque le scroll body. Sans ça le header
-       sticky paraît glisser vers la droite à chaque ouverture de modal. */
+    /* TRIPLE protection anti scrollbar shift :
+       1. scrollbar-gutter: stable → gouttière toujours réservée (Chrome récent)
+       2. overflow-y: scroll → scrollbar toujours visible (Safari, anciens browsers)
+       3. width: 100vw + max-width sur body → contraint la largeur du viewport
+       Sans ça, l'ouverture d'un accordéon (qui fait dépasser la page) cause
+       l'apparition de la scrollbar verticale → le header rétrécit de ~15px
+       et le drapeau langue est poussé hors écran. */
     scrollbar-gutter: stable;
+    overflow-y: scroll;
   }
   body {
     background-color: var(--bg-primary);
