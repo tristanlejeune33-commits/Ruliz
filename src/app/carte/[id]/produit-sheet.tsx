@@ -63,10 +63,16 @@ export function ProduitSheet({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.2 }}
           onClick={onClose}
-          className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
+          className="fixed inset-0 z-[1000] flex items-center justify-center overflow-y-auto overscroll-contain p-4"
           style={{
             backgroundColor: "rgba(0, 0, 0, 0.75)",
             backdropFilter: "blur(5px)",
+            // Force le modal à respecter la largeur réelle du viewport même
+            // si la page a un layout-shift quelconque (bug scrollbar / iOS bar)
+            width: "100vw",
+            height: "100vh",
+            left: 0,
+            top: 0,
           }}
         >
           <motion.div
@@ -76,7 +82,7 @@ export function ProduitSheet({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
-            className="relative flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-[10px] md:max-w-2xl"
+            className="relative flex max-h-[85vh] w-full max-w-[min(28rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-[10px] md:max-w-[min(42rem,calc(100vw-2rem))]"
             style={{
               backgroundColor: theme.cardBody,
               boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
