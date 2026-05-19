@@ -2,6 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { classifyReply } from "@/server/outreach/ai-marketer";
+import {
+  humanDelayMs,
+  pickReplyTemplate,
+  renderTemplate,
+} from "@/server/outreach/reply-auto-templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -84,6 +89,7 @@ export async function POST(req: Request) {
     where: { email },
     select: {
       id: true,
+      email: true,
       status: true,
       nom: true,
       ville: true,
@@ -96,8 +102,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, unknownProspect: true });
   }
 
-  // ─── Si reply : classifie via AI marketer ─────────────────────────────
-  let aiClassification: object | null = null;
+  // ─── Si reply : classifie via AI marketer + déclenche reply auto ──────
+  let aiClassification:
+    | {
+        category?: string;
+        confidence?: number;
+        shouldReply?: boolean;
+        replyText?: string | null;
+        reasoning?: string;
+      }
+    | null = null;
+  let autoReplyScheduled: { delayMs: number; subject: string } | null = null;
+
   if (type === "reply" && payload.reply_text) {
     try {
       const classification = await classifyReply({
@@ -109,7 +125,62 @@ export async function POST(req: Request) {
           : undefined,
       });
       if (classification.ok) {
-        aiClassification = classification.data as unknown as object;
+        aiClassification = classification.data;
+
+        // Déclenche la réponse auto humanisée selon la catégorie classifiée.
+        // Pour negative/unsubscribe/spam_complaint/out_of_office → on ne
+        // répond pas (les templates ont shouldReply:false).
+        const category = classification.data.category;
+        if (category) {
+          const template = pickReplyTemplate(
+            category as Parameters<typeof pickReplyTemplate>[0],
+          );
+          if (template?.shouldReply) {
+            const firstName = (prospect.email.split("@")[0] ?? "").split(
+              ".",
+            )[0];
+            const previewUrl = prospect.cardToken
+              ? `https://ruliz-panel.fr/preview/${prospect.cardToken}`
+              : "https://ruliz-panel.fr";
+
+            const renderedSubject = renderTemplate(template.subject, {
+              first_name: firstName ?? "bonjour",
+              nom: prospect.nom,
+              preview_url: previewUrl,
+            });
+            const renderedBody = renderTemplate(template.body, {
+              first_name: firstName ?? "bonjour",
+              nom: prospect.nom,
+              preview_url: previewUrl,
+            });
+
+            const delayMs = humanDelayMs();
+            autoReplyScheduled = {
+              delayMs,
+              subject: renderedSubject,
+            };
+
+            // Log pour suivi (l'envoi réel passera par Smartlead API ou
+            // un worker Inngest avec délai humain — TODO).
+            console.log(
+              `[outreach-reply] AUTO-REPLY scheduled for ${prospect.email} (cat=${category}, delay=${Math.round(delayMs / 60000)}min)`,
+            );
+            console.log(`[outreach-reply] Subject: ${renderedSubject}`);
+            console.log(`[outreach-reply] Body preview: ${renderedBody.slice(0, 200)}...`);
+          }
+        }
+
+        // Stop la séquence si refus/désinscription explicite
+        if (
+          category === "negative" ||
+          category === "unsubscribe" ||
+          category === "spam_complaint"
+        ) {
+          await prisma.prospectRestaurant.update({
+            where: { id: prospect.id },
+            data: { status: "failed", errorMessage: `reply_${category}` },
+          });
+        }
       }
     } catch (err) {
       console.warn("[outreach-event] classifyReply failed:", err);
@@ -125,6 +196,7 @@ export async function POST(req: Request) {
         ...(payload.metadata ?? {}),
         ...(payload.reply_text ? { replyText: payload.reply_text } : {}),
         ...(aiClassification ? { aiClassification } : {}),
+        ...(autoReplyScheduled ? { autoReplyScheduled } : {}),
       } as object,
     },
   });

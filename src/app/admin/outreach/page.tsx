@@ -109,7 +109,13 @@ export default async function AdminOutreachPage({ searchParams }: PageProps) {
         title={`${stats.total} prospects dans la séquence`}
         description="Pipeline d'acquisition cold-email avec cartes pré-générées. Track temps réel des ouvertures, clics et conversions."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/admin/outreach/journey?campaign=${campaign}`}>
+                <Megaphone className="size-3.5" />
+                Workflow
+              </Link>
+            </Button>
             <Button asChild variant="outline" size="sm">
               <Link href={`/admin/outreach/variants?campaign=${campaign}`}>
                 <Sparkles className="size-3.5" />
