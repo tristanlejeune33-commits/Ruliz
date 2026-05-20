@@ -467,10 +467,10 @@ export function CategorieDrawer({
                     )}
                   />
                 </div>
-                <FormDescription className="text-[10px]">
+                <p className="text-[10px] text-[var(--text-muted)]">
                   Si la fin est avant le début (ex: 22h → 02h), la catégorie
                   passe minuit (service de nuit).
-                </FormDescription>
+                </p>
               </div>
             )}
 
