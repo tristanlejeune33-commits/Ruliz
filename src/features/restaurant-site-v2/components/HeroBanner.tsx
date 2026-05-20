@@ -45,11 +45,16 @@ export function HeroBanner({ config }: HeroBannerProps) {
 
         <div className="rs2-hero-banner-mark">
           {config.logoUrl ? (
-            <img
-              src={config.logoUrl}
-              alt={config.restaurantName}
-              className="rs2-hero-banner-logo"
-            />
+            <div
+              className="rs2-hero-banner-logo-circle"
+              aria-label={config.restaurantName}
+            >
+              <img
+                src={config.logoUrl}
+                alt={config.restaurantName}
+                className="rs2-hero-banner-logo"
+              />
+            </div>
           ) : (
             <h1 className="rs2-display rs2-hero-banner-title">
               {config.restaurantName}

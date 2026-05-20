@@ -2,7 +2,6 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Btn } from "./primitives/Btn";
 import { Monogram } from "./primitives/Monogram";
@@ -13,44 +12,35 @@ interface NavbarProps {
 }
 
 /**
- * Navbar sticky transparent → solid au scroll (80px threshold).
+ * Navbar sticky TOUJOURS SOLIDE (background blanc cassé + filet bas).
  *
- * Logo : <img src={logoUrl}> avec filter:invert quand le fond est
- * "sombre" depuis le point de vue du logo (= théoriquement quand
- * heroLayout === 'banner' && !solid). En light theme avec navbar solide,
- * on retire le filter pour rendre le logo dans sa couleur originale.
+ * Décision design : on retire l'état transparent au-dessus du hero. Une
+ * navbar blanche permanente :
+ *   - Améliore la lisibilité (les liens sont toujours sur fond lisible)
+ *   - Évite le "saut" visuel quand on scroll
+ *   - Met en valeur le CTA Réserver qui est toujours visible/cliquable
  *
- * Sur mobile, les liens disparaissent (CSS media), on garde brand + CTA.
+ * Le logo n'est plus jamais inversé (le filter:invert n'avait de sens que
+ * sur fond hero sombre transparent).
+ *
+ * Le CTA Réserver est toujours `primary` avec une flèche cohérente avec
+ * le reste du template (translate-x au hover).
  */
 export function Navbar({ config }: NavbarProps) {
-  const [solid, setSolid] = useState(false);
-
-  useEffect(() => {
-    function onScroll() {
-      setSolid(window.scrollY > 80);
-    }
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  // Le filter invert s'applique quand on est sur un hero banner avec
-  // overlay sombre ET pas encore en mode solid (= on voit l'overlay)
-  const shouldInvert =
-    config.options.heroLayout === "banner" &&
-    config.options.theme === "light" &&
-    !solid;
-
   return (
-    <nav className={`rs2-nav${solid ? " solid" : ""}`}>
+    <nav className="rs2-nav solid">
       <div className="rs2-container">
         <div className="rs2-nav-inner">
-          <Link href="#top" className="rs2-nav-brand" aria-label={config.restaurantName}>
+          <Link
+            href="#top"
+            className="rs2-nav-brand"
+            aria-label={config.restaurantName}
+          >
             {config.logoUrl ? (
               <img
                 src={config.logoUrl}
                 alt={config.restaurantName}
-                className={`rs2-nav-logo${shouldInvert ? " invert" : ""}`}
+                className="rs2-nav-logo"
               />
             ) : (
               <Monogram name={config.restaurantName} />
@@ -80,7 +70,8 @@ export function Navbar({ config }: NavbarProps) {
               <Btn
                 href={config.reservationUrl}
                 external
-                variant={solid ? "primary" : "secondary"}
+                variant="primary"
+                arrow
               >
                 Réserver
               </Btn>

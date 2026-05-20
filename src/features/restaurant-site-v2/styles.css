@@ -238,23 +238,24 @@
 }
 
 /* ─── NAVBAR ─── */
+/* Toujours solide depuis le départ — on retire l'état transparent.
+   Background quasi-opaque + blur léger pour soigneusement reposer sur
+   l'image hero sans la cacher complètement. Filet 1px en bas constant. */
 .rs2-nav {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  background: transparent;
-  transition:
-    background 280ms,
-    border-color 280ms,
-    backdrop-filter 280ms;
-  border-bottom: 1px solid transparent;
-}
-.rs2-nav.solid {
-  background: color-mix(in oklch, var(--bg) 88%, transparent);
-  backdrop-filter: saturate(180%) blur(14px);
+  background: color-mix(in oklch, var(--bg) 92%, transparent);
+  backdrop-filter: saturate(180%) blur(16px);
+  -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-bottom: 1px solid var(--rule);
+}
+/* Conservé pour rétro-compat — `.solid` n'a plus d'effet visuel
+   différent puisque c'est le style par défaut. */
+.rs2-nav.solid {
+  background: color-mix(in oklch, var(--bg) 92%, transparent);
 }
 .rs2-nav-inner {
   display: flex;
@@ -278,6 +279,8 @@
   width: auto;
   object-fit: contain;
 }
+/* .invert n'est plus utilisée (navbar toujours blanche) mais conservée
+   pour rétro-compat si un logo wordmark blanc est utilisé. */
 .rs2-nav-logo.invert {
   filter: invert(1);
 }
@@ -469,10 +472,40 @@
   display: flex;
   align-items: flex-end;
 }
+
+/* Encadrement circulaire du logo wordmark/icon sur la bannière.
+   Pourquoi : sans frame, un logo PNG ou JPEG carré "flotte" mal sur
+   une image hero — bordures sales, transparence ratée, déséquilibre
+   visuel. Le cadre rond uniformise le rendu peu importe le format
+   du fichier source.
+   Fond near-white pour contraster avec la bannière sombre, légère
+   ombre portée pour de la profondeur, padding interne pour laisser
+   le logo respirer. */
+.rs2-hero-banner-logo-circle {
+  width: clamp(140px, 18vw, 220px);
+  height: clamp(140px, 18vw, 220px);
+  border-radius: 50%;
+  background: var(--bg);
+  display: grid;
+  place-items: center;
+  padding: clamp(18px, 2.2vw, 28px);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.28),
+    0 2px 6px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
 .rs2-hero-banner-logo {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+/* Override quand absent du cadre (cas fallback h1 wordmark — pas concerné
+   mais conservé pour cohérence si quelqu'un veut le format raw). */
+.rs2-hero-banner-mark > .rs2-hero-banner-logo:not(.rs2-hero-banner-logo-circle > *) {
   max-height: clamp(80px, 14vw, 200px);
   max-width: min(820px, 92vw);
-  object-fit: contain;
 }
 .rs2-hero-banner-title {
   font-size: clamp(64px, 12vw, 180px);
@@ -1064,6 +1097,11 @@
   }
   .rs2-hero-banner-logo {
     max-height: 100px;
+  }
+  .rs2-hero-banner-logo-circle {
+    width: 130px;
+    height: 130px;
+    padding: 18px;
   }
   .rs2-about {
     grid-template-columns: 1fr;
