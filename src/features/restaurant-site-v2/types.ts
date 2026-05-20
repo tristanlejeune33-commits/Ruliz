@@ -73,7 +73,13 @@ export interface RestaurantConfig {
   // -------- Menu Teaser --------
   menuTeaser: {
     title: string;
-    items: MenuTeaserItem[]; // 4 items typiques
+    items: MenuTeaserItem[]; // 4 items typiques (résolus côté loader)
+    /**
+     * IDs des produits explicitement sélectionnés pour la vitrine.
+     * Exposé pour que l'éditeur dashboard puisse pre-remplir le picker.
+     * Le rendu site ne lit que `items` (déjà résolus).
+     */
+    productIds?: string[];
   };
 
   // -------- Galerie --------

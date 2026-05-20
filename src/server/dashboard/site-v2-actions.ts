@@ -64,6 +64,13 @@ const v2ConfigSchema = z.object({
   menuTeaser: z
     .object({
       title: z.string().max(255).optional(),
+      /**
+       * IDs des produits en vitrine choisis manuellement (max 4).
+       * String car les BigInt côté Prisma sont sérialisés en string
+       * sur le wire. Order = order d'affichage sur la grille 4-col.
+       * Si vide → fallback auto top-4 côté loader.
+       */
+      productIds: z.array(z.string().regex(/^\d+$/)).max(4).optional(),
     })
     .optional(),
   gallery: z.array(z.string().min(1).max(500)).max(12).optional(),

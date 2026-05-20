@@ -139,6 +139,12 @@ interface SiteConfigV2Json {
   };
   menuTeaser?: {
     title?: string;
+    /**
+     * IDs des produits à mettre en vitrine (max 4). String car BigInt
+     * sérialisable. Si vide ou tous invalides → fallback auto top-4
+     * (cf. loader logic).
+     */
+    productIds?: string[];
   };
   gallery?: string[];
   testimonials?: Testimonial[];
@@ -276,41 +282,86 @@ export async function loadSiteV2(
   const resto = restoRows[0];
   if (!resto || resto.statut === "suspendu") return null;
 
-  // === Top 4 produits pour menuTeaser ===
+  // === Parse site_config JSONB en v2 ===
+  // Lu EN PREMIER pour savoir si vitrine custom ou auto top-4
+  const v2Raw = resto.site_config;
+  const v2 = isV2(v2Raw) ? v2Raw : null;
+
+  // === Produits pour menuTeaser ===
   type ProduitRow = {
+    id: bigint;
     titre: string;
     prix: number | null;
     devise: string | null;
     imageUrl: string | null;
-    catPosition: number;
-    position: number;
   };
-  // Produit.statut = 'affiche' pour visible (cf. menu.ts)
-  // Categorie.affiche = boolean (true visible)
-  // Trie par catégorie position puis produit position
-  const produits = await prisma.$queryRawUnsafe<ProduitRow[]>(
-    `
-    SELECT
-      p.titre,
-      p.prix::float          AS "prix",
-      p.devise,
-      p.image_url            AS "imageUrl",
-      c.position             AS "catPosition",
-      p.position
-    FROM produits p
-    JOIN categories c ON c.id = p.categorie_id
-    WHERE c.restaurant_id = $1
-      AND p.statut = 'affiche'
-      AND c.affiche = true
-    ORDER BY c.position ASC, p.position ASC
-    LIMIT 4
-    `,
-    restaurantId,
-  );
 
-  // === Parse site_config JSONB en v2 ===
-  const v2Raw = resto.site_config;
-  const v2 = isV2(v2Raw) ? v2Raw : null;
+  // Si le restaurateur a sélectionné des produits VITRINE, on les fetch
+  // par leurs IDs (max 4) et on préserve l'ordre choisi.
+  // Sinon fallback : top 4 produits visibles toutes catégories confondues
+  // (cf. logique historique).
+  const pickedIds = v2?.menuTeaser?.productIds ?? [];
+  let produits: ProduitRow[] = [];
+
+  if (pickedIds.length > 0) {
+    // Parse les IDs en BigInt, ignore les invalides
+    const bigIds: bigint[] = [];
+    for (const id of pickedIds.slice(0, 4)) {
+      try {
+        bigIds.push(BigInt(id));
+      } catch {
+        // ignore IDs malformés
+      }
+    }
+    if (bigIds.length > 0) {
+      // Fetch en bulk
+      const fetched = await prisma.$queryRawUnsafe<ProduitRow[]>(
+        `
+        SELECT
+          p.id,
+          p.titre,
+          p.prix::float AS "prix",
+          p.devise,
+          p.image_url   AS "imageUrl"
+        FROM produits p
+        JOIN categories c ON c.id = p.categorie_id
+        WHERE c.restaurant_id = $1
+          AND p.id = ANY($2::bigint[])
+          AND p.statut = 'affiche'
+        `,
+        restaurantId,
+        bigIds,
+      );
+      // Réordonne selon l'ordre de pickedIds (les IDs invalides/disparus
+      // sont juste skippés silencieusement)
+      const byId = new Map(fetched.map((p) => [p.id.toString(), p]));
+      produits = bigIds
+        .map((b) => byId.get(b.toString()))
+        .filter((p): p is ProduitRow => Boolean(p));
+    }
+  }
+
+  // Fallback auto si rien de sélectionné ou tous invalides
+  if (produits.length === 0) {
+    produits = await prisma.$queryRawUnsafe<ProduitRow[]>(
+      `
+      SELECT
+        p.id,
+        p.titre,
+        p.prix::float AS "prix",
+        p.devise,
+        p.image_url   AS "imageUrl"
+      FROM produits p
+      JOIN categories c ON c.id = p.categorie_id
+      WHERE c.restaurant_id = $1
+        AND p.statut = 'affiche'
+        AND c.affiche = true
+      ORDER BY c.position ASC, p.position ASC
+      LIMIT 4
+      `,
+      restaurantId,
+    );
+  }
 
   // === Build RestaurantConfig avec fallbacks ===
   const restaurantName = resto.nom;
@@ -367,6 +418,7 @@ export async function loadSiteV2(
   const menuTeaser = {
     title: v2?.menuTeaser?.title ?? "Une carte vivante, tenue avec soin.",
     items: menuTeaserItems,
+    productIds: pickedIds,
   };
 
   // Gallery

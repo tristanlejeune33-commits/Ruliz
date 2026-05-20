@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { loadSiteV2 } from "@/server/public/restaurant-site-v2-loader";
-import { SiteV2EditorForm } from "./site-editor-form";
+import { prisma } from "@/lib/db";
+import { SiteV2EditorForm, type ProductPickerOption } from "./site-editor-form";
 
 export const metadata: Metadata = {
   title: "Site vitrine — Ruliz",
@@ -25,6 +26,40 @@ export default async function SiteEditorPage() {
   const enabled = payload?.enabled ?? false;
   const slug = payload?.slug ?? null;
   const plan = restaurant.plan as "freemium" | "pro" | "premium";
+
+  // Liste de TOUS les produits du resto pour le picker "produits en
+  // vitrine". On inclut les produits visibles (statut='affiche') groupés
+  // par catégorie. Si pas de produit du tout → array vide → le picker
+  // affiche un état "Crée des produits dans l'éditeur de carte d'abord".
+  const produitsRaw = await prisma.produit.findMany({
+    where: {
+      categorie: { restaurantId: restaurant.id },
+      statut: "affiche",
+    },
+    select: {
+      id: true,
+      titre: true,
+      imageUrl: true,
+      prix: true,
+      devise: true,
+      position: true,
+      categorie: {
+        select: { id: true, titre: true, position: true },
+      },
+    },
+    orderBy: [
+      { categorie: { position: "asc" } },
+      { position: "asc" },
+    ],
+  });
+  const productOptions: ProductPickerOption[] = produitsRaw.map((p) => ({
+    id: p.id.toString(),
+    titre: p.titre,
+    imageUrl: p.imageUrl,
+    prix: p.prix !== null ? Number(p.prix) : null,
+    devise: p.devise ?? "€",
+    categorieTitre: p.categorie.titre,
+  }));
 
   const siteUrl = `/site/${slug ?? restaurantId}`;
 
@@ -66,6 +101,7 @@ export default async function SiteEditorPage() {
         initialEnabled={enabled}
         initialSlug={slug}
         plan={plan}
+        productOptions={productOptions}
       />
     </div>
   );

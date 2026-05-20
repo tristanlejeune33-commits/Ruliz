@@ -44,6 +44,19 @@ import {
 } from "@/server/dashboard/site-v2-actions";
 
 /**
+ * Format des produits passés au picker. Construit côté server avec un
+ * query Prisma sur tous les produits visibles du resto.
+ */
+export interface ProductPickerOption {
+  id: string;
+  titre: string;
+  imageUrl: string | null;
+  prix: number | null;
+  devise: string;
+  categorieTitre: string;
+}
+
+/**
  * Formulaire éditeur du site v2.
  *
  * Le restaurateur édite le contenu ÉDITORIAL (ce qui n'est pas déjà dans
@@ -86,6 +99,8 @@ const schema = z.object({
     signature: z.string().max(120).optional(),
   }),
   menuTeaserTitle: z.string().max(255).optional(),
+  /** Array d'IDs produits sélectionnés. Vide = fallback auto top-4. */
+  vitrineProductIds: z.array(z.string()).max(4),
   gallery: z.array(z.object({ url: z.string().min(1).max(500) })).max(12),
   testimonials: z
     .array(
@@ -115,6 +130,8 @@ interface SiteV2EditorFormProps {
   initialEnabled: boolean;
   initialSlug: string | null;
   plan: "freemium" | "pro" | "premium";
+  /** Liste complète des produits du resto pour le picker vitrine. */
+  productOptions: ProductPickerOption[];
 }
 
 export function SiteV2EditorForm({
@@ -123,6 +140,7 @@ export function SiteV2EditorForm({
   initialEnabled,
   initialSlug,
   plan,
+  productOptions,
 }: SiteV2EditorFormProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [slug, setSlug] = useState<string | null>(initialSlug);
@@ -153,6 +171,7 @@ export function SiteV2EditorForm({
         signature: initialConfig?.about.signature ?? "",
       },
       menuTeaserTitle: initialConfig?.menuTeaser.title ?? "",
+      vitrineProductIds: initialConfig?.menuTeaser.productIds ?? [],
       gallery: (initialConfig?.gallery ?? []).map((url) => ({ url })),
       testimonials: initialConfig?.testimonials ?? [],
       reservationUrl: initialConfig?.reservationUrl ?? "",
@@ -193,9 +212,15 @@ export function SiteV2EditorForm({
           image: blank(values.about.image),
           signature: blank(values.about.signature),
         },
-        menuTeaser: blank(values.menuTeaserTitle)
-          ? { title: blank(values.menuTeaserTitle) }
-          : undefined,
+        menuTeaser: (() => {
+          const t = blank(values.menuTeaserTitle);
+          const ids = values.vitrineProductIds.filter(Boolean);
+          if (!t && ids.length === 0) return undefined;
+          return {
+            ...(t ? { title: t } : {}),
+            ...(ids.length > 0 ? { productIds: ids } : {}),
+          };
+        })(),
         gallery: values.gallery.map((g) => g.url).filter(Boolean),
         testimonials: values.testimonials,
         reservationUrl: blank(values.reservationUrl) ?? "",
@@ -617,30 +642,26 @@ export function SiteV2EditorForm({
           </CardContent>
         </Card>
 
-        {/* Menu teaser */}
+        {/* Menu teaser + Vitrine */}
         <Card>
           <CardHeader>
-            <CardTitle>Mise en avant carte</CardTitle>
+            <CardTitle>Mise en avant carte — Vitrine</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Field label="Titre">
+            <Field label="Titre de la section">
               <Input
                 {...form.register("menuTeaserTitle")}
                 placeholder="Une cuisine. Trois mouvements."
               />
             </Field>
-            <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3 text-xs text-[var(--text-muted)]">
-              Les 4 plats affichés sont automatiquement tirés des 4 premiers
-              produits visibles dans ta carte (triés par ordre des catégories).
-              Pour modifier l&apos;ordre, va dans{" "}
-              <a
-                href="/dashboard/menu"
-                className="text-[var(--accent)] underline hover:no-underline"
-              >
-                Éditeur de carte
-              </a>{" "}
-              et drag-drop tes produits.
-            </p>
+
+            <VitrineProductPicker
+              options={productOptions}
+              selectedIds={form.watch("vitrineProductIds")}
+              onChange={(next) =>
+                form.setValue("vitrineProductIds", next, { shouldDirty: true })
+              }
+            />
           </CardContent>
         </Card>
 
@@ -968,4 +989,160 @@ function blank(s: string | undefined): string | undefined {
   if (!s) return undefined;
   const trim = s.trim();
   return trim.length === 0 ? undefined : trim;
+}
+
+/**
+ * Picker des 4 produits en vitrine.
+ *
+ * UX :
+ *   - Grille de produits cliquables, groupés par catégorie
+ *   - Click = toggle sélection (max 4)
+ *   - Les sélectionnés sont mis en évidence (border accent + numéro 1-4)
+ *   - L'ordre des numéros 1-4 = ordre d'affichage sur le site
+ *   - Bouton "Réinitialiser" → vide la sélection → fallback auto top-4
+ *   - Compteur "X / 4" en haut
+ *   - État vide si aucun produit (call to action vers /dashboard/menu)
+ */
+function VitrineProductPicker({
+  options,
+  selectedIds,
+  onChange,
+}: {
+  options: ProductPickerOption[];
+  selectedIds: string[];
+  onChange: (next: string[]) => void;
+}) {
+  // Group by category for nice display
+  const groups = new Map<string, ProductPickerOption[]>();
+  for (const opt of options) {
+    const arr = groups.get(opt.categorieTitre) ?? [];
+    arr.push(opt);
+    groups.set(opt.categorieTitre, arr);
+  }
+
+  const selectedSet = new Set(selectedIds);
+  const max = 4;
+
+  const handleToggle = (id: string) => {
+    if (selectedSet.has(id)) {
+      onChange(selectedIds.filter((x) => x !== id));
+    } else {
+      if (selectedIds.length >= max) {
+        toast.error(`Maximum ${max} produits en vitrine.`);
+        return;
+      }
+      onChange([...selectedIds, id]);
+    }
+  };
+
+  if (options.length === 0) {
+    return (
+      <p className="rounded-md border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-6 text-center text-xs text-[var(--text-muted)]">
+        Pas encore de produits dans ta carte. Va dans{" "}
+        <a
+          href="/dashboard/menu"
+          className="text-[var(--accent)] underline hover:no-underline"
+        >
+          Éditeur de carte
+        </a>{" "}
+        ajouter des plats, puis reviens choisir ta vitrine.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <Label className="text-xs text-[var(--text-secondary)]">
+          Produits en vitrine{" "}
+          <span className="text-[var(--text-muted)]">
+            ({selectedIds.length}/{max})
+          </span>
+        </Label>
+        {selectedIds.length > 0 && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange([])}
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+          >
+            Réinitialiser (auto top-4)
+          </Button>
+        )}
+      </div>
+
+      <p className="text-xs text-[var(--text-muted)]">
+        Choisis 1 à 4 produits à mettre en vitrine sur ton site. L&apos;ordre
+        de sélection = ordre d&apos;affichage. Vide = top-4 automatique par
+        position.
+      </p>
+
+      <div className="max-h-[480px] space-y-4 overflow-y-auto rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
+        {Array.from(groups.entries()).map(([catTitre, items]) => (
+          <div key={catTitre}>
+            <p className="mb-2 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+              {catTitre}
+            </p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              {items.map((p) => {
+                const isSelected = selectedSet.has(p.id);
+                const rank = isSelected ? selectedIds.indexOf(p.id) + 1 : null;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => handleToggle(p.id)}
+                    className={`group relative aspect-[4/5] overflow-hidden rounded-md border-2 transition-all ${
+                      isSelected
+                        ? "border-[var(--accent)] shadow-md"
+                        : "border-transparent hover:border-[var(--border-subtle)]"
+                    }`}
+                    title={p.titre}
+                  >
+                    {p.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.imageUrl}
+                        alt={p.titre}
+                        className="size-full object-cover transition-transform group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex size-full items-center justify-center bg-[var(--bg-elevated)] text-2xl text-[var(--text-muted)]">
+                        🍽️
+                      </div>
+                    )}
+
+                    {/* Overlay sélection */}
+                    {isSelected && (
+                      <div className="absolute left-1 top-1 flex size-6 items-center justify-center rounded-full bg-[var(--accent)] text-xs font-bold text-white shadow-md">
+                        {rank}
+                      </div>
+                    )}
+
+                    {/* Footer avec nom + prix */}
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-transparent p-1.5 pt-4 text-left">
+                      <p className="line-clamp-2 text-[10px] font-semibold leading-tight text-white">
+                        {p.titre}
+                      </p>
+                      {p.prix !== null && (
+                        <p className="mt-0.5 text-[10px] font-mono text-white/85">
+                          {p.prix.toLocaleString("fr-FR", {
+                            minimumFractionDigits:
+                              p.prix % 1 === 0 ? 0 : 2,
+                            maximumFractionDigits: 2,
+                          })}{" "}
+                          {p.devise}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
