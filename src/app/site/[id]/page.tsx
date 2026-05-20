@@ -7,6 +7,7 @@ import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { loadSiteV2ByIdOrSlug } from "@/server/public/restaurant-site-v2-loader";
 import { RestaurantSite } from "@/features/restaurant-site-v2/RestaurantSite";
 import type { RestaurantConfig } from "@/features/restaurant-site-v2/types";
+import { isRealHumanVisit } from "@/lib/is-real-visit";
 
 /**
  * Page publique du mini-site v2 — `/site/[idOrSlug]`.
@@ -79,37 +80,40 @@ export default async function PublicSitePage({ params }: PageProps) {
     redirect(`/site/${slug}`);
   }
 
-  // Tracking async — never blocks rendering
+  // Tracking async — never blocks rendering, ET ne compte PAS les
+  // prefetch / RSC / bots / crawlers (cf. src/lib/is-real-visit.ts).
   const reqHeaders = await headers();
   const restaurantIdBig = BigInt(restaurantId);
-  after(async () => {
-    try {
-      await ensureRuntimeSchema();
-      await prisma.$executeRaw`
-        INSERT INTO site_views (restaurant_id, user_agent, pays, lang, referer)
-        VALUES (
-          ${restaurantIdBig},
-          ${reqHeaders.get("user-agent")},
-          ${reqHeaders.get("x-vercel-ip-country") ?? null},
-          ${
-            reqHeaders
-              .get("accept-language")
-              ?.split(",")[0]
-              ?.split("-")[0]
-              ?.toLowerCase() ?? null
-          },
-          ${reqHeaders.get("referer") ?? null}
-        )
-      `;
-      await prisma.$executeRaw`
-        UPDATE restaurants
-        SET site_views_count = site_views_count + 1
-        WHERE id = ${restaurantIdBig}
-      `;
-    } catch (e) {
-      console.warn("[site v2] tracking failed:", e);
-    }
-  });
+  if (isRealHumanVisit(reqHeaders)) {
+    after(async () => {
+      try {
+        await ensureRuntimeSchema();
+        await prisma.$executeRaw`
+          INSERT INTO site_views (restaurant_id, user_agent, pays, lang, referer)
+          VALUES (
+            ${restaurantIdBig},
+            ${reqHeaders.get("user-agent")},
+            ${reqHeaders.get("x-vercel-ip-country") ?? null},
+            ${
+              reqHeaders
+                .get("accept-language")
+                ?.split(",")[0]
+                ?.split("-")[0]
+                ?.toLowerCase() ?? null
+            },
+            ${reqHeaders.get("referer") ?? null}
+          )
+        `;
+        await prisma.$executeRaw`
+          UPDATE restaurants
+          SET site_views_count = site_views_count + 1
+          WHERE id = ${restaurantIdBig}
+        `;
+      } catch (e) {
+        console.warn("[site v2] tracking failed:", e);
+      }
+    });
+  }
 
   // JSON-LD structured data — booste le SEO local Google
   const jsonLd = buildJsonLd(config);

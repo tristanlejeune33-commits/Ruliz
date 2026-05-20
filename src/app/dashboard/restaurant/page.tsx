@@ -75,7 +75,7 @@ export default async function RestaurantPage() {
         description="Ces infos apparaissent sur la carte publique scannée par tes clients."
         actions={
           <Button asChild variant="outline" size="sm">
-            <Link href={`/carte/${data.id}`} target="_blank" rel="noreferrer">
+            <Link href={`/carte/${data.id}`} target="_blank" rel="noreferrer" prefetch={false}>
               <ExternalLink className="size-3.5" />
               Voir la carte
             </Link>

@@ -95,7 +95,12 @@ export default async function AuthLayout({
   children: React.ReactNode;
 }) {
   const demoCarteId = await getDemoCarteId();
-  const defaultCarteUrl = demoCarteId ? `/carte/${demoCarteId}` : undefined;
+  // ?preview=1 → bloque le tracking scan côté carte/[id]/page.tsx. Sinon
+  // chaque visite login/signup gonflait artificiellement le compteur du
+  // resto démo (l'iframe se charge à CHAQUE page d'auth).
+  const defaultCarteUrl = demoCarteId
+    ? `/carte/${demoCarteId}?preview=1`
+    : undefined;
 
   return (
     <div

@@ -22,6 +22,7 @@ export function MenuFab({ restaurantId }: { restaurantId: string }) {
         href={`/carte/${restaurantId}`}
         target="_blank"
         rel="noreferrer"
+        prefetch={false}
       />
     </FAB>
   );

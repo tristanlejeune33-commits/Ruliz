@@ -194,7 +194,11 @@ export default async function DashboardHome() {
             </p>
           </div>
           <Button asChild variant="outline" size="sm">
-            <Link href={`/carte/${restaurant.id.toString()}`} target="_blank">
+            <Link
+              href={`/carte/${restaurant.id.toString()}`}
+              target="_blank"
+              prefetch={false}
+            >
               <ExternalLink className="size-3.5" strokeWidth={1.75} />
               Voir ma carte
             </Link>

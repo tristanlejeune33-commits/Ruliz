@@ -111,6 +111,7 @@ export default async function MenuEditorPage() {
                 href={`/carte/${restaurant.id.toString()}`}
                 target="_blank"
                 rel="noreferrer"
+                prefetch={false}
               >
                 <ExternalLink className="size-3.5" strokeWidth={1.75} />
                 Voir la carte publique

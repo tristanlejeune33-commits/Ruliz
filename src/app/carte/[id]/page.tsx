@@ -7,6 +7,7 @@ import { getPublicMenu } from "@/server/public/menu";
 import { recordScan } from "@/server/public/scan";
 import { markOnboardingSelfScanned } from "@/server/dashboard/onboarding-actions";
 import { isSupportedLang, type SupportedLang } from "@/lib/langs";
+import { isRealHumanVisit } from "@/lib/is-real-visit";
 import { CartePublic } from "./carte-public";
 
 // Page dynamique car on lit headers() pour le tracking. Le cache vit dans
@@ -91,9 +92,17 @@ export default async function CartePage({ params, searchParams }: PageProps) {
     });
   }
 
-  // Track scan asynchronously never block render
-  if (!preview) {
-    const headersList = await headers();
+  // Track scan asynchronously — never block render.
+  // Plusieurs filtres pour ne PAS enregistrer un scan parasite :
+  //   - preview=1 (iframe dashboard / aperçu)
+  //   - prefetch Next.js (header next-router-prefetch)
+  //   - requête RSC (header RSC ou Next-Router-State-Tree)
+  //   - bot / crawler (User-Agent regex)
+  // → cf. src/lib/is-real-visit.ts pour la liste complète
+  const headersList = await headers();
+  const isRealVisit = !preview && isRealHumanVisit(headersList);
+
+  if (isRealVisit) {
     const ua = headersList.get("user-agent");
     const country =
       headersList.get("cf-ipcountry") ??
