@@ -66,6 +66,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       LIMIT 5000
     `);
 
+    const SITE_LANGS = ["fr", "en", "es", "de", "it", "pt", "zh"] as const;
+
     for (const r of rows) {
       // Carte publique
       dynamicRoutes.push({
@@ -74,14 +76,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "weekly",
         priority: 0.7,
       });
-      // Site vitrine si activé
+      // Site vitrine si activé — on liste l'URL canonique + alternates lang
+      // pour signaler à Google les 7 variantes linguistiques.
       if (r.siteEnabled) {
         const path = r.siteSlug ?? r.id.toString();
+        const canonicalUrl = `${BASE_URL}/site/${path}`;
+        const languages: Record<string, string> = {};
+        for (const lng of SITE_LANGS) {
+          languages[lng] =
+            lng === "fr" ? canonicalUrl : `${canonicalUrl}?lang=${lng}`;
+        }
         dynamicRoutes.push({
-          url: `${BASE_URL}/site/${path}`,
+          url: canonicalUrl,
           lastModified: r.siteUpdatedAt ?? r.updatedAt ?? new Date(),
           changeFrequency: "monthly",
           priority: 0.6,
+          alternates: { languages },
         });
       }
     }

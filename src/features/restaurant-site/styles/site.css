@@ -194,6 +194,11 @@
     display: flex;
   }
 }
+.rs-nav__right {
+  display: flex;
+  align-items: center;
+  gap: var(--rs-s-2);
+}
 .rs-nav__cta {
   /* hidden on mobile, button is in hero CTA */
   display: none;
@@ -257,6 +262,94 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* === Lang switcher === */
+.rs-lang-switcher {
+  position: relative;
+  display: inline-flex;
+}
+.rs-lang-switcher__trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius-full);
+  color: var(--rs-text);
+  font-family: var(--rs-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 200ms ease, border-color 200ms ease;
+}
+.rs-lang-switcher__trigger:hover,
+.rs-lang-switcher:hover .rs-lang-switcher__trigger {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: var(--rs-accent);
+}
+.rs-site[data-theme="dark"] .rs-lang-switcher__trigger:hover,
+.rs-site[data-theme="dark"] .rs-lang-switcher:hover .rs-lang-switcher__trigger {
+  background: rgba(255, 255, 255, 0.06);
+}
+.rs-lang-switcher__flag {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+.rs-lang-switcher__code {
+  letter-spacing: 0.05em;
+}
+.rs-lang-switcher__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 160px;
+  list-style: none;
+  margin: 0;
+  padding: var(--rs-s-1);
+  background: var(--rs-bg-elevated);
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius-md);
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.12);
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+.rs-lang-switcher:hover .rs-lang-switcher__menu,
+.rs-lang-switcher:focus-within .rs-lang-switcher__menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.rs-lang-switcher__option {
+  display: flex;
+  align-items: center;
+  gap: var(--rs-s-2);
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  color: var(--rs-text);
+  font-family: var(--rs-body);
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+  border-radius: var(--rs-radius-sm);
+  transition: background 150ms ease;
+}
+.rs-lang-switcher__option:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+.rs-site[data-theme="dark"] .rs-lang-switcher__option:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.rs-lang-switcher__option--active {
+  background: color-mix(in oklab, var(--rs-accent) 12%, transparent);
+  color: var(--rs-accent);
+  font-weight: 500;
 }
 
 /* === Hero — centered variant === */

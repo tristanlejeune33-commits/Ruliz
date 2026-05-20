@@ -2,6 +2,8 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
+import { translateSiteConfig } from "@/server/public/translate-site";
+import type { SupportedLang } from "@/lib/langs";
 import {
   defaultSiteConfig,
   type RestaurantSiteBranding,
@@ -24,8 +26,13 @@ import {
 
 const REDIS_TTL_SECONDS = 60 * 30; // 30 min — invalidé manuellement à chaque save
 
-function cacheKey(restaurantId: bigint | string): string {
-  return `site:${restaurantId.toString()}`;
+/**
+ * Clé cache Redis. La lang fait partie de la clé car on cache des payloads
+ * pré-traduits — éviter de re-payer Anthropic à chaque vue.
+ * 50 restos × 7 langs = 350 entrées max × ~5KB = 1.75MB Redis (négligeable).
+ */
+function cacheKey(restaurantId: bigint | string, lang: SupportedLang = "fr"): string {
+  return `site:${restaurantId.toString()}:${lang}`;
 }
 
 export interface PublicSitePayload {
@@ -37,6 +44,8 @@ export interface PublicSitePayload {
   enabled: boolean;
   /** Plan resto — pour bloquer freemium (côté caller). */
   plan: "freemium" | "pro" | "premium";
+  /** Lang du contenu traduit. "fr" = source. */
+  lang: SupportedLang;
 }
 
 type Row = {
@@ -66,7 +75,7 @@ type Row = {
   site_slug: string | null;
 };
 
-function rowToPayload(row: Row): PublicSitePayload {
+function rowToPayload(row: Row, lang: SupportedLang = "fr"): PublicSitePayload {
   const branding: RestaurantSiteBranding = {
     id: row.id.toString(),
     nom: row.nom,
@@ -99,6 +108,7 @@ function rowToPayload(row: Row): PublicSitePayload {
     slug: row.site_slug,
     enabled: Boolean(row.site_enabled),
     plan: (row.plan as "freemium" | "pro" | "premium") ?? "freemium",
+    lang,
   };
 }
 
@@ -132,20 +142,24 @@ const SELECT_COLUMNS = `
 /**
  * Charge le payload public d'un resto par ID numérique.
  *
- * @param skipRedis Bypass L3 cache (utile dans la preview dashboard pour
- *                  voir tout de suite la dernière sauvegarde sans attendre
- *                  l'expiration TTL).
+ * @param options.lang     Lang du payload retourné. Si != "fr", on traduit
+ *                         le config via Anthropic (cache DB partagé).
+ *                         Cache Redis séparé par lang.
+ * @param options.skipRedis Bypass L3 cache (utile dans la preview dashboard
+ *                          pour voir tout de suite la dernière sauvegarde
+ *                          sans attendre l'expiration TTL).
  */
 export async function getPublicSite(
   restaurantId: bigint,
-  options: { skipRedis?: boolean } = {},
+  options: { skipRedis?: boolean; lang?: SupportedLang } = {},
 ): Promise<PublicSitePayload | null> {
   await ensureRuntimeSchema();
+  const lang = options.lang ?? "fr";
 
-  // L3 Redis
+  // L3 Redis (clé par lang)
   if (redis && !options.skipRedis) {
     try {
-      const cached = await redis.get(cacheKey(restaurantId));
+      const cached = await redis.get(cacheKey(restaurantId, lang));
       if (cached) {
         return JSON.parse(cached) as PublicSitePayload;
       }
@@ -160,12 +174,29 @@ export async function getPublicSite(
   );
   const row = rows[0];
   if (!row || row.statut === "suspendu") return null;
-  const payload = rowToPayload(row);
+  let payload = rowToPayload(row, lang);
+
+  // Traduction si nécessaire — uniquement si site_enabled (économise les
+  // tokens Anthropic pour les restos qui ne montrent pas leur site)
+  if (lang !== "fr" && payload.enabled) {
+    try {
+      const translatedConfig = await translateSiteConfig(payload.config, lang);
+      payload = { ...payload, config: translatedConfig };
+    } catch (e) {
+      console.warn(`[getPublicSite] translate ${lang} failed, falling back to fr:`, e);
+      // En cas d'échec Anthropic → renvoie le FR (pas de page cassée)
+    }
+  }
 
   // L3 write — best-effort, don't block
   if (redis) {
     redis
-      .set(cacheKey(restaurantId), JSON.stringify(payload), "EX", REDIS_TTL_SECONDS)
+      .set(
+        cacheKey(restaurantId, lang),
+        JSON.stringify(payload),
+        "EX",
+        REDIS_TTL_SECONDS,
+      )
       .catch((e) => console.warn("[redis] site write failed:", e));
   }
 
@@ -175,18 +206,22 @@ export async function getPublicSite(
 /**
  * Charge par slug — si trouvé retourne le payload + l'id pour pouvoir
  * canoniser l'URL (`/site/[id]` → `/site/[slug]`).
+ *
+ * On utilise getPublicSite(id) en interne après avoir résolu l'id depuis
+ * le slug, pour profiter du cache + de la traduction.
  */
 export async function getPublicSiteBySlug(
   slug: string,
+  options: { lang?: SupportedLang } = {},
 ): Promise<PublicSitePayload | null> {
   await ensureRuntimeSchema();
-  const rows = await prisma.$queryRawUnsafe<Row[]>(
-    `SELECT ${SELECT_COLUMNS} FROM restaurants WHERE site_slug = $1 LIMIT 1`,
+  const rows = await prisma.$queryRawUnsafe<Array<{ id: bigint }>>(
+    `SELECT id FROM restaurants WHERE site_slug = $1 LIMIT 1`,
     slug,
   );
-  const row = rows[0];
-  if (!row || row.statut === "suspendu") return null;
-  return rowToPayload(row);
+  const id = rows[0]?.id;
+  if (!id) return null;
+  return getPublicSite(id, options);
 }
 
 /**
@@ -195,25 +230,30 @@ export async function getPublicSiteBySlug(
  */
 export async function getPublicSiteByIdOrSlug(
   idOrSlug: string,
+  options: { lang?: SupportedLang } = {},
 ): Promise<PublicSitePayload | null> {
   if (/^\d+$/.test(idOrSlug)) {
     try {
-      return await getPublicSite(BigInt(idOrSlug));
+      return await getPublicSite(BigInt(idOrSlug), options);
     } catch {
       return null;
     }
   }
-  return getPublicSiteBySlug(idOrSlug);
+  return getPublicSiteBySlug(idOrSlug, options);
 }
 
 /**
  * Invalide le cache Redis L3 pour un resto. Appelé par les server actions
  * après save / toggle.
+ *
+ * Invalide TOUTES les langs (site:{id}:fr, site:{id}:en, ...) car la
+ * traduction est dérivée du config source.
  */
 export async function invalidateSiteCache(restaurantId: bigint): Promise<void> {
   if (!redis) return;
+  const langs: SupportedLang[] = ["fr", "en", "es", "de", "it", "pt", "zh"];
   try {
-    await redis.del(cacheKey(restaurantId));
+    await Promise.all(langs.map((l) => redis.del(cacheKey(restaurantId, l))));
   } catch (e) {
     console.warn("[redis] site invalidate failed:", e);
   }

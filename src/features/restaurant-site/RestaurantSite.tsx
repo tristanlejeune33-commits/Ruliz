@@ -10,11 +10,14 @@ import { ReservationStrip } from "./components/ReservationStrip";
 import { Footer } from "./components/Footer";
 import { Team } from "./components/Team";
 import { Faq } from "./components/Faq";
+import type { SupportedLang } from "@/lib/langs";
 import type { RestaurantSiteBranding, RestaurantSiteConfig } from "./types";
 
 interface RestaurantSiteProps {
   branding: RestaurantSiteBranding;
   config: RestaurantSiteConfig;
+  /** Lang du contenu rendu — utilisée par le switcher et l'attribut lang HTML. */
+  currentLang?: SupportedLang;
 }
 
 /**
@@ -28,7 +31,11 @@ interface RestaurantSiteProps {
  * pour que toutes les sections héritent automatiquement de la palette
  * sans avoir à passer les couleurs en prop à chaque enfant.
  */
-export function RestaurantSite({ branding, config }: RestaurantSiteProps) {
+export function RestaurantSite({
+  branding,
+  config,
+  currentLang = "fr",
+}: RestaurantSiteProps) {
   // Résolution des couleurs avec override config > resto > fallback
   const accent =
     config.style?.accentColor ||
@@ -63,9 +70,10 @@ export function RestaurantSite({ branding, config }: RestaurantSiteProps) {
       className="rs-site"
       data-theme={themeAttr}
       data-font={fontStyle}
+      lang={currentLang}
       style={styleVars}
     >
-      <Navbar branding={branding} config={config} />
+      <Navbar branding={branding} config={config} currentLang={currentLang} />
 
       <Hero branding={branding} config={config} />
 

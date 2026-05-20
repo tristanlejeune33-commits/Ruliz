@@ -1,16 +1,19 @@
 import Link from "next/link";
+import type { SupportedLang } from "@/lib/langs";
 import type { RestaurantSiteBranding, RestaurantSiteConfig } from "../types";
+import { SiteLangSwitcher } from "./SiteLangSwitcher";
 
 interface NavbarProps {
   branding: RestaurantSiteBranding;
   config: RestaurantSiteConfig;
+  currentLang: SupportedLang;
 }
 
 /**
  * Barre de nav sticky avec logo + nom resto + liens d'ancrage + CTA carte.
  * Mobile : juste le brand (les liens sont accessibles en scroll naturel).
  */
-export function Navbar({ branding, config }: NavbarProps) {
+export function Navbar({ branding, config, currentLang }: NavbarProps) {
   const carteHref = `/carte/${branding.id}`;
 
   const sections = [];
@@ -43,9 +46,12 @@ export function Navbar({ branding, config }: NavbarProps) {
             ))}
           </ul>
 
-          <Link href={carteHref} className="rs-btn rs-btn--primary rs-nav__cta">
-            Voir la carte
-          </Link>
+          <div className="rs-nav__right">
+            <SiteLangSwitcher current={currentLang} />
+            <Link href={carteHref} className="rs-btn rs-btn--primary rs-nav__cta">
+              Voir la carte
+            </Link>
+          </div>
         </div>
       </div>
     </nav>

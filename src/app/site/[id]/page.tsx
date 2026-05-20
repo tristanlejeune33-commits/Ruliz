@@ -6,6 +6,7 @@ import {
   getPublicSiteByIdOrSlug,
   trackSiteView,
 } from "@/server/public/restaurant-site";
+import { detectSiteLang } from "@/server/public/translate-site";
 import { RestaurantSite } from "@/features/restaurant-site/RestaurantSite";
 
 /**
@@ -25,11 +26,18 @@ export const revalidate = 60;
 
 interface PageProps {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+  searchParams,
+}: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const payload = await getPublicSiteByIdOrSlug(id);
+  const { lang: langParam } = await searchParams;
+  const reqHeaders = await headers();
+  const lang = detectSiteLang(langParam, reqHeaders.get("accept-language"));
+  const payload = await getPublicSiteByIdOrSlug(id, { lang });
   if (!payload || !payload.enabled) {
     return { title: "Restaurant non trouvé" };
   }
@@ -76,9 +84,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-export default async function PublicSitePage({ params }: PageProps) {
+export default async function PublicSitePage({
+  params,
+  searchParams,
+}: PageProps) {
   const { id } = await params;
-  const payload = await getPublicSiteByIdOrSlug(id);
+  const { lang: langParam } = await searchParams;
+  const reqHeaders = await headers();
+  const lang = detectSiteLang(langParam, reqHeaders.get("accept-language"));
+  const payload = await getPublicSiteByIdOrSlug(id, { lang });
   if (!payload || !payload.enabled) {
     notFound();
   }
@@ -86,24 +100,23 @@ export default async function PublicSitePage({ params }: PageProps) {
   const { branding, config, slug } = payload;
 
   // Canonical redirect : si l'user arrive sur /site/3 mais qu'un slug existe,
-  // redirige vers /site/le-tire-bouchon (308 permanent).
+  // redirige vers /site/le-tire-bouchon (308 permanent). On garde ?lang= si
+  // présent pour ne pas perdre la lang choisie.
   if (/^\d+$/.test(id) && slug && slug !== id) {
-    redirect(`/site/${slug}`);
+    const target =
+      langParam && langParam !== "fr"
+        ? `/site/${slug}?lang=${langParam}`
+        : `/site/${slug}`;
+    redirect(target);
   }
 
   // Tracking async — never blocks rendering
-  const reqHeaders = await headers();
   after(async () => {
     await trackSiteView({
       restaurantId: BigInt(branding.id),
       userAgent: reqHeaders.get("user-agent"),
       pays: reqHeaders.get("x-vercel-ip-country") ?? null,
-      lang:
-        reqHeaders
-          .get("accept-language")
-          ?.split(",")[0]
-          ?.split("-")[0]
-          ?.toLowerCase() ?? null,
+      lang,
       referer: reqHeaders.get("referer") ?? null,
     });
   });
@@ -117,10 +130,11 @@ export default async function PublicSitePage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <RestaurantSite branding={branding} config={config} />
+      <RestaurantSite branding={branding} config={config} currentLang={lang} />
     </>
   );
 }
+
 
 /**
  * Build le bloc JSON-LD Restaurant.
