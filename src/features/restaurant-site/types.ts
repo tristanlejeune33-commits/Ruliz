@@ -33,6 +33,22 @@ export interface SectionToggles {
   reservation: boolean;
   team: boolean;
   faq: boolean;
+  googleReviews: boolean;
+}
+
+/**
+ * Configuration de la section avis Google.
+ *  - `fiveStarsOnly` : si true, ne montre que les avis 5★ parmi les 5
+ *    retournés par l'API. La section peut être vide si aucun n'a 5★.
+ *  - `showOnlyIfHighRating` : seuil sur la note globale ; si la note
+ *    moyenne du resto est en-dessous, la section est cachée (évite de
+ *    montrer une mauvaise réputation).
+ */
+export interface GoogleReviewsConfig {
+  /** Si true, filtre les avis affichés à 5★ uniquement. Default false. */
+  fiveStarsOnly?: boolean;
+  /** Seuil mini sur la rating globale (1-5). Sous ce seuil, section cachée. */
+  showOnlyIfRatingAbove?: number;
 }
 
 export interface HeroConfig {
@@ -169,6 +185,8 @@ export interface RestaurantSiteConfig {
   team?: TeamMember[];
   /** Section "Questions fréquentes". */
   faq?: FaqItem[];
+  /** Section "Avis Google" (auto-pull Places API). */
+  googleReviews?: GoogleReviewsConfig;
   /** Slug URL — éditable par le user. Persisté dans `restaurants.site_slug`. */
   slug?: string;
 }
@@ -219,6 +237,30 @@ export interface RestaurantSiteBranding {
   tiktokUrl: string | null;
   siteWeb: string | null;
   googleReviewUrl: string | null;
+  /**
+   * Données Google Places — refresh hebdo par Inngest ou manuel.
+   * Si null → la section Avis Google ne s'affiche pas (même si toggle ON).
+   */
+  googleRating: number | null;
+  googleReviewsCount: number | null;
+  googleReviews: GoogleReviewData[];
+  googleReviewsRefreshedAt: string | null;
+}
+
+/**
+ * Données d'un avis Google tel que stocké dans le payload public.
+ * Subset de GoogleReview (lib/google-places.ts) avec seulement les champs
+ * utiles à l'affichage.
+ */
+export interface GoogleReviewData {
+  author_name: string;
+  author_url?: string;
+  profile_photo_url?: string;
+  rating: number;
+  text: string;
+  relative_time_description: string;
+  time: number;
+  language?: string;
 }
 
 /**
@@ -240,6 +282,7 @@ export function defaultSiteConfig(
       reservation: true,
       team: false, // off par défaut
       faq: false,
+      googleReviews: false, // off par défaut (nécessite API key + refresh)
     },
     hero: {
       variant: "split",

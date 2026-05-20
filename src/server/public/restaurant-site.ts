@@ -72,6 +72,11 @@ type Row = {
   tiktokUrl: string | null;
   siteWeb: string | null;
   googleReviewUrl: string | null;
+  // Google Reviews cache
+  googleRating: number | null | string; // Prisma renvoie Decimal en string
+  googleReviewsCount: number | null;
+  googleReviewsJson: unknown;
+  googleReviewsRefreshedAt: Date | null;
   statut: string;
   plan: string;
   site_enabled: boolean | null;
@@ -105,6 +110,27 @@ function rowToPayload(row: Row, lang: SupportedLang = "fr"): PublicSitePayload {
     tiktokUrl: row.tiktokUrl,
     siteWeb: row.siteWeb,
     googleReviewUrl: row.googleReviewUrl,
+    // Google Reviews — Decimal Postgres revient en string, on convertit
+    googleRating:
+      row.googleRating !== null && row.googleRating !== undefined
+        ? Number(row.googleRating)
+        : null,
+    googleReviewsCount: row.googleReviewsCount ?? null,
+    googleReviews: Array.isArray(row.googleReviewsJson)
+      ? (row.googleReviewsJson as Array<{
+          author_name: string;
+          author_url?: string;
+          profile_photo_url?: string;
+          rating: number;
+          text: string;
+          relative_time_description: string;
+          time: number;
+          language?: string;
+        }>)
+      : [],
+    googleReviewsRefreshedAt: row.googleReviewsRefreshedAt
+      ? row.googleReviewsRefreshedAt.toISOString()
+      : null,
   };
   const config = parseOrDefaultConfig(row.site_config, {
     nom: branding.nom,
@@ -144,6 +170,10 @@ const SELECT_COLUMNS = `
   tiktok_url         AS "tiktokUrl",
   site_web           AS "siteWeb",
   google_review_url  AS "googleReviewUrl",
+  google_rating               AS "googleRating",
+  google_reviews_count        AS "googleReviewsCount",
+  google_reviews_json         AS "googleReviewsJson",
+  google_reviews_refreshed_at AS "googleReviewsRefreshedAt",
   statut,
   plan,
   site_enabled,
@@ -331,5 +361,6 @@ function parseOrDefaultConfig(
     style: c.style ?? def.style,
     team: c.team,
     faq: c.faq,
+    googleReviews: c.googleReviews,
   };
 }

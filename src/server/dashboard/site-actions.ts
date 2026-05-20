@@ -41,6 +41,12 @@ const sectionsSchema = z.object({
   reservation: z.boolean(),
   team: z.boolean(),
   faq: z.boolean(),
+  googleReviews: z.boolean(),
+});
+
+const googleReviewsSchema = z.object({
+  fiveStarsOnly: z.boolean().optional(),
+  showOnlyIfRatingAbove: z.number().min(0).max(5).optional(),
 });
 
 const aboutSchema = z.object({
@@ -117,6 +123,7 @@ const configSchema = z.object({
   testimonials: z.array(testimonialSchema).max(20).optional(),
   team: z.array(teamMemberSchema).max(12).optional(),
   faq: z.array(faqItemSchema).max(20).optional(),
+  googleReviews: googleReviewsSchema.optional(),
   practical: practicalSchema.optional(),
   reservation: reservationSchema.optional(),
   seo: seoSchema.optional(),

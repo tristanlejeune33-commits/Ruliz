@@ -20,6 +20,7 @@ import {
   RefreshCw,
   Save,
   Sparkles,
+  Star,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ import {
   saveSiteConfig,
   toggleSiteEnabled,
 } from "@/server/dashboard/site-actions";
+import { refreshGoogleReviewsAction } from "@/server/dashboard/google-reviews-actions";
 
 const schema = z.object({
   slug: z.string().max(64).optional(),
@@ -57,6 +59,11 @@ const schema = z.object({
     reservation: z.boolean(),
     team: z.boolean(),
     faq: z.boolean(),
+    googleReviews: z.boolean(),
+  }),
+  googleReviews: z.object({
+    fiveStarsOnly: z.boolean().optional(),
+    showOnlyIfRatingAbove: z.number().min(0).max(5).optional(),
   }),
   hero: z.object({
     variant: z.enum(["split", "banner", "centered", "video"]),
@@ -181,6 +188,20 @@ export function SiteEditorForm({
     });
   };
 
+  const [reviewsPending, startReviewsTransition] = useTransition();
+  const handleRefreshGoogleReviews = () => {
+    startReviewsTransition(async () => {
+      const res = await refreshGoogleReviewsAction();
+      if (res.ok) {
+        toast.success(
+          `Note ${res.rating?.toFixed(1) ?? "?"}/5 · ${res.count ?? 0} avis · ${res.fetched} fetchés`,
+        );
+      } else {
+        toast.error(res.error);
+      }
+    });
+  };
+
   const isPaid = plan === "pro" || plan === "premium";
 
   const form = useForm<Values>({
@@ -226,6 +247,11 @@ export function SiteEditorForm({
       seo: {
         title: initialConfig.seo?.title ?? "",
         description: initialConfig.seo?.description ?? "",
+      },
+      googleReviews: {
+        fiveStarsOnly: initialConfig.googleReviews?.fiveStarsOnly ?? false,
+        showOnlyIfRatingAbove:
+          initialConfig.googleReviews?.showOnlyIfRatingAbove,
       },
       style: {
         fontHeading: initialConfig.style?.fontHeading,
@@ -289,6 +315,16 @@ export function SiteEditorForm({
           title: blank(values.seo.title),
           description: blank(values.seo.description),
         }),
+        googleReviews: {
+          fiveStarsOnly: values.googleReviews.fiveStarsOnly ?? false,
+          // valueAsNumber retourne NaN sur input vide → on convertit en
+          // undefined pour que Zod accepte (.optional() ne tolère pas NaN)
+          showOnlyIfRatingAbove: Number.isFinite(
+            values.googleReviews.showOnlyIfRatingAbove,
+          )
+            ? values.googleReviews.showOnlyIfRatingAbove
+            : undefined,
+        },
         style: cleanObj({
           fontHeading: values.style.fontHeading,
           accentColor: blank(values.style.accentColor),
@@ -609,8 +645,103 @@ export function SiteEditorForm({
                 form.setValue("sections.reservation", v, { shouldDirty: true })
               }
             />
+            <SectionToggle
+              label="Avis Google ★"
+              description="Auto-pull via Places API (5 max)"
+              checked={form.watch("sections.googleReviews")}
+              onChange={(v) =>
+                form.setValue("sections.googleReviews", v, {
+                  shouldDirty: true,
+                })
+              }
+            />
           </CardContent>
         </Card>
+
+        {/* Google Reviews config card */}
+        {form.watch("sections.googleReviews") && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Star className="size-4 text-amber-500" />
+                Avis Google
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-[var(--text-muted)]">
+                Tire automatiquement la note moyenne, le nombre total d&apos;avis
+                et jusqu&apos;à 5 avis depuis Google Places API. Refresh hebdo
+                automatique via cron, ou manuel via le bouton ci-dessous.
+              </p>
+
+              {/* Filtre 5★ */}
+              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">
+                    ★★★★★ Avis 5 étoiles uniquement
+                  </p>
+                  <p className="text-xs text-[var(--text-muted)]">
+                    Filtre les avis 5★ parmi les 5 retournés par Google. Si
+                    aucun n&apos;a 5★, seules la note globale + le lien Google
+                    sont affichés.
+                  </p>
+                </div>
+                <Switch
+                  checked={form.watch("googleReviews.fiveStarsOnly") ?? false}
+                  onCheckedChange={(v) =>
+                    form.setValue("googleReviews.fiveStarsOnly", v, {
+                      shouldDirty: true,
+                    })
+                  }
+                />
+              </label>
+
+              {/* Seuil note globale */}
+              <Field label="Cacher la section si note globale en-dessous de…">
+                <Input
+                  type="number"
+                  min={0}
+                  max={5}
+                  step={0.1}
+                  placeholder="Vide = toujours afficher"
+                  {...form.register("googleReviews.showOnlyIfRatingAbove", {
+                    valueAsNumber: true,
+                  })}
+                  className="w-32"
+                />
+              </Field>
+
+              {/* Bouton refresh manuel */}
+              <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
+                <p className="mb-2 text-xs text-[var(--text-secondary)]">
+                  <strong>Important :</strong> ton resto doit être trouvable
+                  sur Google Maps (nom + adresse renseignés dans{" "}
+                  <a
+                    href="/dashboard/restaurant"
+                    className="text-[var(--accent)] underline"
+                  >
+                    Mon restaurant
+                  </a>
+                  ). Le premier refresh peut prendre 5-10s (recherche Google).
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshGoogleReviews}
+                  disabled={reviewsPending || !isPaid}
+                >
+                  {reviewsPending ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-3.5" />
+                  )}
+                  Rafraîchir les avis Google
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Hero */}
         <Card>

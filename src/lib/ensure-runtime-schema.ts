@@ -52,6 +52,23 @@ export async function ensureRuntimeSchema(): Promise<void> {
       `ALTER TABLE "restaurants" ADD COLUMN IF NOT EXISTS "timezone" VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';`,
       "restaurants.timezone",
     );
+    // Google Reviews — auto-fetch via Places API
+    // - google_place_id : ID Google de l'établissement, cache permanent
+    //   (résolu 1x via Find Place API depuis nom + adresse, puis stable)
+    // - google_rating + google_reviews_count : note moyenne globale
+    // - google_reviews_json : les 5 avis renvoyés par Place Details (JSONB)
+    // - google_reviews_refreshed_at : timestamp dernier refresh
+    //   (Google ToS interdit cache >30j → cron Inngest refresh hebdo)
+    await safeExec(
+      `ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "google_place_id" VARCHAR(255),
+        ADD COLUMN IF NOT EXISTS "google_rating" NUMERIC(2,1),
+        ADD COLUMN IF NOT EXISTS "google_reviews_count" INTEGER,
+        ADD COLUMN IF NOT EXISTS "google_reviews_json" JSONB,
+        ADD COLUMN IF NOT EXISTS "google_reviews_refreshed_at" TIMESTAMPTZ;`,
+      "restaurants.google_reviews_*",
+    );
+
     // Horaires d'ouverture en texte libre (multi-lignes) — distinct des
     // preset hours lunch/dinner/happy_hour qui pilotent les créneaux de
     // visibilité des catégories. Celui-ci sert à l'affichage public

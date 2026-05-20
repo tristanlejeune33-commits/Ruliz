@@ -10,6 +10,7 @@ import { ReservationStrip } from "./components/ReservationStrip";
 import { Footer } from "./components/Footer";
 import { Team } from "./components/Team";
 import { Faq } from "./components/Faq";
+import { GoogleReviews } from "./components/GoogleReviews";
 import type { SupportedLang } from "@/lib/langs";
 import type { RestaurantSiteBranding, RestaurantSiteConfig } from "./types";
 
@@ -95,6 +96,13 @@ export function RestaurantSite({
 
       {config.sections.testimonials && (config.testimonials?.length ?? 0) > 0 && (
         <Testimonials items={config.testimonials ?? []} />
+      )}
+
+      {config.sections.googleReviews && (
+        <GoogleReviews
+          branding={branding}
+          config={config.googleReviews ?? {}}
+        />
       )}
 
       {config.sections.faq && (config.faq?.length ?? 0) > 0 && (

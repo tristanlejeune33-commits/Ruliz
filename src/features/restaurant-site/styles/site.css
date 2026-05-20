@@ -556,6 +556,124 @@
   opacity: 1;
 }
 
+/* === Google Reviews === */
+.rs-google {
+  background: var(--rs-bg-elevated);
+  border-top: 1px solid var(--rs-border);
+  border-bottom: 1px solid var(--rs-border);
+}
+.rs-google__header {
+  text-align: center;
+  margin-bottom: var(--rs-s-10);
+}
+.rs-google__rating-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rs-s-3);
+  margin-top: var(--rs-s-3);
+  font-family: var(--rs-display);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+.rs-google__stars {
+  color: #fbbf24; /* doré google review */
+  letter-spacing: 2px;
+}
+.rs-google__rating-num {
+  font-weight: 600;
+  color: var(--rs-text);
+}
+.rs-google__rating-count {
+  font-size: 0.875rem;
+  color: var(--rs-text-muted);
+  font-family: var(--rs-body);
+  font-weight: 400;
+}
+.rs-google__filter-note {
+  margin-top: var(--rs-s-3);
+  font-size: 0.75rem;
+  color: var(--rs-accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.rs-google__grid {
+  display: grid;
+  gap: var(--rs-s-4);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .rs-google__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1100px) {
+  .rs-google__grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+.rs-google__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rs-s-3);
+  padding: var(--rs-s-5, 1.25rem);
+  background: var(--rs-bg);
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius-md);
+}
+.rs-google__card-head {
+  display: flex;
+  align-items: center;
+  gap: var(--rs-s-3);
+}
+.rs-google__card-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--rs-bg-elevated);
+}
+.rs-google__card-avatar--fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--rs-display);
+  font-size: 1.125rem;
+  color: var(--rs-accent);
+  font-weight: 600;
+}
+.rs-google__card-author {
+  flex: 1;
+  min-width: 0;
+}
+.rs-google__card-name {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--rs-text);
+}
+.rs-google__card-meta {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--rs-s-2);
+  font-size: 0.75rem;
+  color: var(--rs-text-muted);
+}
+.rs-google__card-meta .rs-google__stars {
+  font-size: 0.875rem;
+  letter-spacing: 1px;
+}
+.rs-google__card-text {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-style: italic;
+  color: var(--rs-text);
+  line-height: 1.6;
+}
+.rs-google__cta {
+  text-align: center;
+  margin-top: var(--rs-s-8);
+}
+
 /* === Testimonials === */
 .rs-testimonials__grid {
   display: grid;
