@@ -471,6 +471,9 @@
 .rs2-hero-banner-mark {
   display: flex;
   align-items: flex-end;
+  /* Lock à gauche — important sur grands écrans où le container est
+     large et le circle pourrait sembler centré sinon. */
+  justify-content: flex-start;
 }
 
 /* Encadrement circulaire du logo wordmark/icon sur la bannière.
@@ -479,20 +482,26 @@
    visuel. Le cadre rond uniformise le rendu peu importe le format
    du fichier source.
    Fond near-white pour contraster avec la bannière sombre, légère
-   ombre portée pour de la profondeur, padding interne pour laisser
-   le logo respirer. */
+   ombre portée pour de la profondeur, padding interne réduit pour
+   laisser le logo prendre un max de place. */
 .rs2-hero-banner-logo-circle {
-  width: clamp(140px, 18vw, 220px);
-  height: clamp(140px, 18vw, 220px);
+  /* Bien plus grand : 240px mobile → 340px tablette → 420px desktop
+     large. Le logo devient un VRAI point focal du hero. */
+  width: clamp(240px, 32vw, 420px);
+  height: clamp(240px, 32vw, 420px);
   border-radius: 50%;
   background: var(--bg);
   display: grid;
   place-items: center;
-  padding: clamp(18px, 2.2vw, 28px);
+  /* Padding réduit (16-24px) pour que le logo remplisse mieux le cercle */
+  padding: clamp(16px, 1.8vw, 24px);
   box-shadow:
-    0 12px 36px rgba(0, 0, 0, 0.28),
-    0 2px 6px rgba(0, 0, 0, 0.18);
+    0 16px 48px rgba(0, 0, 0, 0.32),
+    0 4px 10px rgba(0, 0, 0, 0.18);
   overflow: hidden;
+  /* Empêche le flex parent d'étirer/squisher → conserve le ratio carré */
+  flex-shrink: 0;
+  align-self: flex-start;
 }
 .rs2-hero-banner-logo {
   max-width: 100%;
@@ -1099,9 +1108,12 @@
     max-height: 100px;
   }
   .rs2-hero-banner-logo-circle {
-    width: 130px;
-    height: 130px;
-    padding: 18px;
+    /* Sur mobile, encore visible mais raisonnable : 210px max
+       (~2/3 de la largeur d'un écran 320px). On garde la position à
+       gauche via justify-content sur le parent. */
+    width: clamp(200px, 60vw, 240px);
+    height: clamp(200px, 60vw, 240px);
+    padding: 16px;
   }
   .rs2-about {
     grid-template-columns: 1fr;
