@@ -11,21 +11,26 @@ import { getPublicSiteByIdOrSlug } from "@/server/public/restaurant-site";
  *  - la couleur d'accent du resto
  *  - la bannière si dispo en arrière-plan
  *
- * Le résultat est cached à l'edge par Vercel/Next ; régénéré sur changement
- * de payload.
+ * Cache : Next.js met l'image en cache automatiquement (immutable) au build
+ * et la régénère sur revalidate. Pas besoin de runtime edge — Node tourne
+ * bien et nous permet d'accéder à Prisma + Redis sans contraintes.
+ *
+ * NOTE : on N'EST PAS sur edge runtime parce que `@/lib/redis` (ioredis)
+ * importe `net`, `dns`, `crypto`, `stream` — modules Node.js indisponibles
+ * sur edge. Tentative edge → webpack module-not-found au build.
  */
 
-export const runtime = "edge";
 export const alt = "Restaurant — site vitrine";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 interface Props {
-  params: { id: string };
+  // Next 15 : params est asynchrone même pour les fichiers metadata
+  params: Promise<{ id: string }>;
 }
 
 export default async function OgImage({ params }: Props) {
-  const { id } = params;
+  const { id } = await params;
   const payload = await getPublicSiteByIdOrSlug(id);
 
   // Fallback image si site désactivé ou inconnu
