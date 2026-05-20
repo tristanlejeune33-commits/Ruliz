@@ -69,13 +69,21 @@ export async function ensureRuntimeSchema(): Promise<void> {
       "restaurants.google_reviews_*",
     );
 
-    // Horaires d'ouverture en texte libre (multi-lignes) — distinct des
-    // preset hours lunch/dinner/happy_hour qui pilotent les créneaux de
-    // visibilité des catégories. Celui-ci sert à l'affichage public
-    // (carte + mini-site).
+    // Horaires d'ouverture en texte libre (multi-lignes) — DEPRECATED v2.
+    // Remplacé par horaires_service JSONB structuré jour-par-jour. Kept en
+    // tant que colonne pour ne pas casser le legacy ; plus lu par le site v2.
     await safeExec(
       `ALTER TABLE "restaurants" ADD COLUMN IF NOT EXISTS "horaires_ouverture" TEXT;`,
       "restaurants.horaires_ouverture",
+    );
+
+    // Horaires de service structurés (v2) — array JSONB de 7 entries
+    // ordonnées lun→dim avec { day, closed, midi:{start,end}|null,
+    // soir:{start,end}|null }. Cf. src/lib/horaires-service.ts pour la
+    // shape exacte et les helpers.
+    await safeExec(
+      `ALTER TABLE "restaurants" ADD COLUMN IF NOT EXISTS "horaires_service" JSONB;`,
+      "restaurants.horaires_service",
     );
 
     // === Mini-site vitrine ===

@@ -2,6 +2,10 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
+import {
+  horairesServiceToHoursRows,
+  isHorairesService,
+} from "@/lib/horaires-service";
 import type {
   HoursRow,
   MenuTeaserItem,
@@ -219,6 +223,7 @@ export async function loadSiteV2(
     telephone: string | null;
     email: string | null;
     horairesOuverture: string | null;
+    horairesService: unknown;
     facebookUrl: string | null;
     instagramUrl: string | null;
     tiktokUrl: string | null;
@@ -249,6 +254,7 @@ export async function loadSiteV2(
       telephone,
       email,
       horaires_ouverture  AS "horairesOuverture",
+      horaires_service    AS "horairesService",
       facebook_url        AS "facebookUrl",
       instagram_url       AS "instagramUrl",
       tiktok_url          AS "tiktokUrl",
@@ -383,8 +389,19 @@ export async function loadSiteV2(
       )}`
     : "https://www.google.com/maps";
 
-  // Hours
-  const hours = v2?.hoursOverride ?? parseHoursOuverture(resto.horairesOuverture);
+  // Hours — priorité :
+  //   1. v2.hoursOverride dans site_config (legacy, peu utilisé)
+  //   2. restaurants.horaires_service (JSONB structuré, source canonique)
+  //   3. parsing du texte legacy horaires_ouverture (best-effort)
+  //   4. fallback array "—" 7 jours
+  let hours: HoursRow[];
+  if (v2?.hoursOverride) {
+    hours = v2.hoursOverride;
+  } else if (isHorairesService(resto.horairesService)) {
+    hours = horairesServiceToHoursRows(resto.horairesService) as HoursRow[];
+  } else {
+    hours = parseHoursOuverture(resto.horairesOuverture);
+  }
 
   // Reservation URL : config v2 > restaurant.siteWeb (peu probable mais fallback) > null
   const reservationUrl = v2?.reservationUrl ?? null;

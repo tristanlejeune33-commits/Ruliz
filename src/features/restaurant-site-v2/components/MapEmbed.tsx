@@ -10,16 +10,18 @@ interface MapEmbedProps {
 }
 
 /**
- * Embed Google Maps en iframe grayscale.
+ * Embed Google Maps en iframe grayscale + CTA "Ouvrir dans Maps".
  *
- * Pourquoi iframe et pas Mapbox/leaflet :
- *  - Pas de clé API requise (Google Maps Embed URL est gratuit, public)
- *  - Pas de bundle JS supplémentaire
- *  - `filter: grayscale(1)` dans le CSS rend l'esthétique cohérente
- *    avec le design éditorial (réservé au filet bleu pour les routes)
- *
- * Format d'URL d'embed simple :
- *   https://www.google.com/maps?q=<adresse>&output=embed
+ * Stratégie :
+ *  - iframe `output=embed` Google Maps (zéro API key, gratuit)
+ *  - filter CSS grayscale + contrast pour s'intégrer au design éditorial
+ *  - CTA overlay en bas-droite : ouvre l'application Maps native sur
+ *    mobile (iOS/Android) ou Google Maps dans un nouvel onglet sur
+ *    desktop. Universal URL "google.com/maps/dir/?destination=..."
+ *    fonctionne partout.
+ *  - Click bloquant sur l'iframe désactivé via pointer-events absent :
+ *    on garde l'iframe interactive (zoom/pan) pour ceux qui veulent
+ *    regarder en place.
  */
 export function MapEmbed({ googleMapsUrl, address }: MapEmbedProps) {
   // Tente d'extraire le paramètre ?q= de l'URL fournie
@@ -32,7 +34,11 @@ export function MapEmbed({ googleMapsUrl, address }: MapEmbedProps) {
     // URL invalide → on garde l'adresse texte
   }
 
-  const embedSrc = `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed`;
+  const encoded = encodeURIComponent(query);
+  const embedSrc = `https://www.google.com/maps?q=${encoded}&output=embed`;
+  // Universal Maps URL — ouvre Google Maps app sur mobile, web sinon.
+  // Format "dir" pour proposer un itinéraire directement (UX > "search").
+  const openInMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
 
   return (
     <div className="rs2-map-wrap">
@@ -43,6 +49,18 @@ export function MapEmbed({ googleMapsUrl, address }: MapEmbedProps) {
         referrerPolicy="no-referrer-when-downgrade"
         allowFullScreen
       />
+      <a
+        href={openInMapsUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="rs2-map-cta"
+        aria-label="Ouvrir l'itinéraire dans Google Maps"
+      >
+        <span className="rs2-map-cta-icon" aria-hidden>
+          ➜
+        </span>
+        <span>Ouvrir dans Maps</span>
+      </a>
     </div>
   );
 }

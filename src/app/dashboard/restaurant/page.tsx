@@ -10,6 +10,18 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 import { Button } from "@/components/ui/button";
 import {
+  emptyHorairesService,
+  isHorairesService,
+} from "@/lib/horaires-service";
+
+function emptyHorairesServiceForInit() {
+  return emptyHorairesService();
+}
+
+function isValidHorairesShape(v: unknown): boolean {
+  return isHorairesService(v);
+}
+import {
   HeroEyebrow,
   HeroKpi,
   PageHero,
@@ -26,6 +38,22 @@ export const metadata: Metadata = {
 export default async function RestaurantPage() {
   const { restaurant } = await getCurrentRestaurant();
   const data = serialize(restaurant);
+
+  // Raw query pour le JSONB horaires_service — Prisma client ne connaît pas
+  // cette colonne car elle est ajoutée par ensureRuntimeSchema, pas par
+  // schema.prisma. On la lit explicitement pour la passer au form.
+  const { prisma } = await import("@/lib/db");
+  const { ensureRuntimeSchema } = await import("@/lib/ensure-runtime-schema");
+  await ensureRuntimeSchema();
+  const hsRows = await prisma.$queryRaw<
+    Array<{ horairesService: unknown }>
+  >`
+    SELECT horaires_service AS "horairesService"
+    FROM restaurants
+    WHERE id = ${restaurant.id}
+    LIMIT 1
+  `;
+  const horairesServiceRaw = hsRows[0]?.horairesService ?? null;
 
   const ville = data.ville?.trim();
   const pays = data.pays?.trim();
@@ -90,11 +118,13 @@ export default async function RestaurantPage() {
           codePostal: data.codePostal ?? "",
           ville: data.ville ?? "",
           pays: data.pays ?? "France",
-          // Horaires d'ouverture en texte libre (ajouté tardivement via
-          // ensureRuntimeSchema → le type Prisma local peut ne pas connaître
-          // la colonne, cast explicite pour rétrocompat)
-          horairesOuverture:
-            (data as { horairesOuverture?: string }).horairesOuverture ?? "",
+          // Horaires de service structurés — array 7 jours JSONB ajouté
+          // via ensureRuntimeSchema. Si null (legacy resto sans données),
+          // on init avec tous les jours fermés et l'utilisateur active.
+          horairesService:
+            isValidHorairesShape(horairesServiceRaw)
+              ? (horairesServiceRaw as import("@/lib/horaires-service").HorairesService)
+              : emptyHorairesServiceForInit(),
           deviseDefault: data.deviseDefault ?? "€",
           langueNative:
             (data.langueNative as

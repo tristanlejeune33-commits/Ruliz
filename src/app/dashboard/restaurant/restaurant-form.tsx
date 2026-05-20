@@ -45,8 +45,33 @@ import { AutoSaveIndicator } from "@/components/shared/auto-save-indicator";
 import { FlagIcon } from "@/components/shared/flag-icon";
 import { LANG_META, SUPPORTED_LANGS } from "@/lib/langs";
 import { groupTimezonesByRegion } from "@/lib/timezones";
+import {
+  DAY_CODES,
+  DAY_LABELS_FULL,
+  emptyHorairesService,
+  presetBistrot,
+  presetSeptJoursSur7,
+  presetSoirUniquement,
+  type DayCode,
+  type HorairesService,
+} from "@/lib/horaires-service";
 import { useAutoSave } from "@/lib/use-auto-save";
 import { updateRestaurant } from "@/server/dashboard/actions";
+
+/** Schéma Zod pour une ligne jour de service. */
+const serviceRangeSchema = z
+  .object({
+    start: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM").or(z.literal("")),
+    end: z.string().regex(/^\d{2}:\d{2}$/, "HH:MM").or(z.literal("")),
+  })
+  .nullable();
+
+const dayServiceSchema = z.object({
+  day: z.enum(["lun", "mar", "mer", "jeu", "ven", "sam", "dim"]),
+  closed: z.boolean(),
+  midi: serviceRangeSchema,
+  soir: serviceRangeSchema,
+});
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const optHex = z.union([z.string().regex(HEX_COLOR, "Format #RRGGBB"), z.literal("")]);
@@ -61,11 +86,11 @@ const schema = z.object({
   ville: z.string().max(100),
   pays: z.string().max(100),
   /**
-   * Horaires d'ouverture en texte libre, multi-lignes acceptées.
-   * Affiché tel quel sur la carte publique + le mini-site (section
-   * Infos pratiques).
+   * Horaires de service structurés — 7 jours × {closed, midi, soir}.
+   * Remplace l'ancien `horairesOuverture` (texte libre) qui demandait
+   * un parsing fragile. Affiché tel quel sur la carte + le site v2.
    */
-  horairesOuverture: z.string().max(1000),
+  horairesService: z.array(dayServiceSchema).length(7),
   deviseDefault: z.string().max(5),
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]),
   /** Fuseau horaire IANA (ex: "Europe/Paris", "Pacific/Auckland"). */
@@ -268,20 +293,22 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                 />
                 <FormField
                   control={form.control}
-                  name="horairesOuverture"
+                  name="horairesService"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
-                      <FormLabel>Horaires d&apos;ouverture</FormLabel>
+                      <FormLabel>Horaires de service</FormLabel>
                       <FormControl>
-                        <Textarea
-                          rows={4}
-                          placeholder={"Mardi - Samedi\n12h00 - 14h30 · 19h00 - 22h30\nFermé dimanche et lundi"}
-                          {...field}
+                        <HorairesServicePicker
+                          value={field.value as HorairesService}
+                          onChange={(next) =>
+                            field.onChange(next as HorairesService)
+                          }
                         />
                       </FormControl>
                       <FormDescription className="text-[10px]">
-                        Texte libre, multi-lignes acceptées. Affiché sur ta
-                        carte publique et ton mini-site vitrine.
+                        Pour chaque jour, active les services et saisis tes
+                        heures. Affiché sur ton mini-site vitrine et utilisé
+                        pour générer les créneaux Schema.org SEO.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -994,4 +1021,212 @@ function AutoSaveErrorToast({
     }
   }, [status, errorMessage]);
   return null;
+}
+
+// ====================================================================
+// === HORAIRES DE SERVICE — picker jour-par-jour ===
+// ====================================================================
+
+/**
+ * Grille 7 jours × {service midi, service soir}. Pour chaque jour :
+ *   - Switch "Ouvert / Fermé"
+ *   - Si ouvert : 2 toggles (midi/soir) qui font apparaître 2 time pickers
+ *   - Si fermé : on cache tout
+ *
+ * Presets en haut : Bistrot mar-sam / 7j sur 7 / Soir uniquement, qui
+ * remplacent intégralement le state en 1 clic.
+ *
+ * "Copier sur la semaine" sur chaque ligne copie ce jour-là sur les 6 autres.
+ */
+function HorairesServicePicker({
+  value,
+  onChange,
+}: {
+  value: HorairesService;
+  onChange: (next: HorairesService) => void;
+}) {
+  // Si pas de value initiale (legacy resto sans données), on init fermé
+  const data: HorairesService =
+    value && Array.isArray(value) && value.length === 7
+      ? value
+      : emptyHorairesService();
+
+  function updateDay(
+    dayIndex: number,
+    patch: Partial<HorairesService[number]>,
+  ) {
+    const next = [...data] as HorairesService;
+    next[dayIndex] = { ...next[dayIndex]!, ...patch };
+    onChange(next);
+  }
+
+  function copyToWeek(sourceIndex: number) {
+    const source = data[sourceIndex]!;
+    const next = data.map((d, i) =>
+      i === sourceIndex
+        ? d
+        : { ...source, day: d.day },
+    ) as HorairesService;
+    onChange(next);
+    toast.success(`${DAY_LABELS_FULL[source.day]} copié sur tous les jours`);
+  }
+
+  return (
+    <div className="space-y-3">
+      {/* Presets row */}
+      <div className="flex flex-wrap items-center gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
+        <span className="text-xs text-[var(--text-muted)]">Presets :</span>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onChange(presetBistrot())}
+        >
+          Bistrot mar-sam
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onChange(presetSeptJoursSur7())}
+        >
+          7j/7
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onChange(presetSoirUniquement())}
+        >
+          Soir uniquement
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onChange(emptyHorairesService())}
+          className="text-[var(--text-muted)]"
+        >
+          Tout effacer
+        </Button>
+      </div>
+
+      {/* Day rows */}
+      {(DAY_CODES as readonly DayCode[]).map((day, i) => {
+        const d = data[i]!;
+        const dayLabel = DAY_LABELS_FULL[day];
+        return (
+          <div
+            key={day}
+            className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3"
+          >
+            {/* Header row : jour + toggle ouvert/fermé + copier */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="w-20 text-sm font-medium">{dayLabel}</span>
+                <label className="flex cursor-pointer items-center gap-2 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={!d.closed}
+                    onChange={(e) =>
+                      updateDay(i, {
+                        closed: !e.target.checked,
+                        midi: !e.target.checked ? null : d.midi,
+                        soir: !e.target.checked ? null : d.soir,
+                      })
+                    }
+                    className="size-4 cursor-pointer accent-[var(--accent)]"
+                  />
+                  <span>{d.closed ? "Fermé" : "Ouvert"}</span>
+                </label>
+              </div>
+              {!d.closed && (
+                <button
+                  type="button"
+                  onClick={() => copyToWeek(i)}
+                  className="text-[10px] text-[var(--text-muted)] underline hover:text-[var(--text-primary)]"
+                >
+                  Copier sur la semaine
+                </button>
+              )}
+            </div>
+
+            {!d.closed && (
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {/* Midi */}
+                <ServiceSlot
+                  label="Déjeuner"
+                  range={d.midi}
+                  onChange={(midi) => updateDay(i, { midi })}
+                  defaultStart="12:00"
+                  defaultEnd="14:30"
+                />
+                {/* Soir */}
+                <ServiceSlot
+                  label="Dîner"
+                  range={d.soir}
+                  onChange={(soir) => updateDay(i, { soir })}
+                  defaultStart="19:00"
+                  defaultEnd="22:30"
+                />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Slot de service unitaire — toggle + 2 time pickers. */
+function ServiceSlot({
+  label,
+  range,
+  onChange,
+  defaultStart,
+  defaultEnd,
+}: {
+  label: string;
+  range: { start: string; end: string } | null;
+  onChange: (next: { start: string; end: string } | null) => void;
+  defaultStart: string;
+  defaultEnd: string;
+}) {
+  const active = range !== null;
+  return (
+    <div className="space-y-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)]/40 p-2">
+      <label className="flex cursor-pointer items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={active}
+          onChange={(e) =>
+            onChange(
+              e.target.checked
+                ? { start: defaultStart, end: defaultEnd }
+                : null,
+            )
+          }
+          className="size-3.5 cursor-pointer accent-[var(--accent)]"
+        />
+        <span className="font-medium">{label}</span>
+      </label>
+      {active && range && (
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5">
+          <input
+            type="time"
+            value={range.start}
+            onChange={(e) => onChange({ ...range, start: e.target.value })}
+            className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-xs font-mono"
+          />
+          <span className="text-[var(--text-muted)]">→</span>
+          <input
+            type="time"
+            value={range.end}
+            onChange={(e) => onChange({ ...range, end: e.target.value })}
+            className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1.5 text-xs font-mono"
+          />
+        </div>
+      )}
+    </div>
+  );
 }

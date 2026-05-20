@@ -52,8 +52,29 @@ const restaurantSchema = z.object({
   codePostal: z.string().max(10).optional().or(z.literal("")),
   ville: z.string().max(100).optional().or(z.literal("")),
   pays: z.string().max(100).optional().or(z.literal("")),
-  // Horaires d'ouverture en texte libre, affiché tel quel sur la carte + site
-  horairesOuverture: z.string().max(1000).optional().or(z.literal("")),
+  // Horaires de service structurés (v2) : array 7 jours JSONB.
+  // L'ancien `horairesOuverture` texte libre est deprecated.
+  horairesService: z
+    .array(
+      z.object({
+        day: z.enum(["lun", "mar", "mer", "jeu", "ven", "sam", "dim"]),
+        closed: z.boolean(),
+        midi: z
+          .object({
+            start: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")),
+            end: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")),
+          })
+          .nullable(),
+        soir: z
+          .object({
+            start: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")),
+            end: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")),
+          })
+          .nullable(),
+      }),
+    )
+    .length(7)
+    .optional(),
   deviseDefault: z.string().max(5).optional().or(z.literal("")),
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]).optional(),
   // IANA timezone (validated min-only — Intl.DateTimeFormat valide en runtime)
@@ -112,7 +133,8 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         ADD COLUMN IF NOT EXISTS "dinner_end"       VARCHAR(5) DEFAULT '23:00',
         ADD COLUMN IF NOT EXISTS "happy_hour_start" VARCHAR(5) DEFAULT '18:00',
         ADD COLUMN IF NOT EXISTS "happy_hour_end"   VARCHAR(5) DEFAULT '19:00',
-        ADD COLUMN IF NOT EXISTS "horaires_ouverture" TEXT;
+        ADD COLUMN IF NOT EXISTS "horaires_ouverture" TEXT,
+        ADD COLUMN IF NOT EXISTS "horaires_service" JSONB;
     `);
   } catch (err) {
     console.warn(
@@ -121,26 +143,24 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
     );
   }
 
-  // === Save horaires_ouverture via raw SQL en upfront ===
-  // Comme la colonne est ajoutée à chaud via ensureRuntimeSchema, le client
-  // Prisma local peut ne pas la connaître → erreur P2022 sur l'update
-  // Prisma plus bas. On la sauve séparément en raw SQL pour garantir
-  // la persistence indépendamment du cache Prisma.
-  try {
-    const horaires =
-      data.horairesOuverture && data.horairesOuverture.trim().length > 0
-        ? data.horairesOuverture
-        : null;
-    await prisma.$executeRaw`
-      UPDATE "restaurants"
-      SET "horaires_ouverture" = ${horaires}
-      WHERE "id" = ${bigId}
-    `;
-  } catch (err) {
-    console.warn(
-      "[updateRestaurant] horaires_ouverture raw SQL failed (continuing):",
-      err,
-    );
+  // === Save horaires_service (JSONB v2) via raw SQL en upfront ===
+  // Comme la colonne est ajoutée à chaud via ensureRuntimeSchema, Prisma
+  // client ne la connaît pas → erreur P2022 sur l'update Prisma plus bas.
+  // On la sauve séparément. Si `data.horairesService` est null/undefined
+  // (form non rempli), on n'écrit rien et la colonne garde son état.
+  if (data.horairesService && Array.isArray(data.horairesService)) {
+    try {
+      await prisma.$executeRaw`
+        UPDATE "restaurants"
+        SET "horaires_service" = ${JSON.stringify(data.horairesService)}::jsonb
+        WHERE "id" = ${bigId}
+      `;
+    } catch (err) {
+      console.warn(
+        "[updateRestaurant] horaires_service raw SQL failed (continuing):",
+        err,
+      );
+    }
   }
 
   // === ÉTAPE 2 : sauvegarde EXPLICITE des horaires en raw SQL ===
