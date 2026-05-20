@@ -52,6 +52,18 @@ export async function ensureRuntimeSchema(): Promise<void> {
       `ALTER TABLE "restaurants" ADD COLUMN IF NOT EXISTS "timezone" VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';`,
       "restaurants.timezone",
     );
+    // === Mini-site vitrine ===
+    // site_enabled = false → la route /site/[id] retourne 404 tant que le
+    // restaurateur n'a pas activé sa fonctionnalité (Pro/Premium uniquement).
+    // site_config JSONB = structure éditable côté dashboard, type
+    // RestaurantSiteConfig (cf. src/features/restaurant-site/types.ts).
+    await safeExec(
+      `ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "site_enabled" BOOLEAN NOT NULL DEFAULT false,
+        ADD COLUMN IF NOT EXISTS "site_config" JSONB,
+        ADD COLUMN IF NOT EXISTS "site_updated_at" TIMESTAMPTZ;`,
+      "restaurants.site_*",
+    );
     // Idem catégories/produits — colonnes créneaux critiques
     await safeExec(
       `ALTER TABLE "categories"

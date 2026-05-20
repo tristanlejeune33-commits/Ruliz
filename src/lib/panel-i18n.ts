@@ -114,6 +114,15 @@ const DICT: Record<string, LangDict> = {
     pt: "Códigos QR",
     zh: "二维码",
   },
+  "nav.site": {
+    fr: "Site vitrine",
+    en: "Website",
+    es: "Sitio web",
+    de: "Website",
+    it: "Sito web",
+    pt: "Site web",
+    zh: "官网",
+  },
   "nav.stats": {
     fr: "Statistiques",
     en: "Analytics",

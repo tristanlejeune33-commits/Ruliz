@@ -10,6 +10,7 @@ import {
   CreditCard,
   FlaskConical,
   Gauge,
+  Globe2,
   LayoutDashboard,
   type LucideIcon,
   Mail,
@@ -62,6 +63,7 @@ const DASHBOARD_NAV: SidebarNavSection[] = [
       { labelKey: "nav.restaurant", href: "/dashboard/restaurant", icon: Building2 },
       { labelKey: "nav.menu", href: "/dashboard/menu", icon: UtensilsCrossed },
       { labelKey: "nav.qrcodes", href: "/dashboard/qrcodes", icon: QrCode },
+      { labelKey: "nav.site", href: "/dashboard/site", icon: Globe2 },
     ],
   },
   {
