@@ -8,6 +8,7 @@ import type { CarteTheme } from "./theme";
 import { langLabel } from "./lang-switcher";
 import { t } from "./i18n";
 import type { SupportedLang } from "@/lib/langs";
+import { MapPreview } from "./map-preview";
 
 // Brand icons inline (Lucide ne livre plus les marques pour cause de trademark)
 function FacebookIcon({ className }: { className?: string }) {
@@ -139,6 +140,18 @@ export function FooterPublic({
           >
             {adresse}
           </p>
+        )}
+
+        {/* Map preview Google Maps — affichée uniquement si on a une
+            adresse. Lazy-loaded (iframe loading="lazy") donc 0 impact
+            sur le LCP du carte (le client doit scroller au footer pour
+            la voir). */}
+        {adresse && (
+          <MapPreview
+            address={adresse}
+            theme={theme}
+            ctaLabel={t("ouvrirDansMaps", lang)}
+          />
         )}
 
         {/* Téléphone + Email */}
