@@ -89,8 +89,11 @@ const nextConfig: NextConfig = {
       "font-src 'self' data:",
       // Connexions API : self + Stripe + Sentry + Anthropic + Inngest + Brevo
       "connect-src 'self' https://api.stripe.com https://*.ingest.sentry.io https://api.anthropic.com https://api.inngest.com https://api.brevo.com",
-      // Frames : Stripe Checkout (paiement) — autorisé en frame
-      "frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://hooks.stripe.com",
+      // Frames : Stripe Checkout (paiement) + Google Maps embed (sur la
+      // carte publique footer + site v2 Practical). Sans cette whitelist,
+      // les iframes Google sont BLOQUÉES par le navigateur via CSP →
+      // map blanche.
+      "frame-src 'self' https://js.stripe.com https://checkout.stripe.com https://hooks.stripe.com https://www.google.com https://maps.google.com https://www.google.fr https://maps.google.fr",
       // Forms : self uniquement (sauf checkout Stripe pour le POST initial)
       "form-action 'self' https://checkout.stripe.com",
       // Refus d'être embarqué dans un iframe externe (clickjacking)

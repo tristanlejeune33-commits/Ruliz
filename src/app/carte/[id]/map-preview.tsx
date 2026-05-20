@@ -30,7 +30,11 @@ export function MapPreview({ address, theme, ctaLabel }: MapPreviewProps) {
   if (!address || !address.trim()) return null;
 
   const encoded = encodeURIComponent(address);
-  const embedSrc = `https://www.google.com/maps?q=${encoded}&output=embed`;
+  // Direct maps.google.com pour éviter le 302 depuis www.google.com qui
+  // peut casser X-Frame-Options selon les régions. `&hl=fr` force la
+  // langue Maps en FR (sinon Google peut tomber sur la langue du
+  // navigateur côté iframe).
+  const embedSrc = `https://maps.google.com/maps?q=${encoded}&output=embed&hl=fr`;
   const openMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
 
   return (

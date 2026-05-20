@@ -35,7 +35,9 @@ export function MapEmbed({ googleMapsUrl, address }: MapEmbedProps) {
   }
 
   const encoded = encodeURIComponent(query);
-  const embedSrc = `https://www.google.com/maps?q=${encoded}&output=embed`;
+  // Direct maps.google.com pour éviter le 302 depuis www.google.com qui
+  // peut casser certaines politiques X-Frame-Options selon les régions.
+  const embedSrc = `https://maps.google.com/maps?q=${encoded}&output=embed&hl=fr`;
   // Universal Maps URL — ouvre Google Maps app sur mobile, web sinon.
   // Format "dir" pour proposer un itinéraire directement (UX > "search").
   const openInMapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encoded}`;
