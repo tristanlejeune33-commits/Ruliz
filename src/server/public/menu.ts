@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import type { SupportedLang } from "@/lib/langs";
-import { isCategorieVisibleNow } from "@/lib/schedule";
+import { isCategorieVisibleNow, getRestaurantLocalParts } from "@/lib/schedule";
 
 export { isSupportedLang } from "@/lib/langs";
 
@@ -267,9 +267,17 @@ export async function getPublicMenu(
   //   - joursActifs null OU bit du jour courant set → jour OK
   //   - heureDebut/heureFin null → toute la journée
   //   - sinon heureDebut <= now-time <= heureFin (comparaison string "HH:MM")
-  const now = new Date();
-  const currentDayBit = 1 << now.getDay(); // 0=dim, 6=sam
-  const currentTimeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  //
+  // CRUCIAL : on calcule "maintenant" dans le fuseau horaire DU RESTO et non
+  // celui du serveur Railway (UTC). Sinon un resto à Auckland (UTC+13) voit
+  // ses popups "lundi 12h-14h" déclenchés à 23h-01h UTC, donc jamais visibles
+  // depuis son point de vue local. La récup du TZ est anticipée ici (le bloc
+  // de filtrage des catégories plus bas en aura aussi besoin).
+  const restoTimezone =
+    (restaurant as { timezone?: string }).timezone || "Europe/Paris";
+  const localParts = getRestaurantLocalParts(restoTimezone);
+  const currentDayBit = 1 << localParts.jsDay; // 0=dim, 6=sam
+  const currentTimeStr = localParts.timeHHMM;
   // Cast vers un type incluant les colonnes Stripe/schedule le client
   // Prisma local peut ne pas avoir été régénéré (problème Windows file lock).
   // Les colonnes existent en DB, Prisma findMany les retourne au runtime.
@@ -344,9 +352,7 @@ export async function getPublicMenu(
     happyHourStart: restaurant.happyHourStart,
     happyHourEnd: restaurant.happyHourEnd,
   };
-  // Fuseau horaire du resto (Europe/Paris si pas défini = rétrocompat)
-  const restoTimezone =
-    (restaurant as { timezone?: string }).timezone || "Europe/Paris";
+  // restoTimezone est déjà extrait plus haut (avant le filtre popup).
 
   const categoriesRaw = allCategoriesRaw.filter((cat) =>
     isCategorieVisibleNow(

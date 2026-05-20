@@ -57,7 +57,11 @@ export default async function StatsPage({ searchParams }: PageProps) {
   };
 
   const { restaurant } = await getCurrentRestaurant();
-  const analytics = await getAnalytics(restaurant.id, filters);
+  // Passe le TZ du resto pour que la heatmap horaire reflète bien le ressenti
+  // local (12h Auckland = 12h sur la heatmap, pas 23h UTC Railway).
+  const restoTz =
+    (restaurant as { timezone?: string }).timezone || "Europe/Paris";
+  const analytics = await getAnalytics(restaurant.id, filters, restoTz);
 
   return (
     <div className="space-y-6" data-onboarding-anchor="stats-page">

@@ -94,8 +94,11 @@ interface CategorieSchedule {
 /**
  * Convertit une Date UTC en composantes locales dans un fuseau horaire IANA.
  * Utilise Intl.DateTimeFormat natif (gère DST automatique).
+ *
+ * Exporté pour réutilisation par d'autres modules qui veulent connaître
+ * "l'heure locale du resto MAINTENANT" (popups, analytics, heatmap, etc.).
  */
-function getLocalTimeInTimezone(
+export function getLocalTimeInTimezone(
   date: Date,
   timeZone: string,
 ): { hour: number; minute: number; isoDay: number } {
@@ -197,6 +200,41 @@ function pad(n: number): string {
  * Liste des labels pour affichage UI. Les hints dynamiques (avec horaires du
  * resto) doivent être construits côté composant via `resolvePresetHours`.
  */
+/**
+ * Heure locale + jour de la semaine dans le TZ du resto.
+ *
+ * Convention de retour pratique pour les autres modules :
+ *   - `hour` (0-23)
+ *   - `minute` (0-59)
+ *   - `jsDay` (0=Dimanche, 6=Samedi) — compatible JS Date.getDay()
+ *   - `isoDay` (1=Lundi, 7=Dimanche) — compatible ISO
+ *   - `timeHHMM` ("HH:MM") — pratique pour comparer à des champs string
+ *
+ * Si `timezone` invalide → fallback sur le local serveur (UTC en prod Railway).
+ */
+export function getRestaurantLocalParts(
+  timezone: string,
+  now: Date = new Date(),
+): {
+  hour: number;
+  minute: number;
+  jsDay: number;
+  isoDay: number;
+  timeHHMM: string;
+} {
+  const { hour, minute, isoDay } = getLocalTimeInTimezone(now, timezone);
+  // JS Date.getDay() : 0=Dim, 1=Lun, ..., 6=Sam
+  // ISO : 1=Lun, ..., 7=Dim
+  const jsDay = isoDay === 7 ? 0 : isoDay;
+  return {
+    hour,
+    minute,
+    jsDay,
+    isoDay,
+    timeHHMM: `${pad(hour)}:${pad(minute)}`,
+  };
+}
+
 export const SCHEDULE_OPTIONS: Array<{
   value: ScheduleType;
   label: string;

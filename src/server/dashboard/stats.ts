@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { getLocalTimeInTimezone } from "@/lib/schedule";
 
 export type StatsPeriod = "7d" | "30d" | "90d";
 
@@ -20,6 +21,18 @@ export async function getRestaurantStats(restaurantId: bigint, period: StatsPeri
   const since = startOfPeriod(period);
   const previousSince = new Date(since);
   previousSince.setDate(previousSince.getDate() - PERIOD_DAYS[period]);
+
+  // Récup TZ resto via raw query (le client Prisma local peut ne pas avoir
+  // re-généré la colonne, mais elle existe en DB via ensureRuntimeSchema).
+  let restoTz = "Europe/Paris";
+  try {
+    const rows = await prisma.$queryRaw<Array<{ timezone: string | null }>>`
+      SELECT timezone FROM restaurants WHERE id = ${restaurantId} LIMIT 1
+    `;
+    restoTz = rows[0]?.timezone || "Europe/Paris";
+  } catch {
+    // Fallback déjà à Europe/Paris
+  }
 
   const [scansThis, scansPrev, scansPerDay, scansPerLang] = await Promise.all([
     prisma.scan.count({
@@ -59,12 +72,14 @@ export async function getRestaurantStats(restaurantId: bigint, period: StatsPeri
     if (row) row.scans += 1;
   }
 
-  // Bucketize per hour (0-23)
+  // Bucketize per hour (0-23) DANS le TZ du resto (pas le TZ serveur UTC).
+  // Sinon un coup de feu midi à Auckland (UTC+12/13) finit dans la barre
+  // "23h" côté Railway — incompréhensible pour le restaurateur.
   const hourBuckets = new Map<number, { hour: number; scans: number }>();
   for (let h = 0; h < 24; h++) hourBuckets.set(h, { hour: h, scans: 0 });
   for (const s of scansPerDay) {
-    const h = s.scannedAt.getHours();
-    const row = hourBuckets.get(h);
+    const { hour } = getLocalTimeInTimezone(s.scannedAt, restoTz);
+    const row = hourBuckets.get(hour);
     if (row) row.scans += 1;
   }
 

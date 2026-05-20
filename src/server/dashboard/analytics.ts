@@ -11,6 +11,26 @@ import {
   type OS,
 } from "@/lib/user-agent";
 import { countryMeta } from "@/lib/countries";
+import { getLocalTimeInTimezone } from "@/lib/schedule";
+
+/**
+ * Pour un `Date` UTC stocké en DB (scan.scannedAt), retourne le jour/heure
+ * vécus localement par le restaurateur (donc dans son TZ).
+ *
+ * Ex : un scan UTC 22:30 le 20/05 → en NZ (UTC+13 DST) c'est 11:30 le 21/05
+ * → on rangerait le scan dans bucket "Mardi 11h" et non "Lundi 22h" comme
+ * le faisait l'ancienne version qui utilisait getDay/getHours direct (TZ
+ * serveur Railway, UTC).
+ */
+function localBucket(
+  date: Date,
+  timezone: string,
+): { jsDay: number; hour: number } {
+  const { hour, isoDay } = getLocalTimeInTimezone(date, timezone);
+  // ISO 1=Lun..7=Dim → JS 0=Dim..6=Sam
+  const jsDay = isoDay === 7 ? 0 : isoDay;
+  return { jsDay, hour };
+}
 
 // ---------------- Types & helpers ----------------
 
@@ -140,8 +160,31 @@ interface ScanRow {
 export async function getAnalytics(
   restaurantId: bigint,
   filters: AnalyticsFilters,
+  /**
+   * Fuseau horaire IANA du restaurant (ex: "Europe/Paris", "Pacific/Auckland").
+   * Sert à agréger les scans par heure/jour dans le ressenti local du
+   * restaurateur, plutôt que dans le TZ serveur (UTC). Si non fourni, on
+   * récupère depuis la DB (rétrocompat appelants existants).
+   */
+  timezone?: string,
 ): Promise<AnalyticsResult> {
   const range = resolveRange(filters);
+  // Si pas de TZ explicite, on tombe sur celui du resto en DB (1 query rapide
+  // qui ne touche que la colonne timezone). Default Europe/Paris si pas de
+  // TZ défini (rétrocompat restos anciens). On utilise un raw query pour
+  // éviter de dépendre du type Prisma généré (la colonne est ajoutée par
+  // ensureRuntimeSchema, le client local peut ne pas être re-généré).
+  let restoTz = timezone;
+  if (!restoTz) {
+    try {
+      const rows = await prisma.$queryRaw<Array<{ timezone: string | null }>>`
+        SELECT timezone FROM restaurants WHERE id = ${restaurantId} LIMIT 1
+      `;
+      restoTz = rows[0]?.timezone || "Europe/Paris";
+    } catch {
+      restoTz = "Europe/Paris";
+    }
+  }
 
   // Pull all relevant scans from the current + previous window.
   // For 50 restos × 100k scans/day this fits fine ; if it grows we'll move
@@ -270,8 +313,10 @@ export async function getAnalytics(
     }
   }
   for (const s of filtered) {
-    const day = s.scannedAt.getDay();
-    const hour = s.scannedAt.getHours();
+    // CRUCIAL : on agrège dans le TZ du resto, sinon un coup de feu à 12h
+    // Auckland (UTC -1h en NZ standard) finit dans le bucket "23h Lundi"
+    // côté Railway-UTC, ce qui rend la heatmap inexploitable hors Europe.
+    const { jsDay: day, hour } = localBucket(s.scannedAt, restoTz);
     const k = `${day}-${hour}`;
     heatmapBuckets.set(k, (heatmapBuckets.get(k) ?? 0) + 1);
   }
@@ -307,8 +352,10 @@ export async function getAnalytics(
       const k = s.qrcodeId.toString();
       qrcodeCounts.set(k, (qrcodeCounts.get(k) ?? 0) + 1);
     }
-    hourCounts[s.scannedAt.getHours()]! += 1;
-    dowCounts[s.scannedAt.getDay()]! += 1;
+    // Cf. heatmap : bucket dans le TZ resto, pas du serveur.
+    const localTime = localBucket(s.scannedAt, restoTz);
+    hourCounts[localTime.hour]! += 1;
+    dowCounts[localTime.jsDay]! += 1;
   }
 
   const devices = [...deviceCounts.entries()]
