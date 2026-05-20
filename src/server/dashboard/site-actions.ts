@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import QRCode from "qrcode";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
@@ -12,6 +13,8 @@ import type {
   SiteTemplate,
 } from "@/features/restaurant-site/types";
 import { SITE_TEMPLATES } from "@/features/restaurant-site/types";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://ruliz-panel.fr";
 
 /**
  * Schémas Zod stricts — la validation serveur fait foi. Si le client envoie
@@ -329,6 +332,44 @@ export async function toggleSiteEnabled(
   revalidatePath("/dashboard/site");
   revalidatePath("/sitemap.xml");
   return { ok: true };
+}
+
+/**
+ * Génère un QR code dataURL PNG pointant vers le site vitrine du resto.
+ * Différent du QR de la carte — celui-ci envoie sur /site/[slug] pour les
+ * cartes de visite, sets de table, vitrine, flyers.
+ */
+export async function getSiteQrDataUrl(): Promise<
+  { ok: true; dataUrl: string; url: string } | { ok: false; error: string }
+> {
+  const { restaurant } = await getCurrentRestaurant();
+  const restaurantId = restaurant.id;
+
+  await ensureRuntimeSchema();
+  const rows = await prisma.$queryRaw<
+    Array<{ siteSlug: string | null; siteEnabled: boolean }>
+  >`
+    SELECT site_slug AS "siteSlug", site_enabled AS "siteEnabled"
+    FROM restaurants WHERE id = ${restaurantId} LIMIT 1
+  `;
+  const slug = rows[0]?.siteSlug;
+  const enabled = rows[0]?.siteEnabled;
+  if (!enabled) {
+    return { ok: false, error: "Active d'abord ton site pour générer son QR." };
+  }
+  const url = `${APP_URL}/site/${slug ?? restaurantId.toString()}`;
+  try {
+    const dataUrl = await QRCode.toDataURL(url, {
+      margin: 2,
+      width: 800,
+      color: { dark: "#000000", light: "#ffffff" },
+      errorCorrectionLevel: "M",
+    });
+    return { ok: true, dataUrl, url };
+  } catch (e) {
+    console.error("[getSiteQrDataUrl] generation failed:", e);
+    return { ok: false, error: "Erreur de génération du QR" };
+  }
 }
 
 /**

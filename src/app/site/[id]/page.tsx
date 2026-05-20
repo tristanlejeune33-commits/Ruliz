@@ -45,10 +45,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Canonical : on préfère le slug si dispo
   const canonical = slug ? `/site/${slug}` : `/site/${branding.id}`;
 
+  // Hreflang : les 7 langues supportées de Ruliz. La détection au runtime
+  // se fait côté carte/site via query param. On dit à Google qu'il existe
+  // une version pour chaque langue (même URL, lang change via switcher).
+  const languages: Record<string, string> = {};
+  for (const lng of ["fr", "en", "es", "de", "it", "pt", "zh"]) {
+    languages[lng] = `${canonical}?lang=${lng}`;
+  }
+
   return {
     title,
     description,
-    alternates: { canonical },
+    alternates: { canonical, languages },
     openGraph: {
       title,
       description,

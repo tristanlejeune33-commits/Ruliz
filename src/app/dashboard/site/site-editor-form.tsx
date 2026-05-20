@@ -10,11 +10,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import {
+  Download,
   Eye,
   EyeOff,
   Image as ImageIcon,
   Loader2,
   Plus,
+  QrCode,
   RefreshCw,
   Save,
   Sparkles,
@@ -39,6 +41,7 @@ import type { RestaurantSiteConfig } from "@/features/restaurant-site/types";
 import { SITE_TEMPLATES } from "@/features/restaurant-site/types";
 import {
   applySiteTemplate,
+  getSiteQrDataUrl,
   saveSiteConfig,
   toggleSiteEnabled,
 } from "@/server/dashboard/site-actions";
@@ -161,7 +164,22 @@ export function SiteEditorForm({
   const [savePending, startSaveTransition] = useTransition();
   const [templatePending, startTemplateTransition] = useTransition();
   const [previewKey, setPreviewKey] = useState(0);
+  const [qrPending, startQrTransition] = useTransition();
+  const [qrModal, setQrModal] = useState<{ dataUrl: string; url: string } | null>(
+    null,
+  );
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const handleDownloadQr = () => {
+    startQrTransition(async () => {
+      const res = await getSiteQrDataUrl();
+      if (res.ok) {
+        setQrModal({ dataUrl: res.dataUrl, url: res.url });
+      } else {
+        toast.error(res.error);
+      }
+    });
+  };
 
   const isPaid = plan === "pro" || plan === "premium";
 
@@ -357,7 +375,7 @@ export function SiteEditorForm({
           </Card>
         )}
 
-        {/* Toggle on/off */}
+        {/* Toggle on/off + QR */}
         <Card className="border-[var(--accent)]/40 bg-[var(--accent)]/5">
           <CardContent className="flex items-center justify-between gap-4 pt-6">
             <div>
@@ -381,13 +399,76 @@ export function SiteEditorForm({
                 </code>
               </p>
             </div>
-            <Switch
-              checked={enabled}
-              onCheckedChange={handleToggleEnabled}
-              disabled={enabledPending || !isPaid}
-            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadQr}
+                disabled={!enabled || qrPending}
+                title="QR du site vitrine (pour cartes de visite, vitrine, flyers)"
+              >
+                {qrPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <QrCode className="size-3.5" />
+                )}
+                QR site
+              </Button>
+              <Switch
+                checked={enabled}
+                onCheckedChange={handleToggleEnabled}
+                disabled={enabledPending || !isPaid}
+              />
+            </div>
           </CardContent>
         </Card>
+
+        {/* QR modal */}
+        {qrModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+            onClick={() => setQrModal(null)}
+          >
+            <div
+              className="max-w-sm rounded-xl bg-white p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="mb-2 text-lg font-semibold text-black">
+                QR code de ton site
+              </h3>
+              <p className="mb-4 text-xs text-gray-600">
+                Imprime-le sur tes cartes de visite, ton flyer, ton set de table.
+                <br />
+                URL : <code className="text-[10px]">{qrModal.url}</code>
+              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrModal.dataUrl}
+                alt="QR code site"
+                className="mx-auto block aspect-square w-64"
+              />
+              <div className="mt-4 flex gap-2">
+                <Button asChild className="flex-1">
+                  <a
+                    href={qrModal.dataUrl}
+                    download={`qr-site-${slug ?? restaurantId}.png`}
+                  >
+                    <Download className="size-3.5" />
+                    Télécharger PNG
+                  </a>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setQrModal(null)}
+                  className="flex-1"
+                >
+                  Fermer
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Templates */}
         <Card>
