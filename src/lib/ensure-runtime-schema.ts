@@ -61,8 +61,36 @@ export async function ensureRuntimeSchema(): Promise<void> {
       `ALTER TABLE "restaurants"
         ADD COLUMN IF NOT EXISTS "site_enabled" BOOLEAN NOT NULL DEFAULT false,
         ADD COLUMN IF NOT EXISTS "site_config" JSONB,
-        ADD COLUMN IF NOT EXISTS "site_updated_at" TIMESTAMPTZ;`,
+        ADD COLUMN IF NOT EXISTS "site_updated_at" TIMESTAMPTZ,
+        ADD COLUMN IF NOT EXISTS "site_slug" VARCHAR(64),
+        ADD COLUMN IF NOT EXISTS "site_views_count" BIGINT NOT NULL DEFAULT 0;`,
       "restaurants.site_*",
+    );
+    // Index unique sur le slug (un slug = un seul resto). Pas inclus dans
+    // l'ALTER au-dessus pour pouvoir CATCH en cas de doublons existants.
+    await safeExec(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "restaurants_site_slug_key"
+         ON "restaurants" ("site_slug") WHERE "site_slug" IS NOT NULL;`,
+      "restaurants.site_slug unique index",
+    );
+    // Table site_views : analytics du mini-site (séparée des scans carte
+    // pour pouvoir faire le funnel site→carte sans confusion).
+    await safeExec(
+      `CREATE TABLE IF NOT EXISTS "site_views" (
+        "id" BIGSERIAL PRIMARY KEY,
+        "restaurant_id" BIGINT NOT NULL REFERENCES "restaurants"("id") ON DELETE CASCADE,
+        "viewed_at" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        "user_agent" TEXT,
+        "pays" VARCHAR(2),
+        "lang" VARCHAR(2),
+        "referer" TEXT,
+        "section_clicked" VARCHAR(40)
+      );`,
+      "site_views table",
+    );
+    await safeExec(
+      `CREATE INDEX IF NOT EXISTS "site_views_resto_idx" ON "site_views" ("restaurant_id", "viewed_at" DESC);`,
+      "site_views index",
     );
     // Idem catégories/produits — colonnes créneaux critiques
     await safeExec(

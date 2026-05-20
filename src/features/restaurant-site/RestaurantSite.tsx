@@ -8,6 +8,8 @@ import { Testimonials } from "./components/Testimonials";
 import { Practical } from "./components/Practical";
 import { ReservationStrip } from "./components/ReservationStrip";
 import { Footer } from "./components/Footer";
+import { Team } from "./components/Team";
+import { Faq } from "./components/Faq";
 import type { RestaurantSiteBranding, RestaurantSiteConfig } from "./types";
 
 interface RestaurantSiteProps {
@@ -79,8 +81,16 @@ export function RestaurantSite({ branding, config }: RestaurantSiteProps) {
         <Gallery items={config.gallery ?? []} />
       )}
 
+      {config.sections.team && (config.team?.length ?? 0) > 0 && (
+        <Team members={config.team ?? []} />
+      )}
+
       {config.sections.testimonials && (config.testimonials?.length ?? 0) > 0 && (
         <Testimonials items={config.testimonials ?? []} />
+      )}
+
+      {config.sections.faq && (config.faq?.length ?? 0) > 0 && (
+        <Faq items={config.faq ?? []} />
       )}
 
       {config.sections.practical && (

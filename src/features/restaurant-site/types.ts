@@ -13,10 +13,12 @@
 
 /**
  * Variantes visuelles du hero — pilotent le layout.
- *  - `split`  : image à gauche, texte+CTA à droite (élégant, brasserie)
- *  - `banner` : full-bleed image avec overlay sombre + texte centré (immersif)
+ *  - `split`    : image à gauche, texte+CTA à droite (élégant, brasserie)
+ *  - `banner`   : full-bleed image avec overlay sombre + texte centré (immersif)
+ *  - `centered` : minimaliste — pas d'image, gros titre + sous-titre centré
+ *  - `video`    : full-bleed vidéo loop muted en arrière-plan + overlay
  */
-export type HeroVariant = "split" | "banner";
+export type HeroVariant = "split" | "banner" | "centered" | "video";
 
 /**
  * Toggles des sections — par défaut TOUT est ON sauf témoignages
@@ -29,6 +31,8 @@ export interface SectionToggles {
   testimonials: boolean;
   practical: boolean;
   reservation: boolean;
+  team: boolean;
+  faq: boolean;
 }
 
 export interface HeroConfig {
@@ -39,6 +43,8 @@ export interface HeroConfig {
   subtitle?: string;
   /** URL R2 de l'image hero. Si vide → banniereUrl du resto. */
   imageUrl?: string;
+  /** URL R2 d'une vidéo (variant `video`). MP4 recommandé, ≤10s, ≤5MB. */
+  videoUrl?: string;
   /** Label du CTA principal (ex: "Voir la carte"). */
   ctaLabel?: string;
   /** URL du CTA (interne ou externe). Défaut = `/carte/{id}`. */
@@ -130,6 +136,18 @@ export interface StyleOverrides {
   accentColor?: string;
 }
 
+export interface TeamMember {
+  name: string;
+  role: string;
+  bio?: string;
+  imageUrl?: string;
+}
+
+export interface FaqItem {
+  question: string;
+  answer: string;
+}
+
 /**
  * Configuration complète du mini-site, telle que stockée dans
  * `restaurants.site_config` (JSONB).
@@ -147,6 +165,12 @@ export interface RestaurantSiteConfig {
   reservation?: ReservationConfig;
   seo?: SeoConfig;
   style?: StyleOverrides;
+  /** Section "Notre équipe" (chef + serveurs). */
+  team?: TeamMember[];
+  /** Section "Questions fréquentes". */
+  faq?: FaqItem[];
+  /** Slug URL — éditable par le user. Persisté dans `restaurants.site_slug`. */
+  slug?: string;
 }
 
 /**
@@ -198,6 +222,8 @@ export function defaultSiteConfig(
       testimonials: false, // off tant qu'aucun témoignage
       practical: true,
       reservation: true,
+      team: false, // off par défaut
+      faq: false,
     },
     hero: {
       variant: "split",
@@ -226,3 +252,132 @@ export function defaultSiteConfig(
     },
   };
 }
+
+/**
+ * Templates pré-faits — onboarding 1 clic.
+ *
+ * Le restaurateur choisit un kit qui pré-remplit hero + sections + style,
+ * puis personnalise. Beaucoup plus rapide que partir de zéro.
+ */
+export interface SiteTemplate {
+  id: "bistrot" | "moderne" | "pizzeria" | "gastronomique" | "brasserie";
+  label: string;
+  description: string;
+  preview: string; // emoji ou icône
+  apply: (fallback: { nom: string; description: string | null }) => RestaurantSiteConfig;
+}
+
+export const SITE_TEMPLATES: SiteTemplate[] = [
+  {
+    id: "bistrot",
+    label: "Bistrot français",
+    description:
+      "Hero split, ambiance chaleureuse, typo classique. Pour brasseries et bistrots traditionnels.",
+    preview: "🍷",
+    apply: (fb) => ({
+      ...defaultSiteConfig(fb),
+      hero: {
+        variant: "split",
+        title: fb.nom,
+        subtitle:
+          fb.description ?? "Une cuisine de tradition, des produits du marché, l'esprit du quartier.",
+        eyebrow: "Bistrot français",
+        ctaLabel: "Voir la carte",
+      },
+      about: {
+        title: "Notre histoire",
+        text: "Depuis ouverture, nous mettons à l'honneur la cuisine française authentique avec des produits frais sélectionnés chaque matin auprès de nos producteurs.",
+      },
+      style: { fontHeading: "serif", accentColor: "#8b3a1f" },
+    }),
+  },
+  {
+    id: "moderne",
+    label: "Bistronomique moderne",
+    description:
+      "Hero banner immersif, dark mode, typo géométrique. Pour restaurants néo-bistro et cuisine créative.",
+    preview: "✨",
+    apply: (fb) => ({
+      ...defaultSiteConfig(fb),
+      hero: {
+        variant: "banner",
+        title: fb.nom,
+        subtitle: fb.description ?? "Cuisine d'auteur, produits sourcés, atmosphère contemporaine.",
+        eyebrow: "Cuisine contemporaine",
+        ctaLabel: "Découvrir la carte",
+      },
+      about: {
+        title: "Le projet",
+        text: "Une cuisine engagée, ouverte sur le monde, qui respecte les saisons et les producteurs locaux. Chaque assiette est pensée comme un voyage.",
+      },
+      style: { fontHeading: "sans", accentColor: "#2d5a3f" },
+    }),
+  },
+  {
+    id: "pizzeria",
+    label: "Pizzeria conviviale",
+    description:
+      "Hero split, palette chaude, typo display. Pour pizzerias, trattorias, cuisines italiennes.",
+    preview: "🍕",
+    apply: (fb) => ({
+      ...defaultSiteConfig(fb),
+      hero: {
+        variant: "split",
+        title: fb.nom,
+        subtitle: fb.description ?? "Pâte au levain naturel, ingrédients italiens, four à bois.",
+        eyebrow: "Trattoria",
+        ctaLabel: "Voir nos pizzas",
+      },
+      about: {
+        title: "L'authentique",
+        text: "Une pizza napolitaine traditionnelle, façonnée à la main, cuite au feu de bois 90 secondes. Les meilleurs ingrédients d'Italie pour un goût inimitable.",
+      },
+      style: { fontHeading: "display", accentColor: "#d44a2e" },
+    }),
+  },
+  {
+    id: "gastronomique",
+    label: "Gastronomique épuré",
+    description:
+      "Hero centered minimaliste, beaucoup de blanc, typo display fine. Pour étoilés et fine dining.",
+    preview: "🥂",
+    apply: (fb) => ({
+      ...defaultSiteConfig(fb),
+      hero: {
+        variant: "centered",
+        title: fb.nom,
+        subtitle: fb.description ?? "Une expérience culinaire d'exception.",
+        eyebrow: "Restaurant",
+        ctaLabel: "Notre carte",
+      },
+      about: {
+        title: "Une vision",
+        text: "Chaque plat est l'aboutissement d'une recherche, d'une technique, d'une émotion. Un parcours sensoriel orchestré avec exigence.",
+      },
+      style: { fontHeading: "display", accentColor: "#1a1a1a" },
+    }),
+  },
+  {
+    id: "brasserie",
+    label: "Brasserie de gare",
+    description:
+      "Hero banner vintage, ambiance Art Nouveau, typo serif éditoriale. Pour brasseries historiques.",
+    preview: "🍻",
+    apply: (fb) => ({
+      ...defaultSiteConfig(fb),
+      hero: {
+        variant: "banner",
+        title: fb.nom,
+        subtitle: fb.description ?? "Depuis des décennies, une brasserie au cœur de la ville.",
+        eyebrow: "Brasserie traditionnelle",
+        ctaLabel: "Voir la carte",
+      },
+      about: {
+        title: "Une institution",
+        text: "Banquettes de cuir, plafond mouluré, tables en marbre. Une brasserie où l'on retrouve les classiques de la cuisine française dans une atmosphère intemporelle.",
+      },
+      style: { fontHeading: "serif", accentColor: "#a16207" },
+    }),
+  },
+];
+

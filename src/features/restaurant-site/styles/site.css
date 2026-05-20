@@ -259,6 +259,35 @@
   object-fit: cover;
 }
 
+/* === Hero — centered variant === */
+.rs-hero--centered {
+  padding: var(--rs-s-20) 0;
+  text-align: center;
+}
+.rs-hero--centered .rs-hero__title {
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  margin: 0 auto;
+  max-width: 18ch;
+}
+.rs-hero--centered .rs-hero__subtitle {
+  max-width: 42ch;
+  margin: var(--rs-s-3) auto 0;
+}
+.rs-hero--centered .rs-hero__actions {
+  justify-content: center;
+  margin-top: var(--rs-s-6);
+}
+.rs-hero--centered .rs-eyebrow {
+  margin: 0 auto;
+}
+
+/* === Hero — video variant (étend banner) === */
+.rs-hero--video .rs-hero__bg video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 /* === Hero — banner variant === */
 .rs-hero--banner {
   position: relative;
@@ -508,6 +537,116 @@
   font-size: 0.875rem;
   color: var(--rs-accent);
   text-decoration: none;
+}
+
+/* === Team === */
+.rs-team__grid {
+  display: grid;
+  gap: var(--rs-s-6);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.rs-team__card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--rs-s-2);
+}
+.rs-team__avatar {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--rs-bg-elevated);
+  border: 2px solid var(--rs-border);
+}
+.rs-team__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.rs-team__avatar--fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--rs-display);
+  font-size: 2.5rem;
+  color: var(--rs-accent);
+  font-weight: 600;
+}
+.rs-team__name {
+  font-family: var(--rs-display);
+  font-size: 1.125rem;
+  margin: var(--rs-s-3) 0 0;
+}
+.rs-team__role {
+  font-size: 0.8125rem;
+  color: var(--rs-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+.rs-team__bio {
+  font-size: 0.875rem;
+  color: var(--rs-text-muted);
+  margin: var(--rs-s-2) 0 0;
+  max-width: 28ch;
+}
+
+/* === FAQ === */
+.rs-faq__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rs-s-2);
+  max-width: 720px;
+}
+.rs-faq__item {
+  background: var(--rs-bg-elevated);
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius-md);
+  overflow: hidden;
+}
+.rs-faq__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--rs-s-3);
+  width: 100%;
+  padding: var(--rs-s-4) var(--rs-s-6);
+  background: transparent;
+  border: none;
+  color: var(--rs-text);
+  font-family: var(--rs-body);
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 200ms ease;
+}
+.rs-faq__trigger:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+.rs-site[data-theme="dark"] .rs-faq__trigger:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.rs-faq__chevron {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--rs-accent);
+  font-family: monospace;
+  width: 1.5rem;
+  text-align: center;
+}
+.rs-faq__answer {
+  padding: 0 var(--rs-s-6) var(--rs-s-4);
+  color: var(--rs-text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+.rs-faq__answer p {
+  margin: 0;
 }
 
 /* === Reservation strip === */

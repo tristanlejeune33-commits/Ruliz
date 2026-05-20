@@ -20,7 +20,8 @@ export const metadata: Metadata = {
 
 export default async function SiteEditorPage() {
   const { restaurant } = await getCurrentRestaurant();
-  const payload = await getPublicSite(restaurant.id);
+  // skipRedis pour toujours voir la dernière sauvegarde dans l'éditeur
+  const payload = await getPublicSite(restaurant.id, { skipRedis: true });
 
   const initialConfig =
     payload?.config ??
@@ -29,9 +30,10 @@ export default async function SiteEditorPage() {
       description: restaurant.description,
     });
   const initialEnabled = payload?.enabled ?? false;
+  const initialSlug = payload?.slug ?? null;
 
   const restaurantId = restaurant.id.toString();
-  const siteUrl = `/site/${restaurantId}`;
+  const siteUrl = `/site/${initialSlug ?? restaurantId}`;
 
   return (
     <div className="space-y-6">
@@ -43,15 +45,22 @@ export default async function SiteEditorPage() {
           </HeroEyebrow>
         }
         title="Ton mini-site web"
-        description="Une page vitrine en plus de ta carte. Pour communiquer ton concept, ta galerie photos, tes témoignages, tes infos pratiques. Lien direct vers ta carte intégré."
+        description="Page vitrine en plus de ta carte. Pour communiquer ton concept, ta galerie photos, tes témoignages, tes infos pratiques. Lien direct vers ta carte intégré."
         actions={
-          <Button asChild variant="outline" size="sm" disabled={!initialEnabled}>
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            disabled={!initialEnabled}
+          >
             <Link
               href={siteUrl}
               target="_blank"
               rel="noreferrer"
               aria-disabled={!initialEnabled}
-              className={!initialEnabled ? "pointer-events-none opacity-50" : ""}
+              className={
+                !initialEnabled ? "pointer-events-none opacity-50" : ""
+              }
             >
               <ExternalLink className="size-3.5" strokeWidth={1.75} />
               Voir mon site
@@ -64,6 +73,8 @@ export default async function SiteEditorPage() {
         restaurantId={restaurantId}
         initialConfig={initialConfig}
         initialEnabled={initialEnabled}
+        initialSlug={initialSlug}
+        plan={restaurant.plan as "freemium" | "pro" | "premium"}
       />
     </div>
   );

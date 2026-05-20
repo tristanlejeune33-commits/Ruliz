@@ -1,0 +1,170 @@
+import { ImageResponse } from "next/og";
+import { getPublicSiteByIdOrSlug } from "@/server/public/restaurant-site";
+
+/**
+ * OG image dynamique pour `/site/[id]`.
+ *
+ * Génère une image 1200×630 au moment du share (WhatsApp, iMessage,
+ * Twitter, Facebook…) avec :
+ *  - le nom du resto
+ *  - la ville
+ *  - la couleur d'accent du resto
+ *  - la bannière si dispo en arrière-plan
+ *
+ * Le résultat est cached à l'edge par Vercel/Next ; régénéré sur changement
+ * de payload.
+ */
+
+export const runtime = "edge";
+export const alt = "Restaurant — site vitrine";
+export const size = { width: 1200, height: 630 };
+export const contentType = "image/png";
+
+interface Props {
+  params: { id: string };
+}
+
+export default async function OgImage({ params }: Props) {
+  const { id } = params;
+  const payload = await getPublicSiteByIdOrSlug(id);
+
+  // Fallback image si site désactivé ou inconnu
+  if (!payload || !payload.enabled) {
+    return new ImageResponse(
+      (
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+            height: "100%",
+            background: "#0e0e10",
+            color: "#fff",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "sans-serif",
+            fontSize: 64,
+          }}
+        >
+          Ruliz
+        </div>
+      ),
+      { ...size },
+    );
+  }
+
+  const { branding, config } = payload;
+  const accent = config.style?.accentColor || branding.couleurPrimaire || "#b58f4a";
+  const heroImg = config.hero.imageUrl || branding.banniereUrl;
+  const eyebrow = config.hero.eyebrow || branding.ville || "Restaurant";
+
+  return new ImageResponse(
+    (
+      <div
+        style={{
+          display: "flex",
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          background: heroImg ? "#000" : accent,
+          color: "#fff",
+          fontFamily: "sans-serif",
+        }}
+      >
+        {/* Image de fond */}
+        {heroImg && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={heroImg}
+            alt=""
+            width={1200}
+            height={630}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              opacity: 0.55,
+            }}
+          />
+        )}
+
+        {/* Overlay gradient */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 100%)",
+          }}
+        />
+
+        {/* Contenu */}
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            padding: 80,
+            width: "100%",
+            justifyContent: "flex-end",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 24,
+              textTransform: "uppercase",
+              letterSpacing: 4,
+              color: accent,
+              fontWeight: 500,
+              marginBottom: 16,
+            }}
+          >
+            {eyebrow}
+          </div>
+          <div
+            style={{
+              fontSize: 96,
+              fontWeight: 700,
+              lineHeight: 1.05,
+              maxWidth: 1000,
+              letterSpacing: -2,
+            }}
+          >
+            {branding.nom}
+          </div>
+          {branding.ville && (
+            <div
+              style={{
+                fontSize: 32,
+                marginTop: 16,
+                opacity: 0.85,
+              }}
+            >
+              {branding.ville}
+              {branding.pays ? ` · ${branding.pays}` : ""}
+            </div>
+          )}
+        </div>
+
+        {/* Badge Ruliz en haut à droite */}
+        <div
+          style={{
+            position: "absolute",
+            top: 40,
+            right: 60,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            fontSize: 18,
+            opacity: 0.7,
+          }}
+        >
+          Powered by Ruliz
+        </div>
+      </div>
+    ),
+    { ...size },
+  );
+}
