@@ -13,14 +13,11 @@ import {
   Download,
   Eye,
   EyeOff,
-  Image as ImageIcon,
   Loader2,
   Plus,
   QrCode,
   RefreshCw,
   Save,
-  Sparkles,
-  Star,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,138 +35,99 @@ import {
 } from "@/components/ui/select";
 import { ImageUploader } from "@/components/shared/image-uploader";
 import { slugify } from "@/lib/slugify";
-import type { RestaurantSiteConfig } from "@/features/restaurant-site/types";
-import { SITE_TEMPLATES } from "@/features/restaurant-site/types";
+import type { RestaurantConfig } from "@/features/restaurant-site-v2/types";
 import {
-  applySiteTemplate,
-  getSiteQrDataUrl,
-  saveSiteConfig,
-  toggleSiteEnabled,
-} from "@/server/dashboard/site-actions";
-import { refreshGoogleReviewsAction } from "@/server/dashboard/google-reviews-actions";
+  getSiteV2QrDataUrl,
+  saveSiteV2Config,
+  toggleSiteV2Enabled,
+  type SiteV2ConfigInput,
+} from "@/server/dashboard/site-v2-actions";
+
+/**
+ * Formulaire éditeur du site v2.
+ *
+ * Le restaurateur édite le contenu ÉDITORIAL (ce qui n'est pas déjà dans
+ * son onglet "Mon restaurant") :
+ *   - tagline, established
+ *   - accentColor, typographyPreset
+ *   - hero layout (banner/split), theme (light/dark), aboutImageLeft
+ *   - about (title, body paragraphes, image, signature)
+ *   - menuTeaser.title (les items sont les top-4 produits auto)
+ *   - gallery (URLs R2)
+ *   - testimonials (rating, text, author)
+ *   - reservationUrl
+ *   - section toggles
+ *   - slug URL
+ *
+ * Adresse, téléphone, email, horaires, socials = pull auto depuis
+ * `restaurants` (cf. /dashboard/restaurant pour les éditer).
+ */
 
 const schema = z.object({
   slug: z.string().max(64).optional(),
-  sections: z.object({
-    about: z.boolean(),
-    menuTeaser: z.boolean(),
-    gallery: z.boolean(),
-    testimonials: z.boolean(),
-    practical: z.boolean(),
-    reservation: z.boolean(),
-    team: z.boolean(),
-    faq: z.boolean(),
-    googleReviews: z.boolean(),
-  }),
-  googleReviews: z.object({
-    fiveStarsOnly: z.boolean().optional(),
-    showOnlyIfRatingAbove: z.number().min(0).max(5).optional(),
-  }),
-  hero: z.object({
-    variant: z.enum(["split", "banner", "centered", "video"]),
-    title: z.string().max(255).optional(),
-    subtitle: z.string().max(1000).optional(),
-    imageUrl: z.string().max(500).optional(),
-    videoUrl: z.string().max(500).optional(),
-    ctaLabel: z.string().max(100).optional(),
-    ctaUrl: z.string().max(500).optional(),
-    eyebrow: z.string().max(120).optional(),
-  }),
+  tagline: z.string().max(255).optional(),
+  established: z
+    .number()
+    .int()
+    .min(1800)
+    .max(2100)
+    .optional()
+    .or(z.nan()),
+  accentColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$|^oklch\(.+\)$/i, "Hex ou oklch")
+    .optional()
+    .or(z.literal("")),
+  typographyPreset: z.enum(["editorial", "modern", "classic"]),
   about: z.object({
     title: z.string().max(255).optional(),
-    text: z.string().max(5000).optional(),
-    imageUrl: z.string().max(500).optional(),
+    body: z.array(z.object({ text: z.string().max(2000) })).max(6),
+    image: z.string().max(500).optional(),
+    signature: z.string().max(120).optional(),
   }),
-  menuTeaser: z.object({
-    title: z.string().max(255).optional(),
-    subtitle: z.string().max(500).optional(),
-    ctaLabel: z.string().max(100).optional(),
-  }),
-  gallery: z
-    .array(
-      z.object({
-        url: z.string().min(1).max(500),
-        caption: z.string().max(255).optional(),
-        alt: z.string().max(255).optional(),
-      }),
-    )
-    .max(30),
+  menuTeaserTitle: z.string().max(255).optional(),
+  gallery: z.array(z.object({ url: z.string().min(1).max(500) })).max(12),
   testimonials: z
     .array(
       z.object({
-        name: z.string().min(1).max(100),
+        rating: z.number().min(0).max(5),
         text: z.string().min(1).max(2000),
-        rating: z.number().min(0).max(5).optional(),
-        source: z.string().max(50).optional(),
-        date: z.string().max(50).optional(),
-      }),
-    )
-    .max(20),
-  team: z
-    .array(
-      z.object({
-        name: z.string().min(1).max(100),
-        role: z.string().min(1).max(100),
-        bio: z.string().max(500).optional(),
-        imageUrl: z.string().max(500).optional(),
+        author: z.string().min(1).max(120),
       }),
     )
     .max(12),
-  faq: z
-    .array(
-      z.object({
-        question: z.string().min(1).max(255),
-        answer: z.string().min(1).max(2000),
-      }),
-    )
-    .max(20),
-  practical: z.object({
-    phone: z.string().max(50).optional(),
-    email: z.string().max(255).optional(),
-    schedule: z.string().max(1000).optional(),
-    mapsUrl: z.string().max(500).optional(),
-  }),
-  reservation: z.object({
-    url: z.string().max(500).optional(),
-    phone: z.string().max(50).optional(),
-    label: z.string().max(100).optional(),
-  }),
-  seo: z.object({
-    title: z.string().max(255).optional(),
-    description: z.string().max(500).optional(),
-  }),
-  style: z.object({
-    fontHeading: z.enum(["serif", "sans", "display"]).optional(),
-    accentColor: z
-      .string()
-      .regex(/^#[0-9a-fA-F]{6}$/, "Format #RRGGBB requis")
-      .optional()
-      .or(z.literal("")),
+  reservationUrl: z.string().max(500).optional().or(z.literal("")),
+  options: z.object({
+    showGallery: z.boolean(),
+    showTestimonials: z.boolean(),
+    showReservation: z.boolean(),
+    theme: z.enum(["light", "dark"]),
+    aboutImageLeft: z.boolean(),
+    heroLayout: z.enum(["banner", "split"]),
   }),
 });
 
 type Values = z.infer<typeof schema>;
 
-interface SiteEditorFormProps {
+interface SiteV2EditorFormProps {
   restaurantId: string;
-  initialConfig: RestaurantSiteConfig;
+  initialConfig: RestaurantConfig | null;
   initialEnabled: boolean;
   initialSlug: string | null;
   plan: "freemium" | "pro" | "premium";
 }
 
-export function SiteEditorForm({
+export function SiteV2EditorForm({
   restaurantId,
   initialConfig,
   initialEnabled,
   initialSlug,
   plan,
-}: SiteEditorFormProps) {
+}: SiteV2EditorFormProps) {
   const [enabled, setEnabled] = useState(initialEnabled);
   const [slug, setSlug] = useState<string | null>(initialSlug);
   const [enabledPending, startEnabledTransition] = useTransition();
   const [savePending, startSaveTransition] = useTransition();
-  const [templatePending, startTemplateTransition] = useTransition();
   const [previewKey, setPreviewKey] = useState(0);
   const [qrPending, startQrTransition] = useTransition();
   const [qrModal, setQrModal] = useState<{ dataUrl: string; url: string } | null>(
@@ -177,162 +135,75 @@ export function SiteEditorForm({
   );
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
-  const handleDownloadQr = () => {
-    startQrTransition(async () => {
-      const res = await getSiteQrDataUrl();
-      if (res.ok) {
-        setQrModal({ dataUrl: res.dataUrl, url: res.url });
-      } else {
-        toast.error(res.error);
-      }
-    });
-  };
-
-  const [reviewsPending, startReviewsTransition] = useTransition();
-  const handleRefreshGoogleReviews = () => {
-    startReviewsTransition(async () => {
-      const res = await refreshGoogleReviewsAction();
-      if (res.ok) {
-        toast.success(
-          `Note ${res.rating?.toFixed(1) ?? "?"}/5 · ${res.count ?? 0} avis · ${res.fetched} fetchés`,
-        );
-      } else {
-        toast.error(res.error);
-      }
-    });
-  };
-
   const isPaid = plan === "pro" || plan === "premium";
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
       slug: initialSlug ?? "",
-      sections: initialConfig.sections,
-      hero: {
-        variant: initialConfig.hero.variant,
-        title: initialConfig.hero.title ?? "",
-        subtitle: initialConfig.hero.subtitle ?? "",
-        imageUrl: initialConfig.hero.imageUrl ?? "",
-        videoUrl: initialConfig.hero.videoUrl ?? "",
-        ctaLabel: initialConfig.hero.ctaLabel ?? "",
-        ctaUrl: initialConfig.hero.ctaUrl ?? "",
-        eyebrow: initialConfig.hero.eyebrow ?? "",
-      },
+      tagline: initialConfig?.tagline ?? "",
+      established:
+        initialConfig?.established ?? new Date().getFullYear(),
+      accentColor: initialConfig?.accentColor ?? "",
+      typographyPreset: initialConfig?.typographyPreset ?? "editorial",
       about: {
-        title: initialConfig.about?.title ?? "",
-        text: initialConfig.about?.text ?? "",
-        imageUrl: initialConfig.about?.imageUrl ?? "",
+        title: initialConfig?.about.title ?? "",
+        body: (initialConfig?.about.body ?? [""]).map((text) => ({ text })),
+        image: initialConfig?.about.image ?? "",
+        signature: initialConfig?.about.signature ?? "",
       },
-      menuTeaser: {
-        title: initialConfig.menuTeaser?.title ?? "",
-        subtitle: initialConfig.menuTeaser?.subtitle ?? "",
-        ctaLabel: initialConfig.menuTeaser?.ctaLabel ?? "",
-      },
-      gallery: initialConfig.gallery ?? [],
-      testimonials: initialConfig.testimonials ?? [],
-      team: initialConfig.team ?? [],
-      faq: initialConfig.faq ?? [],
-      practical: {
-        phone: initialConfig.practical?.phone ?? "",
-        email: initialConfig.practical?.email ?? "",
-        schedule: initialConfig.practical?.schedule ?? "",
-        mapsUrl: initialConfig.practical?.mapsUrl ?? "",
-      },
-      reservation: {
-        url: initialConfig.reservation?.url ?? "",
-        phone: initialConfig.reservation?.phone ?? "",
-        label: initialConfig.reservation?.label ?? "",
-      },
-      seo: {
-        title: initialConfig.seo?.title ?? "",
-        description: initialConfig.seo?.description ?? "",
-      },
-      googleReviews: {
-        fiveStarsOnly: initialConfig.googleReviews?.fiveStarsOnly ?? false,
-        showOnlyIfRatingAbove:
-          initialConfig.googleReviews?.showOnlyIfRatingAbove,
-      },
-      style: {
-        fontHeading: initialConfig.style?.fontHeading,
-        accentColor: initialConfig.style?.accentColor ?? "",
+      menuTeaserTitle: initialConfig?.menuTeaser.title ?? "",
+      gallery: (initialConfig?.gallery ?? []).map((url) => ({ url })),
+      testimonials: initialConfig?.testimonials ?? [],
+      reservationUrl: initialConfig?.reservationUrl ?? "",
+      options: {
+        showGallery: initialConfig?.options.showGallery ?? false,
+        showTestimonials: initialConfig?.options.showTestimonials ?? false,
+        showReservation: initialConfig?.options.showReservation ?? false,
+        theme: initialConfig?.options.theme ?? "light",
+        aboutImageLeft: initialConfig?.options.aboutImageLeft ?? true,
+        heroLayout: initialConfig?.options.heroLayout ?? "banner",
       },
     },
   });
 
+  const aboutBody = useFieldArray({ control: form.control, name: "about.body" });
   const gallery = useFieldArray({ control: form.control, name: "gallery" });
   const testimonials = useFieldArray({
     control: form.control,
     name: "testimonials",
   });
-  const team = useFieldArray({ control: form.control, name: "team" });
-  const faq = useFieldArray({ control: form.control, name: "faq" });
 
-  // Bumper le key de l'iframe force un reload propre (vs juste .reload())
   const refreshPreview = () => setPreviewKey((k) => k + 1);
 
   const onSubmit = (values: Values) => {
     startSaveTransition(async () => {
-      const payload: RestaurantSiteConfig = {
-        version: 1,
-        sections: values.sections,
-        hero: cleanObj({
-          variant: values.hero.variant,
-          title: blank(values.hero.title),
-          subtitle: blank(values.hero.subtitle),
-          imageUrl: blank(values.hero.imageUrl),
-          videoUrl: blank(values.hero.videoUrl),
-          ctaLabel: blank(values.hero.ctaLabel),
-          ctaUrl: blank(values.hero.ctaUrl),
-          eyebrow: blank(values.hero.eyebrow),
-        }) as RestaurantSiteConfig["hero"],
-        about: cleanObj({
-          title: blank(values.about.title),
-          text: blank(values.about.text),
-          imageUrl: blank(values.about.imageUrl),
-        }),
-        menuTeaser: cleanObj({
-          title: blank(values.menuTeaser.title),
-          subtitle: blank(values.menuTeaser.subtitle),
-          ctaLabel: blank(values.menuTeaser.ctaLabel),
-        }),
-        gallery: values.gallery,
-        testimonials: values.testimonials,
-        team: values.team,
-        faq: values.faq,
-        practical: cleanObj({
-          phone: blank(values.practical.phone),
-          email: blank(values.practical.email),
-          schedule: blank(values.practical.schedule),
-          mapsUrl: blank(values.practical.mapsUrl),
-        }),
-        reservation: cleanObj({
-          url: blank(values.reservation.url),
-          phone: blank(values.reservation.phone),
-          label: blank(values.reservation.label),
-        }),
-        seo: cleanObj({
-          title: blank(values.seo.title),
-          description: blank(values.seo.description),
-        }),
-        googleReviews: {
-          fiveStarsOnly: values.googleReviews.fiveStarsOnly ?? false,
-          // valueAsNumber retourne NaN sur input vide → on convertit en
-          // undefined pour que Zod accepte (.optional() ne tolère pas NaN)
-          showOnlyIfRatingAbove: Number.isFinite(
-            values.googleReviews.showOnlyIfRatingAbove,
-          )
-            ? values.googleReviews.showOnlyIfRatingAbove
+      const payload: SiteV2ConfigInput = {
+        version: 2,
+        tagline: blank(values.tagline),
+        established:
+          Number.isFinite(values.established) && values.established
+            ? values.established
             : undefined,
+        accentColor: blank(values.accentColor),
+        typographyPreset: values.typographyPreset,
+        about: {
+          title: blank(values.about.title),
+          body: values.about.body.map((b) => b.text).filter((t) => t.trim()),
+          image: blank(values.about.image),
+          signature: blank(values.about.signature),
         },
-        style: cleanObj({
-          fontHeading: values.style.fontHeading,
-          accentColor: blank(values.style.accentColor),
-        }),
+        menuTeaser: blank(values.menuTeaserTitle)
+          ? { title: blank(values.menuTeaserTitle) }
+          : undefined,
+        gallery: values.gallery.map((g) => g.url).filter(Boolean),
+        testimonials: values.testimonials,
+        reservationUrl: blank(values.reservationUrl) ?? "",
+        options: values.options,
         slug: values.slug?.trim() || undefined,
       };
 
-      const res = await saveSiteConfig(payload);
+      const res = await saveSiteV2Config(payload);
       if (res.ok) {
         toast.success("Site sauvegardé. Preview rafraîchie.");
         if ("slug" in res && res.slug !== undefined) setSlug(res.slug);
@@ -345,12 +216,10 @@ export function SiteEditorForm({
 
   const handleToggleEnabled = (next: boolean) => {
     startEnabledTransition(async () => {
-      const res = await toggleSiteEnabled(next);
+      const res = await toggleSiteV2Enabled(next);
       if (res.ok) {
         setEnabled(next);
-        toast.success(
-          next ? "Site activé. Il est en ligne." : "Site désactivé.",
-        );
+        toast.success(next ? "Site activé." : "Site désactivé.");
         refreshPreview();
       } else {
         toast.error(res.error);
@@ -358,35 +227,23 @@ export function SiteEditorForm({
     });
   };
 
-  const handleApplyTemplate = (templateId: string) => {
-    if (
-      !confirm(
-        "Appliquer ce template va remplacer ton contenu actuel. Continuer ?",
-      )
-    )
-      return;
-    startTemplateTransition(async () => {
-      const res = await applySiteTemplate(
-        templateId as "bistrot" | "moderne" | "pizzeria" | "gastronomique" | "brasserie",
-      );
+  const handleAutoSlug = () => {
+    const tagline = form.getValues("tagline") ?? "";
+    const base = slugify(tagline.slice(0, 30) || `resto-${restaurantId}`);
+    form.setValue("slug", base, { shouldDirty: true });
+  };
+
+  const handleDownloadQr = () => {
+    startQrTransition(async () => {
+      const res = await getSiteV2QrDataUrl();
       if (res.ok) {
-        toast.success("Template appliqué. Recharge la page pour voir.");
-        // Recharge pour pull la nouvelle config en defaultValues
-        window.location.reload();
+        setQrModal({ dataUrl: res.dataUrl, url: res.url });
       } else {
         toast.error(res.error);
       }
     });
   };
 
-  // Auto-fill du slug à partir du titre du resto si vide
-  const handleAutoSlug = () => {
-    const heroTitle = form.getValues("hero.title");
-    const base = slugify(heroTitle || "mon-restaurant");
-    form.setValue("slug", base, { shouldDirty: true });
-  };
-
-  // URL de la preview (slug si dispo, sinon ID)
   const previewUrl = `/site/${slug ?? restaurantId}`;
 
   return (
@@ -411,7 +268,7 @@ export function SiteEditorForm({
           </Card>
         )}
 
-        {/* Toggle on/off + QR */}
+        {/* Toggle + QR */}
         <Card className="border-[var(--accent)]/40 bg-[var(--accent)]/5">
           <CardContent className="flex items-center justify-between gap-4 pt-6">
             <div>
@@ -442,7 +299,6 @@ export function SiteEditorForm({
                 size="sm"
                 onClick={handleDownloadQr}
                 disabled={!enabled || qrPending}
-                title="QR du site vitrine (pour cartes de visite, vitrine, flyers)"
               >
                 {qrPending ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -460,7 +316,6 @@ export function SiteEditorForm({
           </CardContent>
         </Card>
 
-        {/* QR modal */}
         {qrModal && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
@@ -474,8 +329,6 @@ export function SiteEditorForm({
                 QR code de ton site
               </h3>
               <p className="mb-4 text-xs text-gray-600">
-                Imprime-le sur tes cartes de visite, ton flyer, ton set de table.
-                <br />
                 URL : <code className="text-[10px]">{qrModal.url}</code>
               </p>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -506,56 +359,18 @@ export function SiteEditorForm({
           </div>
         )}
 
-        {/* Templates */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Sparkles className="size-4 text-[var(--accent)]" />
-              Templates
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-3 text-xs text-[var(--text-muted)]">
-              Démarre vite avec un kit pré-fait. Tu personnalises ensuite.
-              <br />
-              <strong>Attention :</strong> écrase ton contenu actuel.
-            </p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {SITE_TEMPLATES.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => handleApplyTemplate(t.id)}
-                  disabled={templatePending || !isPaid}
-                  className="flex items-start gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3 text-left transition-colors hover:border-[var(--accent)] hover:bg-[var(--bg-elevated)] disabled:opacity-50"
-                >
-                  <span className="text-2xl">{t.preview}</span>
-                  <span className="flex-1">
-                    <span className="block text-sm font-semibold">{t.label}</span>
-                    <span className="block text-xs text-[var(--text-muted)]">
-                      {t.description}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
         {/* URL personnalisée */}
         <Card>
           <CardHeader>
             <CardTitle>URL personnalisée</CardTitle>
           </CardHeader>
           <CardContent>
-            <Field label="Slug (a-z, 0-9, tirets) — vide = utilise l'ID">
+            <Field label="Slug (vide = utilise l'ID numérique)">
               <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--text-muted)]">
-                  /site/
-                </span>
+                <span className="text-xs text-[var(--text-muted)]">/site/</span>
                 <Input
                   {...form.register("slug")}
-                  placeholder={`mon-restaurant`}
+                  placeholder="le-tire-bouchon"
                   maxLength={64}
                 />
                 <Button
@@ -569,194 +384,58 @@ export function SiteEditorForm({
               </div>
             </Field>
             <p className="mt-2 text-xs text-[var(--text-muted)]">
-              Exemple : <code>le-tire-bouchon</code> →{" "}
-              <code>/site/le-tire-bouchon</code>. Plus joli à partager.
+              Plus joli à partager. <code>le-tire-bouchon</code> →{" "}
+              <code>/site/le-tire-bouchon</code>.
             </p>
           </CardContent>
         </Card>
 
-        {/* Sections toggles */}
+        {/* Identité éditoriale */}
         <Card>
           <CardHeader>
-            <CardTitle>Sections affichées</CardTitle>
+            <CardTitle>Identité éditoriale</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-2">
-            <SectionToggle
-              label="À propos"
-              description="Texte de présentation + image"
-              checked={form.watch("sections.about")}
-              onChange={(v) =>
-                form.setValue("sections.about", v, { shouldDirty: true })
-              }
-            />
-            <SectionToggle
-              label="Mise en avant carte"
-              description="Bloc avec lien vers /carte"
-              checked={form.watch("sections.menuTeaser")}
-              onChange={(v) =>
-                form.setValue("sections.menuTeaser", v, { shouldDirty: true })
-              }
-            />
-            <SectionToggle
-              label="Galerie photos"
-              description="Grille de photos R2"
-              checked={form.watch("sections.gallery")}
-              onChange={(v) =>
-                form.setValue("sections.gallery", v, { shouldDirty: true })
-              }
-            />
-            <SectionToggle
-              label="Notre équipe"
-              description="Chef + serveurs + bio"
-              checked={form.watch("sections.team")}
-              onChange={(v) =>
-                form.setValue("sections.team", v, { shouldDirty: true })
-              }
-            />
-            <SectionToggle
-              label="Témoignages clients"
-              description="Avis avec note + auteur"
-              checked={form.watch("sections.testimonials")}
-              onChange={(v) =>
-                form.setValue("sections.testimonials", v, { shouldDirty: true })
-              }
-            />
-            <SectionToggle
-              label="FAQ"
-              description="Questions fréquentes accordéon"
-              checked={form.watch("sections.faq")}
-              onChange={(v) =>
-                form.setValue("sections.faq", v, { shouldDirty: true })
-              }
-            />
-            <SectionToggle
-              label="Infos pratiques"
-              description="Adresse, horaires, contact"
-              checked={form.watch("sections.practical")}
-              onChange={(v) =>
-                form.setValue("sections.practical", v, { shouldDirty: true })
-              }
-            />
-            <SectionToggle
-              label="Bande réservation"
-              description="CTA réserver (URL ou tel)"
-              checked={form.watch("sections.reservation")}
-              onChange={(v) =>
-                form.setValue("sections.reservation", v, { shouldDirty: true })
-              }
-            />
-            <SectionToggle
-              label="Avis Google ★"
-              description="Auto-pull via Places API (5 max)"
-              checked={form.watch("sections.googleReviews")}
-              onChange={(v) =>
-                form.setValue("sections.googleReviews", v, {
-                  shouldDirty: true,
-                })
-              }
-            />
+          <CardContent className="space-y-4">
+            <Field label="Tagline (phrase d'accroche hero + footer)">
+              <Input
+                {...form.register("tagline")}
+                placeholder="Bistrot moderne, produits du marché, vins vivants."
+                maxLength={255}
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Année d'ouverture">
+                <Input
+                  type="number"
+                  min={1800}
+                  max={2100}
+                  {...form.register("established", { valueAsNumber: true })}
+                />
+              </Field>
+              <Field label="URL de réservation (TheFork, Zenchef…)">
+                <Input
+                  {...form.register("reservationUrl")}
+                  placeholder="https://thefork.fr/…"
+                />
+              </Field>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Google Reviews config card */}
-        {form.watch("sections.googleReviews") && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="size-4 text-amber-500" />
-                Avis Google
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-xs text-[var(--text-muted)]">
-                Tire automatiquement la note moyenne, le nombre total d&apos;avis
-                et jusqu&apos;à 5 avis depuis Google Places API. Refresh hebdo
-                automatique via cron, ou manuel via le bouton ci-dessous.
-              </p>
-
-              {/* Filtre 5★ */}
-              <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
-                <div>
-                  <p className="text-sm font-medium text-[var(--text-primary)]">
-                    ★★★★★ Avis 5 étoiles uniquement
-                  </p>
-                  <p className="text-xs text-[var(--text-muted)]">
-                    Filtre les avis 5★ parmi les 5 retournés par Google. Si
-                    aucun n&apos;a 5★, seules la note globale + le lien Google
-                    sont affichés.
-                  </p>
-                </div>
-                <Switch
-                  checked={form.watch("googleReviews.fiveStarsOnly") ?? false}
-                  onCheckedChange={(v) =>
-                    form.setValue("googleReviews.fiveStarsOnly", v, {
-                      shouldDirty: true,
-                    })
-                  }
-                />
-              </label>
-
-              {/* Seuil note globale */}
-              <Field label="Cacher la section si note globale en-dessous de…">
-                <Input
-                  type="number"
-                  min={0}
-                  max={5}
-                  step={0.1}
-                  placeholder="Vide = toujours afficher"
-                  {...form.register("googleReviews.showOnlyIfRatingAbove", {
-                    valueAsNumber: true,
-                  })}
-                  className="w-32"
-                />
-              </Field>
-
-              {/* Bouton refresh manuel */}
-              <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3">
-                <p className="mb-2 text-xs text-[var(--text-secondary)]">
-                  <strong>Important :</strong> ton resto doit être trouvable
-                  sur Google Maps (nom + adresse renseignés dans{" "}
-                  <a
-                    href="/dashboard/restaurant"
-                    className="text-[var(--accent)] underline"
-                  >
-                    Mon restaurant
-                  </a>
-                  ). Le premier refresh peut prendre 5-10s (recherche Google).
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRefreshGoogleReviews}
-                  disabled={reviewsPending || !isPaid}
-                >
-                  {reviewsPending ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="size-3.5" />
-                  )}
-                  Rafraîchir les avis Google
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Hero */}
+        {/* Style global */}
         <Card>
           <CardHeader>
-            <CardTitle>Hero (entête)</CardTitle>
+            <CardTitle>Style</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Style">
+              <Field label="Hero layout">
                 <Select
-                  value={form.watch("hero.variant")}
+                  value={form.watch("options.heroLayout")}
                   onValueChange={(v) =>
                     form.setValue(
-                      "hero.variant",
-                      v as "split" | "banner" | "centered" | "video",
+                      "options.heroLayout",
+                      v as "banner" | "split",
                       { shouldDirty: true },
                     )
                   }
@@ -765,78 +444,104 @@ export function SiteEditorForm({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="split">Split (image + texte)</SelectItem>
                     <SelectItem value="banner">
                       Banner (image plein écran)
                     </SelectItem>
-                    <SelectItem value="centered">
-                      Centered (minimaliste, pas d&apos;image)
-                    </SelectItem>
-                    <SelectItem value="video">
-                      Video (vidéo en fond)
+                    <SelectItem value="split">
+                      Split (50/50 image + texte)
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label="Eyebrow (petit label)">
-                <Input
-                  {...form.register("hero.eyebrow")}
-                  placeholder="Cuisine traditionnelle française"
-                />
+              <Field label="Thème">
+                <Select
+                  value={form.watch("options.theme")}
+                  onValueChange={(v) =>
+                    form.setValue("options.theme", v as "light" | "dark", {
+                      shouldDirty: true,
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light (recommandé)</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                  </SelectContent>
+                </Select>
               </Field>
             </div>
-            <Field label="Titre (h1)">
-              <Input
-                {...form.register("hero.title")}
-                placeholder="Nom du restaurant (vide = nom resto)"
-              />
-            </Field>
-            <Field label="Sous-titre">
-              <Textarea
-                rows={2}
-                {...form.register("hero.subtitle")}
-                placeholder="Une cuisine de caractère, des produits locaux..."
-              />
-            </Field>
-
-            <Field label="Image hero">
-              <ImageUploader
-                value={form.watch("hero.imageUrl") || null}
-                onChange={(url) =>
-                  form.setValue("hero.imageUrl", url ?? "", {
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Typographie">
+                <Select
+                  value={form.watch("typographyPreset")}
+                  onValueChange={(v) =>
+                    form.setValue(
+                      "typographyPreset",
+                      v as "editorial" | "modern" | "classic",
+                      { shouldDirty: true },
+                    )
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="editorial">
+                      Editorial (Instrument Serif italic)
+                    </SelectItem>
+                    <SelectItem value="modern">
+                      Modern (Geist sans-serif)
+                    </SelectItem>
+                    <SelectItem value="classic">
+                      Classic (EB Garamond)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="Couleur d'accent (vide = couleur du resto)">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={
+                      form.watch("accentColor")?.startsWith("#")
+                        ? form.watch("accentColor")
+                        : "#6b2a18"
+                    }
+                    onChange={(e) =>
+                      form.setValue("accentColor", e.target.value, {
+                        shouldDirty: true,
+                      })
+                    }
+                    className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)]"
+                  />
+                  <Input
+                    {...form.register("accentColor")}
+                    placeholder="#6b2a18 ou oklch(0.42 0.13 22)"
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </Field>
+            </div>
+            <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
+              <div>
+                <p className="text-sm font-medium text-[var(--text-primary)]">
+                  Photo About à gauche
+                </p>
+                <p className="text-xs text-[var(--text-muted)]">
+                  Désactive pour inverser (texte gauche, photo droite).
+                </p>
+              </div>
+              <Switch
+                checked={form.watch("options.aboutImageLeft")}
+                onCheckedChange={(v) =>
+                  form.setValue("options.aboutImageLeft", v, {
                     shouldDirty: true,
                   })
                 }
-                restaurantId={restaurantId}
-                kind="banniere"
-                aspect="16/9"
-                label="Glisse ou colle une image"
               />
-            </Field>
-
-            {form.watch("hero.variant") === "video" && (
-              <Field label="URL vidéo MP4 (loop autoplay muted, ≤10s, ≤5MB)">
-                <Input
-                  {...form.register("hero.videoUrl")}
-                  placeholder="https://… (héberge sur R2 ou Cloudinary)"
-                />
-              </Field>
-            )}
-
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Label CTA principal">
-                <Input
-                  {...form.register("hero.ctaLabel")}
-                  placeholder="Voir la carte"
-                />
-              </Field>
-              <Field label="URL CTA principal">
-                <Input
-                  {...form.register("hero.ctaUrl")}
-                  placeholder={`/carte/${restaurantId}`}
-                />
-              </Field>
-            </div>
+            </label>
           </CardContent>
         </Card>
 
@@ -846,32 +551,67 @@ export function SiteEditorForm({
             <CardTitle>À propos</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Field label="Titre">
+            <Field label="Titre de la section">
               <Input
                 {...form.register("about.title")}
-                placeholder="Notre maison"
+                placeholder="Le bistrot que vous auriez aimé tenir."
               />
             </Field>
-            <Field label="Texte (plusieurs paragraphes OK)">
-              <Textarea
-                rows={6}
-                {...form.register("about.text")}
-                placeholder="Notre histoire, notre concept, notre équipe..."
-              />
-            </Field>
-            <Field label="Image illustrative">
+
+            <div className="space-y-2">
+              <Label className="text-xs">
+                Paragraphes ({aboutBody.fields.length}/6)
+              </Label>
+              {aboutBody.fields.map((field, i) => (
+                <div key={field.id} className="flex gap-2">
+                  <Textarea
+                    rows={3}
+                    placeholder={`Paragraphe ${i + 1}`}
+                    {...form.register(`about.body.${i}.text` as const)}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => aboutBody.remove(i)}
+                    disabled={aboutBody.fields.length <= 1}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+              ))}
+              {aboutBody.fields.length < 6 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => aboutBody.append({ text: "" })}
+                >
+                  <Plus className="size-3.5" />
+                  Paragraphe
+                </Button>
+              )}
+            </div>
+
+            <Field label="Image d'illustration">
               <ImageUploader
-                value={form.watch("about.imageUrl") || null}
+                value={form.watch("about.image") || null}
                 onChange={(url) =>
-                  form.setValue("about.imageUrl", url ?? "", {
-                    shouldDirty: true,
-                  })
+                  form.setValue("about.image", url ?? "", { shouldDirty: true })
                 }
                 restaurantId={restaurantId}
                 kind="banniere"
-                aspect="4/3"
-                label="Photo de la salle, du chef, d'un plat"
+                aspect="4/5"
+                label="Photo du chef, de la salle, d'un plat signature"
                 enablePaste={false}
+              />
+            </Field>
+
+            <Field label="Signature (optionnel)">
+              <Input
+                {...form.register("about.signature")}
+                placeholder="— Camille L., cheffe & propriétaire"
+                maxLength={120}
               />
             </Field>
           </CardContent>
@@ -883,26 +623,58 @@ export function SiteEditorForm({
             <CardTitle>Mise en avant carte</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Titre">
-                <Input
-                  {...form.register("menuTeaser.title")}
-                  placeholder="La carte"
-                />
-              </Field>
-              <Field label="Label CTA">
-                <Input
-                  {...form.register("menuTeaser.ctaLabel")}
-                  placeholder="Voir la carte complète"
-                />
-              </Field>
-            </div>
-            <Field label="Phrase d'accroche">
+            <Field label="Titre">
               <Input
-                {...form.register("menuTeaser.subtitle")}
-                placeholder="Découvrez nos plats, mis à jour régulièrement"
+                {...form.register("menuTeaserTitle")}
+                placeholder="Une cuisine. Trois mouvements."
               />
             </Field>
+            <p className="rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3 text-xs text-[var(--text-muted)]">
+              Les 4 plats affichés sont automatiquement tirés des 4 premiers
+              produits visibles dans ta carte (triés par ordre des catégories).
+              Pour modifier l&apos;ordre, va dans{" "}
+              <a
+                href="/dashboard/menu"
+                className="text-[var(--accent)] underline hover:no-underline"
+              >
+                Éditeur de carte
+              </a>{" "}
+              et drag-drop tes produits.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Sections toggles */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Sections affichées</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-3">
+            <SectionToggle
+              label="Galerie"
+              checked={form.watch("options.showGallery")}
+              onChange={(v) =>
+                form.setValue("options.showGallery", v, { shouldDirty: true })
+              }
+            />
+            <SectionToggle
+              label="Témoignages"
+              checked={form.watch("options.showTestimonials")}
+              onChange={(v) =>
+                form.setValue("options.showTestimonials", v, {
+                  shouldDirty: true,
+                })
+              }
+            />
+            <SectionToggle
+              label="Bandeau Réservation"
+              checked={form.watch("options.showReservation")}
+              onChange={(v) =>
+                form.setValue("options.showReservation", v, {
+                  shouldDirty: true,
+                })
+              }
+            />
           </CardContent>
         </Card>
 
@@ -910,13 +682,13 @@ export function SiteEditorForm({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Galerie photos ({gallery.fields.length}/30)</span>
+              <span>Galerie ({gallery.fields.length}/12)</span>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => gallery.append({ url: "", caption: "", alt: "" })}
-                disabled={gallery.fields.length >= 30}
+                onClick={() => gallery.append({ url: "" })}
+                disabled={gallery.fields.length >= 12}
               >
                 <Plus className="size-3.5" />
                 Ajouter
@@ -926,8 +698,8 @@ export function SiteEditorForm({
           <CardContent className="space-y-3">
             {gallery.fields.length === 0 ? (
               <p className="rounded-md border border-dashed border-[var(--border-subtle)] p-6 text-center text-xs text-[var(--text-muted)]">
-                <ImageIcon className="mx-auto mb-2 size-5" strokeWidth={1.5} />
-                Aucune photo. Clic « Ajouter » pour démarrer.
+                Aucune photo. Le pattern bento s&apos;active à partir de 6
+                photos (idéalement 8).
               </p>
             ) : (
               gallery.fields.map((field, i) => (
@@ -941,52 +713,7 @@ export function SiteEditorForm({
                       shouldDirty: true,
                     })
                   }
-                  register={form.register}
                   onRemove={() => gallery.remove(i)}
-                />
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Team */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>Équipe ({team.fields.length}/12)</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  team.append({ name: "", role: "", bio: "", imageUrl: "" })
-                }
-                disabled={team.fields.length >= 12}
-              >
-                <Plus className="size-3.5" />
-                Ajouter
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {team.fields.length === 0 ? (
-              <p className="rounded-md border border-dashed border-[var(--border-subtle)] p-6 text-center text-xs text-[var(--text-muted)]">
-                Aucun membre. Présente ton chef, ton sommelier, ton équipe.
-              </p>
-            ) : (
-              team.fields.map((field, i) => (
-                <TeamRow
-                  key={field.id}
-                  index={i}
-                  restaurantId={restaurantId}
-                  currentUrl={form.watch(`team.${i}.imageUrl`)}
-                  onChangeUrl={(url) =>
-                    form.setValue(`team.${i}.imageUrl`, url ?? "", {
-                      shouldDirty: true,
-                    })
-                  }
-                  register={form.register}
-                  onRemove={() => team.remove(i)}
                 />
               ))
             )}
@@ -997,21 +724,19 @@ export function SiteEditorForm({
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <span>Témoignages ({testimonials.fields.length}/20)</span>
+              <span>Témoignages ({testimonials.fields.length}/12)</span>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 onClick={() =>
                   testimonials.append({
-                    name: "",
-                    text: "",
                     rating: 5,
-                    source: "",
-                    date: "",
+                    text: "",
+                    author: "",
                   })
                 }
-                disabled={testimonials.fields.length >= 20}
+                disabled={testimonials.fields.length >= 12}
               >
                 <Plus className="size-3.5" />
                 Ajouter
@@ -1036,180 +761,31 @@ export function SiteEditorForm({
           </CardContent>
         </Card>
 
-        {/* FAQ */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>FAQ ({faq.fields.length}/20)</span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => faq.append({ question: "", answer: "" })}
-                disabled={faq.fields.length >= 20}
-              >
-                <Plus className="size-3.5" />
-                Ajouter
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {faq.fields.length === 0 ? (
-              <p className="rounded-md border border-dashed border-[var(--border-subtle)] p-6 text-center text-xs text-[var(--text-muted)]">
-                Aucune question. Ex : « Vous prenez les groupes ? », «
-                Parking ? », « Sans gluten ? ».
-              </p>
-            ) : (
-              faq.fields.map((field, i) => (
-                <FaqRow
-                  key={field.id}
-                  register={form.register}
-                  index={i}
-                  onRemove={() => faq.remove(i)}
-                />
-              ))
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Practical — SYNC AUTO avec Mon restaurant */}
+        {/* Practical sync banner */}
         <Card className="border-emerald-500/30 bg-emerald-500/5">
           <CardHeader>
             <CardTitle>Infos pratiques (synchronisées)</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3 text-sm">
+          <CardContent className="space-y-2 text-sm">
             <p className="text-[var(--text-muted)]">
-              <strong className="text-[var(--text-primary)]">
-                Téléphone, email, adresse, horaires, Google Maps et réseaux sociaux
-              </strong>{" "}
-              sont automatiquement tirés de{" "}
+              Téléphone, email, adresse, code postal, ville, horaires
+              d&apos;ouverture, réseaux sociaux et Google Maps sont
+              auto-pullés depuis{" "}
               <a
                 href="/dashboard/restaurant"
                 className="text-[var(--accent)] underline hover:no-underline"
               >
                 Mon restaurant
               </a>
-              . Modifie-les là-bas, ils se mettent à jour ici (et sur la carte
-              publique).
+              .
             </p>
-            <ul className="space-y-1 text-xs text-[var(--text-muted)]">
-              <li>📍 Adresse complète + lien Google Maps auto-généré</li>
-              <li>☎️ Téléphone (clickable tel:)</li>
-              <li>✉️ Email (clickable mailto:)</li>
-              <li>🕐 Horaires d&apos;ouverture (texte libre, multi-lignes)</li>
-              <li>📱 Facebook, Instagram, TikTok, Avis Google, site web</li>
-            </ul>
-          </CardContent>
-        </Card>
-
-        {/* Reservation */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Réservation</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Field label="URL externe (TheFork, Zenchef, OpenTable…)">
-              <Input
-                {...form.register("reservation.url")}
-                placeholder="https://www.thefork.fr/…"
-              />
-            </Field>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Téléphone (fallback)">
-                <Input
-                  {...form.register("reservation.phone")}
-                  placeholder="01 23 45 67 89"
-                />
-              </Field>
-              <Field label="Label du bouton">
-                <Input
-                  {...form.register("reservation.label")}
-                  placeholder="Réserver une table"
-                />
-              </Field>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Style overrides */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Style</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Typo des titres">
-                <Select
-                  value={form.watch("style.fontHeading") ?? ""}
-                  onValueChange={(v) =>
-                    form.setValue(
-                      "style.fontHeading",
-                      v as "serif" | "sans" | "display",
-                      { shouldDirty: true },
-                    )
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Hérite du resto" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="serif">Serif éditoriale (Playfair)</SelectItem>
-                    <SelectItem value="sans">Sans moderne (Inter)</SelectItem>
-                    <SelectItem value="display">Display impact</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="Couleur d'accent (override resto)">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={form.watch("style.accentColor") || "#b58f4a"}
-                    onChange={(e) =>
-                      form.setValue("style.accentColor", e.target.value, {
-                        shouldDirty: true,
-                      })
-                    }
-                    className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)]"
-                  />
-                  <Input
-                    {...form.register("style.accentColor")}
-                    placeholder="Vide = couleur du resto"
-                    className="font-mono"
-                  />
-                </div>
-              </Field>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* SEO */}
-        <Card>
-          <CardHeader>
-            <CardTitle>SEO</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Field label="Title (60 chars max)">
-              <Input
-                {...form.register("seo.title")}
-                placeholder="Vide = nom resto — Restaurant à Ville"
-                maxLength={60}
-              />
-            </Field>
-            <Field label="Meta description (160 chars max)">
-              <Textarea
-                rows={2}
-                {...form.register("seo.description")}
-                placeholder="Vide = description du resto"
-                maxLength={160}
-              />
-            </Field>
           </CardContent>
         </Card>
 
         {/* Sticky save bar */}
         <div className="sticky bottom-4 z-10 flex items-center justify-between gap-3 rounded-xl border border-[var(--border-glass)] bg-[var(--bg-glass)] p-3 backdrop-blur-xl">
           <p className="text-xs text-[var(--text-muted)]">
-            Save → preview refresh + CDN purge (~60s).
+            Save → preview refresh + CDN purge (~120s).
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -1288,35 +864,28 @@ function Field({
 
 function SectionToggle({
   label,
-  description,
   checked,
   onChange,
 }: {
   label: string;
-  description: string;
   checked: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
-      <div>
-        <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
-        <p className="text-xs text-[var(--text-muted)]">{description}</p>
-      </div>
+      <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>
       <Switch checked={checked} onCheckedChange={onChange} />
     </label>
   );
 }
 
 function GalleryRow({
-  register,
   index,
   restaurantId,
   currentUrl,
   onChangeUrl,
   onRemove,
 }: {
-  register: UseFormRegister<Values>;
   index: number;
   restaurantId: string;
   currentUrl: string | undefined;
@@ -1331,82 +900,17 @@ function GalleryRow({
         restaurantId={restaurantId}
         kind="produit"
         aspect="1/1"
-        label="Photo"
+        label={`Photo ${index + 1}`}
         enablePaste={false}
       />
-      <div className="space-y-2">
-        <Input
-          placeholder="Légende (optionnel)"
-          {...register(`gallery.${index}.caption` as const)}
-        />
-        <Input
-          placeholder="Alt accessibilité"
-          {...register(`gallery.${index}.alt` as const)}
-        />
+      <div className="flex items-center text-xs text-[var(--text-muted)]">
+        {currentUrl ? "Image OK" : "Glisse ou colle une image"}
       </div>
       <Button
         type="button"
         variant="ghost"
         size="icon"
         onClick={onRemove}
-        aria-label="Supprimer cette photo"
-        className="self-start"
-      >
-        <Trash2 className="size-3.5" />
-      </Button>
-    </div>
-  );
-}
-
-function TeamRow({
-  register,
-  index,
-  restaurantId,
-  currentUrl,
-  onChangeUrl,
-  onRemove,
-}: {
-  register: UseFormRegister<Values>;
-  index: number;
-  restaurantId: string;
-  currentUrl: string | undefined;
-  onChangeUrl: (url: string | null) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="grid gap-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3 sm:grid-cols-[120px_1fr_auto]">
-      <ImageUploader
-        value={currentUrl || null}
-        onChange={onChangeUrl}
-        restaurantId={restaurantId}
-        kind="produit"
-        aspect="1/1"
-        label="Photo"
-        enablePaste={false}
-      />
-      <div className="space-y-2">
-        <div className="grid gap-2 sm:grid-cols-2">
-          <Input
-            placeholder="Nom"
-            {...register(`team.${index}.name` as const)}
-          />
-          <Input
-            placeholder="Rôle (Chef, Sommelier…)"
-            {...register(`team.${index}.role` as const)}
-          />
-        </div>
-        <Textarea
-          rows={2}
-          placeholder="Bio courte (optionnel)"
-          {...register(`team.${index}.bio` as const)}
-        />
-      </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        onClick={onRemove}
-        aria-label="Supprimer ce membre"
         className="self-start"
       >
         <Trash2 className="size-3.5" />
@@ -1426,28 +930,17 @@ function TestimonialRow({
 }) {
   return (
     <div className="space-y-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
-      <div className="grid gap-2 sm:grid-cols-3">
+      <div className="grid gap-2 sm:grid-cols-[1fr_140px_auto]">
         <Input
-          placeholder="Nom (ex: Marie L.)"
-          {...register(`testimonials.${index}.name` as const)}
+          placeholder="Auteur (ex: Marie D. · Le Fooding)"
+          {...register(`testimonials.${index}.author` as const)}
         />
-        <Input
-          placeholder="Source (Google, TripAdvisor…)"
-          {...register(`testimonials.${index}.source` as const)}
-        />
-        <Input
-          placeholder="Date (Mai 2026)"
-          {...register(`testimonials.${index}.date` as const)}
-        />
-      </div>
-      <div className="flex items-center gap-2">
         <Input
           type="number"
-          placeholder="Note (0-5)"
           min={0}
           max={5}
           step={1}
-          className="w-32"
+          placeholder="Note (0-5)"
           {...register(`testimonials.${index}.rating` as const, {
             valueAsNumber: true,
           })}
@@ -1464,43 +957,8 @@ function TestimonialRow({
       </div>
       <Textarea
         rows={2}
-        placeholder="Texte du témoignage"
+        placeholder="Citation"
         {...register(`testimonials.${index}.text` as const)}
-      />
-    </div>
-  );
-}
-
-function FaqRow({
-  register,
-  index,
-  onRemove,
-}: {
-  register: UseFormRegister<Values>;
-  index: number;
-  onRemove: () => void;
-}) {
-  return (
-    <div className="space-y-2 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
-      <div className="flex items-start gap-2">
-        <Input
-          placeholder="Question (ex: Vous prenez les groupes ?)"
-          {...register(`faq.${index}.question` as const)}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={onRemove}
-          aria-label="Supprimer cette question"
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
-      </div>
-      <Textarea
-        rows={2}
-        placeholder="Réponse"
-        {...register(`faq.${index}.answer` as const)}
       />
     </div>
   );
@@ -1511,17 +969,3 @@ function blank(s: string | undefined): string | undefined {
   const trim = s.trim();
   return trim.length === 0 ? undefined : trim;
 }
-
-// Strip les keys undefined d'un objet — pratique avant JSON.stringify pour
-// que le payload reste minimal.
-function cleanObj<T extends Record<string, unknown>>(obj: T): Partial<T> {
-  const out: Partial<T> = {};
-  for (const key of Object.keys(obj)) {
-    const v = obj[key as keyof T];
-    if (v !== undefined && v !== "") {
-      out[key as keyof T] = v;
-    }
-  }
-  return out;
-}
-

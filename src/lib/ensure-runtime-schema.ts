@@ -82,7 +82,7 @@ export async function ensureRuntimeSchema(): Promise<void> {
     // site_enabled = false → la route /site/[id] retourne 404 tant que le
     // restaurateur n'a pas activé sa fonctionnalité (Pro/Premium uniquement).
     // site_config JSONB = structure éditable côté dashboard, type
-    // RestaurantSiteConfig (cf. src/features/restaurant-site/types.ts).
+    // RestaurantConfig v2 (cf. src/features/restaurant-site-v2/types.ts).
     await safeExec(
       `ALTER TABLE "restaurants"
         ADD COLUMN IF NOT EXISTS "site_enabled" BOOLEAN NOT NULL DEFAULT false,

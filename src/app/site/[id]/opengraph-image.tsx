@@ -1,23 +1,15 @@
 import { ImageResponse } from "next/og";
-import { getPublicSiteByIdOrSlug } from "@/server/public/restaurant-site";
+import { loadSiteV2ByIdOrSlug } from "@/server/public/restaurant-site-v2-loader";
+import { hexToOklch } from "@/features/restaurant-site-v2/lib/hexToOklch";
 
 /**
- * OG image dynamique pour `/site/[id]`.
+ * OG image dynamique pour `/site/[id]` (v2).
  *
- * Génère une image 1200×630 au moment du share (WhatsApp, iMessage,
- * Twitter, Facebook…) avec :
- *  - le nom du resto
- *  - la ville
- *  - la couleur d'accent du resto
- *  - la bannière si dispo en arrière-plan
+ * 1200×630 généré à la volée au moment d'un share (iMessage / WhatsApp /
+ * Twitter / Facebook). Cache automatique Next.js + ISR de la page.
  *
- * Cache : Next.js met l'image en cache automatiquement (immutable) au build
- * et la régénère sur revalidate. Pas besoin de runtime edge — Node tourne
- * bien et nous permet d'accéder à Prisma + Redis sans contraintes.
- *
- * NOTE : on N'EST PAS sur edge runtime parce que `@/lib/redis` (ioredis)
- * importe `net`, `dns`, `crypto`, `stream` — modules Node.js indisponibles
- * sur edge. Tentative edge → webpack module-not-found au build.
+ * Pas de runtime edge — `@/lib/redis` (ioredis) requiert net/dns/crypto
+ * indisponibles sur edge. Node runtime par défaut suffit largement.
  */
 
 export const alt = "Restaurant — site vitrine";
@@ -25,13 +17,12 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 interface Props {
-  // Next 15 : params est asynchrone même pour les fichiers metadata
   params: Promise<{ id: string }>;
 }
 
 export default async function OgImage({ params }: Props) {
   const { id } = await params;
-  const payload = await getPublicSiteByIdOrSlug(id);
+  const payload = await loadSiteV2ByIdOrSlug(id);
 
   // Fallback image si site désactivé ou inconnu
   if (!payload || !payload.enabled) {
@@ -57,10 +48,10 @@ export default async function OgImage({ params }: Props) {
     );
   }
 
-  const { branding, config } = payload;
-  const accent = config.style?.accentColor || branding.couleurPrimaire || "#b58f4a";
-  const heroImg = config.hero.imageUrl || branding.banniereUrl;
-  const eyebrow = config.hero.eyebrow || branding.ville || "Restaurant";
+  const { config } = payload;
+  const accent = hexToOklch(config.accentColor);
+  const heroImg = config.bannerUrl || config.heroImage || null;
+  const eyebrow = config.city || "Restaurant";
 
   return new ImageResponse(
     (
@@ -72,10 +63,9 @@ export default async function OgImage({ params }: Props) {
           position: "relative",
           background: heroImg ? "#000" : accent,
           color: "#fff",
-          fontFamily: "sans-serif",
+          fontFamily: "serif",
         }}
       >
-        {/* Image de fond */}
         {heroImg && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -95,17 +85,16 @@ export default async function OgImage({ params }: Props) {
           />
         )}
 
-        {/* Overlay gradient */}
+        {/* Overlay gradient inspiré du veil hero banner */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(135deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 100%)",
+              "linear-gradient(to top, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.45) 35%, rgba(0,0,0,0.15) 70%, rgba(0,0,0,0.35) 100%)",
           }}
         />
 
-        {/* Contenu */}
         <div
           style={{
             position: "relative",
@@ -118,42 +107,46 @@ export default async function OgImage({ params }: Props) {
         >
           <div
             style={{
-              fontSize: 24,
+              fontSize: 22,
               textTransform: "uppercase",
               letterSpacing: 4,
               color: accent,
               fontWeight: 500,
-              marginBottom: 16,
+              marginBottom: 18,
+              fontFamily: "monospace",
             }}
           >
-            {eyebrow}
+            {eyebrow} · Depuis {config.established}
           </div>
           <div
             style={{
-              fontSize: 96,
-              fontWeight: 700,
-              lineHeight: 1.05,
+              fontSize: 104,
+              fontWeight: 400,
+              fontStyle: "italic",
+              lineHeight: 0.95,
               maxWidth: 1000,
-              letterSpacing: -2,
+              letterSpacing: -2.5,
             }}
           >
-            {branding.nom}
+            {config.restaurantName}
           </div>
-          {branding.ville && (
+          {config.tagline && (
             <div
               style={{
-                fontSize: 32,
-                marginTop: 16,
+                fontSize: 28,
+                marginTop: 18,
                 opacity: 0.85,
+                fontFamily: "sans-serif",
+                maxWidth: 760,
+                lineHeight: 1.3,
               }}
             >
-              {branding.ville}
-              {branding.pays ? ` · ${branding.pays}` : ""}
+              {config.tagline}
             </div>
           )}
         </div>
 
-        {/* Badge Ruliz en haut à droite */}
+        {/* Badge Ruliz */}
         <div
           style={{
             position: "absolute",
@@ -162,11 +155,14 @@ export default async function OgImage({ params }: Props) {
             display: "flex",
             alignItems: "center",
             gap: 8,
-            fontSize: 18,
+            fontSize: 16,
             opacity: 0.7,
+            fontFamily: "monospace",
+            letterSpacing: 1.5,
+            textTransform: "uppercase",
           }}
         >
-          Powered by Ruliz
+          Propulsé par Ruliz
         </div>
       </div>
     ),

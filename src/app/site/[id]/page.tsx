@@ -2,75 +2,56 @@ import { notFound, redirect } from "next/navigation";
 import { headers } from "next/headers";
 import type { Metadata } from "next";
 import { after } from "next/server";
-import {
-  getPublicSiteByIdOrSlug,
-  trackSiteView,
-} from "@/server/public/restaurant-site";
-import { detectSiteLang } from "@/server/public/translate-site";
-import { RestaurantSite } from "@/features/restaurant-site/RestaurantSite";
+import { prisma } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
+import { loadSiteV2ByIdOrSlug } from "@/server/public/restaurant-site-v2-loader";
+import { RestaurantSite } from "@/features/restaurant-site-v2/RestaurantSite";
+import type { RestaurantConfig } from "@/features/restaurant-site-v2/types";
 
 /**
- * Page publique du mini-site restaurant — `/site/[idOrSlug]`.
+ * Page publique du mini-site v2 — `/site/[idOrSlug]`.
  *
  * Accepte deux formes :
  *   /site/3                 → ID numérique (toujours valable)
  *   /site/le-tire-bouchon   → slug friendly (préféré pour SEO + partage)
  *
- * Si l'utilisateur arrive via l'ID alors qu'un slug existe → on REDIRECT
- * 308 vers la version slug (canonical URL).
+ * Si l'utilisateur arrive via l'ID alors qu'un slug existe → REDIRECT 308
+ * vers la version slug (canonical URL).
  *
- * Cache : ISR 60s + Redis L3 (cf. restaurant-site.ts). Une publication
- * dashboard invalide les deux via revalidatePath + invalidateSiteCache.
+ * Cache : ISR 120s + Redis L3 (cf. restaurant-site-v2-loader.ts).
  */
-export const revalidate = 60;
+export const revalidate = 120;
 
 interface PageProps {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ lang?: string }>;
 }
 
-export async function generateMetadata({
-  params,
-  searchParams,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const { lang: langParam } = await searchParams;
-  const reqHeaders = await headers();
-  const lang = detectSiteLang(langParam, reqHeaders.get("accept-language"));
-  const payload = await getPublicSiteByIdOrSlug(id, { lang });
+  const payload = await loadSiteV2ByIdOrSlug(id);
   if (!payload || !payload.enabled) {
     return { title: "Restaurant non trouvé" };
   }
-  const { branding, config, slug } = payload;
-  const cityPart = branding.ville ? ` — Restaurant à ${branding.ville}` : "";
-  const title = config.seo?.title || `${branding.nom}${cityPart}`;
+  const { config, slug, restaurantId } = payload;
+  const cityPart = config.city ? ` — Restaurant à ${config.city}` : "";
+  const title = `${config.restaurantName}${cityPart}`;
   const description =
-    config.seo?.description ||
-    branding.description ||
-    `Découvrez ${branding.nom}, notre carte et nos infos pratiques.`;
-  const heroImage = config.hero.imageUrl || branding.banniereUrl || undefined;
+    config.tagline ||
+    `Découvrez ${config.restaurantName}, notre carte et nos infos pratiques.`;
+  const heroImage = config.bannerUrl || config.heroImage || undefined;
 
-  // Canonical : on préfère le slug si dispo
-  const canonical = slug ? `/site/${slug}` : `/site/${branding.id}`;
-
-  // Hreflang : les 7 langues supportées de Ruliz. La détection au runtime
-  // se fait côté carte/site via query param. On dit à Google qu'il existe
-  // une version pour chaque langue (même URL, lang change via switcher).
-  const languages: Record<string, string> = {};
-  for (const lng of ["fr", "en", "es", "de", "it", "pt", "zh"]) {
-    languages[lng] = `${canonical}?lang=${lng}`;
-  }
+  const canonical = slug ? `/site/${slug}` : `/site/${restaurantId}`;
 
   return {
     title,
     description,
-    alternates: { canonical, languages },
+    alternates: { canonical },
     openGraph: {
       title,
       description,
       url: canonical,
-      siteName: branding.nom,
-      images: [{ url: `/site/${id}/opengraph-image` }],
+      siteName: config.restaurantName,
+      images: heroImage ? [{ url: heroImage }] : undefined,
       type: "website",
       locale: "fr_FR",
     },
@@ -78,51 +59,60 @@ export async function generateMetadata({
       card: "summary_large_image",
       title,
       description,
-      images: [`/site/${id}/opengraph-image`],
+      images: heroImage ? [heroImage] : undefined,
     },
-    other: heroImage ? { "og:image:secure_url": heroImage } : undefined,
   };
 }
 
-export default async function PublicSitePage({
-  params,
-  searchParams,
-}: PageProps) {
+export default async function PublicSitePage({ params }: PageProps) {
   const { id } = await params;
-  const { lang: langParam } = await searchParams;
-  const reqHeaders = await headers();
-  const lang = detectSiteLang(langParam, reqHeaders.get("accept-language"));
-  const payload = await getPublicSiteByIdOrSlug(id, { lang });
+  const payload = await loadSiteV2ByIdOrSlug(id);
   if (!payload || !payload.enabled) {
     notFound();
   }
 
-  const { branding, config, slug } = payload;
+  const { config, slug, restaurantId } = payload;
 
   // Canonical redirect : si l'user arrive sur /site/3 mais qu'un slug existe,
-  // redirige vers /site/le-tire-bouchon (308 permanent). On garde ?lang= si
-  // présent pour ne pas perdre la lang choisie.
+  // redirige vers /site/le-tire-bouchon (308 permanent)
   if (/^\d+$/.test(id) && slug && slug !== id) {
-    const target =
-      langParam && langParam !== "fr"
-        ? `/site/${slug}?lang=${langParam}`
-        : `/site/${slug}`;
-    redirect(target);
+    redirect(`/site/${slug}`);
   }
 
   // Tracking async — never blocks rendering
+  const reqHeaders = await headers();
+  const restaurantIdBig = BigInt(restaurantId);
   after(async () => {
-    await trackSiteView({
-      restaurantId: BigInt(branding.id),
-      userAgent: reqHeaders.get("user-agent"),
-      pays: reqHeaders.get("x-vercel-ip-country") ?? null,
-      lang,
-      referer: reqHeaders.get("referer") ?? null,
-    });
+    try {
+      await ensureRuntimeSchema();
+      await prisma.$executeRaw`
+        INSERT INTO site_views (restaurant_id, user_agent, pays, lang, referer)
+        VALUES (
+          ${restaurantIdBig},
+          ${reqHeaders.get("user-agent")},
+          ${reqHeaders.get("x-vercel-ip-country") ?? null},
+          ${
+            reqHeaders
+              .get("accept-language")
+              ?.split(",")[0]
+              ?.split("-")[0]
+              ?.toLowerCase() ?? null
+          },
+          ${reqHeaders.get("referer") ?? null}
+        )
+      `;
+      await prisma.$executeRaw`
+        UPDATE restaurants
+        SET site_views_count = site_views_count + 1
+        WHERE id = ${restaurantIdBig}
+      `;
+    } catch (e) {
+      console.warn("[site v2] tracking failed:", e);
+    }
   });
 
   // JSON-LD structured data — booste le SEO local Google
-  const jsonLd = buildJsonLd(branding, config);
+  const jsonLd = buildJsonLd(config);
 
   return (
     <>
@@ -130,78 +120,69 @@ export default async function PublicSitePage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <RestaurantSite branding={branding} config={config} currentLang={lang} />
+      <RestaurantSite config={config} />
     </>
   );
 }
 
-
 /**
- * Build le bloc JSON-LD Restaurant.
- * https://schema.org/Restaurant
- * Google utilise ça pour enrichir la SERP avec horaires, étoiles, photo,
- * map, etc.
+ * Build le bloc JSON-LD Restaurant (schema.org).
+ * Google utilise ça pour enrichir la SERP avec horaires, étoiles, photo, map.
  */
-function buildJsonLd(
-  branding: import("@/features/restaurant-site/types").RestaurantSiteBranding,
-  config: import("@/features/restaurant-site/types").RestaurantSiteConfig,
-) {
+function buildJsonLd(config: RestaurantConfig) {
   type JsonLd = Record<string, unknown>;
   const ld: JsonLd = {
     "@context": "https://schema.org",
     "@type": "Restaurant",
-    name: branding.nom,
-    description: branding.description ?? undefined,
-    image: config.hero.imageUrl || branding.banniereUrl || undefined,
-    url: branding.siteWeb ?? undefined,
+    name: config.restaurantName,
+    description: config.tagline,
+    image: config.bannerUrl || config.heroImage || undefined,
   };
 
-  if (branding.adresse || branding.ville) {
+  if (config.practical.address) {
     ld.address = {
       "@type": "PostalAddress",
-      streetAddress: branding.adresse ?? undefined,
-      addressLocality: branding.ville ?? undefined,
-      addressCountry: branding.pays ?? undefined,
+      streetAddress: config.practical.address,
+      addressLocality: config.city,
     };
   }
-
-  if (config.practical?.phone) {
+  if (config.practical.phone) {
     ld.telephone = config.practical.phone;
   }
+  if (config.practical.email) {
+    ld.email = config.practical.email;
+  }
 
-  // Reviews → aggregateRating
-  const testimonials = config.testimonials ?? [];
-  const ratings = testimonials.filter((t) => typeof t.rating === "number");
+  // Aggregate rating depuis les testimonials manuels
+  const ratings = config.testimonials?.filter(
+    (t) => typeof t.rating === "number",
+  ) ?? [];
   if (ratings.length > 0) {
-    const avg =
-      ratings.reduce((sum, t) => sum + (t.rating ?? 0), 0) / ratings.length;
+    const avg = ratings.reduce((sum, t) => sum + t.rating, 0) / ratings.length;
     ld.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: avg.toFixed(1),
       reviewCount: ratings.length,
     };
-    ld.review = testimonials.slice(0, 5).map((t) => ({
-      "@type": "Review",
-      author: { "@type": "Person", name: t.name },
-      reviewBody: t.text,
-      reviewRating:
-        typeof t.rating === "number"
-          ? { "@type": "Rating", ratingValue: t.rating }
-          : undefined,
-    }));
   }
 
-  // Réservation
-  if (config.reservation?.url || config.reservation?.phone) {
+  if (config.reservationUrl) {
     ld.acceptsReservations = "True";
   }
 
-  // Réseaux sociaux
+  // openingHours en format Schema.org : "Mo-Sa 12:00-22:00"
+  // (on n'extrait pas systématiquement — Google accepte le bloc même sans)
+
   const sameAs = [
-    branding.facebookUrl,
-    branding.instagramUrl,
-    branding.tiktokUrl,
-    branding.googleReviewUrl,
+    config.socials.instagram
+      ? `https://instagram.com/${config.socials.instagram.replace(/^@/, "")}`
+      : null,
+    config.socials.facebook
+      ? `https://facebook.com/${config.socials.facebook}`
+      : null,
+    config.socials.tiktok
+      ? `https://tiktok.com/@${config.socials.tiktok.replace(/^@/, "")}`
+      : null,
   ].filter(Boolean);
   if (sameAs.length > 0) {
     ld.sameAs = sameAs;

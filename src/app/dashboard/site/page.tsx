@@ -2,17 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ExternalLink, Globe2 } from "lucide-react";
 
-// Comme /dashboard/restaurant : on force le re-fetch pour toujours servir
-// la dernière config et pas une version cached après save.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 import { Button } from "@/components/ui/button";
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
-import { getPublicSite } from "@/server/public/restaurant-site";
-import { defaultSiteConfig } from "@/features/restaurant-site/types";
-import { SiteEditorForm } from "./site-editor-form";
+import { loadSiteV2 } from "@/server/public/restaurant-site-v2-loader";
+import { SiteV2EditorForm } from "./site-editor-form";
 
 export const metadata: Metadata = {
   title: "Site vitrine — Ruliz",
@@ -21,19 +18,15 @@ export const metadata: Metadata = {
 export default async function SiteEditorPage() {
   const { restaurant } = await getCurrentRestaurant();
   // skipRedis pour toujours voir la dernière sauvegarde dans l'éditeur
-  const payload = await getPublicSite(restaurant.id, { skipRedis: true });
-
-  const initialConfig =
-    payload?.config ??
-    defaultSiteConfig({
-      nom: restaurant.nom,
-      description: restaurant.description,
-    });
-  const initialEnabled = payload?.enabled ?? false;
-  const initialSlug = payload?.slug ?? null;
+  const payload = await loadSiteV2(restaurant.id, { skipRedis: true });
 
   const restaurantId = restaurant.id.toString();
-  const siteUrl = `/site/${initialSlug ?? restaurantId}`;
+  const config = payload?.config ?? null;
+  const enabled = payload?.enabled ?? false;
+  const slug = payload?.slug ?? null;
+  const plan = restaurant.plan as "freemium" | "pro" | "premium";
+
+  const siteUrl = `/site/${slug ?? restaurantId}`;
 
   return (
     <div className="space-y-6">
@@ -45,22 +38,20 @@ export default async function SiteEditorPage() {
           </HeroEyebrow>
         }
         title="Ton mini-site web"
-        description="Page vitrine en plus de ta carte. Pour communiquer ton concept, ta galerie photos, tes témoignages, tes infos pratiques. Lien direct vers ta carte intégré."
+        description="Un site éditorial moderne, généré depuis ta carte. Les infos pratiques, ton branding et tes plats sont auto-pullés. Tu n'as qu'à personnaliser le contenu éditorial (à propos, témoignages, galerie)."
         actions={
           <Button
             asChild
             variant="outline"
             size="sm"
-            disabled={!initialEnabled}
+            disabled={!enabled}
           >
             <Link
               href={siteUrl}
               target="_blank"
               rel="noreferrer"
-              aria-disabled={!initialEnabled}
-              className={
-                !initialEnabled ? "pointer-events-none opacity-50" : ""
-              }
+              aria-disabled={!enabled}
+              className={!enabled ? "pointer-events-none opacity-50" : ""}
             >
               <ExternalLink className="size-3.5" strokeWidth={1.75} />
               Voir mon site
@@ -69,12 +60,12 @@ export default async function SiteEditorPage() {
         }
       />
 
-      <SiteEditorForm
+      <SiteV2EditorForm
         restaurantId={restaurantId}
-        initialConfig={initialConfig}
-        initialEnabled={initialEnabled}
-        initialSlug={initialSlug}
-        plan={restaurant.plan as "freemium" | "pro" | "premium"}
+        initialConfig={config}
+        initialEnabled={enabled}
+        initialSlug={slug}
+        plan={plan}
       />
     </div>
   );
