@@ -632,6 +632,47 @@
   text-decoration: none;
 }
 
+/* === Practical — réseaux sociaux === */
+.rs-practical__socials {
+  margin-top: var(--rs-s-12);
+  padding-top: var(--rs-s-8);
+  border-top: 1px solid var(--rs-border);
+  text-align: center;
+}
+.rs-practical__socials .rs-eyebrow {
+  display: block;
+  margin-bottom: var(--rs-s-4);
+}
+.rs-practical__socials-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--rs-s-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+}
+.rs-practical__social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--rs-s-2);
+  padding: 0.625rem 1.125rem;
+  border: 1px solid var(--rs-border);
+  border-radius: var(--rs-radius-full);
+  color: var(--rs-text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: border-color 200ms ease, color 200ms ease, background 200ms ease;
+}
+.rs-practical__social-link:hover {
+  border-color: var(--rs-accent);
+  color: var(--rs-accent);
+  background: color-mix(in oklab, var(--rs-accent) 6%, transparent);
+}
+.rs-practical__social-link svg {
+  flex-shrink: 0;
+}
+
 /* === Team === */
 .rs-team__grid {
   display: grid;

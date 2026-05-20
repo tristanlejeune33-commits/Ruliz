@@ -941,40 +941,33 @@ export function SiteEditorForm({
           </CardContent>
         </Card>
 
-        {/* Practical */}
-        <Card>
+        {/* Practical — SYNC AUTO avec Mon restaurant */}
+        <Card className="border-emerald-500/30 bg-emerald-500/5">
           <CardHeader>
-            <CardTitle>Infos pratiques</CardTitle>
+            <CardTitle>Infos pratiques (synchronisées)</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Téléphone">
-                <Input
-                  {...form.register("practical.phone")}
-                  placeholder="01 23 45 67 89"
-                />
-              </Field>
-              <Field label="Email">
-                <Input
-                  type="email"
-                  {...form.register("practical.email")}
-                  placeholder="contact@restaurant.fr"
-                />
-              </Field>
-            </div>
-            <Field label="Horaires (multi-lignes acceptées)">
-              <Textarea
-                rows={4}
-                {...form.register("practical.schedule")}
-                placeholder="Mardi - Samedi&#10;12h00 - 14h30 · 19h00 - 22h30&#10;Fermé dimanche et lundi"
-              />
-            </Field>
-            <Field label="URL Google Maps (vide = adresse du resto)">
-              <Input
-                {...form.register("practical.mapsUrl")}
-                placeholder="https://goo.gl/maps/…"
-              />
-            </Field>
+          <CardContent className="space-y-3 text-sm">
+            <p className="text-[var(--text-muted)]">
+              <strong className="text-[var(--text-primary)]">
+                Téléphone, email, adresse, horaires, Google Maps et réseaux sociaux
+              </strong>{" "}
+              sont automatiquement tirés de{" "}
+              <a
+                href="/dashboard/restaurant"
+                className="text-[var(--accent)] underline hover:no-underline"
+              >
+                Mon restaurant
+              </a>
+              . Modifie-les là-bas, ils se mettent à jour ici (et sur la carte
+              publique).
+            </p>
+            <ul className="space-y-1 text-xs text-[var(--text-muted)]">
+              <li>📍 Adresse complète + lien Google Maps auto-généré</li>
+              <li>☎️ Téléphone (clickable tel:)</li>
+              <li>✉️ Email (clickable mailto:)</li>
+              <li>🕐 Horaires d&apos;ouverture (texte libre, multi-lignes)</li>
+              <li>📱 Facebook, Instagram, TikTok, Avis Google, site web</li>
+            </ul>
           </CardContent>
         </Card>
 

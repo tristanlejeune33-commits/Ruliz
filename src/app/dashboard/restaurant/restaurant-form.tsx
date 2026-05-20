@@ -60,6 +60,12 @@ const schema = z.object({
   codePostal: z.string().max(10),
   ville: z.string().max(100),
   pays: z.string().max(100),
+  /**
+   * Horaires d'ouverture en texte libre, multi-lignes acceptées.
+   * Affiché tel quel sur la carte publique + le mini-site (section
+   * Infos pratiques).
+   */
+  horairesOuverture: z.string().max(1000),
   deviseDefault: z.string().max(5),
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]),
   /** Fuseau horaire IANA (ex: "Europe/Paris", "Pacific/Auckland"). */
@@ -256,6 +262,27 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                       <FormControl>
                         <Input {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="horairesOuverture"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Horaires d&apos;ouverture</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          rows={4}
+                          placeholder={"Mardi - Samedi\n12h00 - 14h30 · 19h00 - 22h30\nFermé dimanche et lundi"}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription className="text-[10px]">
+                        Texte libre, multi-lignes acceptées. Affiché sur ta
+                        carte publique et ton mini-site vitrine.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

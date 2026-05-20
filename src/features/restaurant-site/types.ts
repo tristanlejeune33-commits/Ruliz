@@ -197,7 +197,23 @@ export interface RestaurantSiteBranding {
   fontStyle: "modern" | "editorial" | "elegant";
   ville: string | null;
   pays: string | null;
+  codePostal: string | null;
   adresse: string | null;
+  /**
+   * Téléphone du restaurant — depuis `restaurants.telephone`.
+   * Affiché tel quel (clickable tel:) dans Practical + Footer.
+   */
+  telephone: string | null;
+  /**
+   * Email du restaurant — depuis `restaurants.email`.
+   * Affiché tel quel (clickable mailto:) dans Practical.
+   */
+  email: string | null;
+  /**
+   * Horaires d'ouverture en texte libre (multi-lignes) — depuis
+   * `restaurants.horaires_ouverture`. Ex : "Mardi-Samedi\n12h-15h · 19h-23h"
+   */
+  horairesOuverture: string | null;
   facebookUrl: string | null;
   instagramUrl: string | null;
   tiktokUrl: string | null;

@@ -52,6 +52,15 @@ export async function ensureRuntimeSchema(): Promise<void> {
       `ALTER TABLE "restaurants" ADD COLUMN IF NOT EXISTS "timezone" VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';`,
       "restaurants.timezone",
     );
+    // Horaires d'ouverture en texte libre (multi-lignes) — distinct des
+    // preset hours lunch/dinner/happy_hour qui pilotent les créneaux de
+    // visibilité des catégories. Celui-ci sert à l'affichage public
+    // (carte + mini-site).
+    await safeExec(
+      `ALTER TABLE "restaurants" ADD COLUMN IF NOT EXISTS "horaires_ouverture" TEXT;`,
+      "restaurants.horaires_ouverture",
+    );
+
     // === Mini-site vitrine ===
     // site_enabled = false → la route /site/[id] retourne 404 tant que le
     // restaurateur n'a pas activé sa fonctionnalité (Pro/Premium uniquement).

@@ -62,7 +62,11 @@ type Row = {
   fontStyle: string | null;
   ville: string | null;
   pays: string | null;
+  codePostal: string | null;
   adresse: string | null;
+  telephone: string | null;
+  email: string | null;
+  horairesOuverture: string | null;
   facebookUrl: string | null;
   instagramUrl: string | null;
   tiktokUrl: string | null;
@@ -91,7 +95,11 @@ function rowToPayload(row: Row, lang: SupportedLang = "fr"): PublicSitePayload {
       (row.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",
     ville: row.ville,
     pays: row.pays,
+    codePostal: row.codePostal,
     adresse: row.adresse,
+    telephone: row.telephone,
+    email: row.email,
+    horairesOuverture: row.horairesOuverture,
     facebookUrl: row.facebookUrl,
     instagramUrl: row.instagramUrl,
     tiktokUrl: row.tiktokUrl,
@@ -126,7 +134,11 @@ const SELECT_COLUMNS = `
   font_style         AS "fontStyle",
   ville,
   pays,
+  code_postal        AS "codePostal",
   adresse,
+  telephone,
+  email,
+  horaires_ouverture AS "horairesOuverture",
   facebook_url       AS "facebookUrl",
   instagram_url      AS "instagramUrl",
   tiktok_url         AS "tiktokUrl",

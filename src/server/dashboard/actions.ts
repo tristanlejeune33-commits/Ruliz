@@ -52,6 +52,8 @@ const restaurantSchema = z.object({
   codePostal: z.string().max(10).optional().or(z.literal("")),
   ville: z.string().max(100).optional().or(z.literal("")),
   pays: z.string().max(100).optional().or(z.literal("")),
+  // Horaires d'ouverture en texte libre, affiché tel quel sur la carte + site
+  horairesOuverture: z.string().max(1000).optional().or(z.literal("")),
   deviseDefault: z.string().max(5).optional().or(z.literal("")),
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]).optional(),
   // IANA timezone (validated min-only — Intl.DateTimeFormat valide en runtime)
@@ -109,11 +111,34 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         ADD COLUMN IF NOT EXISTS "dinner_start"     VARCHAR(5) DEFAULT '18:30',
         ADD COLUMN IF NOT EXISTS "dinner_end"       VARCHAR(5) DEFAULT '23:00',
         ADD COLUMN IF NOT EXISTS "happy_hour_start" VARCHAR(5) DEFAULT '18:00',
-        ADD COLUMN IF NOT EXISTS "happy_hour_end"   VARCHAR(5) DEFAULT '19:00';
+        ADD COLUMN IF NOT EXISTS "happy_hour_end"   VARCHAR(5) DEFAULT '19:00',
+        ADD COLUMN IF NOT EXISTS "horaires_ouverture" TEXT;
     `);
   } catch (err) {
     console.warn(
       "[updateRestaurant] ensure horaires columns failed (continuing):",
+      err,
+    );
+  }
+
+  // === Save horaires_ouverture via raw SQL en upfront ===
+  // Comme la colonne est ajoutée à chaud via ensureRuntimeSchema, le client
+  // Prisma local peut ne pas la connaître → erreur P2022 sur l'update
+  // Prisma plus bas. On la sauve séparément en raw SQL pour garantir
+  // la persistence indépendamment du cache Prisma.
+  try {
+    const horaires =
+      data.horairesOuverture && data.horairesOuverture.trim().length > 0
+        ? data.horairesOuverture
+        : null;
+    await prisma.$executeRaw`
+      UPDATE "restaurants"
+      SET "horaires_ouverture" = ${horaires}
+      WHERE "id" = ${bigId}
+    `;
+  } catch (err) {
+    console.warn(
+      "[updateRestaurant] horaires_ouverture raw SQL failed (continuing):",
       err,
     );
   }

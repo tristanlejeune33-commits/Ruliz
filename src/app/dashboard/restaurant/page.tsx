@@ -90,6 +90,11 @@ export default async function RestaurantPage() {
           codePostal: data.codePostal ?? "",
           ville: data.ville ?? "",
           pays: data.pays ?? "France",
+          // Horaires d'ouverture en texte libre (ajouté tardivement via
+          // ensureRuntimeSchema → le type Prisma local peut ne pas connaître
+          // la colonne, cast explicite pour rétrocompat)
+          horairesOuverture:
+            (data as { horairesOuverture?: string }).horairesOuverture ?? "",
           deviseDefault: data.deviseDefault ?? "€",
           langueNative:
             (data.langueNative as
