@@ -206,14 +206,17 @@
   background: var(--rs2-btn-bg-hover, var(--accent));
   color: var(--rs2-btn-text-hover, var(--on-accent));
 }
+/* Secondary = bouton outline transparent. Respecte aussi les vars
+   custom de l'user si elles sont définies (bordure + texte prennent
+   la couleur du bg custom, lors du hover bascule en bg plein). */
 .rs2-btn-secondary {
   background: transparent;
-  color: var(--ink);
-  border: 1px solid var(--ink);
+  color: var(--rs2-btn-bg, var(--ink));
+  border: 1px solid var(--rs2-btn-bg, var(--ink));
 }
 .rs2-btn-secondary:hover {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--rs2-btn-bg, var(--ink));
+  color: var(--rs2-btn-text, var(--bg));
 }
 .rs2-btn .arrow {
   display: inline-block;
@@ -1007,6 +1010,8 @@
 }
 
 /* ─── FLOATING RESERVE CTA ─── */
+/* Utilise les CSS vars custom de l'user si définies (cohérent avec tous
+   les autres boutons primary du site). Fallback accent si rien custom. */
 .rs2-float-cta {
   position: fixed;
   top: 68px;
@@ -1017,8 +1022,8 @@
   gap: 10px;
   padding: 13px 20px;
   border-radius: 999px;
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--rs2-btn-bg, var(--accent));
+  color: var(--rs2-btn-text, var(--on-accent));
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 500;
@@ -1026,8 +1031,11 @@
   text-transform: uppercase;
   line-height: 1;
   box-shadow:
-    0 1px 0 color-mix(in oklch, var(--on-accent) 25%, transparent) inset,
-    0 8px 24px color-mix(in oklch, var(--accent) 30%, transparent);
+    0 1px 0
+      color-mix(in oklch, var(--rs2-btn-text, var(--on-accent)) 25%, transparent)
+      inset,
+    0 8px 24px
+      color-mix(in oklch, var(--rs2-btn-bg, var(--accent)) 30%, transparent);
   transition:
     transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
     box-shadow 320ms,
@@ -1048,7 +1056,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--on-accent);
+  background: var(--rs2-btn-text, var(--on-accent));
   opacity: 0.6;
   animation: rs2-pulseDot 1.6s ease-in-out infinite;
 }

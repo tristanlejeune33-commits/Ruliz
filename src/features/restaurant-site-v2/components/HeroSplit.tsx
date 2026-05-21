@@ -56,7 +56,12 @@ export function HeroSplit({ config }: HeroSplitProps) {
             Voir la carte
           </Btn>
           {config.reservationUrl && (
-            <Btn href={config.reservationUrl} external variant="secondary">
+            <Btn
+              href={config.reservationUrl}
+              external
+              variant="primary"
+              arrow
+            >
               Réserver
             </Btn>
           )}
