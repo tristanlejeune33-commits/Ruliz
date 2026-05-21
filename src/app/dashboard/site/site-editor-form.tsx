@@ -648,22 +648,11 @@ export function SiteV2EditorForm({
                   </div>
                 </Field>
               </div>
-              {/* Live preview du bouton avec les couleurs actuelles */}
-              <div className="flex items-center justify-center rounded-md border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-4">
-                <span
-                  className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all"
-                  style={{
-                    background:
-                      form.watch("buttonBgColor") || "var(--text-primary)",
-                    color:
-                      form.watch("buttonTextColor") ||
-                      "var(--bg-primary)",
-                  }}
-                >
-                  <span>Aperçu bouton</span>
-                  <span aria-hidden>→</span>
-                </span>
-              </div>
+              {/* Live preview du bouton avec les couleurs actuelles + warn contraste */}
+              <ButtonPreviewWithContrast
+                bg={form.watch("buttonBgColor") ?? ""}
+                text={form.watch("buttonTextColor") ?? ""}
+              />
             </div>
             <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
               <div>
@@ -1112,6 +1101,82 @@ function blank(s: string | undefined): string | undefined {
   if (!s) return undefined;
   const trim = s.trim();
   return trim.length === 0 ? undefined : trim;
+}
+
+/**
+ * Aperçu live du bouton avec calcul de contraste WCAG.
+ * Affiche un warning si le ratio est sous 3 (illisible). Le rendu côté
+ * site auto-corrige (cf. RestaurantSite.tsx) mais on prévient l'user
+ * dans le form pour qu'il choisisse de meilleures couleurs.
+ */
+function ButtonPreviewWithContrast({
+  bg,
+  text,
+}: {
+  bg: string;
+  text: string;
+}) {
+  const bgValid = /^#[0-9a-fA-F]{6}$/.test(bg);
+  const textValid = /^#[0-9a-fA-F]{6}$/.test(text);
+
+  let ratio: number | null = null;
+  if (bgValid && textValid) {
+    ratio = computeContrast(bg, text);
+  }
+
+  const showWarning = ratio !== null && ratio < 3;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-center rounded-md border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-4">
+        <span
+          className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all"
+          style={{
+            background: bgValid ? bg : "var(--text-primary)",
+            color: textValid ? text : "var(--bg-primary)",
+          }}
+        >
+          <span>Aperçu bouton</span>
+          <span aria-hidden>→</span>
+        </span>
+      </div>
+      {ratio !== null && (
+        <p
+          className={`text-center text-xs ${
+            showWarning
+              ? "font-medium text-amber-600 dark:text-amber-400"
+              : "text-[var(--text-muted)]"
+          }`}
+        >
+          Contraste : {ratio.toFixed(2)}:1
+          {showWarning && (
+            <>
+              {" "}
+              · ⚠ Trop faible (auto-correction au rendu pour rester lisible)
+            </>
+          )}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Luminance + contrast WCAG côté client pour le preview. */
+function computeContrast(hex1: string, hex2: string): number {
+  const lum = (hex: string) => {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.slice(0, 2), 16) / 255;
+    const g = parseInt(h.slice(2, 4), 16) / 255;
+    const b = parseInt(h.slice(4, 6), 16) / 255;
+    const lin = (c: number) =>
+      c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  };
+  const l1 = lum(hex1);
+  const l2 = lum(hex2);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 /**
