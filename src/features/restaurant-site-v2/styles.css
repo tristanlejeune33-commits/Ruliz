@@ -192,29 +192,29 @@
   white-space: nowrap;
 }
 /* CTA primary — utilise les CSS vars custom si l'user les a définies,
-   sinon fallback sur ink/bg (dark btn light text, contexte normal). */
-.rs2-btn-primary {
+   sinon fallback sur ink/bg (dark btn light text, contexte normal).
+   IMPORTANT : on préfixe avec .rs2-root pour gagner contre la règle
+   `.rs2-root a { color: inherit }` du reset (qui sinon a une spécificité
+   plus élevée : classe + élément = (0,1,1) vs (0,1,0) pour .rs2-btn-primary
+   seul). Sans ce préfixe, les boutons non-banner héritent la couleur
+   du parent et ignorent --rs2-btn-text → texte dark sur fond user dark =
+   illisible. Cf. bug screenshot 25-05-21. */
+.rs2-root .rs2-btn-primary {
   background: var(--rs2-btn-bg, var(--ink));
   color: var(--rs2-btn-text, var(--bg));
 }
-/* Hover : garde les couleurs custom user (sinon = swap accent par défaut).
-   Sans cette logique, l'utilisateur qui pick "fond noir + texte blanc"
-   voyait son bouton flasher en accent au hover (souvent invisible si
-   l'accent est sombre). Avec ça, les couleurs restent stables, l'effet
-   hover passe par le transform translateY(-1px) du .rs2-btn base. */
-.rs2-btn-primary:hover {
+.rs2-root .rs2-btn-primary:hover {
   background: var(--rs2-btn-bg-hover, var(--accent));
   color: var(--rs2-btn-text-hover, var(--on-accent));
 }
-/* Secondary = bouton outline transparent. Respecte aussi les vars
-   custom de l'user si elles sont définies (bordure + texte prennent
-   la couleur du bg custom, lors du hover bascule en bg plein). */
-.rs2-btn-secondary {
+/* Secondary = bouton outline transparent. Idem préfixe .rs2-root pour
+   battre `.rs2-root a { color: inherit }` du reset. */
+.rs2-root .rs2-btn-secondary {
   background: transparent;
   color: var(--rs2-btn-bg, var(--ink));
   border: 1px solid var(--rs2-btn-bg, var(--ink));
 }
-.rs2-btn-secondary:hover {
+.rs2-root .rs2-btn-secondary:hover {
   background: var(--rs2-btn-bg, var(--ink));
   color: var(--rs2-btn-text, var(--bg));
 }
