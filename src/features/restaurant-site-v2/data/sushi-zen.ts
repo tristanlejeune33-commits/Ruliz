@@ -120,6 +120,7 @@ export const sushiZenConfig: RestaurantConfig = {
     showGallery: true,
     showTestimonials: true,
     showReservation: true,
+    showMap: true,
     theme: "light",
     aboutImageLeft: false,
     heroLayout: "split",

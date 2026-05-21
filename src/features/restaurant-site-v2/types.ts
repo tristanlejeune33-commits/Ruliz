@@ -115,6 +115,13 @@ export interface RestaurantConfig {
     showGallery: boolean;
     showTestimonials: boolean;
     showReservation: boolean;
+    /**
+     * True = affiche la map Google Maps (iframe + CTA Ouvrir dans Maps)
+     * dans la section Pratique. False = section affiche uniquement les
+     * infos texte (adresse cliquable + tel + email + horaires) sans
+     * embed visuel. Default true pour rétrocompat des sites existants.
+     */
+    showMap: boolean;
     theme: SiteTheme;
     /** True = photo à gauche, texte à droite ; false = inversé (direction rtl). */
     aboutImageLeft: boolean;

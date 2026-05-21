@@ -46,6 +46,8 @@ const optionsSchema = z.object({
   showGallery: z.boolean(),
   showTestimonials: z.boolean(),
   showReservation: z.boolean(),
+  /** Toggle Maps embed dans la section Pratique. */
+  showMap: z.boolean(),
   theme: z.enum(["light", "dark"]),
   aboutImageLeft: z.boolean(),
   heroLayout: z.enum(["banner", "split"]),

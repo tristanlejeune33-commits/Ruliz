@@ -19,15 +19,21 @@ const DAY_LABELS: Record<string, string> = {
 };
 
 /**
- * Section "Pratique" — infos cliquables à gauche, map à droite.
+ * Section "Pratique" — infos cliquables à gauche, map à droite
+ * (la map peut être masquée via `options.showMap = false`).
  *
  * Highlight du jour courant dans le tableau d'horaires :
  *   JS Date.getDay() : 0=dim, 1=lun, ..., 6=sam
  *   Nos rows sont ordonnées lun→dim → indexFromJsDay convertit.
+ *
+ * Layout :
+ *   - showMap = true  → grid 2-col (info 1fr | map 1.2fr)
+ *   - showMap = false → 1 colonne pleine largeur (les infos)
  */
 export function Practical({ config, sectionNum }: PracticalProps) {
   // Lundi=0, Dimanche=6
   const todayIndex = (new Date().getDay() + 6) % 7;
+  const showMap = config.options.showMap !== false;
 
   return (
     <section id="practical" className="rs2-section">
@@ -40,7 +46,13 @@ export function Practical({ config, sectionNum }: PracticalProps) {
           </Reveal>
         </div>
 
-        <div className="rs2-info">
+        <div
+          className="rs2-info"
+          // Quand la map est masquée, on étire la colonne d'infos sur
+          // toute la largeur plutôt que de laisser un trou (cf. CSS de
+          // .rs2-info en grid 1fr 1.2fr).
+          style={showMap ? undefined : { gridTemplateColumns: "1fr" }}
+        >
           <Reveal index={0}>
             <div className="rs2-info-blocks">
               <div className="rs2-info-block">
@@ -105,12 +117,14 @@ export function Practical({ config, sectionNum }: PracticalProps) {
             </div>
           </Reveal>
 
-          <Reveal index={1}>
-            <MapEmbed
-              googleMapsUrl={config.practical.googleMapsUrl}
-              address={config.practical.address}
-            />
-          </Reveal>
+          {showMap && (
+            <Reveal index={1}>
+              <MapEmbed
+                googleMapsUrl={config.practical.googleMapsUrl}
+                address={config.practical.address}
+              />
+            </Reveal>
+          )}
         </div>
       </div>
     </section>

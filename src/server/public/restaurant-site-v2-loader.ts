@@ -157,6 +157,8 @@ interface SiteConfigV2Json {
     showGallery?: boolean;
     showTestimonials?: boolean;
     showReservation?: boolean;
+    /** Toggle map Google Maps dans la section Pratique. Default true. */
+    showMap?: boolean;
     theme?: "light" | "dark";
     aboutImageLeft?: boolean;
     heroLayout?: "banner" | "split";
@@ -493,6 +495,10 @@ export async function loadSiteV2(
       showTestimonials:
         v2?.options?.showTestimonials ?? testimonials.length > 0,
       showReservation: v2?.options?.showReservation ?? reservationUrl !== null,
+      // Default true → rétrocompat des sites existants qui voient la map.
+      // L'utilisateur peut désactiver explicitement via le toggle des
+      // paramètres site.
+      showMap: v2?.options?.showMap ?? true,
       theme,
       aboutImageLeft: v2?.options?.aboutImageLeft ?? true,
       heroLayout: v2?.options?.heroLayout ?? "banner",

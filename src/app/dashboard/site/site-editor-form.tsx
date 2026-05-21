@@ -116,6 +116,7 @@ const schema = z.object({
     showGallery: z.boolean(),
     showTestimonials: z.boolean(),
     showReservation: z.boolean(),
+    showMap: z.boolean(),
     theme: z.enum(["light", "dark"]),
     aboutImageLeft: z.boolean(),
     heroLayout: z.enum(["banner", "split"]),
@@ -179,6 +180,9 @@ export function SiteV2EditorForm({
         showGallery: initialConfig?.options.showGallery ?? false,
         showTestimonials: initialConfig?.options.showTestimonials ?? false,
         showReservation: initialConfig?.options.showReservation ?? false,
+        // Default true → la map est visible sur les sites existants
+        // sans intervention. L'user désactive explicitement s'il préfère.
+        showMap: initialConfig?.options.showMap ?? true,
         theme: initialConfig?.options.theme ?? "light",
         aboutImageLeft: initialConfig?.options.aboutImageLeft ?? true,
         heroLayout: initialConfig?.options.heroLayout ?? "banner",
@@ -670,7 +674,7 @@ export function SiteV2EditorForm({
           <CardHeader>
             <CardTitle>Sections affichées</CardTitle>
           </CardHeader>
-          <CardContent className="grid gap-3 sm:grid-cols-3">
+          <CardContent className="grid gap-3 sm:grid-cols-2">
             <SectionToggle
               label="Galerie"
               checked={form.watch("options.showGallery")}
@@ -694,6 +698,13 @@ export function SiteV2EditorForm({
                 form.setValue("options.showReservation", v, {
                   shouldDirty: true,
                 })
+              }
+            />
+            <SectionToggle
+              label="Carte Google Maps"
+              checked={form.watch("options.showMap")}
+              onChange={(v) =>
+                form.setValue("options.showMap", v, { shouldDirty: true })
               }
             />
           </CardContent>

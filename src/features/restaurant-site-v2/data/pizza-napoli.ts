@@ -118,6 +118,7 @@ export const pizzaNapoliConfig: RestaurantConfig = {
     showGallery: true,
     showTestimonials: true,
     showReservation: true,
+    showMap: true,
     theme: "light",
     aboutImageLeft: true,
     heroLayout: "banner",
