@@ -287,7 +287,12 @@ export function SiteV2EditorForm({
     });
   };
 
+  // URL utilisée pour le LIEN "Voir mon site" (clean, partageable)
   const previewUrl = `/site/${slug ?? restaurantId}`;
+  // URL utilisée pour l'IFRAME — query param cache-bust qui bump à chaque
+  // save. Sans ça, ISR Next.js + Cloudflare edge cache + Redis L3 +
+  // navigateur peuvent tous garder une version stale.
+  const previewIframeUrl = `${previewUrl}?_=${previewKey}`;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_480px]">
@@ -963,7 +968,7 @@ export function SiteV2EditorForm({
           <iframe
             key={previewKey}
             ref={iframeRef}
-            src={enabled ? previewUrl : "about:blank"}
+            src={enabled ? previewIframeUrl : "about:blank"}
             className="h-[calc(100vh-8rem)] w-full rounded-lg border border-[var(--border-subtle)] bg-white shadow-lg"
             title="Preview du site"
           />
