@@ -69,15 +69,14 @@ export function HeroBanner({ config }: HeroBannerProps) {
             Voir la carte
           </Btn>
           {config.reservationUrl && (
-            <a
+            <Btn
               href={config.reservationUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rs2-link"
-              style={{ color: "#fff", fontSize: 14, padding: "14px 0" }}
+              external
+              variant="primary"
+              arrow
             >
               Réserver une table
-            </a>
+            </Btn>
           )}
         </div>
       </div>

@@ -150,6 +150,8 @@ interface SiteConfigV2Json {
   testimonials?: Testimonial[];
   reservationUrl?: string;
   accentColor?: string; // override le couleurPrimaire du resto
+  buttonBgColor?: string; // bg des CTA primary
+  buttonTextColor?: string; // texte des CTA primary
   typographyPreset?: "editorial" | "modern" | "classic";
   /** Override des horaires structurées (sinon parsé depuis horairesOuverture). */
   hoursOverride?: HoursRow[];
@@ -467,6 +469,8 @@ export async function loadSiteV2(
     bannerUrl: resto.banniereUrl,
     heroImage: resto.banniereUrl ?? undefined,
     accentColor,
+    buttonBgColor: v2?.buttonBgColor,
+    buttonTextColor: v2?.buttonTextColor,
     typographyPreset,
     city,
     established,

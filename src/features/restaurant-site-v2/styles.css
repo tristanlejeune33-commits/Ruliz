@@ -191,9 +191,11 @@
     transform 280ms;
   white-space: nowrap;
 }
+/* CTA primary — utilise les CSS vars custom si l'user les a définies,
+   sinon fallback sur ink/bg (dark btn light text, contexte normal). */
 .rs2-btn-primary {
-  background: var(--ink);
-  color: var(--bg);
+  background: var(--rs2-btn-bg, var(--ink));
+  color: var(--rs2-btn-text, var(--bg));
 }
 .rs2-btn-primary:hover {
   background: var(--accent);
@@ -536,9 +538,12 @@
   align-items: center;
   margin-top: 14px;
 }
+/* Override hero banner — sur l'image sombre, le default est blanc/ink
+   pour lisibilité MAX. Si l'user a customisé --rs2-btn-bg/--rs2-btn-text,
+   ces vars priment. */
 .rs2-hero-banner .rs2-btn-primary {
-  background: #fff;
-  color: var(--ink);
+  background: var(--rs2-btn-bg, #fff);
+  color: var(--rs2-btn-text, var(--ink));
 }
 .rs2-hero-banner .rs2-btn-primary:hover {
   background: var(--accent);

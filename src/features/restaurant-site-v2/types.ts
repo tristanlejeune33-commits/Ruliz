@@ -50,6 +50,17 @@ export interface RestaurantConfig {
   bannerUrl: string | null;
   /** Hex ou oklch — mappé en CSS var --accent. */
   accentColor: string;
+  /**
+   * Couleur de fond des CTAs primary (Voir la carte / Réserver / etc.).
+   * Hex ou oklch. Si non défini → ink (dark) en hors-banner, blanc sur
+   * banner pour lisibilité.
+   */
+  buttonBgColor?: string;
+  /**
+   * Couleur de texte des CTAs primary. Hex ou oklch.
+   * Si non défini → bg (light) en hors-banner, ink (dark) sur banner.
+   */
+  buttonTextColor?: string;
   typographyPreset: TypographyPreset;
 
   // -------- Méta affichées (chip eyebrow) --------

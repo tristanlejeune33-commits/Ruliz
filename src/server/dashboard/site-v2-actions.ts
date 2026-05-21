@@ -61,6 +61,14 @@ const v2ConfigSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$|^oklch\(.+\)$/i, "Format hex ou oklch")
     .optional(),
+  buttonBgColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$|^oklch\(.+\)$/i, "Format hex ou oklch")
+    .optional(),
+  buttonTextColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$|^oklch\(.+\)$/i, "Format hex ou oklch")
+    .optional(),
   typographyPreset: z.enum(["editorial", "modern", "classic"]).optional(),
   about: aboutSchema.optional(),
   menuTeaser: z

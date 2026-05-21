@@ -91,6 +91,16 @@ const schema = z.object({
     .regex(/^#[0-9a-fA-F]{6}$|^oklch\(.+\)$/i, "Hex ou oklch")
     .optional()
     .or(z.literal("")),
+  buttonBgColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$|^oklch\(.+\)$/i, "Hex ou oklch")
+    .optional()
+    .or(z.literal("")),
+  buttonTextColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$|^oklch\(.+\)$/i, "Hex ou oklch")
+    .optional()
+    .or(z.literal("")),
   typographyPreset: z.enum(["editorial", "modern", "classic"]),
   about: z.object({
     title: z.string().max(255).optional(),
@@ -164,6 +174,8 @@ export function SiteV2EditorForm({
       established:
         initialConfig?.established ?? new Date().getFullYear(),
       accentColor: initialConfig?.accentColor ?? "",
+      buttonBgColor: initialConfig?.buttonBgColor ?? "",
+      buttonTextColor: initialConfig?.buttonTextColor ?? "",
       typographyPreset: initialConfig?.typographyPreset ?? "editorial",
       about: {
         title: initialConfig?.about.title ?? "",
@@ -209,6 +221,8 @@ export function SiteV2EditorForm({
             ? values.established
             : undefined,
         accentColor: blank(values.accentColor),
+        buttonBgColor: blank(values.buttonBgColor),
+        buttonTextColor: blank(values.buttonTextColor),
         typographyPreset: values.typographyPreset,
         about: {
           title: blank(values.about.title),
@@ -548,6 +562,56 @@ export function SiteV2EditorForm({
                   <Input
                     {...form.register("accentColor")}
                     placeholder="#6b2a18 ou oklch(0.42 0.13 22)"
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </Field>
+            </div>
+
+            {/* Couleurs des CTA (boutons "Voir la carte", "Réserver", etc.) */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Couleur fond des boutons (vide = défaut)">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={
+                      form.watch("buttonBgColor")?.startsWith("#")
+                        ? form.watch("buttonBgColor")
+                        : "#ffffff"
+                    }
+                    onChange={(e) =>
+                      form.setValue("buttonBgColor", e.target.value, {
+                        shouldDirty: true,
+                      })
+                    }
+                    className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)]"
+                  />
+                  <Input
+                    {...form.register("buttonBgColor")}
+                    placeholder="#ffffff"
+                    className="font-mono text-xs"
+                  />
+                </div>
+              </Field>
+              <Field label="Couleur texte des boutons (vide = défaut)">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={
+                      form.watch("buttonTextColor")?.startsWith("#")
+                        ? form.watch("buttonTextColor")
+                        : "#1a1a1a"
+                    }
+                    onChange={(e) =>
+                      form.setValue("buttonTextColor", e.target.value, {
+                        shouldDirty: true,
+                      })
+                    }
+                    className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)]"
+                  />
+                  <Input
+                    {...form.register("buttonTextColor")}
+                    placeholder="#1a1a1a"
                     className="font-mono text-xs"
                   />
                 </div>

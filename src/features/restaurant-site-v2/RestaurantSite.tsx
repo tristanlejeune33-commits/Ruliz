@@ -41,10 +41,21 @@ export function RestaurantSite({ config }: RestaurantSiteProps) {
   // Convertit l'accent en oklch si l'utilisateur a fourni du hex
   const accent = hexToOklch(config.accentColor);
 
+  // Couleurs CTA — converties hex → oklch si fournies. Si non, les CSS
+  // tombent sur les fallbacks (--ink/--bg en normal, blanc sur banner).
+  const btnBg = config.buttonBgColor ? hexToOklch(config.buttonBgColor) : null;
+  const btnText = config.buttonTextColor
+    ? hexToOklch(config.buttonTextColor)
+    : null;
+
   const styleVars: CSSProperties = {
     ...fonts.style,
     // @ts-expect-error CSS custom properties non typées dans React.CSSProperties
     "--accent": accent,
+    // Injectées seulement si l'user a customisé — sinon les CSS fallback
+    // sur les defaults via var(--rs2-btn-bg, --ink) etc.
+    ...(btnBg ? { "--rs2-btn-bg": btnBg } : {}),
+    ...(btnText ? { "--rs2-btn-text": btnText } : {}),
   };
 
   // Numérotation dynamique des sections — labels visuels
