@@ -568,54 +568,102 @@ export function SiteV2EditorForm({
               </Field>
             </div>
 
-            {/* Couleurs des CTA (boutons "Voir la carte", "Réserver", etc.) */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Field label="Couleur fond des boutons (vide = défaut)">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={
-                      form.watch("buttonBgColor")?.startsWith("#")
-                        ? form.watch("buttonBgColor")
-                        : "#ffffff"
-                    }
-                    onChange={(e) =>
-                      form.setValue("buttonBgColor", e.target.value, {
-                        shouldDirty: true,
-                      })
-                    }
-                    className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)]"
-                  />
-                  <Input
-                    {...form.register("buttonBgColor")}
-                    placeholder="#ffffff"
-                    className="font-mono text-xs"
-                  />
-                </div>
-              </Field>
-              <Field label="Couleur texte des boutons (vide = défaut)">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="color"
-                    value={
-                      form.watch("buttonTextColor")?.startsWith("#")
-                        ? form.watch("buttonTextColor")
-                        : "#1a1a1a"
-                    }
-                    onChange={(e) =>
-                      form.setValue("buttonTextColor", e.target.value, {
-                        shouldDirty: true,
-                      })
-                    }
-                    className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)]"
-                  />
-                  <Input
-                    {...form.register("buttonTextColor")}
-                    placeholder="#1a1a1a"
-                    className="font-mono text-xs"
-                  />
-                </div>
-              </Field>
+            {/* Couleurs des CTA + live preview en temps réel */}
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Couleur fond des boutons">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={
+                        form.watch("buttonBgColor")?.startsWith("#")
+                          ? form.watch("buttonBgColor")
+                          : "#ffffff"
+                      }
+                      onChange={(e) =>
+                        form.setValue("buttonBgColor", e.target.value, {
+                          shouldDirty: true,
+                        })
+                      }
+                      className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)]"
+                    />
+                    <Input
+                      {...form.register("buttonBgColor")}
+                      placeholder="vide = défaut"
+                      className="font-mono text-xs"
+                    />
+                    {form.watch("buttonBgColor") && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          form.setValue("buttonBgColor", "", {
+                            shouldDirty: true,
+                          })
+                        }
+                        title="Effacer"
+                      >
+                        ✕
+                      </Button>
+                    )}
+                  </div>
+                </Field>
+                <Field label="Couleur texte des boutons">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={
+                        form.watch("buttonTextColor")?.startsWith("#")
+                          ? form.watch("buttonTextColor")
+                          : "#ffffff"
+                      }
+                      onChange={(e) =>
+                        form.setValue("buttonTextColor", e.target.value, {
+                          shouldDirty: true,
+                        })
+                      }
+                      className="size-10 cursor-pointer rounded-md border border-[var(--border-subtle)]"
+                    />
+                    <Input
+                      {...form.register("buttonTextColor")}
+                      placeholder="vide = défaut"
+                      className="font-mono text-xs"
+                    />
+                    {form.watch("buttonTextColor") && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          form.setValue("buttonTextColor", "", {
+                            shouldDirty: true,
+                          })
+                        }
+                        title="Effacer"
+                      >
+                        ✕
+                      </Button>
+                    )}
+                  </div>
+                </Field>
+              </div>
+              {/* Live preview du bouton avec les couleurs actuelles */}
+              <div className="flex items-center justify-center rounded-md border border-dashed border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-4">
+                <span
+                  className="inline-flex items-center gap-2 rounded-full px-5 py-3 text-sm font-medium transition-all"
+                  style={{
+                    background:
+                      form.watch("buttonBgColor") || "var(--text-primary)",
+                    color:
+                      form.watch("buttonTextColor") ||
+                      "var(--bg-primary)",
+                  }}
+                >
+                  <span>Aperçu bouton</span>
+                  <span aria-hidden>→</span>
+                </span>
+              </div>
             </div>
             <label className="flex cursor-pointer items-center justify-between gap-3 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3">
               <div>

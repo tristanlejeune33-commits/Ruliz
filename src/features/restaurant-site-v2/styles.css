@@ -197,9 +197,14 @@
   background: var(--rs2-btn-bg, var(--ink));
   color: var(--rs2-btn-text, var(--bg));
 }
+/* Hover : garde les couleurs custom user (sinon = swap accent par défaut).
+   Sans cette logique, l'utilisateur qui pick "fond noir + texte blanc"
+   voyait son bouton flasher en accent au hover (souvent invisible si
+   l'accent est sombre). Avec ça, les couleurs restent stables, l'effet
+   hover passe par le transform translateY(-1px) du .rs2-btn base. */
 .rs2-btn-primary:hover {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--rs2-btn-bg-hover, var(--accent));
+  color: var(--rs2-btn-text-hover, var(--on-accent));
 }
 .rs2-btn-secondary {
   background: transparent;
@@ -546,8 +551,8 @@
   color: var(--rs2-btn-text, var(--ink));
 }
 .rs2-hero-banner .rs2-btn-primary:hover {
-  background: var(--accent);
-  color: var(--on-accent);
+  background: var(--rs2-btn-bg-hover, var(--accent));
+  color: var(--rs2-btn-text-hover, var(--on-accent));
 }
 
 /* ─── ABOUT ─── */
