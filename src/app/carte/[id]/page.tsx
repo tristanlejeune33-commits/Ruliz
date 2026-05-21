@@ -108,6 +108,13 @@ export default async function CartePage({ params, searchParams }: PageProps) {
       headersList.get("cf-ipcountry") ??
       headersList.get("x-vercel-ip-country") ??
       null;
+    // IP : Cloudflare/Railway expose plusieurs headers selon le proxy.
+    // On prend le 1er disponible. Stockée hashée par scan.ts pour dédup.
+    const ip =
+      headersList.get("cf-connecting-ip") ??
+      headersList.get("x-real-ip") ??
+      headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
 
     after(async () => {
       try {
@@ -119,6 +126,7 @@ export default async function CartePage({ params, searchParams }: PageProps) {
           lang,
           userAgent: ua,
           pays: country,
+          ip,
         });
       } catch (e) {
         console.warn("[scan] tracking failed:", e);

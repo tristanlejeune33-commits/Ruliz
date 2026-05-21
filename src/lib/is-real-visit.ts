@@ -22,9 +22,115 @@
  * On ratisse large parce qu'un faux négatif (=on enregistre un bot)
  * coûte 1 scan parasite ; un faux positif (=on ignore un humain) coûte
  * juste 1 scan manquant — moins grave.
+ *
+ * Listes consolidées : SEO crawlers + IA bots + monitoring + previews
+ * sociaux + outils dev/test + headless browsers + archivers.
  */
-const BOT_UA_REGEX =
-  /bot\b|crawl|spider|slurp|prerender|headless|fetch\b|monitor|uptime|pingdom|datadog|chatgpt-user|gptbot|claude-?web|claudebot|anthropic|perplexity|googlebot|bingbot|duckduckbot|baiduspider|yandex|sogou|facebookexternalhit|facebookcatalog|whatsapp|twitterbot|linkedinbot|slackbot|discordbot|skypeuripreview|telegrambot|applebot|ia_archiver|archive\.org|yeti|google-?inspectiontool|chrome-?lighthouse|cypress|playwright|selenium|puppeteer/i;
+const BOT_UA_REGEX = new RegExp(
+  [
+    // Génériques
+    "bot\\b",
+    "crawl",
+    "spider",
+    "slurp",
+    "prerender",
+    "headless",
+    "fetch\\b",
+    "scrapy",
+    "scraper",
+    "node-fetch",
+    "axios",
+    "go-http-client",
+    "python-requests",
+    "okhttp",
+    "java/",
+    "libwww",
+    "curl/",
+    "wget",
+    // Search engines
+    "googlebot",
+    "bingbot",
+    "duckduckbot",
+    "baiduspider",
+    "yandex",
+    "sogou",
+    "yeti",
+    "naver",
+    "applebot",
+    "google-?inspectiontool",
+    "adsbot-google",
+    "mediapartners-google",
+    "google-extended",
+    // SEO / scraping tools
+    "ahrefs",
+    "semrush",
+    "mj12bot",
+    "dotbot",
+    "rogerbot",
+    "blexbot",
+    "barkrowler",
+    "seekport",
+    "seznam",
+    "petalbot",
+    "amazonbot",
+    "bytespider",
+    "ccbot",
+    "dataforseo",
+    "internet-?archive",
+    "ia_archiver",
+    "archive\\.org",
+    // IA / LLM crawlers
+    "chatgpt-user",
+    "gptbot",
+    "oai-searchbot",
+    "claude-?web",
+    "claudebot",
+    "anthropic",
+    "perplexity",
+    "youbot",
+    "youbot",
+    "cohere",
+    "diffbot",
+    "facebookbot",
+    "meta-externalagent",
+    "meta-externalfetcher",
+    // Social previews / link unfurlers
+    "facebookexternalhit",
+    "facebookcatalog",
+    "whatsapp",
+    "twitterbot",
+    "linkedinbot",
+    "slackbot",
+    "discordbot",
+    "skypeuripreview",
+    "telegrambot",
+    "embedly",
+    "vkshare",
+    "outbrain",
+    // Monitoring / uptime
+    "monitor",
+    "uptime",
+    "pingdom",
+    "datadog",
+    "newrelic",
+    "betteruptime",
+    "statuscake",
+    "site24x7",
+    "checkly",
+    "freshping",
+    // Headless / dev tools
+    "chrome-?lighthouse",
+    "speedcurve",
+    "gtmetrix",
+    "pagespeed",
+    "cypress",
+    "playwright",
+    "selenium",
+    "puppeteer",
+    "phantomjs",
+  ].join("|"),
+  "i",
+);
 
 /**
  * Headers que Next.js + browsers utilisent pour signaler une requête non-
