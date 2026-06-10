@@ -40,8 +40,12 @@ export default async function DashboardHome() {
 
   const [categoriesCount, produitsCount, totalClicks, jeuParticipations] =
     await Promise.all([
+      // Compte TOUTES les catégories du resto (top-level + sous-catégories),
+      // pour matcher exactement ce que l'éditeur de carte affiche. L'ancien
+      // filtre `parentId: null` excluait les sous-catégories → compteur faux
+      // dès qu'un resto structurait sa carte (ex: Vins ↳ Rouges/Blancs).
       prisma.categorie.count({
-        where: { restaurantId: restaurant.id, parentId: null },
+        where: { restaurantId: restaurant.id },
       }),
       prisma.produit.count({
         where: { categorie: { restaurantId: restaurant.id } },
