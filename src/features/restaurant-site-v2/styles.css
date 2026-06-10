@@ -1011,8 +1011,11 @@
 
 /* ─── FLOATING RESERVE CTA ─── */
 /* Utilise les CSS vars custom de l'user si définies (cohérent avec tous
-   les autres boutons primary du site). Fallback accent si rien custom. */
-.rs2-float-cta {
+   les autres boutons primary du site). Fallback accent si rien custom.
+   IMPORTANT : préfixe .rs2-root pour battre `.rs2-root a { color: inherit }`
+   du reset — sinon le texte est hérité du parent (dark) au lieu d'utiliser
+   --rs2-btn-text. Même bug que les autres boutons primary, même fix. */
+.rs2-root .rs2-float-cta {
   position: fixed;
   top: 68px;
   right: 18px;
