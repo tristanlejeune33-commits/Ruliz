@@ -54,7 +54,45 @@ const getCachedMenu = unstable_cache(
 export default async function CartePage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const { lang: langRaw, qr, preview, ref, u } = await searchParams;
-  const lang: SupportedLang = isSupportedLang(langRaw) ? langRaw : "fr";
+
+  // === Résolution de la langue d'affichage ===
+  // Ordre de priorité :
+  //   1. ?lang= explicite dans l'URL (choix utilisateur via switcher)
+  //   2. Langue du navigateur (Accept-Language) si supportée par Ruliz
+  //      → un touriste anglais qui scanne voit la carte en EN directement
+  //   3. Langue native du restaurant (langueNative configurée par le resto)
+  //   4. "fr" en dernier recours
+  // L'ancien code hardcodait "fr" en fallback → un resto néo-zélandais
+  // (langueNative=en) servait sa carte en français aux clients sans ?lang=.
+  let lang: SupportedLang;
+  if (isSupportedLang(langRaw)) {
+    lang = langRaw;
+  } else {
+    const headersForLang = await headers();
+    const browserLang = headersForLang
+      .get("accept-language")
+      ?.split(",")[0]
+      ?.split("-")[0]
+      ?.toLowerCase();
+    if (isSupportedLang(browserLang)) {
+      lang = browserLang;
+    } else {
+      // Fallback : langue native du resto (raw query — colonne ajoutée à
+      // chaud, le client Prisma local peut ne pas la connaître)
+      lang = "fr";
+      try {
+        const bigId = BigInt(id);
+        const { prisma } = await import("@/lib/db");
+        const rows = await prisma.$queryRaw<
+          Array<{ langueNative: string | null }>
+        >`SELECT langue_native AS "langueNative" FROM restaurants WHERE id = ${bigId} LIMIT 1`;
+        const native = rows[0]?.langueNative;
+        if (isSupportedLang(native)) lang = native;
+      } catch {
+        // id invalide ou DB indisponible → fr, notFound suivra si besoin
+      }
+    }
+  }
 
   const menu = await getCachedMenu(id, lang);
   if (!menu) notFound();
