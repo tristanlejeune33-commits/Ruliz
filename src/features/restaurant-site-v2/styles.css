@@ -176,8 +176,12 @@
 .rs2-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   padding: 14px 22px;
+  /* Zone de tap minimum 44px (Apple HIG / WCAG 2.5.5). Le padding seul
+     donnait 42px (14+14+14) — sous le seuil. */
+  min-height: 44px;
   border-radius: 999px;
   font-family: var(--font-body);
   font-size: 14px;
@@ -889,8 +893,11 @@
   bottom: 12px;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 10px 16px;
+  /* Zone de tap minimum 44px (Apple HIG / WCAG 2.5.5) */
+  min-height: 44px;
   border-radius: 999px;
   background: var(--bg);
   color: var(--ink);
@@ -1022,8 +1029,11 @@
   z-index: 200;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 10px;
   padding: 13px 20px;
+  /* Zone de tap minimum 44px (Apple HIG / WCAG 2.5.5) */
+  min-height: 44px;
   border-radius: 999px;
   background: var(--rs2-btn-bg, var(--accent));
   color: var(--rs2-btn-text, var(--on-accent));
