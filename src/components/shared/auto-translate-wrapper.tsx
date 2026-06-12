@@ -33,6 +33,13 @@ const LOCAL_STORAGE_PREFIX = "ruliz_t_v1_";
  *   - Anthropic miss (1ère visite globale) : ~1-2s server roundtrip
  *   - Après warm-up : que des hits localStorage
  */
+/**
+ * Flag module-level : true pendant que NOS writes mutent les text nodes.
+ * L'observer ignore les mutations pendant ce temps pour éviter la boucle
+ * infinie (nos writes characterData re-déclencheraient translatePage).
+ */
+let isApplyingTranslations = false;
+
 export function AutoTranslateWrapper({
   children,
 }: {
@@ -48,9 +55,19 @@ export function AutoTranslateWrapper({
     const container = containerRef.current;
     if (!container) return;
 
+    // === IMPORTANT : on scanne document.body, PAS le container ===
+    // Les modals, dropdowns, selects, sheets, toasts (Radix/Sonner) sont
+    // rendus via PORTAL directement sous <body>, donc HORS du container.
+    // L'ancienne version ne scannait que le container → tous les overlays
+    // restaient en français ("le sélecteur de langue ne fonctionne pas").
+    // Ce wrapper n'existe que dans les layouts dashboard/admin, donc tout
+    // ce qui est à l'écran appartient au panel → scanner body est safe.
+    const scanRoot = document.body;
+
     // Si on revient en FR, restaure tous les textes originaux
     if (lang === "fr") {
-      const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+      isApplyingTranslations = true;
+      const walker = document.createTreeWalker(scanRoot, NodeFilter.SHOW_TEXT);
       let node: Text | null;
       while ((node = walker.nextNode() as Text | null)) {
         const original = originalTextsRef.current.get(node);
@@ -58,6 +75,9 @@ export function AutoTranslateWrapper({
           node.nodeValue = original;
         }
       }
+      setTimeout(() => {
+        isApplyingTranslations = false;
+      }, 0);
       return;
     }
 
@@ -68,7 +88,7 @@ export function AutoTranslateWrapper({
       // 1) Collecte les text nodes éligibles
       const textNodesByText = new Map<string, Text[]>();
       const walker = document.createTreeWalker(
-        container,
+        scanRoot,
         NodeFilter.SHOW_TEXT,
         {
           acceptNode(node) {
@@ -79,7 +99,7 @@ export function AutoTranslateWrapper({
             const parent = node.parentElement;
             if (!parent) return NodeFilter.FILTER_REJECT;
             const tag = parent.tagName.toLowerCase();
-            if (["script", "style", "code", "pre", "noscript"].includes(tag)) {
+            if (["script", "style", "code", "pre", "noscript", "textarea"].includes(tag)) {
               return NodeFilter.FILTER_REJECT;
             }
             // Évite les nodes opt-out
@@ -161,19 +181,27 @@ export function AutoTranslateWrapper({
 
     translatePage();
 
-    // Observer : retraduit si le DOM change (nouvelle page, modal s'ouvre, etc.)
+    // Observer : retraduit si le DOM change.
+    // characterData: true est CRITIQUE — React met à jour le texte des
+    // nodes existants via mutation characterData (pas childList). Sans ce
+    // flag, chaque re-render React qui remettait le texte FR d'origine
+    // passait inaperçu → la page "revenait en français" après une
+    // interaction (hover, state update, navigation soft). C'était la
+    // cause principale du sélecteur de langue "qui ne marche pas".
     const observer = new MutationObserver(() => {
       if (cancelled) return;
+      // Ignore les mutations causées par NOS propres writes (anti-boucle)
+      if (isApplyingTranslations) return;
       // Debounce un peu pour éviter de spammer
       window.clearTimeout((window as unknown as { __translateTimer?: number }).__translateTimer);
       (window as unknown as { __translateTimer?: number }).__translateTimer = window.setTimeout(() => {
-        if (!cancelled) translatePage();
+        if (!cancelled && !isApplyingTranslations) translatePage();
       }, 300);
     });
-    observer.observe(container, {
+    observer.observe(scanRoot, {
       childList: true,
       subtree: true,
-      characterData: false,
+      characterData: true,
     });
 
     return () => {
@@ -192,21 +220,33 @@ export function AutoTranslateWrapper({
 /**
  * Applique un mapping {textFR: textTraduit} aux text nodes correspondants.
  * Préserve les whitespaces autour du texte.
+ *
+ * Le flag isApplyingTranslations couvre nos writes pour que l'observer
+ * characterData ne re-déclenche pas translatePage en boucle. Il est
+ * relâché au prochain tick (les callbacks MutationObserver des writes
+ * synchrones sont déjà en file à ce moment-là et seront ignorés).
  */
 function applyTranslations(
   textNodesByText: Map<string, Text[]>,
   translations: Record<string, string>,
 ): void {
-  for (const [text, nodes] of textNodesByText.entries()) {
-    const translation = translations[text];
-    if (!translation || translation === text) continue;
+  isApplyingTranslations = true;
+  try {
+    for (const [text, nodes] of textNodesByText.entries()) {
+      const translation = translations[text];
+      if (!translation || translation === text) continue;
 
-    for (const node of nodes) {
-      const original = node.nodeValue ?? "";
-      // Préserve les whitespaces avant/après
-      const leadingWs = original.match(/^\s*/)?.[0] ?? "";
-      const trailingWs = original.match(/\s*$/)?.[0] ?? "";
-      node.nodeValue = `${leadingWs}${translation}${trailingWs}`;
+      for (const node of nodes) {
+        const original = node.nodeValue ?? "";
+        // Préserve les whitespaces avant/après
+        const leadingWs = original.match(/^\s*/)?.[0] ?? "";
+        const trailingWs = original.match(/\s*$/)?.[0] ?? "";
+        node.nodeValue = `${leadingWs}${translation}${trailingWs}`;
+      }
     }
+  } finally {
+    setTimeout(() => {
+      isApplyingTranslations = false;
+    }, 0);
   }
 }

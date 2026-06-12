@@ -2,6 +2,7 @@
 
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { isSupportedLang, type SupportedLang } from "@/lib/langs";
 import { getAnthropic } from "@/server/translation/anthropic";
 
@@ -66,6 +67,12 @@ export async function translatePanelString(
     return { ok: false, error: "unsupported_lang" };
   }
   if (lang === "fr") return { ok: true, text };
+
+  // Garantit que la table panel_translations_cache existe (créée par
+  // ensureRuntimeSchema, jamais appelée ici avant → si aucune autre
+  // route ne l'avait déclenchée, le cache DB était silencieusement
+  // inopérant : chaque visite re-payait Anthropic).
+  await ensureRuntimeSchema();
 
   const textHash = hashText(text);
 
