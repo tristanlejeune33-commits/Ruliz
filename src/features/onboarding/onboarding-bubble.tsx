@@ -141,48 +141,87 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
   }, [anchorEl]);
 
   // === Actions ===
-  const handleNext = useCallback(async () => {
+  // === Persistance fiable de l'étape ===
+  // saveState pilote l'indicateur visuel "Enregistrement… / Enregistré ✓".
+  // persistStep est NON-bloquant : la bulle avance et navigue immédiatement
+  // (UX optimiste), la sauvegarde DB part en arrière-plan avec 1 retry.
+  // L'ancien flow attendait `await setOnboardingStep()` AVANT de naviguer :
+  //   - cold start Railway → bouton "Suivant" gelé 2-5s
+  //   - action en échec (réseau) → pas de try/finally → pending=true à vie
+  //     = bulle définitivement bloquée ("bancal")
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">(
+    "idle",
+  );
+  const saveTimerRef = useRef<number | null>(null);
+
+  const persistStep = useCallback((stepId: number) => {
+    setSaveState("saving");
+    const attempt = async (retriesLeft: number): Promise<void> => {
+      try {
+        await setOnboardingStep(stepId);
+        setSaveState("saved");
+        // Efface le "Enregistré ✓" après 2s pour ne pas polluer la bulle
+        if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = window.setTimeout(
+          () => setSaveState("idle"),
+          2000,
+        );
+      } catch (err) {
+        if (retriesLeft > 0) {
+          // 1 retry après 1.5s (réseau flaky, cold start)
+          await new Promise((r) => setTimeout(r, 1500));
+          return attempt(retriesLeft - 1);
+        }
+        console.warn("[onboarding] persist step failed:", err);
+        setSaveState("error");
+      }
+    };
+    void attempt(1);
+  }, []);
+
+  const handleNext = useCallback(() => {
     if (!currentStep || pending) return;
-    setPending(true);
 
     const nextId = currentStep.id + 1;
     const nextStep = ONBOARDING_STEPS.find((s) => s.id === nextId);
 
     if (!nextStep) {
-      // Dernière étape → complétion
-      await setOnboardingStep(TOTAL_STEPS);
-      setCompleted(true);
-      setPending(false);
+      // Dernière étape → complétion. Ici on attend la confirmation DB
+      // (sinon la bulle pourrait réapparaître au prochain login).
+      setPending(true);
+      setOnboardingStep(TOTAL_STEPS)
+        .then(() => setCompleted(true))
+        .catch((err) => {
+          console.warn("[onboarding] completion failed:", err);
+          // On complète quand même côté UI — pire cas, la bulle revient
+          // à la dernière étape au prochain login.
+          setCompleted(true);
+        })
+        .finally(() => setPending(false));
       return;
     }
 
-    // Persiste l'étape suivante avant la navigation
-    await setOnboardingStep(nextId);
-
+    // UX optimiste : avance + navigue tout de suite, persiste en fond
+    setCurrentStepId(nextId);
     if (nextStep.path !== pathname) {
       router.push(nextStep.path);
     }
-    setCurrentStepId(nextId);
-    setPending(false);
-  }, [currentStep, pathname, pending, router]);
+    persistStep(nextId);
+  }, [currentStep, pathname, pending, persistStep, router]);
 
-  const handlePrev = useCallback(async () => {
+  const handlePrev = useCallback(() => {
     if (!currentStep || pending) return;
     const prevId = currentStep.id - 1;
     if (prevId < 1) return; // déjà à l'étape 1
     const prevStep = ONBOARDING_STEPS.find((s) => s.id === prevId);
     if (!prevStep) return;
 
-    setPending(true);
-    // Persiste l'étape en arrière (utile si l'user ferme et revient)
-    await setOnboardingStep(prevId);
-
+    setCurrentStepId(prevId);
     if (prevStep.path !== pathname) {
       router.push(prevStep.path);
     }
-    setCurrentStepId(prevId);
-    setPending(false);
-  }, [currentStep, pathname, pending, router]);
+    persistStep(prevId);
+  }, [currentStep, pathname, pending, persistStep, router]);
 
   const handleSkipRequest = useCallback(() => {
     setSkipConfirmOpen(true);
@@ -190,10 +229,16 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
 
   const handleSkipConfirm = useCallback(async () => {
     setPending(true);
-    await skipOnboarding();
-    setSkipConfirmOpen(false);
-    setCompleted(true);
-    setPending(false);
+    try {
+      await skipOnboarding();
+    } catch (err) {
+      console.warn("[onboarding] skip failed:", err);
+      // On ferme quand même — pire cas la bulle revient au prochain login
+    } finally {
+      setSkipConfirmOpen(false);
+      setCompleted(true);
+      setPending(false);
+    }
   }, []);
 
   if (completed) return null;
@@ -380,6 +425,25 @@ export function OnboardingBubble({ initialStep }: OnboardingBubbleProps) {
                   )}
                 </AnimatePresence>
               </>
+            )}
+
+            {/* Indicateur de sauvegarde de la progression */}
+            {saveState !== "idle" && (
+              <p
+                className="mb-1.5 text-right text-[10px] font-medium"
+                style={{
+                  color:
+                    saveState === "error"
+                      ? "var(--color-destructive, #e5484d)"
+                      : "var(--text-tertiary)",
+                }}
+                aria-live="polite"
+              >
+                {saveState === "saving" && "Enregistrement…"}
+                {saveState === "saved" && "Enregistré ✓"}
+                {saveState === "error" &&
+                  "Progression non sauvegardée (hors ligne ?)"}
+              </p>
             )}
 
             {/* Actions 3 zones : skip (gauche) retour (centre) suivant (droite) */}
