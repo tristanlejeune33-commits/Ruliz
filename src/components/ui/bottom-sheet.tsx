@@ -60,6 +60,25 @@ export function BottomSheet({
       : null,
   );
 
+  // === Fix "les taps marchent 1 fois sur 2" ===
+  // Vaul (mode modal) pose `pointer-events: none` sur <body> à l'ouverture
+  // et est censé le retirer à la FIN de l'animation de fermeture. Quand la
+  // fermeture coïncide avec une navigation Next.js (cas typique : tap sur
+  // un lien du drawer → router.push + onOpenChange(false) dans le même
+  // tick), l'animation est interrompue par le re-render et le cleanup est
+  // raté → body reste en pointer-events:none → TOUS les taps suivants
+  // (bottom nav inclus) sont mangés jusqu'au prochain cycle Vaul.
+  // Bug connu vaul ≤1.x. Workaround : cleanup forcé après l'animation.
+  React.useEffect(() => {
+    if (rootProps.open) return;
+    const t = window.setTimeout(() => {
+      if (document.body.style.pointerEvents === "none") {
+        document.body.style.removeProperty("pointer-events");
+      }
+    }, 500); // > durée d'animation vaul (~300ms) + marge
+    return () => window.clearTimeout(t);
+  }, [rootProps.open]);
+
   return (
     <Vaul.Root
       shouldScaleBackground={false}
