@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import { X } from "lucide-react";
 import type { PublicMenu } from "@/server/public/menu";
 import type { SupportedLang } from "@/lib/langs";
@@ -53,6 +53,24 @@ export function ProduitSheet({
         .filter((p): p is Produit => !!p)
     : [];
 
+  // === Swipe-down pour fermer (mobile) ===
+  // Le drag est capté UNIQUEMENT par la poignée en haut du sheet (pattern
+  // iOS) — pas par le panel entier, sinon le geste entrerait en conflit
+  // avec le scroll interne du contenu. La poignée est un "drag proxy" :
+  // elle ne bouge pas elle-même (constraints 0/0, elastic 0) mais son
+  // info.offset.y pilote la translation Y du panel via la motion value.
+  const dragY = useMotionValue(0);
+  const handleDragEnd = (offsetY: number, velocityY: number) => {
+    if (offsetY > 100 || velocityY > 600) {
+      onClose();
+      // Reset pour la prochaine ouverture (le panel est démonté par
+      // AnimatePresence mais la motion value persiste entre produits)
+      dragY.set(0);
+    } else {
+      animate(dragY, 0, { duration: 0.2, ease: "easeOut" });
+    }
+  };
+
   return (
     <AnimatePresence>
       {open && produit && (
@@ -87,8 +105,34 @@ export function ProduitSheet({
               backgroundColor: theme.cardBody,
               boxShadow: "0 4px 10px rgba(0, 0, 0, 0.3)",
               color: theme.textBody,
+              y: dragY,
             }}
           >
+            {/* Poignée swipe-down (mobile uniquement) — drag proxy : elle
+                reste immobile (constraints 0/0) mais son offset pilote la
+                translation Y du panel. Swipe > 100px ou flick > 600px/s
+                → fermeture. Limitée à la poignée pour ne pas entrer en
+                conflit avec le scroll interne du contenu. */}
+            <motion.div
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0}
+              dragMomentum={false}
+              onDrag={(_, info) => {
+                dragY.set(Math.max(0, info.offset.y));
+              }}
+              onDragEnd={(_, info) =>
+                handleDragEnd(info.offset.y, info.velocity.y)
+              }
+              className="flex h-7 w-full shrink-0 cursor-grab touch-none items-center justify-center active:cursor-grabbing md:hidden"
+              aria-hidden
+            >
+              <div
+                className="h-1.5 w-10 rounded-full"
+                style={{ backgroundColor: "rgba(0, 0, 0, 0.18)" }}
+              />
+            </motion.div>
+
             {/* Bouton X fixe en haut-droit, hors du scroll → reste cliquable
                 même quand on scrolle le contenu. Touch target 44×44 (Apple HIG)
                 + fond blanc opaque obligatoire pour rester visible sur tous
