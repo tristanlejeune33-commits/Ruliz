@@ -64,6 +64,8 @@ interface MenuEditorProps {
   tree: SerializedMenu;
   vignettes: SerializedVignettes;
   allergenes: SerializedAllergenes;
+  /** Devise par défaut du resto — pré-remplit le champ devise des nouveaux produits. */
+  deviseDefault?: string;
 }
 
 export function MenuEditor({
@@ -71,6 +73,7 @@ export function MenuEditor({
   tree,
   vignettes,
   allergenes,
+  deviseDefault = "€",
 }: MenuEditorProps) {
   const router = useRouter();
   const [showPreview, setShowPreview] = useState(true);
@@ -839,6 +842,7 @@ export function MenuEditor({
           produit={editingProduit.mode === "edit" ? editingProduit.produit : null}
           vignettes={vignettes}
           allergenes={allergenes}
+          deviseDefault={deviseDefault}
           onClose={() => setEditingProduit(null)}
           onSaved={refreshAll}
         />

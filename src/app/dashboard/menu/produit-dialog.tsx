@@ -101,6 +101,8 @@ interface ProduitDialogProps {
   produit: SerializedProduit | null;
   vignettes: SerializedVignettes;
   allergenes: SerializedAllergenes;
+  /** Devise par défaut du resto — utilisée pour les NOUVEAUX produits. */
+  deviseDefault?: string;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -113,6 +115,7 @@ export function ProduitDialog({
   produit,
   vignettes,
   allergenes,
+  deviseDefault = "€",
   onClose,
   onSaved,
 }: ProduitDialogProps) {
@@ -127,7 +130,9 @@ export function ProduitDialog({
       description: produit?.description ?? "",
       imageUrl: produit?.imageUrl ?? "",
       prix: produit?.prix ?? "",
-      devise: produit?.devise ?? "€",
+      // Nouveaux produits : héritent de la devise par défaut du resto
+      // (configurée dans Mon restaurant) au lieu d'un "€" hardcodé.
+      devise: produit?.devise ?? deviseDefault,
       descriptionPrix: produit?.descriptionPrix ?? "",
       prixVariantes: (() => {
         const raw = (produit as unknown as { prixVariantes?: unknown })

@@ -274,10 +274,16 @@ CRITICAL :
   }
 
   // Pré-charge les codes vignettes + allergènes pour les résoudre en IDs DB
-  const [allVignettes, allAllergenes] = await Promise.all([
+  // + la devise par défaut du resto pour les produits importés
+  const [allVignettes, allAllergenes, restoMeta] = await Promise.all([
     prisma.vignette.findMany({ select: { id: true, code: true } }),
     prisma.allergene.findMany({ select: { id: true, code: true } }),
+    prisma.restaurant.findUnique({
+      where: { id: restoBigId },
+      select: { deviseDefault: true },
+    }),
   ]);
+  const deviseImport = restoMeta?.deviseDefault ?? "€";
   const vignetteByCode = new Map(allVignettes.map((v) => [v.code, v.id]));
   const allergeneByCode = new Map(allAllergenes.map((a) => [a.code, a.id]));
 
@@ -330,7 +336,7 @@ CRITICAL :
           description: p.description || null,
           prix: p.prix ?? null,
           descriptionPrix: p.descriptionPrix || null,
-          devise: "€",
+          devise: deviseImport,
           statut: "affiche",
           position: produitPosition,
           scheduleType: "always",

@@ -414,7 +414,10 @@ export async function getPublicMenu(
           descriptionPrix: trad?.descriptionPrix ?? p.descriptionPrix,
           imageUrl: p.imageUrl,
           prix: p.prix !== null ? Number(p.prix) : null,
-          devise: p.devise ?? "€",
+          // Fallback en cascade : devise du produit > devise par défaut du
+          // resto > "€". L'ancien fallback "€" direct ignorait la devise
+          // configurée par le restaurateur (NZD, CHF, etc.).
+          devise: p.devise ?? restaurant.deviseDefault ?? "€",
           // Variantes de prix : on parse le JSON Prisma (peut être null,
           // tableau ou autre selon stale du client). Filter strict pour
           // exposer seulement les entrées bien formées { label, prix }.

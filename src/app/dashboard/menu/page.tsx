@@ -129,6 +129,7 @@ export default async function MenuEditorPage() {
         tree={serialize(tree)}
         vignettes={serialize(refData.vignettes)}
         allergenes={serialize(refData.allergenes)}
+        deviseDefault={restaurant.deviseDefault ?? "€"}
       />
 
       {/* FAB mobile : "Voir ma carte" (le bouton inline est hidden lg:) */}
