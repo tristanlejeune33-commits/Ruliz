@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { assertFeature } from "@/lib/plan-gate";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -46,6 +47,11 @@ function parseDateOrNull(v: string | null | undefined) {
 }
 
 export async function upsertPopup(input: unknown): Promise<ActionResult<{ id: string }>> {
+  // Gating serveur : pop-ups = feature Pro+ (le lock UI seul est
+  // contournable via appel direct à la server action)
+  const gate = await assertFeature("popups");
+  if (!gate.ok) return gate;
+
   const parsed = popupSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides" };

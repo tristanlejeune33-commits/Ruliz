@@ -5,6 +5,7 @@ import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { isBrevoConfigured, normalizeFrenchPhone, sendSms } from "@/lib/brevo";
 import { prisma } from "@/lib/db";
+import { assertFeature } from "@/lib/plan-gate";
 import { APP_URL, getOrCreateStripeCustomer, getStripe } from "@/lib/stripe";
 import { getSmsPackById } from "./sms-packs";
 import { getActingUserId } from "@/lib/impersonation";
@@ -303,6 +304,10 @@ export async function sendSmsBlast(input: unknown): Promise<
     tokensSpent: number;
   }>
 > {
+  // Gating serveur : SMS marketing = feature Premium
+  const gate = await assertFeature("smsMarketing");
+  if (!gate.ok) return gate;
+
   await ensureSmsSchema();
 
   const parsed = blastSchema.safeParse(input);
@@ -833,6 +838,10 @@ const automationSchema = z.object({
 });
 
 export async function createSmsAutomation(input: unknown): Promise<ActionResult> {
+  // Gating serveur : SMS marketing = feature Premium
+  const gate = await assertFeature("smsMarketing");
+  if (!gate.ok) return gate;
+
   await ensureSmsSchema();
   const parsed = automationSchema.safeParse(input);
   if (!parsed.success) {

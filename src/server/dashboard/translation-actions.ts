@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
+import { assertFeature } from "@/lib/plan-gate";
 import { redis } from "@/lib/redis";
 import { inngest } from "@/server/inngest/client";
 import {
@@ -54,6 +55,12 @@ export async function retranslateMenu(
 
   const owned = await assertRestaurantOwner(bigId);
   if (!owned) return { ok: false, error: "Accès refusé" };
+
+  // Gating serveur : traduction IA = feature Pro+ (l'auto-heal de la
+  // carte publique n'est pas concerné — il passe par le service direct,
+  // pas par cette action utilisateur)
+  const gate = await assertFeature("iaTranslation");
+  if (!gate.ok) return gate;
 
   // 1. Pre-flight check
   if (!getAnthropic()) {

@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { assertWithinLimit } from "@/lib/plan-gate";
 import { redis } from "@/lib/redis";
 import { inngest } from "@/server/inngest/client";
 import { SUPPORTED_LANGS, type SupportedLang } from "@/lib/langs";
@@ -374,6 +375,14 @@ export async function createProduit(input: unknown): Promise<ActionResult<{ id: 
 
   const cat = await assertCategorieOwner(catId);
   if (!cat) return { ok: false, error: "Accès refusé" };
+
+  // Gating serveur : limite de produits par plan (freemium = 30).
+  // Compte tous les produits du resto (toutes catégories confondues).
+  const produitCount = await prisma.produit.count({
+    where: { categorie: { restaurantId: cat.restaurantId } },
+  });
+  const limit = await assertWithinLimit("maxProduits", produitCount);
+  if (!limit.ok) return limit;
 
   const last = await prisma.produit.findFirst({
     where: { categorieId: catId },

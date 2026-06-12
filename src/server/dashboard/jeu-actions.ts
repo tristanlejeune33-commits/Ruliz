@@ -5,6 +5,7 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { assertFeature } from "@/lib/plan-gate";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -45,6 +46,11 @@ function bigOrNull(value: string | null | undefined) {
 }
 
 export async function upsertJeu(input: unknown): Promise<ActionResult<{ id: string }>> {
+  // Gating serveur : la roulette est une feature Pro+. Le lock UI seul
+  // est contournable via un appel direct à la server action.
+  const gate = await assertFeature("rouletteGame");
+  if (!gate.ok) return gate;
+
   const parsed = upsertJeuSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Données invalides" };

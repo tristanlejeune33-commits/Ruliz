@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { assertWithinLimit } from "@/lib/plan-gate";
 import { buildR2Key, isR2Configured, uploadBuffer } from "@/lib/r2";
 import { getAppUrl } from "@/lib/url";
 
@@ -39,6 +40,14 @@ export async function createQrcode(input: unknown): Promise<ActionResult<{ id: s
   }
   const restaurant = await assertRestaurantOwner(restoBigId);
   if (!restaurant) return { ok: false, error: "Accès refusé" };
+
+  // Gating serveur : limite de QR codes par plan (freemium = 1).
+  // Le check UI seul est contournable via appel direct à l'action.
+  const existingCount = await prisma.qrcode.count({
+    where: { restaurantId: restoBigId },
+  });
+  const limit = await assertWithinLimit("maxQrcodes", existingCount);
+  if (!limit.ok) return limit;
 
   try {
     // Code unique avec retries (collisions ultra rares mais on protège)
