@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { authClient } from "@/lib/auth-client";
 import { clearSessionCookies, getPostLoginUrl } from "@/server/auth/actions";
+import { AuthDivider, GoogleButton } from "../google-button";
 
 const loginSchema = z.object({
   email: z.email("Email invalide"),
@@ -59,7 +60,13 @@ const LABEL_STYLE: React.CSSProperties = {
   marginBottom: 6,
 };
 
-export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+export function LoginForm({
+  redirectTo,
+  googleEnabled = false,
+}: {
+  redirectTo?: string;
+  googleEnabled?: boolean;
+}) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
@@ -121,6 +128,12 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         noValidate
         className="space-y-5"
       >
+        {googleEnabled && (
+          <>
+            <GoogleButton redirectTo={redirectTo} />
+            <AuthDivider />
+          </>
+        )}
         {topError && (
           <div
             role="alert"

@@ -126,6 +126,9 @@ export default async function SignupPage({ searchParams }: PageProps) {
               }
             : undefined
         }
+        googleEnabled={Boolean(
+          process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+        )}
       />
       <p className="text-center text-sm" style={{ color: "#4A5573" }}>
         Déjà un compte ?{" "}

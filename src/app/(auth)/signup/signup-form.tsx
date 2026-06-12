@@ -20,6 +20,7 @@ import {
   SIGNUP_COUNTRIES,
   languageFromCountry,
 } from "@/lib/country-language";
+import { AuthDivider, GoogleButton } from "../google-button";
 
 const schema = z.object({
   prenom: z.string().min(1, "Requis").max(100),
@@ -38,6 +39,8 @@ interface SignupFormProps {
     email: string;
     prospectToken: string;
   };
+  /** Affiche "Continuer avec Google" (credentials configurés côté serveur). */
+  googleEnabled?: boolean;
 }
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -69,7 +72,10 @@ const blurFx = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
   e.currentTarget.style.boxShadow = "none";
 };
 
-export function SignupForm({ prefill }: SignupFormProps = {}) {
+export function SignupForm({
+  prefill,
+  googleEnabled = false,
+}: SignupFormProps = {}) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
 
@@ -115,6 +121,12 @@ export function SignupForm({ prefill }: SignupFormProps = {}) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+        {googleEnabled && !prefill?.prospectToken && (
+          <>
+            <GoogleButton />
+            <AuthDivider />
+          </>
+        )}
         <div className="grid grid-cols-2 gap-3">
           <FormField
             control={form.control}

@@ -38,6 +38,61 @@ export const auth = betterAuth({
       });
     },
   },
+  // Google OAuth — actif seulement si les credentials sont configurés
+  // (Google Cloud Console → OAuth 2.0 Client ID, redirect URI :
+  //  {BETTER_AUTH_URL}/api/auth/callback/google)
+  socialProviders:
+    process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : undefined,
+  databaseHooks: {
+    user: {
+      create: {
+        // Un signup email/password crée le User métier AVANT l'AuthUser
+        // (signupClient) — ici on le retrouve par email et on le lie.
+        // Un signup OAuth (Google) n'a PAS de User métier → on le crée
+        // avec role=client, comme le flow self-service classique.
+        after: async (authUser) => {
+          try {
+            const existing = await prisma.user.findUnique({
+              where: { email: authUser.email },
+              select: { id: true },
+            });
+            if (existing) {
+              await prisma.authUser.update({
+                where: { id: authUser.id },
+                data: { userId: existing.id },
+              });
+              return;
+            }
+            const name = (authUser.name ?? "").trim();
+            const [prenom, ...rest] = name.split(/\s+/);
+            const user = await prisma.user.create({
+              data: {
+                email: authUser.email,
+                prenom: prenom || null,
+                nom: rest.length > 0 ? rest.join(" ") : null,
+                role: "client",
+                statut: "actif",
+              },
+            });
+            await prisma.authUser.update({
+              where: { id: authUser.id },
+              data: { userId: user.id },
+            });
+          } catch (e) {
+            // Ne jamais bloquer le signup auth — le link est rattrapable
+            console.error("[auth] user.create.after hook failed:", e);
+          }
+        },
+      },
+    },
+  },
   user: {
     // Notre Prisma `User` est la table métier ; Better-Auth utilise `AuthUser`.
     modelName: "AuthUser",

@@ -37,7 +37,12 @@ export default async function LoginPage({
           Vos cartes, vos QR codes et vos statistiques sont restés en ordre.
         </p>
       </div>
-      <LoginForm redirectTo={redirect} />
+      <LoginForm
+        redirectTo={redirect}
+        googleEnabled={Boolean(
+          process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+        )}
+      />
       <p
         className="text-center text-sm"
         style={{ color: "#4A5573" }}
