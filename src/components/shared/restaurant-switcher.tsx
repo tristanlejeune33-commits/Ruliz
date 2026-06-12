@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check,
@@ -19,8 +19,21 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { setActiveRestaurant } from "@/server/dashboard/actions";
+import {
+  createFirstRestaurant,
+  setActiveRestaurant,
+} from "@/server/dashboard/actions";
 
 export interface RestaurantOption {
   id: string;
@@ -48,16 +61,24 @@ export function RestaurantSwitcher({
 }: RestaurantSwitcherProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const active = restaurants.find((r) => r.id === activeId) ?? restaurants[0];
 
   if (!active) {
     return (
-      <button
-        type="button"
-        className="inline-flex h-9 items-center gap-2 rounded-xl border border-dashed border-[var(--border-glass-hover)] bg-transparent px-3 text-xs text-[var(--text-tertiary)] transition-colors hover:border-[var(--neon-cyan)]/40 hover:text-[var(--text-primary)]"
-      >
-        <Plus className="size-4" strokeWidth={1.75} /> Ajouter un restaurant
-      </button>
+      <>
+        <button
+          type="button"
+          onClick={() => setAddDialogOpen(true)}
+          className="inline-flex h-9 items-center gap-2 rounded-xl border border-dashed border-[var(--border-glass-hover)] bg-transparent px-3 text-xs text-[var(--text-tertiary)] transition-colors hover:border-[var(--neon-cyan)]/40 hover:text-[var(--text-primary)]"
+        >
+          <Plus className="size-4" strokeWidth={1.75} /> Ajouter un restaurant
+        </button>
+        <AddRestaurantDialog
+          open={addDialogOpen}
+          onOpenChange={setAddDialogOpen}
+        />
+      </>
     );
   }
 
@@ -74,6 +95,7 @@ export function RestaurantSwitcher({
   };
 
   return (
+    <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
@@ -168,7 +190,14 @@ export function RestaurantSwitcher({
           );
         })}
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="gap-2 rounded-md text-[var(--neon-cyan)] data-[highlighted]:text-[var(--neon-cyan)]">
+        <DropdownMenuItem
+          // setTimeout 0 : laisse le dropdown finir sa fermeture (restore
+          // focus, cleanup pointer-events sur body) AVANT d'ouvrir le
+          // dialog. Sans ça, Radix peut fermer le dialog immédiatement ou
+          // laisser body en pointer-events:none (UI gelée).
+          onSelect={() => setTimeout(() => setAddDialogOpen(true), 0)}
+          className="gap-2 rounded-md text-[var(--neon-cyan)] data-[highlighted]:text-[var(--neon-cyan)]"
+        >
           <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[var(--neon-cyan-soft)] ring-1 ring-[var(--neon-cyan)]/30">
             <Plus className="size-3.5" strokeWidth={1.75} />
           </span>
@@ -176,5 +205,129 @@ export function RestaurantSwitcher({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <AddRestaurantDialog
+      open={addDialogOpen}
+      onOpenChange={setAddDialogOpen}
+    />
+    </>
+  );
+}
+
+/**
+ * Dialog de création d'un restaurant supplémentaire.
+ *
+ * Réutilise la server action `createFirstRestaurant` (malgré son nom, elle
+ * gère les restaurants suivants : `canCreateRestaurant` applique la limite
+ * du plan et retourne une erreur explicite si elle est atteinte).
+ *
+ * Après création : bascule le restaurant actif sur le nouveau + refresh
+ * pour que tout le dashboard (sidebar, KPIs, éditeur) pointe dessus.
+ */
+function AddRestaurantDialog({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [nom, setNom] = useState("");
+  const [ville, setVille] = useState("");
+
+  const handleCreate = () => {
+    const trimmed = nom.trim();
+    if (!trimmed) {
+      toast.error("Donne un nom à ton restaurant.");
+      return;
+    }
+    startTransition(async () => {
+      const res = await createFirstRestaurant({
+        nom: trimmed,
+        ville: ville.trim(),
+        email: "",
+        telephone: "",
+      });
+      if (!res.ok) {
+        // Limite de plan atteinte ou autre erreur → message explicite
+        toast.error(res.error);
+        return;
+      }
+      if (!res.data?.id) {
+        toast.error("Création réussie mais ID manquant. Recharge la page.");
+        router.refresh();
+        return;
+      }
+      // Bascule sur le nouveau resto immédiatement
+      const switched = await setActiveRestaurant(res.data.id);
+      if (!switched.ok) {
+        toast.error(switched.error);
+      }
+      toast.success(`Restaurant « ${trimmed} » créé !`);
+      setNom("");
+      setVille("");
+      onOpenChange(false);
+      router.refresh();
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Ajouter un restaurant</DialogTitle>
+          <DialogDescription>
+            Chaque restaurant a sa propre carte, ses QR codes et ses stats.
+            Tu pourras basculer entre eux depuis ce menu.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="new-resto-nom">Nom du restaurant *</Label>
+            <Input
+              id="new-resto-nom"
+              autoFocus
+              placeholder="La Table d'à côté"
+              value={nom}
+              onChange={(e) => setNom(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreate();
+              }}
+              maxLength={255}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="new-resto-ville">Ville (optionnel)</Label>
+            <Input
+              id="new-resto-ville"
+              placeholder="Bordeaux"
+              value={ville}
+              onChange={(e) => setVille(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreate();
+              }}
+              maxLength={100}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={pending}
+          >
+            Annuler
+          </Button>
+          <Button onClick={handleCreate} disabled={pending || !nom.trim()}>
+            {pending ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Plus className="size-4" />
+            )}
+            Créer
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
