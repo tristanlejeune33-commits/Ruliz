@@ -1,16 +1,20 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image from "next/image";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Activity,
+  Check,
   Download,
   Loader2,
   MoreHorizontal,
+  Pencil,
   Plus,
+  Printer,
   QrCode as QrCodeIcon,
   Trash2,
 } from "lucide-react";
@@ -41,6 +45,7 @@ import { cn } from "@/lib/utils";
 import {
   createQrcode,
   deleteQrcode,
+  setQrcodeLabel,
   setQrcodeStatut,
 } from "@/server/dashboard/qrcode-actions";
 
@@ -48,6 +53,7 @@ interface QrcodeRow {
   id: string;
   codeUnique: string;
   pngUrl: string | null;
+  label: string | null;
   statut: string;
   scanTotal: number;
   scanMois: number;
@@ -130,6 +136,16 @@ export function QrcodesView({ restaurantId, qrcodes }: QrcodesViewProps) {
     });
   };
 
+  const handleLabel = (id: string, label: string) => {
+    startTransition(async () => {
+      const res = await setQrcodeLabel({ id, label });
+      if (res.ok) {
+        toast.success(label.trim() ? "QR code renommé" : "Nom retiré");
+        router.refresh();
+      } else toast.error(res.error);
+    });
+  };
+
   const handleDownload = (qr: QrcodeRow) => {
     if (!qr.pngUrl) return;
     const a = document.createElement("a");
@@ -161,19 +177,24 @@ export function QrcodesView({ restaurantId, qrcodes }: QrcodesViewProps) {
           ariaLabel="Filtre statut"
           className="w-full lg:w-auto"
         />
-        <Button
-          onClick={handleCreate}
-          disabled={pending}
-          size="sm"
-          className="hidden lg:inline-flex"
-        >
-          {pending ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <Plus className="size-3.5" />
+        <div className="hidden items-center gap-2 lg:flex">
+          {!empty && (
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/qrcodes/print" target="_blank">
+                <Printer className="size-3.5" />
+                Imprimer
+              </Link>
+            </Button>
           )}
-          Générer un QR code
-        </Button>
+          <Button onClick={handleCreate} disabled={pending} size="sm">
+            {pending ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Plus className="size-3.5" />
+            )}
+            Générer un QR code
+          </Button>
+        </div>
       </div>
 
       {/* Liste */}
@@ -201,6 +222,7 @@ export function QrcodesView({ restaurantId, qrcodes }: QrcodesViewProps) {
               onDownload={() => handleDownload(qr)}
               onStatut={(s) => handleStatut(qr.id, s)}
               onDelete={() => handleDelete(qr.id)}
+              onLabel={(label) => handleLabel(qr.id, label)}
             />
           ))}
         </div>
@@ -269,14 +291,26 @@ function QrcodeCard({
   onDownload,
   onStatut,
   onDelete,
+  onLabel,
 }: {
   qr: QrcodeRow;
   pending: boolean;
   onDownload: () => void;
   onStatut: (s: "actif" | "inactif" | "perdu") => void;
   onDelete: () => void;
+  onLabel: (label: string) => void;
 }) {
   const meta = STATUT_META[qr.statut] ?? STATUT_FALLBACK;
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [labelDraft, setLabelDraft] = useState(qr.label ?? "");
+  const labelInputRef = useRef<HTMLInputElement>(null);
+
+  const commitLabel = () => {
+    setEditingLabel(false);
+    if (labelDraft.trim() !== (qr.label ?? "")) {
+      onLabel(labelDraft.trim());
+    }
+  };
   return (
     <Card className="group overflow-hidden p-0 transition-all duration-200 hover:shadow-lg">
       <div className="relative flex aspect-square items-center justify-center border-b border-[var(--border-subtle)] bg-gradient-to-br from-white to-neutral-50 p-6">
@@ -306,10 +340,63 @@ function QrcodeCard({
         )}
       </div>
       <div className="space-y-3 p-4">
-        <div className="flex items-center justify-between gap-2">
-          <p className="truncate font-mono text-sm font-medium tracking-tight">
-            {qr.codeUnique}
-          </p>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            {editingLabel ? (
+              <div className="flex items-center gap-1">
+                <input
+                  ref={labelInputRef}
+                  value={labelDraft}
+                  onChange={(e) => setLabelDraft(e.target.value)}
+                  onBlur={commitLabel}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitLabel();
+                    if (e.key === "Escape") {
+                      setLabelDraft(qr.label ?? "");
+                      setEditingLabel(false);
+                    }
+                  }}
+                  maxLength={80}
+                  placeholder="Table 5, Vitrine…"
+                  className="min-w-0 flex-1 rounded-md border border-[var(--border-subtle)] bg-[var(--bg-elevated)] px-2 py-1 text-sm outline-none focus:border-[var(--accent)]"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-7 shrink-0"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={commitLabel}
+                  aria-label="Enregistrer le nom"
+                >
+                  <Check className="size-4" />
+                </Button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  setLabelDraft(qr.label ?? "");
+                  setEditingLabel(true);
+                  setTimeout(() => labelInputRef.current?.focus(), 0);
+                }}
+                className="group/label flex max-w-full items-center gap-1.5 text-left"
+              >
+                <span
+                  className={cn(
+                    "truncate text-sm font-semibold tracking-tight",
+                    !qr.label &&
+                      "font-normal italic text-[var(--text-muted)]",
+                  )}
+                >
+                  {qr.label || "Nommer ce QR"}
+                </span>
+                <Pencil className="size-3 shrink-0 text-[var(--text-muted)] opacity-0 transition group-hover/label:opacity-100" />
+              </button>
+            )}
+            <p className="truncate font-mono text-[11px] text-[var(--text-muted)]">
+              {qr.codeUnique}
+            </p>
+          </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

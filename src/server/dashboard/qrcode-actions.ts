@@ -6,6 +6,7 @@ import QRCode from "qrcode";
 import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { assertWithinLimit } from "@/lib/plan-gate";
 import { buildR2Key, isR2Configured, uploadBuffer } from "@/lib/r2";
 import { getAppUrl } from "@/lib/url";
@@ -29,6 +30,10 @@ const createSchema = z.object({
 });
 
 export async function createQrcode(input: unknown): Promise<ActionResult<{ id: string }>> {
+  // La colonne `label` est ajoutée à chaud : on garantit qu'elle existe avant
+  // tout SELECT/INSERT Prisma qui l'inclut (sinon P2022 après régénération
+  // du client sur Railway).
+  await ensureRuntimeSchema();
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Données invalides" };
 
@@ -129,6 +134,7 @@ const updateStatutSchema = z.object({
 });
 
 export async function setQrcodeStatut(input: unknown): Promise<ActionResult> {
+  await ensureRuntimeSchema();
   const parsed = updateStatutSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Données invalides" };
 
@@ -175,6 +181,49 @@ export async function deleteQrcode(id: string): Promise<ActionResult> {
   if (!owned) return { ok: false, error: "Accès refusé" };
 
   await prisma.qrcode.delete({ where: { id: bigId } });
+  revalidatePath("/dashboard/qrcodes");
+  return { ok: true };
+}
+
+const updateLabelSchema = z.object({
+  id: z.string(),
+  // Vide autorisé → on efface le libellé. Trim + cap à 80 chars.
+  label: z.string().max(80),
+});
+
+/**
+ * Renomme un QR code (« Table 5 », « Vitrine », « Set de table »…).
+ * Écriture en SQL brut pour rester robuste tant que le client Prisma local
+ * n'a pas encore la colonne `label` (régénérée au build Railway).
+ */
+export async function setQrcodeLabel(input: unknown): Promise<ActionResult> {
+  await ensureRuntimeSchema();
+  const parsed = updateLabelSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Données invalides" };
+
+  let bigId: bigint;
+  try {
+    bigId = BigInt(parsed.data.id);
+  } catch {
+    return { ok: false, error: "Identifiant invalide" };
+  }
+
+  const qr = await prisma.qrcode.findUnique({
+    where: { id: bigId },
+    select: { restaurantId: true },
+  });
+  if (!qr) return { ok: false, error: "QR introuvable" };
+
+  const owned = await assertRestaurantOwner(qr.restaurantId);
+  if (!owned) return { ok: false, error: "Accès refusé" };
+
+  const trimmed = parsed.data.label.trim();
+  await prisma.$executeRaw`
+    UPDATE "qrcodes"
+    SET "label" = ${trimmed.length > 0 ? trimmed : null}
+    WHERE "id" = ${bigId}
+  `;
+
   revalidatePath("/dashboard/qrcodes");
   return { ok: true };
 }

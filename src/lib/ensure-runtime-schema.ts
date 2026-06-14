@@ -627,6 +627,13 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ON "panel_translations_cache" ("created_at");
     `);
 
+    // === QR codes — libellé nommable (« Table 5 », « Vitrine »…) ===
+    // Permet au resto d'identifier chaque QR et de l'imprimer avec son nom.
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "qrcodes"
+        ADD COLUMN IF NOT EXISTS "label" VARCHAR(80);
+    `);
+
     runtimeSchemaEnsured = true;
   } catch (err) {
     console.warn(

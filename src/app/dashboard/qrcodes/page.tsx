@@ -16,6 +16,7 @@ import {
 } from "@/components/shared/page-hero";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { serialize } from "@/lib/serialize";
 import { QrcodesView } from "./qrcodes-view";
 
@@ -25,6 +26,9 @@ export const metadata: Metadata = {
 
 export default async function QrcodesPage() {
   const { restaurant } = await getCurrentRestaurant();
+  // Garantit la colonne `label` (ajoutée à chaud) avant le findMany qui
+  // l'inclut désormais dans son SELECT.
+  await ensureRuntimeSchema();
 
   const qrcodes = await prisma.qrcode.findMany({
     where: { restaurantId: restaurant.id },

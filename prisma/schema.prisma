@@ -278,6 +278,7 @@ model Qrcode {
   restaurantId BigInt    @map("restaurant_id")
   codeUnique   String    @unique @map("code_unique") @db.VarChar(20)
   pngUrl       String?   @map("png_url")
+  label        String?   @db.VarChar(80)
   statut       String    @default("actif") @db.VarChar(20)
   assignedAt   DateTime? @map("assigned_at") @db.Timestamptz()
   scanTotal    BigInt    @default(0) @map("scan_total")
