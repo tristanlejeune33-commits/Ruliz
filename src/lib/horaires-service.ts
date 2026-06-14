@@ -52,14 +52,21 @@ export interface ServiceRange {
 /**
  * Une journée de service. `closed = true` masque les deux services.
  * Sinon, midi/soir peuvent être null indépendamment (ex: que dîner).
+ *
+ * `continu = true` → service continu (ex: 11h30→23h sans coupure). Dans ce
+ * mode, la plage unique est stockée dans `midi` et `soir` reste null. Le champ
+ * est purement UI : l'affichage (`formatDayService`) rend simplement la plage
+ * `midi`, donc une donnée legacy sans `continu` reste correctement rendue.
  */
 export interface DayService {
   day: DayCode;
   closed: boolean;
-  /** Service du midi (déjeuner). null si pas de service midi ce jour. */
+  /** Service du midi (déjeuner), OU la plage unique si `continu`. */
   midi: ServiceRange | null;
   /** Service du soir (dîner). null si pas de service soir ce jour. */
   soir: ServiceRange | null;
+  /** Service continu : une seule plage (dans `midi`), pas de coupure. */
+  continu?: boolean;
 }
 
 /** Toujours 7 entrées, ordre lun→dim. */

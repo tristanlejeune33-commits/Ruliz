@@ -71,6 +71,8 @@ const restaurantSchema = z.object({
             end: z.string().regex(/^\d{2}:\d{2}$/).or(z.literal("")),
           })
           .nullable(),
+        // Service continu : plage unique (dans `midi`), pas de coupure.
+        continu: z.boolean().optional(),
       }),
     )
     .length(7)

@@ -71,6 +71,8 @@ const dayServiceSchema = z.object({
   closed: z.boolean(),
   midi: serviceRangeSchema,
   soir: serviceRangeSchema,
+  // Service continu : plage unique (dans `midi`), pas de coupure midi/soir.
+  continu: z.boolean().optional(),
 });
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -1152,23 +1154,76 @@ function HorairesServicePicker({
             </div>
 
             {!d.closed && (
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {/* Midi */}
-                <ServiceSlot
-                  label="Déjeuner"
-                  range={d.midi}
-                  onChange={(midi) => updateDay(i, { midi })}
-                  defaultStart="12:00"
-                  defaultEnd="14:30"
-                />
-                {/* Soir */}
-                <ServiceSlot
-                  label="Dîner"
-                  range={d.soir}
-                  onChange={(soir) => updateDay(i, { soir })}
-                  defaultStart="19:00"
-                  defaultEnd="22:30"
-                />
+              <div className="mt-3 space-y-3">
+                {/* Sélecteur de mode : deux services vs service continu */}
+                <div className="inline-flex rounded-md border border-[var(--border-subtle)] bg-[var(--bg-card)]/40 p-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateDay(i, {
+                        continu: false,
+                        // Réhydrate les deux services depuis la plage continue
+                        midi: d.midi ?? { start: "12:00", end: "14:30" },
+                        soir: d.soir ?? { start: "19:00", end: "22:30" },
+                      })
+                    }
+                    className={`rounded px-2.5 py-1 font-medium transition ${
+                      !d.continu
+                        ? "bg-[var(--accent)] text-[var(--accent-foreground,#0b0b0b)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    Midi + Soir
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      updateDay(i, {
+                        continu: true,
+                        // Plage unique stockée dans midi, soir effacé
+                        midi: d.midi ?? { start: "11:30", end: "23:00" },
+                        soir: null,
+                      })
+                    }
+                    className={`rounded px-2.5 py-1 font-medium transition ${
+                      d.continu
+                        ? "bg-[var(--accent)] text-[var(--accent-foreground,#0b0b0b)]"
+                        : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    Service continu
+                  </button>
+                </div>
+
+                {d.continu ? (
+                  /* Une seule plage, sans coupure (ex: 11h30→23h) */
+                  <ServiceSlot
+                    label="Service continu"
+                    range={d.midi}
+                    onChange={(midi) => updateDay(i, { midi, soir: null })}
+                    defaultStart="11:30"
+                    defaultEnd="23:00"
+                  />
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {/* Midi */}
+                    <ServiceSlot
+                      label="Déjeuner"
+                      range={d.midi}
+                      onChange={(midi) => updateDay(i, { midi })}
+                      defaultStart="12:00"
+                      defaultEnd="14:30"
+                    />
+                    {/* Soir */}
+                    <ServiceSlot
+                      label="Dîner"
+                      range={d.soir}
+                      onChange={(soir) => updateDay(i, { soir })}
+                      defaultStart="19:00"
+                      defaultEnd="22:30"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
