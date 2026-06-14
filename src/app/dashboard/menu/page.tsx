@@ -91,19 +91,25 @@ export default async function MenuEditorPage() {
               <span className="text-[var(--text-muted)]">produits</span>
             </div>
 
-            {/* GROS CTA "Importer ma carte par photo" full-width mobile, inline desktop */}
-            <Button
-              asChild
-              size="sm"
-              variant="primary"
-              className="h-10 flex-1 gap-2 px-3.5 font-semibold lg:h-9 lg:flex-initial"
-            >
-              <Link href="/dashboard/menu/import">
-                <Camera className="size-4" strokeWidth={1.75} />
-                <span className="lg:hidden">Importer une photo</span>
-                <span className="hidden lg:inline">Importer ma carte</span>
-              </Link>
-            </Button>
+            {/* CTA import par photo. Masqué quand le banner cold-start est
+                affiché (carte quasi vide) : il porte déjà ce CTA en gros, deux
+                boutons primaires « Importer » côte à côte surchargeaient le
+                header. Sur une carte garnie, ce bouton redevient le point
+                d'entrée import. */}
+            {!showImportBanner && (
+              <Button
+                asChild
+                size="sm"
+                variant="primary"
+                className="h-10 flex-1 gap-2 px-3.5 font-semibold lg:h-9 lg:flex-initial"
+              >
+                <Link href="/dashboard/menu/import">
+                  <Camera className="size-4" strokeWidth={1.75} />
+                  <span className="lg:hidden">Importer une photo</span>
+                  <span className="hidden lg:inline">Importer ma carte</span>
+                </Link>
+              </Button>
+            )}
 
             <RetranslateButton restaurantId={restaurant.id.toString()} />
             <Button asChild variant="outline" size="sm" className="hidden lg:inline-flex">
