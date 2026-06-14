@@ -30,7 +30,10 @@ type Step =
 
 type ActionSociale = "facebook" | "instagram" | "google_review";
 
-const COUNTDOWN_SECONDS = 10;
+// 5s : assez pour laisser le temps de suivre le compte / laisser l'avis
+// (le lien social s'est ouvert à l'étape précédente) sans la lenteur des 10s
+// d'origine qui faisaient décrocher les joueurs.
+const COUNTDOWN_SECONDS = 5;
 
 // Couleurs FIXES de la roulette indépendantes du thème restaurant.
 // Le restaurateur configure couleurPrimaire pour la carte, mais la modal jeu
@@ -474,21 +477,27 @@ function FormStep({
           onSubmit();
         }}
       >
-        <FormInput
-          name="prenom"
-          placeholder="Prénom"
-          value={form.prenom}
-          onChange={(v) => setForm((f) => ({ ...f, prenom: v }))}
-        />
-        <FormInput
-          name="nom"
-          placeholder="Nom"
-          value={form.nom}
-          onChange={(v) => setForm((f) => ({ ...f, nom: v }))}
-        />
+        {/* Prénom + Nom sur une ligne : le formulaire paraît plus court,
+            moins de friction perçue. */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-2.5">
+          <FormInput
+            name="prenom"
+            placeholder="Prénom"
+            value={form.prenom}
+            onChange={(v) => setForm((f) => ({ ...f, prenom: v }))}
+          />
+          <FormInput
+            name="nom"
+            placeholder="Nom"
+            value={form.nom}
+            onChange={(v) => setForm((f) => ({ ...f, nom: v }))}
+          />
+        </div>
+        {/* Date de naissance : non validée côté serveur → explicitement
+            facultative pour ne pas alourdir le parcours. */}
         <FormInput
           name="naissance"
-          placeholder="Date de naissance (jj/mm/aaaa)"
+          placeholder="Date de naissance (facultatif)"
           value={form.naissance}
           onChange={(v) => setForm((f) => ({ ...f, naissance: v }))}
         />
