@@ -48,9 +48,16 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
   // Auto-popup du jeu concours après X secondes si configuré.
   // On garde un flag en sessionStorage pour ne PAS spammer l'utilisateur
   // qui ferme la modal et reload (1 fois par session navigateur).
+  //
+  // Coordination des overlays auto-ouvrants : si un popup événement est
+  // présent, il s'affiche déjà (~800ms) et a la priorité — la roulette
+  // (z plus élevé) le masquerait sinon. On NE déclenche donc PAS l'auto-popup
+  // du jeu quand un popup événement est actif ; la roulette reste accessible
+  // via le bouton cadeau du header et le CTA « Jeu concours ».
   useEffect(() => {
     if (preview) return;
     if (!menu.jeu?.autoPopup) return;
+    if (menu.popup) return;
     if (typeof window === "undefined") return;
 
     const SEEN_KEY = `ruliz:jeu-autopopup-seen:${menu.restaurant.id}`;
@@ -58,12 +65,19 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
 
     const delay = (menu.jeu.autoPopupDelaySec || 3) * 1000;
     const timer = setTimeout(() => {
-      setRouletteOpen(true);
-      window.sessionStorage.setItem(SEEN_KEY, "1");
+      // Garde-fou : si l'utilisateur a ouvert un détail produit entre-temps,
+      // on ne superpose pas la roulette par-dessus (même z-index).
+      setActiveProduitId((current) => {
+        if (current === null) {
+          setRouletteOpen(true);
+          window.sessionStorage.setItem(SEEN_KEY, "1");
+        }
+        return current;
+      });
     }, delay);
 
     return () => clearTimeout(timer);
-  }, [preview, menu.jeu, menu.restaurant.id]);
+  }, [preview, menu.jeu, menu.popup, menu.restaurant.id]);
 
   // Aplatit récursivement TOUS les produits y compris ceux des
   // sous-catégories sinon cliquer sur un produit nested ne pouvait pas
