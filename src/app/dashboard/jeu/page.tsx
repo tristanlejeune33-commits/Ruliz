@@ -14,6 +14,7 @@ import {
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
+import { getEffectivePlan } from "@/lib/plan-gate";
 import { prisma } from "@/lib/db";
 import { serialize } from "@/lib/serialize";
 import { JeuForm } from "./jeu-form";
@@ -62,7 +63,7 @@ export default async function JeuPage() {
       />
 
       <PlanLock
-        currentPlan={restaurant.plan}
+        currentPlan={getEffectivePlan(restaurant)}
         requiredPlan="pro"
         title="Le jeu roulette est inclus dans le plan Pro"
         description="Récupère les coordonnées de tes clients pendant qu'ils laissent un avis 5 étoiles. Tu remontes dans les recherches Google en quelques scans."

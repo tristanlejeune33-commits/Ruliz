@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { PlanBadge, type Plan } from "@/components/shared/status-badge";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
+import { getEffectivePlan } from "@/lib/plan-gate";
 import { prisma } from "@/lib/db";
 import { getRestaurantStats } from "@/server/dashboard/stats";
 import { FlagIcon } from "@/components/shared/flag-icon";
@@ -114,7 +115,7 @@ export default async function DashboardHome() {
       <WelcomeHero
         firstName={firstName}
         restaurantName={restaurant.nom}
-        planBadge={<PlanBadge plan={restaurant.plan as Plan} />}
+        planBadge={<PlanBadge plan={getEffectivePlan(restaurant) as Plan} />}
       />
 
       {/* KPI BENTO innovation #10 light : marque de coin diagonale bleue

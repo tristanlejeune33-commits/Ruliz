@@ -28,6 +28,7 @@ import {
 } from "@/components/shared/page-hero";
 import { PlanBadge, type Plan } from "@/components/shared/status-badge";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
+import { getEffectivePlan } from "@/lib/plan-gate";
 import { serialize } from "@/lib/serialize";
 import { RestaurantForm } from "./restaurant-form";
 
@@ -68,7 +69,7 @@ export default async function RestaurantPage() {
             <HeroEyebrow icon={<Building2 className="size-3" />}>
               Mon restaurant
             </HeroEyebrow>
-            <PlanBadge plan={data.plan as Plan} />
+            <PlanBadge plan={getEffectivePlan(restaurant) as Plan} />
           </>
         }
         title={data.nom}

@@ -13,6 +13,7 @@ import {
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanBadge, type Plan as UiPlan } from "@/components/shared/status-badge";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
+import { getEffectivePlan } from "@/lib/plan-gate";
 import { PLANS, type Plan, formatPriceEuro, isAtLeastPlan } from "@/lib/plans";
 import { isStripeConfigured } from "@/lib/stripe";
 import { syncRestaurantSubscription } from "@/server/billing/actions";
@@ -66,7 +67,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
             <HeroEyebrow icon={<CreditCard className="size-3" strokeWidth={1.75} />}>
               Facturation
             </HeroEyebrow>
-            <PlanBadge plan={restaurant.plan as UiPlan} />
+            <PlanBadge plan={getEffectivePlan(restaurant) as UiPlan} />
           </>
         }
         title="Plan & paiement"

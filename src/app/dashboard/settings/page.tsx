@@ -27,6 +27,7 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
+import { getEffectivePlan } from "@/lib/plan-gate";
 import { PlanBadge, type Plan } from "@/components/shared/status-badge";
 import { RestartTourButton } from "./restart-tour-button";
 import { DeleteAccountCard } from "./delete-account-card";
@@ -188,7 +189,7 @@ export default async function SettingsPage() {
                     Géré par Stripe. Résiliation et changement de plan à tout moment.
                   </CardDescription>
                 </div>
-                <PlanBadge plan={restaurant.plan as Plan} />
+                <PlanBadge plan={getEffectivePlan(restaurant) as Plan} />
               </div>
             </CardHeader>
             <CardContent>

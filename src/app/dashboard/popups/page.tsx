@@ -3,6 +3,7 @@ import { Megaphone } from "lucide-react";
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
+import { getEffectivePlan } from "@/lib/plan-gate";
 import { prisma } from "@/lib/db";
 import { serialize } from "@/lib/serialize";
 import { PopupsManager } from "./popups-manager";
@@ -33,7 +34,7 @@ export default async function PopupsPage() {
       />
 
       <PlanLock
-        currentPlan={restaurant.plan}
+        currentPlan={getEffectivePlan(restaurant)}
         requiredPlan="pro"
         title="Les pop-ups événements sont inclus dans le plan Pro"
         description="Affiche un message ponctuel à tes clients : nouvelle carte, brunch du dimanche, soirée DJ…"
