@@ -162,6 +162,10 @@ model User {
   /// True quand l'user a scanné son propre QR depuis l'étape 6 (KPI aha moment)
   onboardingSelfScanned Boolean   @default(false) @map("onboarding_self_scanned")
 
+  /// Perso de l'accueil dashboard : { order: string[], hidden: string[] }.
+  /// null = layout par défaut. Édité via le mode « Personnaliser ».
+  dashboardLayout    Json?     @map("dashboard_layout")
+
   authUser           AuthUser?
   restaurants        Restaurant[]
   teamOf             TeamMember[]       @relation("OwnerTeam")

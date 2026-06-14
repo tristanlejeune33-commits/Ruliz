@@ -158,7 +158,9 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "opt_in_sms" BOOLEAN NOT NULL DEFAULT TRUE;
     `);
 
-    // === users : champs onboarding + i18n ===
+    // === users : champs onboarding + i18n + perso dashboard ===
+    // dashboard_layout : { order: string[], hidden: string[] } — ordre et
+    // visibilité des sections de l'accueil dashboard (mode « Personnaliser »).
     await prisma.$executeRawUnsafe(`
       ALTER TABLE "users"
         ADD COLUMN IF NOT EXISTS "onboarding_step" INTEGER NOT NULL DEFAULT 0,
@@ -168,7 +170,8 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "onboarding_completed_at" TIMESTAMPTZ,
         ADD COLUMN IF NOT EXISTS "onboarding_self_scanned" BOOLEAN NOT NULL DEFAULT FALSE,
         ADD COLUMN IF NOT EXISTS "country_code" VARCHAR(2) DEFAULT 'FR',
-        ADD COLUMN IF NOT EXISTS "langue_native" VARCHAR(2) DEFAULT 'fr';
+        ADD COLUMN IF NOT EXISTS "langue_native" VARCHAR(2) DEFAULT 'fr',
+        ADD COLUMN IF NOT EXISTS "dashboard_layout" JSONB;
     `);
 
     // === restaurants : plan offert (cadeau bienvenue 14j Premium + admin) ===
