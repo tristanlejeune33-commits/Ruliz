@@ -28,6 +28,13 @@ export const PANEL_LANG_COOKIE = "ruliz_panel_lang";
 interface ProviderProps {
   /** Lang lue côté serveur (cookie) puis hydratée côté client. */
   initialLang: PanelLang;
+  /**
+   * Déclenche un `router.refresh()` au changement pour resynchroniser les
+   * Server Components traduits côté serveur (sidebar dashboard). À mettre à
+   * `false` quand le contenu est traduit uniquement côté client (mini-site
+   * vitrine) — évite un flicker inutile.
+   */
+  refreshOnChange?: boolean;
   children: React.ReactNode;
 }
 
@@ -45,7 +52,11 @@ interface ProviderProps {
  * `router.refresh()` ne repropageait pas la nouvelle valeur, le drapeau ne
  * changeait jamais et le DOM n'était jamais retraduit.
  */
-export function PanelLangProvider({ initialLang, children }: ProviderProps) {
+export function PanelLangProvider({
+  initialLang,
+  refreshOnChange = true,
+  children,
+}: ProviderProps) {
   const router = useRouter();
   const [lang, setLangState] = useState<PanelLang>(initialLang);
 
@@ -61,10 +72,10 @@ export function PanelLangProvider({ initialLang, children }: ProviderProps) {
       if (typeof document !== "undefined") {
         document.cookie = `${PANEL_LANG_COOKIE}=${newLang}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
       }
-      // Sync les Server Components (sidebar nav, etc.) avec la nouvelle lang.
-      router.refresh();
+      // Sync les Server Components traduits côté serveur (sidebar nav, etc.).
+      if (refreshOnChange) router.refresh();
     },
-    [router],
+    [router, refreshOnChange],
   );
 
   const value = useMemo<PanelLangContextValue>(

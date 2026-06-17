@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { Btn } from "./primitives/Btn";
 import { Monogram } from "./primitives/Monogram";
+import { LangPicker } from "./LangPicker";
 import type { RestaurantConfig } from "../types";
 
 interface NavbarProps {
@@ -66,6 +67,7 @@ export function Navbar({ config }: NavbarProps) {
           </div>
 
           <div className="rs2-nav-cta">
+            <LangPicker />
             {config.reservationUrl && (
               <Btn
                 href={config.reservationUrl}

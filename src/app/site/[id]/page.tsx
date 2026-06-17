@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { loadSiteV2ByIdOrSlug } from "@/server/public/restaurant-site-v2-loader";
 import { RestaurantSite } from "@/features/restaurant-site-v2/RestaurantSite";
+import { SiteLangShell } from "@/features/restaurant-site-v2/SiteLangShell";
 import type { RestaurantConfig } from "@/features/restaurant-site-v2/types";
 import { isRealHumanVisit } from "@/lib/is-real-visit";
 
@@ -124,7 +125,9 @@ export default async function PublicSitePage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <RestaurantSite config={config} />
+      <SiteLangShell>
+        <RestaurantSite config={config} />
+      </SiteLangShell>
     </>
   );
 }

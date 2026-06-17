@@ -310,6 +310,85 @@
   align-items: center;
 }
 
+/* ─── Sélecteur de langue (navbar) ─── */
+.rs2-lang {
+  position: relative;
+}
+.rs2-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--rule-strong);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 200ms,
+    background 200ms;
+}
+.rs2-lang-btn:hover {
+  border-color: var(--ink);
+}
+.rs2-lang-name {
+  /* Masqué sur petit écran : juste le drapeau + chevron */
+}
+@media (max-width: 640px) {
+  .rs2-lang-name {
+    display: none;
+  }
+}
+.rs2-lang-chevron {
+  opacity: 0.5;
+}
+.rs2-lang-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+.rs2-lang-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 100;
+  min-width: 180px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+.rs2-lang-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms;
+}
+.rs2-lang-item:hover {
+  background: var(--surface);
+}
+.rs2-lang-item[data-active="true"] {
+  background: var(--surface);
+  font-weight: 600;
+}
+
 .rs2-monogram {
   width: 36px;
   height: 36px;
