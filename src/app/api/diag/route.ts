@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { isR2Configured, uploadBuffer } from "@/lib/r2";
+import type { SupportedLang } from "@/lib/langs";
 
 /**
  * Diagnostic endpoint **admin uniquement** (verrouillé).
@@ -90,9 +91,16 @@ export async function GET(req: Request) {
         const { translatePanelString } = await import(
           "@/server/dashboard/translate-panel-actions"
         );
-        const panelCases: Array<{ src: string; lang: "en" | "de" }> = [
+        // Même phrase source vers les 6 langues cibles : on voit immédiatement
+        // lesquelles le serveur sait traduire (diagnostic « it/pt/zh ne
+        // marchent pas »).
+        const panelCases: Array<{ src: string; lang: SupportedLang }> = [
           { src: "Réserver une table", lang: "en" },
-          { src: "Cuisine de saison, produits du marché.", lang: "de" },
+          { src: "Réserver une table", lang: "es" },
+          { src: "Réserver une table", lang: "de" },
+          { src: "Réserver une table", lang: "it" },
+          { src: "Réserver une table", lang: "pt" },
+          { src: "Réserver une table", lang: "zh" },
         ];
         for (const c of panelCases) {
           const r = await translatePanelString(c.src, c.lang);
