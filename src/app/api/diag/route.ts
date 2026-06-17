@@ -40,6 +40,51 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const runR2Test = url.searchParams.get("r2test") === "1";
+  const runTransTest = url.searchParams.get("transtest") === "1";
+
+  // Test de traduction RÉEL : confirme que la clé Anthropic est non seulement
+  // présente mais VALIDE et que le modèle traduit bien (titres de catégories
+  // inclus). Décisif pour diagnostiquer « la carte n'est pas traduite » :
+  //   - keyPresent:false        → ajouter ANTHROPIC_API_KEY dans Railway
+  //   - ok:false (401/permission) → clé invalide/expirée
+  //   - ok:true + translated visible → le pipeline marche, c'est de la
+  //     donnée périmée côté resto (re-traduire) et non un bug de prod.
+  let transTest:
+    | { ok: true; samples: Array<{ src: string; lang: string; translated: string }> }
+    | { ok: false; error: string }
+    | { skipped: true } = { skipped: true };
+
+  if (runTransTest) {
+    try {
+      const { translateText } = await import("@/server/translation/anthropic");
+      const cases: Array<{ src: string; lang: "de" | "en" | "es" }> = [
+        { src: "Desserts", lang: "de" },
+        { src: "Entrées", lang: "en" },
+        { src: "Saucisse purée", lang: "en" },
+      ];
+      const samples: Array<{ src: string; lang: string; translated: string }> = [];
+      for (const c of cases) {
+        const r = await translateText({
+          text: c.src,
+          targetLang: c.lang,
+          sourceLang: "fr",
+        });
+        if (!r.ok) {
+          transTest = { ok: false, error: `${c.src}→${c.lang}: ${r.error}` };
+          break;
+        }
+        samples.push({ src: c.src, lang: c.lang, translated: r.text });
+      }
+      if (samples.length === cases.length) {
+        transTest = { ok: true, samples };
+      }
+    } catch (err) {
+      transTest = {
+        ok: false,
+        error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
+      };
+    }
+  }
 
   let r2TestResult:
     | { ok: true; publicUrl: string }
@@ -102,8 +147,9 @@ export async function GET(req: Request) {
       resend: present("RESEND_API_KEY"),
     },
     r2Test: r2TestResult,
+    transTest,
     hint: runR2Test
       ? null
-      : "Ajoute ?r2test=1 à l'URL pour tester un PUT réel vers R2",
+      : "Ajoute ?r2test=1 (PUT R2 réel) ou ?transtest=1 (traduction Anthropic réelle) à l'URL",
   });
 }
