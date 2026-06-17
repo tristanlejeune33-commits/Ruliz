@@ -85,6 +85,24 @@ export function AutoTranslateWrapper({
     let cancelled = false;
 
     const translatePage = async () => {
+      // 0) Restaure d'abord les textes ORIGINAUX (français) avant de traduire.
+      // Sinon, en passant d'une langue à une autre (ex: ES → EN), on collecte
+      // le texte DÉJÀ traduit (espagnol) et on l'envoie à Anthropic avec la
+      // consigne « traduis du français » → il le renvoie tel quel → l'UI reste
+      // BLOQUÉE sur la langue précédente ("ça a traduit que en espagnol").
+      // On repart donc toujours du français source.
+      isApplyingTranslations = true;
+      const restoreWalker = document.createTreeWalker(
+        scanRoot,
+        NodeFilter.SHOW_TEXT,
+      );
+      let restoreNode: Text | null;
+      while ((restoreNode = restoreWalker.nextNode() as Text | null)) {
+        const original = originalTextsRef.current.get(restoreNode);
+        if (original != null) restoreNode.nodeValue = original;
+      }
+      isApplyingTranslations = false;
+
       // 1) Collecte les text nodes éligibles
       const textNodesByText = new Map<string, Text[]>();
       const walker = document.createTreeWalker(
