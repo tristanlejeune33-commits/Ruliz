@@ -13,7 +13,7 @@ traduction) avant toute modification. Décisions utilisateur intégrées :
 | **1 — Carte langue par défaut** | `src/app/carte/[id]/page.tsx` | Aucune. La résolution `?lang=` › Accept-Language › `langue_native` › fr est **déjà** celle demandée (navigateur prioritaire). Le symptôme « pas la bonne langue » était en fait le BUG 4 (contenu non traduit → fallback langue source). | **Aucun changement** (comportement déjà conforme à ton choix). Pas de migration DB. | ✅ (déjà OK) |
 | **2 — Paramètre langue dashboard** | `src/app/dashboard/restaurant/restaurant-form.tsx`, `src/server/dashboard/actions.ts` | Aucune. Le sélecteur « Langue de saisie de la carte » (= langue par défaut) existe déjà : 7 langues, persisté via Prisma + fallback SQL. `langue_native` joue le rôle de `default_language` (pas de champ dupliqué nécessaire). | **Aucun changement** (fonctionnel). | ✅ (déjà OK) |
 | **3 — Création de compte** | `src/lib/country-language.ts`, `src/app/(auth)/signup/signup-form.tsx`, `src/lib/auth.ts` | Signup email pré-réglé sur **FR** par défaut ; signup **Google** créait le User sans `langueNative` → toujours « fr ». | `navigator.language` pré-sélectionne le pays à l'inscription ; hook OAuth lit `Accept-Language` → pose `langueNative`. `langueNative` jamais NULL (default `"fr"`). | ✅ |
-| **4 — Traduction produits (panel)** | — (diagnostic) | Pipeline **architecturalement complet et correct** (déclenchement auto + manuel, prompt 1.7 qui force la trad des titres ET catégories, stockage `produit/categorie_translations`, invalidation à l'édition). Le bouton manuel « Re-traduire » est gaté Pro+. | Cause probable = **prod** (clé `ANTHROPIC_API_KEY` absente/invalide sur Railway) ou donnée périmée. Ajout d'un **diagnostic décisif** (`/api/diag?transtest=1`) qui teste Anthropic en direct. | 🟡 à confirmer via diag |
+| **4 — Traduction produits (panel)** | `src/server/dashboard/translation-actions.ts`, `src/lib/plans.ts`, `src/app/api/diag/route.ts` | **Cause racine confirmée** : le bouton « Re-traduire » déléguait à **Inngest** et renvoyait un succès optimiste (« dispo dans 1-2 min ») sans vérifier que le worker traite l'event. En prod, si l'app Inngest n'est pas enregistrée → event dans le vide, toast « lancée » mais **aucune** traduction. Cause secondaire : le bouton était gaté Pro+. | (a) Bouton **toujours synchrone** → traduit en direct, renvoie les vrais compteurs. (b) Traduction **dégatée pour tous les plans** (`iaTranslation: true` en freemium). (c) Diagnostic `/api/diag?transtest=1`. | ✅ |
 | **4 — Traduction produits (carte)** | `src/app/carte/[id]/page.tsx` (existant) | La carte lit bien `produit_translations`/`categorie_translations` filtrées par `lang`, avec fallback langue source si trad absente + **auto-heal** en arrière-plan (déjà présent, non gaté). Si rien ne se traduit → la traduction n'aboutit jamais (clé) ou Anthropic garde le mot tel quel (ex: « Desserts » est un mot allemand valide). | Diagnostic ci-dessus. Pas de bug de lecture identifié. | 🟡 à confirmer via diag |
 
 ---
@@ -37,21 +37,14 @@ Regarde le bloc `transTest` :
 
 ---
 
-## ⚠️ Point qui demande ta décision (gating)
+## ✅ Décision gating (tranchée)
 
-Le bouton **« Re-traduire »** du dashboard est gaté **Pro+** (décision 3.9).
-Or ton resto de test est **freemium effectif** (trial expiré) → tu ne peux
-pas forcer une re-traduction pour récupérer une donnée périmée. À noter :
-la **traduction automatique** (à la sauvegarde d'un plat) et l'**auto-heal**
-de la carte publique, eux, ne sont **pas** gatés → ils traduisent même en
-freemium. Il y a donc une **incohérence** : si tu veux que les restos
-freemium aient la traduction, il faut dégater le bouton manuel ; sinon il
-faut aussi gater l'auto-traduction. **Quelle règle veux-tu ?** (je n'ai rien
-changé au gating sans ton accord).
-
-Contournement immédiat sans décision : ré-éditer une catégorie/un plat
-(re-sauvegarder) **régénère** sa traduction automatiquement (l'édition
-invalide l'ancienne trad), ou re-t'offrir Premium via le panel admin.
+La traduction IA est désormais **accessible à tous les plans** (freemium
+inclus) — choix validé. Un seul changement dans `PLAN_FEATURES` (`iaTranslation:
+true` en freemium) qui cascade partout : le gate passe pour tous, et la
+comparaison de prix + bullets marketing l'affichent pour le freemium. Cohérent
+avec la promesse cœur de Ruliz (cartes multilingues) et avec l'auto-traduction
+qui n'était déjà pas gatée.
 
 ---
 
