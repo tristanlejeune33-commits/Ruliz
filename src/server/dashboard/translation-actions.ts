@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { assertFeature } from "@/lib/plan-gate";
 import { redis } from "@/lib/redis";
-import { inngest } from "@/server/inngest/client";
 import {
   getAnthropic,
   SUPPORTED_LANGS,
@@ -71,25 +70,18 @@ export async function retranslateMenu(
     };
   }
 
-  // 2. Inngest path (prod only quand Railway a INNGEST_EVENT_KEY)
-  if (process.env.INNGEST_EVENT_KEY) {
-    try {
-      await inngest.send({
-        name: "restaurant/menu.translate",
-        data: { restaurantId: bigId.toString() },
-      });
-      revalidatePath("/dashboard/menu");
-      revalidatePath(`/carte/${bigId.toString()}`);
-      return { ok: true, data: { mode: "inngest" } };
-    } catch (e) {
-      console.warn(
-        "[retranslateMenu] inngest send failed, falling back to sync:",
-        e,
-      );
-    }
-  }
-
-  // 3. Sync path : on AWAIT la traduction et on retourne les stats réelles.
+  // 2. Bouton MANUEL = toujours SYNCHRONE.
+  // Avant : si INNGEST_EVENT_KEY était présent, on déléguait à Inngest et on
+  // renvoyait un succès optimiste ("dispo dans 1-2 min") SANS vérifier que le
+  // worker traite vraiment l'event. Si l'app Inngest n'est pas enregistrée /
+  // le signing key ne matche pas → l'event part dans le vide, le toast dit
+  // "lancée" mais RIEN n'est traduit → "ça marche pas du tout".
+  // Le bouton étant déclenché par l'utilisateur (qui attend un résultat), on
+  // exécute la traduction en direct et on renvoie les VRAIS compteurs.
+  // (L'auto-traduction à la sauvegarde garde, elle, son fallback after().)
+  console.log(
+    `[retranslateMenu] sync start for restaurant ${bigId}, langs=${langs?.join(",") ?? "all"}`,
+  );
   console.log(
     `[retranslateMenu] sync start for restaurant ${bigId}, langs=${langs?.join(",") ?? "all"}`,
   );
