@@ -55,7 +55,11 @@ export const PLANS: Record<Plan, PlanConfig> = {
       maxQrcodes: 1,
       maxProduits: 30,
       maxTeamMembers: 1,
-      iaTranslation: false,
+      // Traduction IA dispo sur TOUS les plans : c'est la promesse cœur de
+      // Ruliz (cartes multilingues), et l'auto-traduction n'était déjà pas
+      // gatée. Débloque le bouton « Re-traduire » + l'affiche dans la
+      // comparaison de prix pour le freemium.
+      iaTranslation: true,
       rouletteGame: false,
       popups: false,
       advancedStats: false,
