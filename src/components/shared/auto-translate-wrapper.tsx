@@ -4,7 +4,10 @@ import { useEffect, useRef } from "react";
 import { usePanelLang } from "./panel-lang-context";
 import { translatePanelBatch } from "@/server/dashboard/translate-panel-actions";
 
-const LOCAL_STORAGE_PREFIX = "ruliz_t_v1_";
+// v2 : bump après le fix « traduction bloquée sur la langue précédente ».
+// Invalide les caches client potentiellement pollués (textes déjà traduits
+// mis en cache à tort pendant la période du bug ES→autre langue).
+const LOCAL_STORAGE_PREFIX = "ruliz_t_v2_";
 
 /**
  * Wrapper qui auto-traduit TOUS les text nodes du DOM enfant.
@@ -179,8 +182,14 @@ export function AutoTranslateWrapper({
         const fetched = await translatePanelBatch(toFetch, lang);
         if (cancelled) return;
 
-        // Cache localStorage
+        // Cache localStorage — MAIS jamais une traduction == source.
+        // Un texte renvoyé inchangé = soit un échec Anthropic (rate-limit,
+        // timeout → translatePanelBatch retourne l'original), soit un nom
+        // propre. Le cacher figerait la langue en français POUR TOUJOURS
+        // (cause du "it/pt/zh ne marchent pas" : un hoquet pendant leur
+        // 1ʳᵉ traduction avait caché le français). On le laisse se re-fetcher.
         for (const [text, translation] of Object.entries(fetched)) {
+          if (translation === text) continue;
           try {
             localStorage.setItem(
               `${LOCAL_STORAGE_PREFIX}${lang}:${text}`,
