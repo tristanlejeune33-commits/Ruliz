@@ -24,11 +24,22 @@ export function SiteLangShell({ children }: { children: React.ReactNode }) {
   const [lang, setLang] = useState<SupportedLang>("fr");
 
   useEffect(() => {
+    // 1. Choix explicite précédent (cookie) → prioritaire.
     const m = document.cookie.match(
       new RegExp(`(?:^|; )${PANEL_LANG_COOKIE}=([^;]+)`),
     );
-    const c = m?.[1];
-    if (isSupportedLang(c)) setLang(c);
+    const cookieLang = m?.[1];
+    if (isSupportedLang(cookieLang)) {
+      setLang(cookieLang);
+      return;
+    }
+    // 2. Sinon, DÉTECTION AUTOMATIQUE de la langue du navigateur : un client
+    //    allemand qui ouvre le site le voit traduit en allemand sans cliquer.
+    //    ("fr" = langue source, rien à traduire → on reste tel quel.)
+    const navLang = navigator.language?.split("-")[0]?.toLowerCase();
+    if (isSupportedLang(navLang) && navLang !== "fr") {
+      setLang(navLang);
+    }
   }, []);
 
   return (
