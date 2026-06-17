@@ -72,6 +72,23 @@ export const auth = betterAuth({
             }
             const name = (authUser.name ?? "").trim();
             const [prenom, ...rest] = name.split(/\s+/);
+            // Langue native depuis l'Accept-Language du navigateur (au lieu de
+            // "fr" brut) : un restaurateur DE/EN qui s'inscrit via Google a sa
+            // carte pré-réglée dans sa langue. Fallback "fr" si en-tête absent.
+            let langueNative = "fr";
+            try {
+              const { headers } = await import("next/headers");
+              const h = await headers();
+              const browserLang = h
+                .get("accept-language")
+                ?.split(",")[0]
+                ?.split("-")[0]
+                ?.toLowerCase();
+              const { isSupportedLang } = await import("@/lib/langs");
+              if (isSupportedLang(browserLang)) langueNative = browserLang;
+            } catch {
+              // Hors contexte requête → garde "fr"
+            }
             const user = await prisma.user.create({
               data: {
                 email: authUser.email,
@@ -79,6 +96,7 @@ export const auth = betterAuth({
                 nom: rest.length > 0 ? rest.join(" ") : null,
                 role: "client",
                 statut: "actif",
+                langueNative,
               },
             });
             await prisma.authUser.update({

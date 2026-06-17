@@ -55,3 +55,17 @@ export function countryName(countryCode: string | null | undefined): string {
   const found = SIGNUP_COUNTRIES.find((c) => c.code === upper);
   return found?.name ?? upper;
 }
+
+/**
+ * Premier pays du picker correspondant à une langue (ex: "en" → "GB").
+ * Sert à pré-sélectionner le pays du signup depuis la langue du navigateur.
+ * null si la langue n'est pas supportée.
+ */
+export function defaultCountryForLanguage(
+  lang: string | null | undefined,
+): string | null {
+  if (!lang) return null;
+  const code = lang.split("-")[0]?.toLowerCase();
+  const found = SIGNUP_COUNTRIES.find((c) => c.language === code);
+  return found?.code ?? null;
+}

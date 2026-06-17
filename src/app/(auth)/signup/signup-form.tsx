@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +18,7 @@ import {
 import { clearSessionCookies, signupClient } from "@/server/auth/actions";
 import {
   SIGNUP_COUNTRIES,
+  defaultCountryForLanguage,
   languageFromCountry,
 } from "@/lib/country-language";
 import { AuthDivider, GoogleButton } from "../google-button";
@@ -93,6 +94,24 @@ export function SignupForm({
 
   const country = form.watch("country");
   const detectedLang = languageFromCountry(country);
+
+  // Pré-sélectionne le pays (donc la langue de la carte) depuis la langue du
+  // navigateur, une seule fois au montage et tant que l'utilisateur n'a pas
+  // touché au sélecteur. Évite de bloquer tout le monde sur "FR" par défaut :
+  // un restaurateur allemand qui s'inscrit voit sa carte pré-réglée en DE.
+  const browserLangApplied = useRef(false);
+  useEffect(() => {
+    if (browserLangApplied.current) return;
+    browserLangApplied.current = true;
+    if (form.formState.dirtyFields.country) return;
+    const navLang =
+      typeof navigator !== "undefined" ? navigator.language : null;
+    const code = defaultCountryForLanguage(navLang);
+    if (code && code !== form.getValues("country")) {
+      form.setValue("country", code);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function onSubmit(values: Values) {
     setIsPending(true);
