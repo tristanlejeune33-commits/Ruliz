@@ -50,37 +50,66 @@ export async function GET(req: Request) {
   //   - ok:true + translated visible → le pipeline marche, c'est de la
   //     donnée périmée côté resto (re-traduire) et non un bug de prod.
   let transTest:
-    | { ok: true; samples: Array<{ src: string; lang: string; translated: string }> }
-    | { ok: false; error: string }
+    | {
+        ok: true;
+        menuPath: Array<{ src: string; lang: string; translated: string }>;
+        panelPath: Array<{ src: string; lang: string; translated: string }>;
+      }
+    | { ok: false; path: "menu" | "panel"; error: string }
     | { skipped: true } = { skipped: true };
 
   if (runTransTest) {
     try {
+      // 1. Chemin MENU (translateText) — utilisé par la carte publique.
       const { translateText } = await import("@/server/translation/anthropic");
-      const cases: Array<{ src: string; lang: "de" | "en" | "es" }> = [
+      const menuCases: Array<{ src: string; lang: "de" | "en" }> = [
         { src: "Desserts", lang: "de" },
-        { src: "Entrées", lang: "en" },
         { src: "Saucisse purée", lang: "en" },
       ];
-      const samples: Array<{ src: string; lang: string; translated: string }> = [];
-      for (const c of cases) {
+      const menuPath: Array<{ src: string; lang: string; translated: string }> =
+        [];
+      for (const c of menuCases) {
         const r = await translateText({
           text: c.src,
           targetLang: c.lang,
           sourceLang: "fr",
         });
         if (!r.ok) {
-          transTest = { ok: false, error: `${c.src}→${c.lang}: ${r.error}` };
+          transTest = { ok: false, path: "menu", error: `${c.src}→${c.lang}: ${r.error}` };
           break;
         }
-        samples.push({ src: c.src, lang: c.lang, translated: r.text });
+        menuPath.push({ src: c.src, lang: c.lang, translated: r.text });
       }
-      if (samples.length === cases.length) {
-        transTest = { ok: true, samples };
+
+      // 2. Chemin PANEL (translatePanelString) — utilisé par le dashboard ET
+      //    le mini-site vitrine. C'est CE chemin qui doit marcher pour que la
+      //    traduction auto de l'interface / du site fonctionne.
+      const panelPath: Array<{ src: string; lang: string; translated: string }> =
+        [];
+      if (menuPath.length === menuCases.length) {
+        const { translatePanelString } = await import(
+          "@/server/dashboard/translate-panel-actions"
+        );
+        const panelCases: Array<{ src: string; lang: "en" | "de" }> = [
+          { src: "Réserver une table", lang: "en" },
+          { src: "Cuisine de saison, produits du marché.", lang: "de" },
+        ];
+        for (const c of panelCases) {
+          const r = await translatePanelString(c.src, c.lang);
+          if (!r.ok) {
+            transTest = { ok: false, path: "panel", error: `${c.src}→${c.lang}: ${r.error}` };
+            break;
+          }
+          panelPath.push({ src: c.src, lang: c.lang, translated: r.text });
+        }
+        if (panelPath.length === panelCases.length) {
+          transTest = { ok: true, menuPath, panelPath };
+        }
       }
     } catch (err) {
       transTest = {
         ok: false,
+        path: "menu",
         error: err instanceof Error ? `${err.name}: ${err.message}` : String(err),
       };
     }
