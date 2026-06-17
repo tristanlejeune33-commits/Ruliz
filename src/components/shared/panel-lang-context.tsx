@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import { t as serverT, type PanelLang } from "@/lib/panel-i18n";
 
@@ -26,23 +33,35 @@ interface ProviderProps {
 
 /**
  * Provider mis dans le dashboard layout (server component) qui passe la lang
- * lue depuis le cookie httpOnly. Tout composant client peut ensuite faire
+ * lue depuis le cookie. Tout composant client peut ensuite faire
  * `const { t } = usePanelLang()` puis `t("nav.dashboard")`.
  *
- * Note : la lang est immutable côté Provider (pas de useState) car on veut
- * que le changement passe par le cookie + un router.refresh() pour que les
- * Server Components (sidebar nav, etc.) re-render avec la bonne lang. C'est
- * ce que fait setLang ci-dessous.
+ * La lang est un ÉTAT LOCAL initialisé depuis `initialLang` : au clic, on la
+ * met à jour IMMÉDIATEMENT (drapeau + auto-traduction du DOM) sans attendre
+ * le round-trip serveur. On écrit aussi le cookie + `router.refresh()` pour
+ * que les Server Components (sidebar nav) se re-render dans la bonne langue.
+ *
+ * Avant : `lang` était figée sur `initialLang` (pas de state). Si le
+ * `router.refresh()` ne repropageait pas la nouvelle valeur, le drapeau ne
+ * changeait jamais et le DOM n'était jamais retraduit.
  */
 export function PanelLangProvider({ initialLang, children }: ProviderProps) {
   const router = useRouter();
+  const [lang, setLangState] = useState<PanelLang>(initialLang);
+
+  // Si le serveur pousse une nouvelle initialLang (navigation, refresh),
+  // on resynchronise l'état local. No-op quand on vient de la changer soi-même.
+  useEffect(() => {
+    setLangState(initialLang);
+  }, [initialLang]);
 
   const setLang = useCallback(
     (newLang: PanelLang) => {
-      if (typeof document === "undefined") return;
-      document.cookie = `${PANEL_LANG_COOKIE}=${newLang}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-      // Force un re-render server-side complet pour que la sidebar (Server)
-      // et les autres composants serveur récupèrent la nouvelle lang.
+      setLangState(newLang); // maj optimiste immédiate (UI + auto-translate)
+      if (typeof document !== "undefined") {
+        document.cookie = `${PANEL_LANG_COOKIE}=${newLang}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+      }
+      // Sync les Server Components (sidebar nav, etc.) avec la nouvelle lang.
       router.refresh();
     },
     [router],
@@ -50,11 +69,11 @@ export function PanelLangProvider({ initialLang, children }: ProviderProps) {
 
   const value = useMemo<PanelLangContextValue>(
     () => ({
-      lang: initialLang,
+      lang,
       setLang,
-      t: (key: string) => serverT(key, initialLang),
+      t: (key: string) => serverT(key, lang),
     }),
-    [initialLang, setLang],
+    [lang, setLang],
   );
 
   return (
