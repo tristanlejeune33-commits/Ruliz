@@ -8,7 +8,7 @@ import {
   PANEL_LANG_COOKIE,
 } from "@/components/shared/panel-lang-context";
 import { AutoTranslateWrapper } from "@/components/shared/auto-translate-wrapper";
-import { PreviewLangPicker } from "@/components/shared/preview-lang-picker";
+import { MarketingLangPicker } from "./marketing-lang-picker";
 import { isSupportedLang, type SupportedLang } from "@/lib/langs";
 
 /**
@@ -53,7 +53,7 @@ export default async function MarketingLayout({
                 </Button>
               </nav>
               <div className="flex items-center gap-2">
-                <PreviewLangPicker />
+                <MarketingLangPicker />
                 <Button variant="ghost" asChild className="hidden sm:inline-flex">
                   <Link href="/login">Se connecter</Link>
                 </Button>
