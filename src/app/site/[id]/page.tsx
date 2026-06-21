@@ -9,6 +9,12 @@ import { RestaurantSite } from "@/features/restaurant-site-v2/RestaurantSite";
 import { SiteLangShell } from "@/features/restaurant-site-v2/SiteLangShell";
 import type { RestaurantConfig } from "@/features/restaurant-site-v2/types";
 import { isRealHumanVisit } from "@/lib/is-real-visit";
+import { detectCountry } from "@/lib/geo";
+import {
+  isSupportedSignupCountry,
+  languageFromCountry,
+} from "@/lib/country-language";
+import type { SupportedLang } from "@/lib/langs";
 
 /**
  * Page publique du mini-site v2 — `/site/[idOrSlug]`.
@@ -119,13 +125,26 @@ export default async function PublicSitePage({ params }: PageProps) {
   // JSON-LD structured data — booste le SEO local Google
   const jsonLd = buildJsonLd(config);
 
+  // Fallback géoloc : si le pays du visiteur a une langue supportée, on la
+  // passe au shell client (utilisée seulement si le visiteur n'a ni cookie ni
+  // langue de navigateur supportée). La langue du navigateur reste prioritaire.
+  let geoLang: SupportedLang | null = null;
+  try {
+    const country = await detectCountry();
+    if (country && isSupportedSignupCountry(country)) {
+      geoLang = languageFromCountry(country);
+    }
+  } catch {
+    // géoloc indispo → null
+  }
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <SiteLangShell>
+      <SiteLangShell geoLang={geoLang}>
         <RestaurantSite config={config} />
       </SiteLangShell>
     </>

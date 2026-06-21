@@ -20,7 +20,15 @@ import { isSupportedLang, type SupportedLang } from "@/lib/langs";
  * basculer via le sélecteur. `refreshOnChange={false}` car le contenu est
  * traduit uniquement côté client (rien de traduit côté serveur à resync).
  */
-export function SiteLangShell({ children }: { children: React.ReactNode }) {
+export function SiteLangShell({
+  children,
+  geoLang = null,
+}: {
+  children: React.ReactNode;
+  /** Langue déduite du pays (géoloc IP serveur) — fallback si pas de cookie
+   *  ni de langue de navigateur supportée. */
+  geoLang?: SupportedLang | null;
+}) {
   const [lang, setLang] = useState<SupportedLang>("fr");
 
   useEffect(() => {
@@ -33,14 +41,18 @@ export function SiteLangShell({ children }: { children: React.ReactNode }) {
       setLang(cookieLang);
       return;
     }
-    // 2. Sinon, DÉTECTION AUTOMATIQUE de la langue du navigateur : un client
-    //    allemand qui ouvre le site le voit traduit en allemand sans cliquer.
-    //    ("fr" = langue source, rien à traduire → on reste tel quel.)
+    // 2. Langue du navigateur (PRIORITAIRE sur la géoloc) : un client allemand
+    //    voit le site en allemand sans cliquer.
     const navLang = navigator.language?.split("-")[0]?.toLowerCase();
     if (isSupportedLang(navLang) && navLang !== "fr") {
       setLang(navLang);
+      return;
     }
-  }, []);
+    // 3. Fallback géoloc IP (pays du visiteur), si fourni par le serveur.
+    if (geoLang && geoLang !== "fr") {
+      setLang(geoLang);
+    }
+  }, [geoLang]);
 
   return (
     <PanelLangProvider initialLang={lang} refreshOnChange={false}>

@@ -77,19 +77,39 @@ export default async function CartePage({ params, searchParams }: PageProps) {
     if (isSupportedLang(browserLang)) {
       lang = browserLang;
     } else {
-      // Fallback : langue native du resto (raw query — colonne ajoutée à
-      // chaud, le client Prisma local peut ne pas la connaître)
       lang = "fr";
+      // Fallback 1 : géoloc IP. Si le pays du visiteur a une langue supportée
+      // (ex: visiteur en Espagne dont le navigateur n'est ni FR/EN/ES…), on
+      // sert la carte dans cette langue. La langue du navigateur reste
+      // PRIORITAIRE au-dessus (un touriste garde la langue de son téléphone).
+      let resolved = false;
       try {
-        const bigId = BigInt(id);
-        const { prisma } = await import("@/lib/db");
-        const rows = await prisma.$queryRaw<
-          Array<{ langueNative: string | null }>
-        >`SELECT langue_native AS "langueNative" FROM restaurants WHERE id = ${bigId} LIMIT 1`;
-        const native = rows[0]?.langueNative;
-        if (isSupportedLang(native)) lang = native;
+        const { detectCountry } = await import("@/lib/geo");
+        const { isSupportedSignupCountry, languageFromCountry } = await import(
+          "@/lib/country-language"
+        );
+        const country = await detectCountry();
+        if (country && isSupportedSignupCountry(country)) {
+          lang = languageFromCountry(country);
+          resolved = true;
+        }
       } catch {
-        // id invalide ou DB indisponible → fr, notFound suivra si besoin
+        // géoloc indispo → on tente la langue native du resto
+      }
+      // Fallback 2 : langue native du resto (raw query — colonne ajoutée à
+      // chaud, le client Prisma local peut ne pas la connaître)
+      if (!resolved) {
+        try {
+          const bigId = BigInt(id);
+          const { prisma } = await import("@/lib/db");
+          const rows = await prisma.$queryRaw<
+            Array<{ langueNative: string | null }>
+          >`SELECT langue_native AS "langueNative" FROM restaurants WHERE id = ${bigId} LIMIT 1`;
+          const native = rows[0]?.langueNative;
+          if (isSupportedLang(native)) lang = native;
+        } catch {
+          // id invalide ou DB indisponible → fr, notFound suivra si besoin
+        }
       }
     }
   }
