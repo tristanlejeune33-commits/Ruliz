@@ -93,8 +93,12 @@ const SelectContent = React.forwardRef<
       <SelectPrimitive.Viewport
         className={cn(
           "p-1",
+          // NOTE : pas de `h-[var(--radix-select-trigger-height)]` ici. Ce
+          // height (= hauteur du bouton) bridait le dropdown à ~1 option →
+          // la liste (langues, fuseaux…) était coupée. On laisse le contenu
+          // se dimensionner naturellement, plafonné par max-h-96 du Content.
           position === "popper" &&
-            "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
+            "w-full min-w-[var(--radix-select-trigger-width)]",
         )}
       >
         {children}

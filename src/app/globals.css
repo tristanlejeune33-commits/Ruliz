@@ -232,6 +232,13 @@
     font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Anti-décalage Radix : à l'ouverture d'un Select/Dialog/Popover,
+       react-remove-scroll verrouille le scroll et ajoute un padding-right au
+       <body> pour compenser la scrollbar qui disparaît. Mais on réserve déjà
+       la gouttière en permanence (html: overflow-y:scroll + scrollbar-gutter:
+       stable) → cette compensation décale TOUTE la page vers la gauche/droite
+       ("la partie gauche se lève"). On force la taille compensée à 0. */
+    --removed-body-scroll-bar-size: 0px !important;
   }
   /* Re-applique `color` et `background` sur les sous-arbres qui basculent
      data-theme="light|dark". Sinon la couleur calculée du body (dark mode
