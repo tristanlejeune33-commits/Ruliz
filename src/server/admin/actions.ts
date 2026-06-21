@@ -1,12 +1,37 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
+import { SUPPORTED_LANGS } from "@/lib/langs";
 import { requireAdmin } from "@/lib/session";
+
+/**
+ * Date « lointaine » utilisée pour un plan fixé MANUELLEMENT par l'admin
+ * (bypass Stripe, durée illimitée). getEffectivePlan honore le plan tant que
+ * planOffertExpiresAt > now → on met une date très loin pour un grant permanent.
+ */
+const PERMANENT_GRANT_UNTIL = new Date("2099-12-31T23:59:59.000Z");
+
+/** Purge les caches de la carte publique d'un restaurant (branding plan-dépendant). */
+async function purgeCarteCaches(restaurantId: bigint): Promise<void> {
+  revalidatePath(`/carte/${restaurantId.toString()}`);
+  revalidateTag("public-menu");
+  if (redis) {
+    try {
+      const keys = SUPPORTED_LANGS.map(
+        (l) => `carte:${restaurantId.toString()}:${l}`,
+      );
+      await redis.del(...keys);
+    } catch (err) {
+      console.warn("[admin] purgeCarteCaches redis del failed:", err);
+    }
+  }
+}
 
 // ---------------- Schemas ----------------
 
@@ -272,12 +297,47 @@ export async function setRestaurantPlan(
   restaurantId: bigint,
   plan: (typeof PLANS)[number],
 ): Promise<ActionResult> {
-  await requireAdmin();
+  const session = await requireAdmin();
   if (!PLANS.includes(plan)) return { ok: false, error: "Plan invalide" };
-  await prisma.restaurant.update({ where: { id: restaurantId }, data: { plan } });
-  await logAdminAction("restaurant.set_plan", { restaurantId: restaurantId.toString(), plan });
+
+  const authUser = await prisma.authUser.findUnique({
+    where: { id: session.user.id },
+    select: { userId: true },
+  });
+  const adminUserId = authUser?.userId ?? null;
+
+  if (plan === "freemium") {
+    // Repasse RÉELLEMENT en freemium : on retire un éventuel cadeau admin
+    // (sinon planOffertExpiresAt maintiendrait l'ancien plan effectif).
+    await prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: {
+        plan: "freemium",
+        planOffertExpiresAt: null,
+        planOffertByUserId: null,
+      },
+    });
+  } else {
+    // Plan pro/premium fixé manuellement par l'admin = grant PERMANENT
+    // (bypass Stripe). Sans planOffertExpiresAt, getEffectivePlan redescendait
+    // en freemium → le changement de plan n'avait AUCUN effet côté client.
+    await prisma.restaurant.update({
+      where: { id: restaurantId },
+      data: {
+        plan,
+        planOffertExpiresAt: PERMANENT_GRANT_UNTIL,
+        planOffertByUserId: adminUserId,
+      },
+    });
+  }
+
+  await logAdminAction("restaurant.set_plan", {
+    restaurantId: restaurantId.toString(),
+    plan,
+  });
   revalidatePath("/admin/clients");
   revalidatePath("/admin/restaurants");
+  await purgeCarteCaches(restaurantId);
   return { ok: true };
 }
 
