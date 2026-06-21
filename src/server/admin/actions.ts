@@ -179,9 +179,13 @@ export async function createClient(input: unknown): Promise<ActionResult<{ id: n
 const createRestaurantForClientSchema = z.object({
   userId: z.coerce.number().int().positive(),
   nom: z.string().min(1, "Nom requis").max(255),
-  ville: z.string().max(100).optional().or(z.literal("")),
+  email: z.string().max(255).optional().or(z.literal("")),
+  telephone: z.string().max(20).optional().or(z.literal("")),
   adresse: z.string().max(500).optional().or(z.literal("")),
   codePostal: z.string().max(10).optional().or(z.literal("")),
+  ville: z.string().max(100).optional().or(z.literal("")),
+  pays: z.string().max(100).optional().or(z.literal("")),
+  langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]).optional(),
 });
 
 /**
@@ -219,11 +223,13 @@ export async function createRestaurantForClient(
     data: {
       userId: user.id,
       nom: data.nom.trim(),
-      ville: empty(data.ville),
+      email: empty(data.email),
+      telephone: empty(data.telephone),
       adresse: empty(data.adresse),
       codePostal: empty(data.codePostal),
-      pays: user.pays ?? "France",
-      langueNative: user.langueNative ?? "fr",
+      ville: empty(data.ville),
+      pays: empty(data.pays) ?? user.pays ?? "France",
+      langueNative: data.langueNative ?? user.langueNative ?? "fr",
       plan: "freemium",
       statut: "actif",
     },

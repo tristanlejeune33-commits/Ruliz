@@ -197,7 +197,26 @@ export default async function ClientDetailPage({ params }: PageProps) {
 
         <TabsContent value="restaurants" className="space-y-4">
           <div className="flex justify-end">
-            <CreateRestaurantForClient userId={data.id} />
+            <CreateRestaurantForClient
+              userId={data.id}
+              defaults={{
+                telephone: data.telephone ?? undefined,
+                adresse: data.adresse ?? undefined,
+                codePostal: data.codePostal ?? undefined,
+                ville: data.ville ?? undefined,
+                pays: data.pays ?? undefined,
+                langue:
+                  ((data as { langueNative?: string }).langueNative as
+                    | "fr"
+                    | "en"
+                    | "es"
+                    | "de"
+                    | "it"
+                    | "pt"
+                    | "zh"
+                    | undefined) ?? undefined,
+              }}
+            />
           </div>
           <div className="grid gap-4 md:grid-cols-2">
             {data.restaurants.length === 0 && (
