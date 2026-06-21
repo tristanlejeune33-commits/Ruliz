@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { SUPPORTED_LANGS } from "@/lib/langs";
+import { getStripe } from "@/lib/stripe";
 import { requireAdmin } from "@/lib/session";
 
 /**
@@ -242,6 +243,54 @@ export async function createRestaurantForClient(
   });
   revalidatePath(`/admin/clients/${user.id}`);
   return { ok: true, data: { id: restaurant.id.toString() } };
+}
+
+/**
+ * Supprime un restaurant d'un client depuis l'admin. Irréversible.
+ *
+ * - Annule l'abonnement Stripe s'il y en a un (sinon le client serait facturé
+ *   pour un resto supprimé).
+ * - prisma.restaurant.delete cascade sur categories→produits, qrcodes, jeux,
+ *   pop-ups, base_clients. Les commandes boutique sont déliées (SetNull).
+ * - Les images R2 deviennent orphelines → ramassées par le Cleanup R2 (>30j).
+ */
+export async function deleteRestaurantAdmin(
+  restaurantId: string,
+): Promise<ActionResult> {
+  await requireAdmin();
+  let bigId: bigint;
+  try {
+    bigId = BigInt(restaurantId);
+  } catch {
+    return { ok: false, error: "Identifiant restaurant invalide" };
+  }
+
+  const resto = await prisma.restaurant.findUnique({
+    where: { id: bigId },
+    select: { id: true, userId: true, nom: true, stripeSubscriptionId: true },
+  });
+  if (!resto) return { ok: false, error: "Restaurant introuvable." };
+
+  if (resto.stripeSubscriptionId) {
+    try {
+      const stripe = getStripe();
+      if (stripe) await stripe.subscriptions.cancel(resto.stripeSubscriptionId);
+    } catch (err) {
+      console.warn("[admin.deleteRestaurant] annulation Stripe échouée:", err);
+    }
+  }
+
+  await prisma.restaurant.delete({ where: { id: bigId } });
+  await purgeCarteCaches(bigId);
+
+  await logAdminAction("restaurant.delete", {
+    restaurantId: resto.id.toString(),
+    nom: resto.nom,
+    userId: resto.userId,
+  });
+  revalidatePath(`/admin/clients/${resto.userId}`);
+  revalidatePath("/admin/restaurants");
+  return { ok: true };
 }
 
 export async function updateClient(input: unknown): Promise<ActionResult> {

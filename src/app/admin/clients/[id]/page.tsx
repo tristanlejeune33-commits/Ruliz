@@ -43,6 +43,7 @@ import { ClientPermissions } from "./client-permissions";
 import { ClientBillingTab } from "./client-billing-tab";
 import { ImpersonateButton } from "./impersonate-button";
 import { CreateRestaurantForClient } from "./create-restaurant-for-client";
+import { DeleteRestaurantButton } from "./delete-restaurant-button";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -287,7 +288,13 @@ export default async function ClientDetailPage({ params }: PageProps) {
                         )}
                       </CardDescription>
                     </div>
-                    <PlanBadge plan={r.plan as Plan} />
+                    <div className="flex items-center gap-1">
+                      <PlanBadge plan={r.plan as Plan} />
+                      <DeleteRestaurantButton
+                        restaurantId={r.id.toString()}
+                        nom={r.nom}
+                      />
+                    </div>
                   </CardHeader>
                   <CardContent className="grid grid-cols-3 gap-4 text-center">
                     <Stat label="QR codes" value={r.qrcodes.length} />
