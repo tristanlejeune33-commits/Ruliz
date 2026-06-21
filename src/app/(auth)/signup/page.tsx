@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { detectCountry } from "@/lib/geo";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { SignupForm } from "./signup-form";
 
@@ -17,18 +17,9 @@ interface PageProps {
 export default async function SignupPage({ searchParams }: PageProps) {
   const { prospect: prospectToken } = await searchParams;
 
-  // Détection du pays via l'IP (header Cloudflare devant Railway, ou Vercel).
-  // Sert à pré-remplir pays + langue de la carte. "XX"/"T1" (Tor) = inconnu.
-  const h = await headers();
-  const rawCountry = (
-    h.get("cf-ipcountry") ??
-    h.get("x-vercel-ip-country") ??
-    ""
-  ).toUpperCase();
-  const detectedCountry =
-    /^[A-Z]{2}$/.test(rawCountry) && rawCountry !== "XX" && rawCountry !== "T1"
-      ? rawCountry
-      : null;
+  // Détection du pays (header géo si proxy Cloudflare, sinon géoloc de l'IP
+  // via GeoJS). Pré-remplit pays + langue de la carte au signup.
+  const detectedCountry = await detectCountry();
 
   // Si un token prospect est fourni, on précharge ses infos pour
   // pré-remplir le formulaire et personnaliser l'accueil.
