@@ -239,6 +239,7 @@ export async function loadSiteV2(
     tiktokUrl: string | null;
     siteWeb: string | null;
     googleReviewUrl: string | null;
+    deviseDefault: string | null;
     statut: string;
     plan: string;
     site_enabled: boolean | null;
@@ -270,6 +271,7 @@ export async function loadSiteV2(
       tiktok_url          AS "tiktokUrl",
       site_web            AS "siteWeb",
       google_review_url   AS "googleReviewUrl",
+      devise_default      AS "deviseDefault",
       statut,
       plan,
       site_enabled,
@@ -404,7 +406,8 @@ export async function loadSiteV2(
   const menuTeaserItems: MenuTeaserItem[] = produits.map((p, idx) => ({
     num: idx + 1,
     name: p.titre,
-    price: formatPrice(p.prix, p.devise),
+    // Devise du resto = source de vérité (un resto = une devise), comme la carte.
+    price: formatPrice(p.prix, resto.deviseDefault),
     image:
       p.imageUrl ??
       "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80",
