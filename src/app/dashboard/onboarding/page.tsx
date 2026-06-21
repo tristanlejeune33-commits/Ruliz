@@ -20,7 +20,10 @@ export default async function OnboardingPage() {
   const session = await requireDashboard();
   const authUser = await prisma.authUser.findUnique({
     where: { id: session.user.id },
-    select: { userId: true },
+    select: {
+      userId: true,
+      user: { select: { langueNative: true } },
+    },
   });
 
   // Si l'utilisateur a déjà un restaurant, on ne devrait pas être ici.
@@ -46,7 +49,19 @@ export default async function OnboardingPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <OnboardingForm />
+          <OnboardingForm
+            defaultLangue={
+              (authUser?.user?.langueNative as
+                | "fr"
+                | "en"
+                | "es"
+                | "de"
+                | "it"
+                | "pt"
+                | "zh"
+                | undefined) ?? "fr"
+            }
+          />
         </CardContent>
       </Card>
     </div>
