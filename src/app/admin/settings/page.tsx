@@ -256,9 +256,7 @@ export default async function AdminSettingsPage() {
             d&apos;environnement Railway.
             <ul className="mt-2 list-inside list-disc space-y-0.5">
               <li>Édition des templates email (Resend) confirmation client, notification admin</li>
-              <li>Limites par plan (max produits, max QR codes, etc.) codé pour l&apos;instant dans <code className="font-mono text-[10px]">src/lib/plans.ts</code></li>
               <li>Liste des langues activées globalement</li>
-              <li>Réset du cache Redis depuis le dashboard</li>
             </ul>
           </CardDescription>
         </CardHeader>
