@@ -23,6 +23,7 @@ import {
   signupLanguageForCountry,
 } from "@/lib/country-language";
 import { countryMeta } from "@/lib/countries";
+import { T, useT } from "@/components/shared/translate";
 import { AuthDivider, GoogleButton } from "../google-button";
 
 const schema = z.object({
@@ -83,6 +84,7 @@ export function SignupForm({
   defaultCountry = null,
 }: SignupFormProps = {}) {
   const router = useRouter();
+  const t = useT();
   const [isPending, setIsPending] = useState(false);
 
   const initialCountry = defaultCountry ?? "FR";
@@ -146,9 +148,9 @@ export function SignupForm({
 
     // Message contextuel selon activation prospect ou pas
     if (res.data?.activatedProspect) {
-      toast.success("Compte créé et carte activée !");
+      toast.success(t("Compte créé et carte activée !"));
     } else {
-      toast.success("Compte créé. Bienvenue !");
+      toast.success(t("Compte créé. Bienvenue !"));
     }
     router.push("/dashboard");
     router.refresh();
@@ -170,7 +172,7 @@ export function SignupForm({
             render={({ field }) => (
               <FormItem>
                 <label htmlFor="signup-prenom" style={LABEL_STYLE}>
-                  Prénom
+                  <T>Prénom</T>
                 </label>
                 <FormControl>
                   <input
@@ -195,7 +197,7 @@ export function SignupForm({
             render={({ field }) => (
               <FormItem>
                 <label htmlFor="signup-nom" style={LABEL_STYLE}>
-                  Nom
+                  <T>Nom</T>
                 </label>
                 <FormControl>
                   <input
@@ -222,7 +224,7 @@ export function SignupForm({
           render={({ field }) => (
             <FormItem>
               <label htmlFor="signup-email" style={LABEL_STYLE}>
-                Email professionnel
+                <T>Email professionnel</T>
               </label>
               <FormControl>
                 <input
@@ -250,7 +252,7 @@ export function SignupForm({
           render={({ field }) => (
             <FormItem>
               <label htmlFor="signup-password" style={LABEL_STYLE}>
-                Mot de passe
+                <T>Mot de passe</T>
               </label>
               <FormControl>
                 <input
@@ -278,7 +280,7 @@ export function SignupForm({
           render={({ field }) => (
             <FormItem>
               <label htmlFor="signup-country" style={LABEL_STYLE}>
-                Pays de ton restaurant
+                <T>Pays de ton restaurant</T>
               </label>
               <FormControl>
                 <select
@@ -308,11 +310,11 @@ export function SignupForm({
                 className="mt-1.5 text-xs leading-snug"
                 style={{ color: "#5e6b85" }}
               >
-                Détecte automatiquement la langue de ta carte (
+                <T>Détecte automatiquement la langue de ta carte</T> (
                 <strong style={{ color: "#26438A" }}>
                   {detectedLang.toUpperCase()}
                 </strong>
-                ). Modifiable plus tard dans les paramètres.
+                ). <T>Modifiable plus tard dans les paramètres.</T>
               </p>
               <FormMessage />
             </FormItem>
@@ -329,18 +331,18 @@ export function SignupForm({
           {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              <span>Création…</span>
+              <span><T>Création…</T></span>
             </>
           ) : (
             <>
-              <span>Créer mon compte</span>
+              <span><T>Créer mon compte</T></span>
               <ArrowRight className="size-4" strokeWidth={2} />
             </>
           )}
         </Button>
 
         <p className="text-center text-xs" style={{ color: "#4A5573" }}>
-          En créant un compte, tu acceptes nos{" "}
+          <T>En créant un compte, tu acceptes nos</T>{" "}
           <a
             href="/legal/mentions-legales"
             target="_blank"
@@ -348,9 +350,9 @@ export function SignupForm({
             className="font-semibold hover:underline"
             style={{ color: "#26438A" }}
           >
-            CGV
+            <T>CGV</T>
           </a>{" "}
-          et notre{" "}
+          <T>et notre</T>{" "}
           <a
             href="/legal/politique-confidentialite"
             target="_blank"
@@ -358,7 +360,7 @@ export function SignupForm({
             className="font-semibold hover:underline"
             style={{ color: "#26438A" }}
           >
-            politique de confidentialité
+            <T>politique de confidentialité</T>
           </a>
           .
         </p>

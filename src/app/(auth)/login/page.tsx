@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { T } from "@/components/shared/translate";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
@@ -22,19 +23,21 @@ export default async function LoginPage({
             color: "#26438A",
           }}
         >
-          Espace restaurateur
+          <T>Espace restaurateur</T>
         </span>
         <h1
           className="mt-3 text-balance text-3xl font-bold leading-[1.15] tracking-tight"
           style={{ color: "#0B1530" }}
         >
-          Reprenons là où vous vous êtes arrêté
+          <T>Reprenons là où vous vous êtes arrêté</T>
         </h1>
         <p
           className="mt-2.5 text-sm leading-relaxed"
           style={{ color: "#4A5573" }}
         >
-          Vos cartes, vos QR codes et vos statistiques sont restés en ordre.
+          <T>
+            Vos cartes, vos QR codes et vos statistiques sont restés en ordre.
+          </T>
         </p>
       </div>
       <LoginForm
@@ -47,13 +50,13 @@ export default async function LoginPage({
         className="text-center text-sm"
         style={{ color: "#4A5573" }}
       >
-        Pas encore de compte ?{" "}
+        <T>Pas encore de compte ?</T>{" "}
         <Link
           href="/signup"
           className="font-semibold hover:underline"
           style={{ color: "#26438A", textUnderlineOffset: "3px" }}
         >
-          Créer un compte →
+          <T>Créer un compte →</T>
         </Link>
       </p>
     </div>

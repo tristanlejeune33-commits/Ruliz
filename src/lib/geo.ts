@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { headers } from "next/headers";
 
 /**
@@ -34,7 +35,9 @@ function isValidCountry(code: string): boolean {
   return /^[A-Z]{2}$/.test(code) && code !== "XX" && code !== "T1";
 }
 
-export async function detectCountry(): Promise<string | null> {
+// `cache()` : dédup par requête → un seul appel GeoJS même si layout + page
+// l'invoquent tous les deux (cas /signup).
+export const detectCountry = cache(async (): Promise<string | null> => {
   const h = await headers();
 
   // 1. Header géo direct
@@ -69,4 +72,4 @@ export async function detectCountry(): Promise<string | null> {
   } catch {
     return null;
   }
-}
+});

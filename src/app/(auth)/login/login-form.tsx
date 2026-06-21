@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { authClient } from "@/lib/auth-client";
 import { clearSessionCookies, getPostLoginUrl } from "@/server/auth/actions";
+import { T, useT } from "@/components/shared/translate";
 import { AuthDivider, GoogleButton } from "../google-button";
 
 const loginSchema = z.object({
@@ -68,6 +69,7 @@ export function LoginForm({
   googleEnabled?: boolean;
 }) {
   const router = useRouter();
+  const t = useT();
   const [isPending, setIsPending] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
   const [topError, setTopError] = useState<string | null>(null);
@@ -116,7 +118,7 @@ export function LoginForm({
     }
 
     setSuccess(true);
-    toast.success("Connecté.");
+    toast.success(t("Connecté."));
     router.push(target);
     router.refresh();
   }
@@ -160,7 +162,7 @@ export function LoginForm({
           >
             <CheckCircle2 className="mt-px size-4 shrink-0" strokeWidth={2} />
             <span className="leading-snug">
-              Connecté. Redirection vers le tableau de bord…
+              <T>Connecté. Redirection vers le tableau de bord…</T>
             </span>
           </div>
         )}
@@ -171,7 +173,7 @@ export function LoginForm({
           render={({ field }) => (
             <FormItem>
               <label htmlFor="login-email" style={LABEL_STYLE}>
-                Email professionnel
+                <T>Email professionnel</T>
               </label>
               <FormControl>
                 <input
@@ -205,14 +207,14 @@ export function LoginForm({
             <FormItem>
               <div className="flex items-baseline justify-between">
                 <label htmlFor="login-password" style={LABEL_STYLE}>
-                  Mot de passe
+                  <T>Mot de passe</T>
                 </label>
                 <Link
                   href="/forgot-password"
                   className="text-xs font-semibold hover:underline"
                   style={{ color: "#26438A", textUnderlineOffset: "3px" }}
                 >
-                  Oublié ?
+                  <T>Oublié ?</T>
                 </Link>
               </div>
               <FormControl>
@@ -240,8 +242,8 @@ export function LoginForm({
                     onClick={() => setShowPwd((v) => !v)}
                     aria-label={
                       showPwd
-                        ? "Masquer le mot de passe"
-                        : "Afficher le mot de passe"
+                        ? t("Masquer le mot de passe")
+                        : t("Afficher le mot de passe")
                     }
                     tabIndex={-1}
                     className="absolute right-1.5 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-lg transition"
@@ -274,16 +276,16 @@ export function LoginForm({
           {isPending ? (
             <>
               <Loader2 className="size-4 animate-spin" />
-              <span>Connexion…</span>
+              <span><T>Connexion…</T></span>
             </>
           ) : success ? (
             <>
               <CheckCircle2 className="size-4" strokeWidth={2.5} />
-              <span>Connecté</span>
+              <span><T>Connecté</T></span>
             </>
           ) : (
             <>
-              <span>Se connecter</span>
+              <span><T>Se connecter</T></span>
               <ArrowRight className="size-4" strokeWidth={2} />
             </>
           )}

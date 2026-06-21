@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { Logo } from "@/components/shared/logo";
+import { T } from "@/components/shared/translate";
+import { PanelLangProvider } from "@/components/shared/panel-lang-context";
 import { prisma } from "@/lib/db";
 import { ensureAdminDemoRestaurant } from "@/lib/admin-demo";
+import { detectCountry } from "@/lib/geo";
+import { signupLanguageForCountry } from "@/lib/country-language";
 import { CartePreviewPane } from "./carte-preview-pane";
 
 /**
@@ -102,7 +106,14 @@ export default async function AuthLayout({
     ? `/carte/${demoCarteId}?preview=1`
     : undefined;
 
+  // Langue de l'interface auth selon le pays détecté (IP). Les pages login/
+  // signup s'affichent ainsi dans la langue du visiteur (fallback anglais si
+  // langue non supportée, fr si pays indéterminé).
+  const detectedCountry = await detectCountry();
+  const uiLang = signupLanguageForCountry(detectedCountry);
+
   return (
+    <PanelLangProvider initialLang={uiLang} refreshOnChange={false}>
     <div
       data-theme="light"
       className="grid min-h-screen bg-[var(--bg-primary)] lg:grid-cols-[1fr_1.05fr]"
@@ -118,7 +129,7 @@ export default async function AuthLayout({
             style={{ fontFamily: "var(--font-mono)" }}
           >
             <span className="rz-pulse" aria-hidden />
-            Services opérationnels
+            <T>Services opérationnels</T>
           </span>
         </header>
         <div className="flex flex-1 items-center justify-center">
@@ -134,13 +145,13 @@ export default async function AuthLayout({
               href="/legal/mentions-legales"
               className="hover:text-[var(--text-primary)]"
             >
-              CGV
+              <T>CGV</T>
             </Link>
             <Link
               href="/legal/politique-confidentialite"
               className="hover:text-[var(--text-primary)]"
             >
-              Confidentialité
+              <T>Confidentialité</T>
             </Link>
           </nav>
         </footer>
@@ -151,5 +162,6 @@ export default async function AuthLayout({
         <CartePreviewPane defaultCarteUrl={defaultCarteUrl} />
       </div>
     </div>
+    </PanelLangProvider>
   );
 }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { detectCountry } from "@/lib/geo";
+import { T } from "@/components/shared/translate";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { SignupForm } from "./signup-form";
 
@@ -64,21 +65,34 @@ export default async function SignupPage({ searchParams }: PageProps) {
           className="text-[11px] font-semibold uppercase tracking-[0.12em]"
           style={{ fontFamily: "var(--font-mono)", color: "#26438A" }}
         >
-          {prospect ? "Activation de votre carte" : "Inscription restaurateur"}
+          {prospect ? (
+            <T>Activation de votre carte</T>
+          ) : (
+            <T>Inscription restaurateur</T>
+          )}
         </span>
         <h1
           className="mt-3 text-balance text-3xl font-bold leading-[1.15] tracking-tight"
           style={{ color: "#0B1530" }}
         >
-          {prospect ? `Bienvenue, ${prospect.nom}` : "Crée ton compte gratuit"}
+          {prospect ? (
+            `Bienvenue, ${prospect.nom}`
+          ) : (
+            <T>Crée ton compte gratuit</T>
+          )}
         </h1>
         <p
           className="mt-2.5 text-sm leading-relaxed"
           style={{ color: "#4A5573" }}
         >
-          {prospect
-            ? "Votre carte digitale est prête. Créez votre compte en 30 secondes pour l'activer."
-            : "14 jours d'essai Pro offerts, aucune carte bancaire requise."}
+          {prospect ? (
+            <T>
+              Votre carte digitale est prête. Créez votre compte en 30 secondes
+              pour l&apos;activer.
+            </T>
+          ) : (
+            <T>14 jours d&apos;essai Pro offerts, aucune carte bancaire requise.</T>
+          )}
         </p>
       </div>
 
@@ -115,7 +129,7 @@ export default async function SignupPage({ searchParams }: PageProps) {
               className="text-xs"
               style={{ color: "#4A5573" }}
             >
-              Carte pré-générée — modifiable juste après activation.
+              <T>Carte pré-générée — modifiable juste après activation.</T>
             </p>
           </div>
           <Sparkles className="size-4" style={{ color: "#26438A" }} />
@@ -137,13 +151,13 @@ export default async function SignupPage({ searchParams }: PageProps) {
         )}
       />
       <p className="text-center text-sm" style={{ color: "#4A5573" }}>
-        Déjà un compte ?{" "}
+        <T>Déjà un compte ?</T>{" "}
         <Link
           href="/login"
           className="font-semibold hover:underline"
           style={{ color: "#26438A", textUnderlineOffset: "3px" }}
         >
-          Se connecter →
+          <T>Se connecter →</T>
         </Link>
       </p>
     </div>
