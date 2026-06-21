@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 import {
@@ -8,8 +8,39 @@ import {
   setActiveRestaurantCookie,
 } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
+import { SUPPORTED_LANGS } from "@/lib/langs";
 import { canCreateRestaurant } from "@/lib/restaurant-limits";
 import { requireDashboard } from "@/lib/session";
+
+/**
+ * Invalide tous les caches de la carte publique d'un restaurant.
+ *
+ * Mirroir de `bumpRestaurantCaches` (menu-actions.ts) : une modif des
+ * réglages du resto (devise, thème, couleurs, adresse, map…) doit se voir
+ * IMMÉDIATEMENT sur `/carte/[id]`, pas après expiration du TTL Redis (30 min).
+ *
+ *  - `revalidatePath` → ISR Next (L2)
+ *  - `revalidateTag("public-menu")` → data cache `unstable_cache` du carte/page
+ *  - `redis.del(carte:{id}:{lang})` → cache Redis (L3), toutes les langues
+ */
+async function invalidateCarteCaches(restaurantId: bigint): Promise<void> {
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/restaurant");
+  revalidatePath(`/carte/${restaurantId.toString()}`);
+  revalidateTag("public-menu");
+
+  if (redis) {
+    try {
+      const keys = SUPPORTED_LANGS.map(
+        (l) => `carte:${restaurantId.toString()}:${l}`,
+      );
+      await redis.del(...keys);
+    } catch (err) {
+      console.warn("[invalidateCarteCaches] redis del failed:", err);
+    }
+  }
+}
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -91,6 +122,8 @@ const restaurantSchema = z.object({
   // Theme
   theme: z.enum(["light", "dark"]).optional(),
   fontStyle: z.enum(["modern", "editorial", "elegant"]).optional(),
+  // Affichage de la carte Google Maps sur la carte publique (opt-in)
+  showMap: z.boolean().optional(),
   // Colors
   couleurPrimaire: optHex,
   couleurSecondaire: optHex,
@@ -124,6 +157,20 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
   if (!owned) return { ok: false, error: "Accès refusé" };
 
   const empty = (v: string | undefined) => (v && v.trim().length > 0 ? v : null);
+
+  // === Devise : capture l'ancienne valeur pour détecter un changement ===
+  // La devise est stockée PAR PRODUIT (Produit.devise, figée à la création).
+  // Changer Restaurant.deviseDefault ne suffisait donc pas : les produits
+  // existants gardaient leur ancienne devise et la carte publique affichait
+  // toujours l'ancien symbole. On propage le nouveau symbole à tous les
+  // produits du resto seulement si la devise a réellement changé (sinon on
+  // écraserait d'éventuelles devises custom par produit à chaque save).
+  const prevMeta = await prisma.restaurant.findUnique({
+    where: { id: bigId },
+    select: { deviseDefault: true },
+  });
+  const newDevise = empty(data.deviseDefault) ?? "€";
+  const deviseChanged = (prevMeta?.deviseDefault ?? "€") !== newDevise;
 
   // === ÉTAPE 1 : assure que les colonnes horaires existent en DB ===
   try {
@@ -235,6 +282,7 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         happyHourEnd,
         theme: data.theme ?? "light",
         fontStyle: data.fontStyle ?? "editorial",
+        showMap: data.showMap ?? false,
         couleurPrimaire: empty(data.couleurPrimaire),
         couleurSecondaire: empty(data.couleurSecondaire),
         couleurFond: empty(data.couleurFond),
@@ -306,6 +354,19 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         );
       }
     }
+    // show_map est booléen → param séparé (le tableau ci-dessus est typé string|null).
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "restaurants" SET "show_map" = $1 WHERE "id" = $2`,
+        data.showMap ?? false,
+        bigId,
+      );
+    } catch (e) {
+      console.warn(
+        "[updateRestaurant] raw SQL update failed for column \"show_map\":",
+        e instanceof Error ? e.message : e,
+      );
+    }
     if (failedCount === updates.length) {
       return {
         ok: false,
@@ -314,9 +375,24 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
     }
   }
 
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/restaurant");
-  revalidatePath(`/carte/${bigId.toString()}`);
+  // === Propagation devise → produits existants (si changée) ===
+  // updateMany filtré par la relation catégorie→restaurant. Best-effort :
+  // une erreur ici ne doit pas faire échouer la sauvegarde du resto.
+  if (deviseChanged) {
+    try {
+      const updated = await prisma.produit.updateMany({
+        where: { categorie: { restaurantId: bigId } },
+        data: { devise: newDevise },
+      });
+      console.log(
+        `[updateRestaurant] devise propagée à ${updated.count} produits (${newDevise})`,
+      );
+    } catch (err) {
+      console.warn("[updateRestaurant] propagation devise produits échouée:", err);
+    }
+  }
+
+  await invalidateCarteCaches(bigId);
   return { ok: true };
 }
 
@@ -324,9 +400,14 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
 
 const createRestaurantSchema = z.object({
   nom: z.string().min(1).max(255),
+  adresse: z.string().max(500).optional().or(z.literal("")),
+  codePostal: z.string().max(10).optional().or(z.literal("")),
   ville: z.string().max(100).optional().or(z.literal("")),
   email: z.string().max(255).optional().or(z.literal("")),
   telephone: z.string().max(20).optional().or(z.literal("")),
+  // Langue native de la carte (langue de saisie du restaurateur). Pré-remplie
+  // depuis le profil au signup mais surchargée si l'user choisit à la création.
+  langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]).optional(),
 });
 
 export async function createFirstRestaurant(
@@ -387,11 +468,15 @@ export async function createFirstRestaurant(
   const baseData: Prisma.RestaurantUncheckedCreateInput = {
     userId: authUser.userId,
     nom: parsed.data.nom,
+    adresse: empty(parsed.data.adresse),
+    codePostal: empty(parsed.data.codePostal),
     ville: empty(parsed.data.ville),
     email: empty(parsed.data.email),
     telephone: empty(parsed.data.telephone),
     pays: authUser.user?.pays ?? "France",
-    langueNative: authUser.user?.langueNative ?? "fr",
+    // Langue choisie à la création > langue du profil signup > fr
+    langueNative:
+      parsed.data.langueNative ?? authUser.user?.langueNative ?? "fr",
     plan: isFirstRestaurant ? "premium" : "freemium",
     statut: "actif",
   };
