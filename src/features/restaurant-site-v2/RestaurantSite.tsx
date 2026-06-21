@@ -94,7 +94,7 @@ export function RestaurantSite({ config }: RestaurantSiteProps) {
   //
   // Hover : on injecte aussi --rs2-btn-bg-hover et --rs2-btn-text-hover
   // qui REPRENNENT les couleurs (au lieu de switcher en accent).
-  let btnBg: string | null = config.buttonBgColor
+  const btnBg: string | null = config.buttonBgColor
     ? hexToOklch(config.buttonBgColor)
     : null;
   let btnText: string | null = config.buttonTextColor

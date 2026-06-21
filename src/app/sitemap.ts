@@ -45,7 +45,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  let dynamicRoutes: MetadataRoute.Sitemap = [];
+  const dynamicRoutes: MetadataRoute.Sitemap = [];
   try {
     await ensureRuntimeSchema();
     type Row = {

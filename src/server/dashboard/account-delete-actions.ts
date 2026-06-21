@@ -5,7 +5,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
-import { deleteFromR2ByUrl, listR2Keys, deleteR2Batch } from "@/lib/r2";
+import { listR2Keys, deleteR2Batch } from "@/lib/r2";
 import { requireDashboard } from "@/lib/session";
 
 export type ActionResult<T = unknown> =

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { AlertTriangle, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -42,7 +41,6 @@ interface DeleteAccountCardProps {
  * Après succès → redirige vers la landing avec un toast d'au revoir.
  */
 export function DeleteAccountCard({ userEmail }: DeleteAccountCardProps) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [open, setOpen] = useState(false);
   const [emailDraft, setEmailDraft] = useState("");

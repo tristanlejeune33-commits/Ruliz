@@ -20,9 +20,7 @@
 type RateLimitEntry = { count: number; resetAt: number };
 
 declare global {
-  // eslint-disable-next-line no-var
   var __ruliz_ratelimit_store: Map<string, RateLimitEntry> | undefined;
-  // eslint-disable-next-line no-var
   var __ruliz_ratelimit_hits: number | undefined;
 }
 

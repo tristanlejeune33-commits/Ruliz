@@ -10,7 +10,6 @@ export function ThemeToggle() {
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     // next-themes resolves theme client-side only; mount flag avoids hydration mismatch.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

@@ -21,7 +21,7 @@ export async function debugSaveHoraires(input: {
   try {
     bigId = BigInt(input.restaurantId);
     steps.push({ name: "Parse restaurant ID", ok: true, detail: bigId.toString() });
-  } catch (err) {
+  } catch {
     return {
       ok: false,
       error: "Invalid restaurant ID",

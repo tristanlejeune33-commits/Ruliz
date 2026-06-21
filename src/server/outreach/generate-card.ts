@@ -147,8 +147,6 @@ export async function generateCardForProspect(prospectId: bigint): Promise<{
     (prospect.menuSourceType === "pdf" || prospect.menuSourceType === "image")
   ) {
     try {
-      const mediaType =
-        prospect.menuSourceType === "pdf" ? "application/pdf" : "image/jpeg";
       const res = await client.messages.create({
         model: VISION_MODEL,
         max_tokens: MAX_TOKENS,

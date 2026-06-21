@@ -95,7 +95,6 @@ export function Roulette({
   jeu,
   open,
   onClose,
-  accentColor,
   googleReviewUrl,
   facebookUrl,
   instagramUrl,

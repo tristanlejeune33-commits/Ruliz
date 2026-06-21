@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 import { Check, CreditCard, Sparkles, X } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -32,15 +29,6 @@ interface PageProps {
   }>;
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  active: "Actif",
-  trialing: "Essai gratuit",
-  past_due: "Paiement en retard",
-  canceled: "Annulé",
-  incomplete: "Incomplet",
-  unpaid: "Impayé",
-};
-
 export default async function BillingPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const { restaurant } = await getCurrentRestaurant();
@@ -49,14 +37,6 @@ export default async function BillingPage({ searchParams }: PageProps) {
   if (params.checkout === "success" && restaurant.stripeSubscriptionId) {
     await syncRestaurantSubscription(restaurant.id.toString());
   }
-
-  const currentPlan = PLANS[restaurant.plan];
-  const renewLabel = restaurant.stripeCurrentPeriodEnd
-    ? format(restaurant.stripeCurrentPeriodEnd, "d MMM yyyy", { locale: fr })
-    : null;
-  const statusLabel = restaurant.stripeSubscriptionStatus
-    ? STATUS_LABELS[restaurant.stripeSubscriptionStatus] ?? restaurant.stripeSubscriptionStatus
-    : null;
 
   return (
     <div className="space-y-8">

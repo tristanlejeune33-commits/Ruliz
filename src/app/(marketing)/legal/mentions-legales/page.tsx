@@ -21,14 +21,6 @@ export const metadata: Metadata = {
  */
 
 type TocItem = { id: string; label: string };
-type Section = {
-  id: string;
-  number?: string;
-  title: string;
-  /** Si défini, démarre un nouveau chapitre dans la TOC */
-  chapter?: string;
-  body: React.ReactNode;
-};
 
 const TOC: TocItem[] = [
   { id: "editeur", label: "Éditeur du site" },
