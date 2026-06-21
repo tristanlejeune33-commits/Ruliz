@@ -3,7 +3,8 @@ import type Stripe from "stripe";
 import { prisma } from "@/lib/db";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
-import { priceIdToPlan, type Plan } from "@/lib/plans";
+import { type Plan } from "@/lib/plans";
+import { resolvePlanFromPriceId } from "@/lib/plan-config";
 import {
   sendSmsPackConfirmation,
   sendBoutiquePaidConfirmation,
@@ -474,12 +475,10 @@ async function handleSubscriptionUpsert(sub: Stripe.Subscription) {
   }
 
   const priceId = sub.items.data[0]?.price.id ?? null;
-  const plan: Plan = (() => {
-    if (sub.status === "canceled" || sub.status === "incomplete_expired") {
-      return "freemium";
-    }
-    return priceIdToPlan(priceId);
-  })();
+  const plan: Plan =
+    sub.status === "canceled" || sub.status === "incomplete_expired"
+      ? "freemium"
+      : await resolvePlanFromPriceId(priceId);
 
   const periodEnd =
     "current_period_end" in sub && typeof sub.current_period_end === "number"

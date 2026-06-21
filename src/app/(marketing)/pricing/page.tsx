@@ -4,7 +4,8 @@ import { ArrowRight, Check, Sparkles, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PLANS, formatPriceEuro, type PlanConfig } from "@/lib/plans";
+import { formatPriceEuro, type PlanConfig } from "@/lib/plans";
+import { getPlanConfig } from "@/lib/plan-config";
 
 export const metadata: Metadata = {
   title: "Tarifs Ruliz",
@@ -28,8 +29,9 @@ const FEATURE_ROWS: Array<{
   { key: "removeBranding", label: 'Retirer "Propulsé par Ruliz"' },
 ];
 
-export default function PricingPage() {
-  const plans = Object.values(PLANS);
+export default async function PricingPage() {
+  const config = await getPlanConfig();
+  const plans = Object.values(config);
 
   return (
     <div>

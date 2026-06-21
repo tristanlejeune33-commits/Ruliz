@@ -85,6 +85,25 @@ export async function getPlanConfig(): Promise<Record<Plan, PlanConfig>> {
 }
 
 /**
+ * Mapping INVERSE : depuis un price ID Stripe (mensuel ou annuel), retrouve le
+ * plan correspondant en tenant compte des IDs configurés en admin (sinon
+ * défauts env). Utilisé par le webhook Stripe + la resync d'abonnement.
+ */
+export async function resolvePlanFromPriceId(
+  priceId: string | null | undefined,
+): Promise<Plan> {
+  if (!priceId) return "freemium";
+  const config = await getPlanConfig();
+  for (const plan of PLAN_ORDER) {
+    const c = config[plan];
+    if (priceId === c.stripePriceIdMonthly || priceId === c.stripePriceIdYearly) {
+      return plan;
+    }
+  }
+  return "freemium";
+}
+
+/**
  * Vérifie une feature contre une config déjà chargée. Booléen → sa valeur ;
  * limite numérique → utilisable sauf si plafond = 0 (null = illimité = ok).
  */

@@ -11,7 +11,13 @@ import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanBadge, type Plan as UiPlan } from "@/components/shared/status-badge";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
 import { getEffectivePlan } from "@/lib/plan-gate";
-import { PLANS, type Plan, formatPriceEuro, isAtLeastPlan } from "@/lib/plans";
+import {
+  type Plan,
+  type PlanConfig,
+  formatPriceEuro,
+  isAtLeastPlan,
+} from "@/lib/plans";
+import { getPlanConfig } from "@/lib/plan-config";
 import { isStripeConfigured } from "@/lib/stripe";
 import { syncRestaurantSubscription } from "@/server/billing/actions";
 import { BillingActions, UpgradeButton } from "./billing-actions";
@@ -32,6 +38,7 @@ interface PageProps {
 export default async function BillingPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const { restaurant } = await getCurrentRestaurant();
+  const planConfig = await getPlanConfig();
 
   // Si on revient d'un Checkout réussi, sync immédiatement (le webhook arrive en async).
   if (params.checkout === "success" && restaurant.stripeSubscriptionId) {
@@ -86,7 +93,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
               />
               <div>
                 <CardTitle>
-                  Cette fonctionnalité demande {PLANS[params.upgrade as Plan]?.name ?? "un plan supérieur"}
+                  Cette fonctionnalité demande {planConfig[params.upgrade as Plan]?.name ?? "un plan supérieur"}
                 </CardTitle>
                 <CardDescription className="mt-1">
                   Choisis un plan ci-dessous pour la débloquer.
@@ -124,7 +131,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
           "lg:-mx-0 lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:pb-0",
         ].join(" ")}
       >
-        {(Object.values(PLANS) as (typeof PLANS)[Plan][]).map((p) => {
+        {(Object.values(planConfig) as PlanConfig[]).map((p) => {
           const isCurrent = p.id === restaurant.plan;
           const isUpgrade = !isAtLeastPlan(restaurant.plan, p.id);
           return (
@@ -148,7 +155,7 @@ export default async function BillingPage({ searchParams }: PageProps) {
 }
 
 interface PlanCardProps {
-  plan: (typeof PLANS)[Plan];
+  plan: PlanConfig;
   currentPlan: Plan;
   isCurrent: boolean;
   isUpgrade: boolean;

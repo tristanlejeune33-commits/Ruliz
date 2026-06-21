@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
-import { PLANS, type Plan } from "@/lib/plans";
+import { type Plan } from "@/lib/plans";
+import { getPlanConfig, resolvePlanFromPriceId } from "@/lib/plan-config";
 import { requireDashboard } from "@/lib/session";
 import { APP_URL, TRIAL_PERIOD_DAYS, getStripe, isStripeConfigured } from "@/lib/stripe";
 
@@ -91,11 +92,12 @@ export async function createCheckoutSession(
   const restaurant = await assertRestaurantOwner(restoBigId);
   if (!restaurant) return { ok: false, error: "Accès refusé" };
 
-  const priceId = PLANS[plan as Plan].stripePriceIdMonthly;
+  const planConfig = await getPlanConfig();
+  const priceId = planConfig[plan as Plan].stripePriceIdMonthly;
   if (!priceId) {
     return {
       ok: false,
-      error: `STRIPE_${plan.toUpperCase()}_PRICE_ID manquant dans l'env`,
+      error: `Aucun price ID Stripe configuré pour le plan ${plan} (admin → Réglages → Plans, ou env STRIPE_${plan.toUpperCase()}_PRICE_ID).`,
     };
   }
 
@@ -175,13 +177,7 @@ export async function syncRestaurantSubscription(
   const sub = await stripe.subscriptions.retrieve(restaurant.stripeSubscriptionId);
 
   const priceId = sub.items.data[0]?.price.id ?? null;
-  const plan = priceId
-    ? priceId === process.env.STRIPE_PRO_PRICE_ID
-      ? "pro"
-      : priceId === process.env.STRIPE_PREMIUM_PRICE_ID
-        ? "premium"
-        : "freemium"
-    : "freemium";
+  const plan = await resolvePlanFromPriceId(priceId);
 
   const periodEnd =
     "current_period_end" in sub && typeof sub.current_period_end === "number"
