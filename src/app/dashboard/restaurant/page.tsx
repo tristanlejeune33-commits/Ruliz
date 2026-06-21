@@ -150,6 +150,7 @@ export default async function RestaurantPage() {
           happyHourEnd: data.happyHourEnd ?? "",
           theme: (data.theme as "light" | "dark") ?? "light",
           fontStyle: (data.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",
+          showMap: (data as { showMap?: boolean }).showMap ?? false,
           couleurPrimaire: data.couleurPrimaire ?? "#4870e0",
           couleurSecondaire: data.couleurSecondaire ?? "",
           couleurFond: data.couleurFond ?? "",

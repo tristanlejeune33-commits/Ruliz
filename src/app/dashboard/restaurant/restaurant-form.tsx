@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useTransition } from "react";
-import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Save, Sun, Moon, Upload } from "lucide-react";
+import { Loader2, Save, Sun, Moon, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -41,7 +41,6 @@ import {
 } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { ImageUploader } from "@/components/shared/image-uploader";
-import { AutoSaveIndicator } from "@/components/shared/auto-save-indicator";
 import { FlagIcon } from "@/components/shared/flag-icon";
 import { LANG_META, SUPPORTED_LANGS } from "@/lib/langs";
 import { groupTimezonesByRegion } from "@/lib/timezones";
@@ -106,6 +105,7 @@ const schema = z.object({
   happyHourEnd: z.string().max(5),
   theme: z.enum(["light", "dark"]),
   fontStyle: z.enum(["modern", "editorial", "elegant"]),
+  showMap: z.boolean(),
   couleurPrimaire: optHex,
   couleurSecondaire: optHex,
   couleurFond: optHex,
@@ -603,6 +603,45 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                           sample="Le Tire-Bouchon"
                         />
                       </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Plan d&apos;accès</CardTitle>
+                <CardDescription>
+                  Affiche une carte Google Maps cliquable dans le pied de page
+                  de ta carte digitale, avec un bouton « itinéraire ».
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="showMap"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-4">
+                      <div className="flex items-start gap-3">
+                        <MapPin className="mt-0.5 size-5 shrink-0 text-[var(--text-muted)]" />
+                        <div className="space-y-1">
+                          <FormLabel className="cursor-pointer">
+                            Afficher la carte Maps
+                          </FormLabel>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Nécessite une adresse renseignée dans l&apos;onglet
+                            Infos. Désactivé par défaut.
+                          </p>
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}

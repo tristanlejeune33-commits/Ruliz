@@ -257,6 +257,12 @@ model Restaurant {
   couleurFond              String?   @map("couleur_fond") @db.VarChar(7)
   couleurTexteTitre        String?   @map("couleur_texte_titre") @db.VarChar(7)
   couleurCategorie         String?   @map("couleur_categorie") @db.VarChar(7)
+  /**
+   * Affiche (ou non) la carte Google Maps dans le footer de la carte digitale
+   * publique `/carte/[id]`. Default false : pas d'affichage automatique, le
+   * restaurateur l'active depuis /dashboard/restaurant.
+   */
+  showMap                  Boolean   @default(false) @map("show_map")
   // ----- Réseaux sociaux -----
   facebookUrl              String?   @map("facebook_url")
   instagramUrl             String?   @map("instagram_url")

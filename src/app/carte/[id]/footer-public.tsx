@@ -142,11 +142,11 @@ export function FooterPublic({
           </p>
         )}
 
-        {/* Map preview Google Maps — affichée uniquement si on a une
-            adresse. Lazy-loaded (iframe loading="lazy") donc 0 impact
-            sur le LCP du carte (le client doit scroller au footer pour
-            la voir). */}
-        {adresse && (
+        {/* Map preview Google Maps — affichée seulement si (a) on a une
+            adresse ET (b) le restaurateur a activé l'option (showMap) dans
+            /dashboard/restaurant. Plus d'affichage automatique par défaut.
+            Lazy-loaded (iframe loading="lazy") donc 0 impact sur le LCP. */}
+        {adresse && restaurant.showMap && (
           <MapPreview
             address={adresse}
             theme={theme}

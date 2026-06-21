@@ -32,6 +32,8 @@ export type PublicMenu = {
     couleurTexteTitre: string | null;
     /** Couleur des titres de catégories. */
     couleurCategorie: string | null;
+    /** Afficher la carte Google Maps dans le footer (opt-in restaurateur). */
+    showMap: boolean;
     ville: string | null;
     pays: string | null;
     adresse: string | null;
@@ -166,6 +168,7 @@ export async function getPublicMenu(
         couleurFond: true,
         couleurTexteTitre: true,
         couleurCategorie: true,
+        showMap: true,
         ville: true,
         pays: true,
         adresse: true,
@@ -495,6 +498,7 @@ export async function getPublicMenu(
       couleurFond: restaurant.couleurFond,
       couleurTexteTitre: restaurant.couleurTexteTitre,
       couleurCategorie: restaurant.couleurCategorie,
+      showMap: restaurant.showMap ?? false,
       ville: restaurant.ville,
       pays: restaurant.pays,
       adresse: restaurant.adresse,

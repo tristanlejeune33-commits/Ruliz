@@ -608,6 +608,15 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "timezone" VARCHAR(64) NOT NULL DEFAULT 'Europe/Paris';
     `);
 
+    // === Restaurant — affichage de la carte Google Maps sur /carte/[id] ===
+    // Default FALSE : on ne montre plus la map automatiquement dans le footer
+    // de la carte digitale. Le restaurateur l'active explicitement dans
+    // /dashboard/restaurant (onglet Thème). L'iframe Maps reste lazy-loaded.
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "show_map" BOOLEAN NOT NULL DEFAULT FALSE;
+    `);
+
     // === Panel auto-translate cache ===
     // Cache à vie des traductions du panel client/admin (sidebar, pages,
     // formulaires, etc.). Quand un user change la lang vers EN/ES/etc., le
