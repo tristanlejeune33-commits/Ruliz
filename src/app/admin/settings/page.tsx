@@ -13,7 +13,9 @@ import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { isStripeConfigured } from "@/lib/stripe";
 import { requireAdmin } from "@/lib/session";
 import { listAllSmsPacks } from "@/server/dashboard/sms-packs";
+import { getPlanConfig } from "@/lib/plan-config";
 import { SmsPacksEditor } from "./sms-packs-editor";
+import { PlansEditor } from "./plans-editor";
 import { R2CleanupCard } from "./r2-cleanup-card";
 
 export const metadata: Metadata = {
@@ -34,6 +36,21 @@ export default async function AdminSettingsPage() {
   await requireAdmin();
 
   const smsPacks = await listAllSmsPacks();
+
+  const planConfig = await getPlanConfig();
+  const pickPlan = (c: (typeof planConfig)["pro"]) => ({
+    name: c.name,
+    monthlyPriceHT: c.monthlyPriceHT,
+    yearlyPriceHT: c.yearlyPriceHT,
+    stripePriceIdMonthly: c.stripePriceIdMonthly,
+    stripePriceIdYearly: c.stripePriceIdYearly,
+    features: c.features,
+  });
+  const planInitial = {
+    freemium: pickPlan(planConfig.freemium),
+    pro: pickPlan(planConfig.pro),
+    premium: pickPlan(planConfig.premium),
+  };
 
   const integrations = [
     {
@@ -189,6 +206,9 @@ export default async function AdminSettingsPage() {
           <SmsPacksEditor packs={smsPacks} />
         </CardContent>
       </Card>
+
+      {/* === Gestion des plans (matrice plan × fonctionnalité) === */}
+      <PlansEditor initial={planInitial} />
 
       {/* === INFOS BUILD === */}
       <Card>

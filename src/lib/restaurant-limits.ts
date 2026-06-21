@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { PLANS, type Plan } from "@/lib/plans";
+import { type Plan } from "@/lib/plans";
+import { getPlanConfig } from "@/lib/plan-config";
 
 /**
  * Détermine le plan "le plus élevé" d'un utilisateur (parmi tous ses restaurants).
@@ -15,6 +16,15 @@ export async function getHighestPlanOfUser(userId: number): Promise<Plan> {
   return "freemium";
 }
 
+/** Un admin (compte démo / interne) n'est jamais limité. */
+async function isAdminUser(userId: number): Promise<boolean> {
+  const u = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  return u?.role === "admin";
+}
+
 /**
  * Retourne `true` si l'utilisateur peut encore créer un restaurant
  * étant donné son plan actuel.
@@ -26,11 +36,14 @@ export async function canCreateRestaurant(userId: number): Promise<{
   max: number | null;
   plan: Plan;
 }> {
-  const [count, plan] = await Promise.all([
+  const [count, plan, admin] = await Promise.all([
     prisma.restaurant.count({ where: { userId } }),
     getHighestPlanOfUser(userId),
+    isAdminUser(userId),
   ]);
-  const max = PLANS[plan].features.maxRestaurants;
+  if (admin) return { ok: true, current: count, max: null, plan };
+  const config = await getPlanConfig();
+  const max = config[plan].features.maxRestaurants;
   if (max !== null && count >= max) {
     return { ok: false, reason: "limit_reached", current: count, max, plan };
   }
@@ -43,11 +56,14 @@ export async function canAddTeamMember(userId: number): Promise<{
   max: number | null;
   plan: Plan;
 }> {
-  const [count, plan] = await Promise.all([
+  const [count, plan, admin] = await Promise.all([
     prisma.teamMember.count({ where: { userId } }),
     getHighestPlanOfUser(userId),
+    isAdminUser(userId),
   ]);
-  const max = PLANS[plan].features.maxTeamMembers;
+  if (admin) return { ok: true, current: count, max: null, plan };
+  const config = await getPlanConfig();
+  const max = config[plan].features.maxTeamMembers;
   if (max !== null && count >= max) {
     return { ok: false, current: count, max, plan };
   }

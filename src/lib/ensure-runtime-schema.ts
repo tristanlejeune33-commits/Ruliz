@@ -646,6 +646,26 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "label" VARCHAR(80);
     `);
 
+    // === Configuration des plans (matrice plan × fonctionnalité) ===
+    // Éditée par l'admin via /admin/settings. 1 ligne par plan
+    // (freemium/pro/premium). Table VIDE par défaut → getPlanConfig() retombe
+    // sur les défauts codés dans src/lib/plans.ts (donc zéro régression tant
+    // que l'admin n'a rien modifié). Le plan "démo" n'est PAS stocké : il a
+    // toujours accès à tout (bypass dans le gating). `features` JSONB contient
+    // les 11 booléens + 4 limites numériques (null = illimité).
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "plan_configs" (
+        "plan" VARCHAR(20) PRIMARY KEY,
+        "name" VARCHAR(100),
+        "monthly_price_ht" NUMERIC(10,2),
+        "yearly_price_ht" NUMERIC(10,2),
+        "stripe_price_id_monthly" VARCHAR(255),
+        "stripe_price_id_yearly" VARCHAR(255),
+        "features" JSONB,
+        "updated_at" TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
     runtimeSchemaEnsured = true;
   } catch (err) {
     console.warn(

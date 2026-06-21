@@ -115,6 +115,52 @@ export const PLANS: Record<Plan, PlanConfig> = {
 
 export const PLAN_ORDER: Plan[] = ["freemium", "pro", "premium"];
 
+/**
+ * Jeu de fonctionnalités "tout activé" — utilisé pour le plan DÉMO (le resto
+ * admin a accès à 100% des features, quel que soit le réglage des autres plans).
+ */
+export const ALL_FEATURES_ON: PlanFeatures = {
+  maxRestaurants: null,
+  maxQrcodes: null,
+  maxProduits: null,
+  maxTeamMembers: null,
+  iaTranslation: true,
+  rouletteGame: true,
+  popups: true,
+  advancedStats: true,
+  customDomain: true,
+  smsMarketing: true,
+  removeBranding: true,
+};
+
+/** Limites numériques (null = illimité) — métadonnées pour l'éditeur admin. */
+export const LIMIT_FIELDS = [
+  { key: "maxRestaurants", label: "Restaurants max" },
+  { key: "maxQrcodes", label: "QR codes max (par resto)" },
+  { key: "maxProduits", label: "Produits max (par carte)" },
+  { key: "maxTeamMembers", label: "Membres d'équipe max" },
+] as const satisfies ReadonlyArray<{
+  key: keyof PlanFeatures;
+  label: string;
+}>;
+
+/** Fonctionnalités booléennes (activé / désactivé) — métadonnées éditeur. */
+export const TOGGLE_FIELDS = [
+  { key: "iaTranslation", label: "Traduction IA multilingue" },
+  { key: "rouletteGame", label: "Jeu roulette d'avis" },
+  { key: "popups", label: "Pop-ups événements" },
+  { key: "advancedStats", label: "Statistiques avancées" },
+  { key: "customDomain", label: "Domaine personnalisé" },
+  { key: "smsMarketing", label: "SMS marketing" },
+  { key: "removeBranding", label: "Retirer le watermark « Propulsé par Ruliz »" },
+] as const satisfies ReadonlyArray<{
+  key: keyof PlanFeatures;
+  label: string;
+}>;
+
+export type LimitKey = (typeof LIMIT_FIELDS)[number]["key"];
+export type ToggleKey = (typeof TOGGLE_FIELDS)[number]["key"];
+
 export function planRank(p: Plan): number {
   return PLAN_ORDER.indexOf(p);
 }
