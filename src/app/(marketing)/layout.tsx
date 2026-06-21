@@ -20,18 +20,12 @@ export default function MarketingLayout({
     >
       <header className="sticky top-0 z-40 border-b border-[var(--border-glass)] bg-[var(--bg-primary)]/85 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
-          <Link href="/" aria-label="Ruliz, retour à l'accueil">
+          <Link href="/login" aria-label="Ruliz, retour à la connexion">
             <Logo variant="full" priority />
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
             <Button variant="ghost" asChild>
-              <Link href="/#features">Fonctionnalités</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/#pricing">Tarifs</Link>
-            </Button>
-            <Button variant="ghost" asChild>
-              <Link href="/#faq">FAQ</Link>
+              <Link href="/pricing">Tarifs</Link>
             </Button>
           </nav>
           <div className="flex items-center gap-2">

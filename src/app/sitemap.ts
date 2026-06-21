@@ -6,7 +6,7 @@ import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
  * Sitemap dynamique généré au build/revalidate.
  *
  * Inclut :
- *  - les pages marketing publiques (landing, pricing, legal)
+ *  - les pages publiques (pricing, legal)
  *  - une entrée par mini-site activé (`/site/[slug|id]`)
  *  - une entrée par carte publique active (`/carte/[id]`)
  *
@@ -21,12 +21,6 @@ const BASE_URL =
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
-    {
-      url: `${BASE_URL}/`,
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 1,
-    },
     {
       url: `${BASE_URL}/pricing`,
       lastModified: new Date(),
