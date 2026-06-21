@@ -76,6 +76,7 @@ export default async function DashboardLayout({
     statut: string;
     plan: string;
     planOffertExpiresAt: Date | null;
+    langueNative: string | null;
   } | null = null;
   if (activeId) {
     try {
@@ -86,6 +87,7 @@ export default async function DashboardLayout({
           statut: true,
           plan: true,
           planOffertExpiresAt: true,
+          langueNative: true,
         } as never,
       })) as unknown as typeof activeRestaurant;
     } catch (err) {
@@ -100,6 +102,7 @@ export default async function DashboardLayout({
             stripeSubscriptionStatus: true,
             statut: true,
             plan: true,
+            langueNative: true,
           },
         });
         activeRestaurant = fallback
@@ -143,11 +146,16 @@ export default async function DashboardLayout({
     !onboardingState.skipped &&
     !acting?.isImpersonating; // pas de tour en mode SAV admin
 
-  // Lang du panel lue depuis le cookie ruliz_panel_lang. Défaut FR.
+  // Lang du panel : cookie ruliz_panel_lang explicite > langue native du resto
+  // (auto-détectée au signup) > FR. Le restaurateur voit ainsi son panel dans
+  // sa langue par défaut, sans avoir à toucher au sélecteur.
   const langCookie = cookieStore.get(PANEL_LANG_COOKIE)?.value;
+  const nativeLang = activeRestaurant?.langueNative;
   const panelLang: SupportedLang = isSupportedLang(langCookie)
     ? langCookie
-    : "fr";
+    : isSupportedLang(nativeLang)
+      ? nativeLang
+      : "fr";
 
   // Affiché en mode SAV nom + email du user impersonné
   const impersonatedTargetName =
