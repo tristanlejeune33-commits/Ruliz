@@ -20,6 +20,7 @@ const featuresSchema = z.object({
   customDomain: z.boolean(),
   smsMarketing: z.boolean(),
   removeBranding: z.boolean(),
+  clientsPage: z.boolean(),
 });
 
 const planSchema = z.object({

@@ -106,6 +106,7 @@ const FEATURE_LABELS: Partial<Record<keyof PlanFeatures, string>> = {
   iaTranslation: "La traduction automatique",
   advancedStats: "Les statistiques avancées",
   customDomain: "L'accès au site vitrine",
+  clientsPage: "L'accès à la page Clients",
 };
 
 type AssertResult =

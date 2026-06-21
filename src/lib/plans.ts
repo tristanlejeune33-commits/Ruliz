@@ -41,6 +41,8 @@ export interface PlanFeatures {
   smsMarketing: boolean;
   /** Suppression du watermark "Propulsé par Ruliz". */
   removeBranding: boolean;
+  /** Accès à la page « Clients » (base clients / contacts du restaurant). */
+  clientsPage: boolean;
 }
 
 export const PLANS: Record<Plan, PlanConfig> = {
@@ -66,6 +68,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       customDomain: false,
       smsMarketing: false,
       removeBranding: false,
+      clientsPage: false,
     },
   },
   pro: {
@@ -88,6 +91,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       customDomain: false,
       smsMarketing: false,
       removeBranding: false,
+      clientsPage: true,
     },
   },
   premium: {
@@ -109,6 +113,7 @@ export const PLANS: Record<Plan, PlanConfig> = {
       customDomain: true,
       smsMarketing: true,
       removeBranding: true,
+      clientsPage: true,
     },
   },
 };
@@ -131,6 +136,7 @@ export const ALL_FEATURES_ON: PlanFeatures = {
   customDomain: true,
   smsMarketing: true,
   removeBranding: true,
+  clientsPage: true,
 };
 
 /** Limites numériques (null = illimité) — métadonnées pour l'éditeur admin. */
@@ -151,6 +157,7 @@ export const TOGGLE_FIELDS = [
   { key: "popups", label: "Pop-ups événements" },
   { key: "advancedStats", label: "Statistiques avancées" },
   { key: "customDomain", label: "Accès au site vitrine" },
+  { key: "clientsPage", label: "Accès à la page Clients" },
   { key: "smsMarketing", label: "SMS marketing" },
   { key: "removeBranding", label: "Retirer le watermark « Propulsé par Ruliz »" },
 ] as const satisfies ReadonlyArray<{

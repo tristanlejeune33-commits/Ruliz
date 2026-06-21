@@ -171,6 +171,7 @@ function PlanCard({ plan, isCurrent, isUpgrade, restaurantId }: PlanCardProps) {
     { key: "advancedStats", label: "Stats avancées" },
     { key: "rouletteGame", label: "Jeu roulette d'avis" },
     { key: "popups", label: "Pop-ups événements" },
+    { key: "clientsPage", label: "Page Clients" },
     { key: "customDomain", label: "Site vitrine" },
     { key: "smsMarketing", label: "SMS marketing" },
     { key: "removeBranding", label: 'Sans "Propulsé par Ruliz"' },

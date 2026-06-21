@@ -24,6 +24,7 @@ const FEATURE_ROWS: Array<{
   { key: "rouletteGame", label: "Jeu roulette d'avis Google" },
   { key: "popups", label: "Pop-ups événements" },
   { key: "maxTeamMembers", label: "Membres d'équipe" },
+  { key: "clientsPage", label: "Page Clients (base contacts)" },
   { key: "customDomain", label: "Site vitrine (mini-site)" },
   { key: "smsMarketing", label: "SMS marketing" },
   { key: "removeBranding", label: 'Retirer "Propulsé par Ruliz"' },
