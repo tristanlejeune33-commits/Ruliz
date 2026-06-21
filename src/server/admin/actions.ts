@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
@@ -94,14 +95,51 @@ export async function createClient(input: unknown): Promise<ActionResult<{ id: n
     },
   });
 
+  // === Préservation de la session admin ===========================
+  // `auth.api.signUpEmail` + autoSignIn + plugin nextCookies connectent
+  // automatiquement le NOUVEAU client et écrasent le cookie de session de
+  // l'admin dans CETTE requête → l'admin se retrouvait connecté en client
+  // sans pouvoir revenir. On capture le(s) cookie(s) de session admin avant,
+  // on les restaure après, et on nettoie le cookie de cache + la session
+  // orpheline créée pour le client (qu'il n'utilisera jamais).
+  const cookieStore = await cookies();
+  const adminSessionCookies = cookieStore
+    .getAll()
+    .filter((c) => c.name.includes("session_token"))
+    .map((c) => ({ name: c.name, value: c.value }));
+
   // Better-Auth signUp pour créer le compte d'auth + hash password.
-  const { user: authUser } = await auth.api.signUpEmail({
-    body: {
-      email: data.email,
-      password: data.password,
-      name: `${data.prenom} ${data.nom}`,
-    },
-  });
+  const { user: authUser, token: clientSessionToken } =
+    await auth.api.signUpEmail({
+      body: {
+        email: data.email,
+        password: data.password,
+        name: `${data.prenom} ${data.nom}`,
+      },
+    });
+
+  // Restaure la session admin : supprime le cookie de cache de session (qui
+  // contient désormais les données du client) et réécrit le cookie de session
+  // avec la valeur de l'admin.
+  const isProd = process.env.NODE_ENV === "production";
+  for (const c of cookieStore.getAll()) {
+    if (c.name.includes("session_data")) cookieStore.delete(c.name);
+  }
+  for (const c of adminSessionCookies) {
+    cookieStore.set(c.name, c.value, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: isProd,
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+  }
+  // Nettoie la session DB orpheline du client (le cookie a été écrasé).
+  if (clientSessionToken) {
+    await prisma.session
+      .deleteMany({ where: { token: clientSessionToken } })
+      .catch(() => null);
+  }
 
   await prisma.authUser.update({
     where: { id: authUser.id },
