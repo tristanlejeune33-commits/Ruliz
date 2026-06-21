@@ -19,8 +19,10 @@ import { clearSessionCookies, signupClient } from "@/server/auth/actions";
 import {
   SIGNUP_COUNTRIES,
   defaultCountryForLanguage,
-  languageFromCountry,
+  isSupportedSignupCountry,
+  signupLanguageForCountry,
 } from "@/lib/country-language";
+import { countryMeta } from "@/lib/countries";
 import { AuthDivider, GoogleButton } from "../google-button";
 
 const schema = z.object({
@@ -42,6 +44,8 @@ interface SignupFormProps {
   };
   /** Affiche "Continuer avec Google" (credentials configurés côté serveur). */
   googleEnabled?: boolean;
+  /** Pays détecté via l'IP (ISO 2). Pré-sélectionne pays + langue de la carte. */
+  defaultCountry?: string | null;
 }
 
 const INPUT_STYLE: React.CSSProperties = {
@@ -76,9 +80,12 @@ const blurFx = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
 export function SignupForm({
   prefill,
   googleEnabled = false,
+  defaultCountry = null,
 }: SignupFormProps = {}) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
+
+  const initialCountry = defaultCountry ?? "FR";
 
   const form = useForm<Values>({
     resolver: zodResolver(schema),
@@ -87,13 +94,20 @@ export function SignupForm({
       nom: "",
       email: prefill?.email ?? "",
       password: "",
-      country: "FR",
+      country: initialCountry,
       prospectToken: prefill?.prospectToken,
     },
   });
 
   const country = form.watch("country");
-  const detectedLang = languageFromCountry(country);
+  const detectedLang = signupLanguageForCountry(country);
+
+  // Si l'IP a détecté un pays hors de la liste des langues supportées
+  // (ex: Turquie), on l'ajoute en tête du picker — sa carte sera en anglais.
+  const extraCountry =
+    defaultCountry && !isSupportedSignupCountry(defaultCountry)
+      ? { code: defaultCountry, ...countryMeta(defaultCountry) }
+      : null;
 
   // Pré-sélectionne le pays (donc la langue de la carte) depuis la langue du
   // navigateur, une seule fois au montage et tant que l'utilisateur n'a pas
@@ -103,6 +117,9 @@ export function SignupForm({
   useEffect(() => {
     if (browserLangApplied.current) return;
     browserLangApplied.current = true;
+    // L'IP (defaultCountry) est prioritaire : si on a déjà un pays détecté
+    // côté serveur, on ne le surcharge pas avec la langue du navigateur.
+    if (defaultCountry) return;
     if (form.formState.dirtyFields.country) return;
     const navLang =
       typeof navigator !== "undefined" ? navigator.language : null;
@@ -275,6 +292,11 @@ export function SignupForm({
                     field.onBlur();
                   }}
                 >
+                  {extraCountry && (
+                    <option key={extraCountry.code} value={extraCountry.code}>
+                      {extraCountry.flag} {extraCountry.name}
+                    </option>
+                  )}
                   {SIGNUP_COUNTRIES.map((c) => (
                     <option key={c.code} value={c.code}>
                       {c.flag} {c.name}

@@ -48,6 +48,32 @@ export function languageFromCountry(countryCode: string | null | undefined): Sup
   return found?.language ?? "fr";
 }
 
+/**
+ * Langue de carte par défaut au signup pour un code pays détecté.
+ *
+ * Différence avec languageFromCountry : si le pays détecté n'a PAS de langue
+ * supportée par Ruliz (ex: Turquie → pas de turc), on retombe sur l'ANGLAIS
+ * (et pas le français) — c'est la langue internationale par défaut quand on
+ * n'a pas la traduction. `null` (aucun pays détecté) → "fr" (audience FR).
+ */
+export function signupLanguageForCountry(
+  countryCode: string | null | undefined,
+): SupportedLang {
+  if (!countryCode) return "fr";
+  const found = SIGNUP_COUNTRIES.find(
+    (c) => c.code === countryCode.toUpperCase(),
+  );
+  return found?.language ?? "en";
+}
+
+/** True si le pays figure déjà dans le picker de langues supportées. */
+export function isSupportedSignupCountry(
+  countryCode: string | null | undefined,
+): boolean {
+  if (!countryCode) return false;
+  return SIGNUP_COUNTRIES.some((c) => c.code === countryCode.toUpperCase());
+}
+
 /** Retourne le nom complet d'un pays par son code ISO 2 */
 export function countryName(countryCode: string | null | undefined): string {
   if (!countryCode) return "";

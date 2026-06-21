@@ -4,7 +4,8 @@ import { headers, cookies } from "next/headers";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { countryName, languageFromCountry } from "@/lib/country-language";
+import { signupLanguageForCountry } from "@/lib/country-language";
+import { countryMeta } from "@/lib/countries";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -88,8 +89,8 @@ export async function signupClient(input: unknown): Promise<ActionResult<{ activ
     return { ok: false, error: "Un compte existe déjà avec cet email." };
   }
 
-  const paysFullName = countryName(data.country) || "France";
-  const langueNative = languageFromCountry(data.country);
+  const paysFullName = countryMeta(data.country).name || "France";
+  const langueNative = signupLanguageForCountry(data.country);
 
   const user = await prisma.user.create({
     data: {

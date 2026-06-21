@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
@@ -15,6 +16,19 @@ interface PageProps {
 
 export default async function SignupPage({ searchParams }: PageProps) {
   const { prospect: prospectToken } = await searchParams;
+
+  // Détection du pays via l'IP (header Cloudflare devant Railway, ou Vercel).
+  // Sert à pré-remplir pays + langue de la carte. "XX"/"T1" (Tor) = inconnu.
+  const h = await headers();
+  const rawCountry = (
+    h.get("cf-ipcountry") ??
+    h.get("x-vercel-ip-country") ??
+    ""
+  ).toUpperCase();
+  const detectedCountry =
+    /^[A-Z]{2}$/.test(rawCountry) && rawCountry !== "XX" && rawCountry !== "T1"
+      ? rawCountry
+      : null;
 
   // Si un token prospect est fourni, on précharge ses infos pour
   // pré-remplir le formulaire et personnaliser l'accueil.
@@ -126,6 +140,7 @@ export default async function SignupPage({ searchParams }: PageProps) {
               }
             : undefined
         }
+        defaultCountry={detectedCountry}
         googleEnabled={Boolean(
           process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
         )}
