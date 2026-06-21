@@ -151,6 +151,68 @@ export async function createClient(input: unknown): Promise<ActionResult<{ id: n
   return { ok: true, data: { id: user.id } };
 }
 
+const createRestaurantForClientSchema = z.object({
+  userId: z.coerce.number().int().positive(),
+  nom: z.string().min(1, "Nom requis").max(255),
+  ville: z.string().max(100).optional().or(z.literal("")),
+  adresse: z.string().max(500).optional().or(z.literal("")),
+  codePostal: z.string().max(10).optional().or(z.literal("")),
+});
+
+/**
+ * Crée un restaurant POUR un client donné, depuis la fiche admin.
+ *
+ * Pourquoi : `createClient` ne crée que le compte (User + AuthUser), pas de
+ * restaurant. Un client sans restaurant ne peut rien faire au login (et
+ * l'impersonation renvoie sur /admin). L'admin peut donc amorcer le 1er
+ * restaurant du client ici. Plan freemium par défaut (l'admin offre un plan
+ * via l'onglet « Droits & Plans » si besoin).
+ */
+export async function createRestaurantForClient(
+  input: unknown,
+): Promise<ActionResult<{ id: string }>> {
+  await requireAdmin();
+  const parsed = createRestaurantForClientSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Données invalides",
+    };
+  }
+  const data = parsed.data;
+
+  const user = await prisma.user.findUnique({
+    where: { id: data.userId },
+    select: { id: true, langueNative: true, pays: true },
+  });
+  if (!user) return { ok: false, error: "Client introuvable." };
+
+  const empty = (v: string | undefined) =>
+    v && v.trim().length > 0 ? v.trim() : null;
+
+  const restaurant = await prisma.restaurant.create({
+    data: {
+      userId: user.id,
+      nom: data.nom.trim(),
+      ville: empty(data.ville),
+      adresse: empty(data.adresse),
+      codePostal: empty(data.codePostal),
+      pays: user.pays ?? "France",
+      langueNative: user.langueNative ?? "fr",
+      plan: "freemium",
+      statut: "actif",
+    },
+  });
+
+  await logAdminAction("client.restaurant.create", {
+    userId: user.id,
+    restaurantId: restaurant.id.toString(),
+    nom: data.nom,
+  });
+  revalidatePath(`/admin/clients/${user.id}`);
+  return { ok: true, data: { id: restaurant.id.toString() } };
+}
+
 export async function updateClient(input: unknown): Promise<ActionResult> {
   await requireAdmin();
   const parsed = updateClientSchema.safeParse(input);

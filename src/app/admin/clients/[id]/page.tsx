@@ -42,6 +42,7 @@ import { ClientActions } from "./client-actions";
 import { ClientPermissions } from "./client-permissions";
 import { ClientBillingTab } from "./client-billing-tab";
 import { ImpersonateButton } from "./impersonate-button";
+import { CreateRestaurantForClient } from "./create-restaurant-for-client";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -194,12 +195,16 @@ export default async function ClientDetailPage({ params }: PageProps) {
           />
         </TabsContent>
 
-        <TabsContent value="restaurants">
+        <TabsContent value="restaurants" className="space-y-4">
+          <div className="flex justify-end">
+            <CreateRestaurantForClient userId={data.id} />
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             {data.restaurants.length === 0 && (
               <Card className="md:col-span-2 p-8 text-center">
                 <p className="text-sm text-[var(--text-muted)]">
-                  Ce client n&apos;a pas encore de restaurant.
+                  Ce client n&apos;a pas encore de restaurant. Crée-lui-en un
+                  ci-dessus pour qu&apos;il puisse accéder à son panel.
                 </p>
               </Card>
             )}
