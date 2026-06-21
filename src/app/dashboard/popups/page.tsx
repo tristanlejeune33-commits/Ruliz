@@ -3,7 +3,7 @@ import { Megaphone } from "lucide-react";
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
-import { getEffectivePlan } from "@/lib/plan-gate";
+import { getFeatureGate } from "@/lib/plan-gate";
 import { prisma } from "@/lib/db";
 import { serialize } from "@/lib/serialize";
 import { PopupsManager } from "./popups-manager";
@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 
 export default async function PopupsPage() {
   const { restaurant } = await getCurrentRestaurant();
+  const gate = await getFeatureGate(restaurant, "popups");
 
   const popups = await prisma.popup.findMany({
     where: { restaurantId: restaurant.id },
@@ -34,8 +35,9 @@ export default async function PopupsPage() {
       />
 
       <PlanLock
-        currentPlan={getEffectivePlan(restaurant)}
-        requiredPlan="pro"
+        allowed={gate.allowed}
+        requiredPlan={gate.requiredPlan}
+        requiredPlanName={gate.requiredPlanName}
         title="Les pop-ups événements sont inclus dans le plan Pro"
         description="Affiche un message ponctuel à tes clients : nouvelle carte, brunch du dimanche, soirée DJ…"
       >

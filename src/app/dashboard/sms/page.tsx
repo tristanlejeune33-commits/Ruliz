@@ -19,7 +19,7 @@ import {
 import { HeroEyebrow, HeroKpi, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
-import { getEffectivePlan } from "@/lib/plan-gate";
+import { getFeatureGate } from "@/lib/plan-gate";
 import { prisma } from "@/lib/db";
 import {
   getDefaultSmsSender,
@@ -46,6 +46,7 @@ interface PageProps {
 export default async function SmsPage({ searchParams }: PageProps) {
   const { restaurant } = await getCurrentRestaurant();
   const { purchase } = await searchParams;
+  const gate = await getFeatureGate(restaurant, "smsMarketing");
 
   const restaurantId = restaurant.id.toString();
 
@@ -106,8 +107,9 @@ export default async function SmsPage({ searchParams }: PageProps) {
       />
 
       <PlanLock
-        currentPlan={getEffectivePlan(restaurant)}
-        requiredPlan="premium"
+        allowed={gate.allowed}
+        requiredPlan={gate.requiredPlan}
+        requiredPlanName={gate.requiredPlanName}
         title="Le SMS marketing est inclus dans Premium"
         description="Récupère les coordonnées de tes clients via la roulette, puis envoie-leur un SMS pour les faire revenir. Idéal pour remplir tes services creux."
       >

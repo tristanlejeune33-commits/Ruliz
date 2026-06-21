@@ -114,7 +114,7 @@ export function CartePublic({ menu, preview }: CartePublicProps) {
     });
   };
 
-  const removeBranding = menu.restaurant.plan === "premium";
+  const removeBranding = menu.removeBranding;
 
   return (
     <div

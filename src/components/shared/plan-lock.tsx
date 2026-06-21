@@ -8,13 +8,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { PLANS, type Plan, isAtLeastPlan } from "@/lib/plans";
+import { type Plan } from "@/lib/plans";
 
 interface PlanLockProps {
-  /** Plan currently active on the restaurant. */
-  currentPlan: Plan;
-  /** Plan required to unlock this feature. */
+  /**
+   * La feature est-elle autorisée pour le plan effectif du resto ?
+   * Calculé via `getFeatureGate()` (config admin + bypass démo). Quand true,
+   * on affiche les enfants ; sinon, la carte d'upgrade.
+   */
+  allowed: boolean;
+  /** Plan le moins cher qui débloque la feature (cible du CTA). */
   requiredPlan: Plan;
+  /** Nom affiché de ce plan (depuis la config admin). */
+  requiredPlanName: string;
   /** Title shown when locked. */
   title: string;
   /** Description shown when locked. */
@@ -23,21 +29,21 @@ interface PlanLockProps {
 }
 
 /**
- * Renders the children only when the current plan is high enough.
- * Otherwise, renders an upgrade card.
+ * Affiche les enfants seulement si la feature est autorisée par la config du
+ * plan effectif. Sinon, une carte d'upgrade. Le verrouillage suit donc la
+ * matrice plan × fonctionnalité éditée dans /admin/settings.
  */
 export function PlanLock({
-  currentPlan,
+  allowed,
   requiredPlan,
+  requiredPlanName,
   title,
   description,
   children,
 }: PlanLockProps) {
-  if (isAtLeastPlan(currentPlan, requiredPlan)) {
+  if (allowed) {
     return <>{children}</>;
   }
-
-  const required = PLANS[requiredPlan];
 
   return (
     <Card className="overflow-hidden">
@@ -57,7 +63,7 @@ export function PlanLock({
             <Button asChild>
               <Link href={`/dashboard/billing?upgrade=${requiredPlan}`}>
                 <Sparkles className="size-4" />
-                Passer en {required.name}
+                Passer en {requiredPlanName}
               </Link>
             </Button>
           </CardContent>

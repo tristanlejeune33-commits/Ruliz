@@ -174,3 +174,32 @@ export async function getFeatureUsage() {
   const features = await effectiveFeaturesOf(restaurant);
   return { plan, features };
 }
+
+/**
+ * Calcule l'état de verrouillage d'une feature pour le composant <PlanLock>,
+ * EN FONCTION DE LA CONFIG ADMIN (matrice plan × fonctionnalité) et pas d'un
+ * ordre de plan codé en dur.
+ *
+ *  - `allowed` : la feature est-elle incluse dans le plan effectif du resto
+ *    (ou bypass démo/admin) ?
+ *  - `requiredPlan` / `requiredPlanName` : le plan le moins cher qui inclut la
+ *    feature → cible du bouton « Passer en … ». Suit la config (si l'admin
+ *    déplace une feature vers Premium, le CTA pointe vers Premium).
+ */
+export async function getFeatureGate(
+  restaurant: RestaurantPlanInfo & { userId: number },
+  feature: keyof PlanFeatures,
+): Promise<{ allowed: boolean; requiredPlan: Plan; requiredPlanName: string }> {
+  const features = await effectiveFeaturesOf(restaurant);
+  const allowed = featureAllowed(features[feature]);
+  const config = await getPlanConfig();
+  const minPlan =
+    (["freemium", "pro", "premium"] as Plan[]).find((p) =>
+      canUseFeatureInConfig(config, p, feature),
+    ) ?? "premium";
+  return {
+    allowed,
+    requiredPlan: minPlan,
+    requiredPlanName: config[minPlan].name,
+  };
+}

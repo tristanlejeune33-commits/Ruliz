@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import type { SupportedLang } from "@/lib/langs";
 import { isCategorieVisibleNow, getRestaurantLocalParts } from "@/lib/schedule";
+import { getPlanConfig } from "@/lib/plan-config";
+import type { Plan } from "@/lib/plans";
 
 export { isSupportedLang } from "@/lib/langs";
 
@@ -47,6 +49,9 @@ export type PublicMenu = {
     googleReviewUrl: string | null;
     plan: "freemium" | "pro" | "premium";
   };
+  /** Retirer le watermark « Propulsé par Ruliz » (feature removeBranding du
+      plan, selon la matrice admin). */
+  removeBranding: boolean;
   /** Jeu roulette actif si configuré (et dans la fenêtre date_debut/fin). */
   jeu: {
     id: string;
@@ -483,7 +488,15 @@ export async function getPublicMenu(
     }
   }
 
+  // Watermark « Propulsé par Ruliz » : suit la feature removeBranding du plan
+  // (matrice admin). Calculé sur cache miss uniquement (la valeur est ensuite
+  // mise en cache Redis avec le reste du menu).
+  const planCfg = await getPlanConfig();
+  const planKey = (restaurant.plan as Plan) ?? "freemium";
+  const removeBranding = planCfg[planKey]?.features.removeBranding ?? false;
+
   const menu: PublicMenu = {
+    removeBranding,
     restaurant: {
       id: restaurant.id.toString(),
       nom: restaurant.nom,

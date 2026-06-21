@@ -14,7 +14,7 @@ import {
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
 import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
-import { getEffectivePlan } from "@/lib/plan-gate";
+import { getFeatureGate } from "@/lib/plan-gate";
 import { prisma } from "@/lib/db";
 import { serialize } from "@/lib/serialize";
 import { JeuForm } from "./jeu-form";
@@ -31,6 +31,7 @@ interface JeuConfig {
 
 export default async function JeuPage() {
   const { restaurant } = await getCurrentRestaurant();
+  const gate = await getFeatureGate(restaurant, "rouletteGame");
 
   const jeu = await prisma.jeu.findFirst({
     where: { restaurantId: restaurant.id },
@@ -63,8 +64,9 @@ export default async function JeuPage() {
       />
 
       <PlanLock
-        currentPlan={getEffectivePlan(restaurant)}
-        requiredPlan="pro"
+        allowed={gate.allowed}
+        requiredPlan={gate.requiredPlan}
+        requiredPlanName={gate.requiredPlanName}
         title="Le jeu roulette est inclus dans le plan Pro"
         description="Récupère les coordonnées de tes clients pendant qu'ils laissent un avis 5 étoiles. Tu remontes dans les recherches Google en quelques scans."
       >
