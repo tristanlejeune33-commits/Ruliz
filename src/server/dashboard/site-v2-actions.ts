@@ -6,6 +6,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { ensureRuntimeSchema } from "@/lib/ensure-runtime-schema";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
+import { getFeatureGate } from "@/lib/plan-gate";
 import { invalidateSiteV2Cache } from "@/server/public/restaurant-site-v2-loader";
 import { isReservedSlug, isValidSlug, slugify } from "@/lib/slugify";
 
@@ -112,9 +113,6 @@ function checkRateLimit(key: string, max = 20, windowMs = 60_000): boolean {
   return true;
 }
 
-function isPlanAllowed(plan: string): boolean {
-  return plan === "pro" || plan === "premium";
-}
 
 // === saveSiteV2Config ===
 
@@ -124,10 +122,13 @@ export async function saveSiteV2Config(
   const { restaurant } = await getCurrentRestaurant();
   const restaurantId = restaurant.id;
 
-  if (!isPlanAllowed(restaurant.plan)) {
+  const siteGate = await getFeatureGate(restaurant, "customDomain");
+  if (!siteGate.allowed) {
     return {
       ok: false,
-      error: "Le site vitrine nécessite un plan Pro ou Premium.",
+      error: siteGate.requiredPlanName
+        ? `Le site vitrine nécessite le plan ${siteGate.requiredPlanName}.`
+        : "Le site vitrine n'est disponible sur aucun plan pour le moment.",
     };
   }
 
@@ -231,10 +232,13 @@ export async function toggleSiteV2Enabled(
   const { restaurant } = await getCurrentRestaurant();
   const restaurantId = restaurant.id;
 
-  if (!isPlanAllowed(restaurant.plan)) {
+  const siteGate = await getFeatureGate(restaurant, "customDomain");
+  if (!siteGate.allowed) {
     return {
       ok: false,
-      error: "Le site vitrine nécessite un plan Pro ou Premium.",
+      error: siteGate.requiredPlanName
+        ? `Le site vitrine nécessite le plan ${siteGate.requiredPlanName}.`
+        : "Le site vitrine n'est disponible sur aucun plan pour le moment.",
     };
   }
 

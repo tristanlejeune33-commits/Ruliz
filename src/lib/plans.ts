@@ -150,7 +150,7 @@ export const TOGGLE_FIELDS = [
   { key: "rouletteGame", label: "Jeu roulette d'avis" },
   { key: "popups", label: "Pop-ups événements" },
   { key: "advancedStats", label: "Statistiques avancées" },
-  { key: "customDomain", label: "Domaine personnalisé" },
+  { key: "customDomain", label: "Accès au site vitrine" },
   { key: "smsMarketing", label: "SMS marketing" },
   { key: "removeBranding", label: "Retirer le watermark « Propulsé par Ruliz »" },
 ] as const satisfies ReadonlyArray<{

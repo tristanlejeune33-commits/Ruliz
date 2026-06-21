@@ -17,10 +17,10 @@ interface PlanLockProps {
    * on affiche les enfants ; sinon, la carte d'upgrade.
    */
   allowed: boolean;
-  /** Plan le moins cher qui débloque la feature (cible du CTA). */
-  requiredPlan: Plan;
-  /** Nom affiché de ce plan (depuis la config admin). */
-  requiredPlanName: string;
+  /** Plan le moins cher qui débloque la feature (cible du CTA). null si aucun. */
+  requiredPlan: Plan | null;
+  /** Nom affiché de ce plan (depuis la config admin). null si aucun plan. */
+  requiredPlanName: string | null;
   /** Title shown when locked. */
   title: string;
   /** Description shown when locked. */
@@ -60,12 +60,19 @@ export function PlanLock({
             </CardDescription>
           </CardHeader>
           <CardContent className="p-0">
-            <Button asChild>
-              <Link href={`/dashboard/billing?upgrade=${requiredPlan}`}>
-                <Sparkles className="size-4" />
-                Passer en {requiredPlanName}
-              </Link>
-            </Button>
+            {requiredPlan && requiredPlanName ? (
+              <Button asChild>
+                <Link href={`/dashboard/billing?upgrade=${requiredPlan}`}>
+                  <Sparkles className="size-4" />
+                  Passer en {requiredPlanName}
+                </Link>
+              </Button>
+            ) : (
+              <p className="text-sm text-[var(--text-muted)]">
+                Cette fonctionnalité n&apos;est disponible sur aucun plan pour
+                le moment.
+              </p>
+            )}
           </CardContent>
         </div>
       </div>

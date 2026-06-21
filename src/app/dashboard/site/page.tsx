@@ -7,7 +7,9 @@ export const revalidate = 0;
 
 import { Button } from "@/components/ui/button";
 import { HeroEyebrow, PageHero } from "@/components/shared/page-hero";
+import { PlanLock } from "@/components/shared/plan-lock";
 import { getCurrentRestaurant } from "@/lib/active-restaurant";
+import { getFeatureGate } from "@/lib/plan-gate";
 import { loadSiteV2 } from "@/server/public/restaurant-site-v2-loader";
 import { prisma } from "@/lib/db";
 import { SiteV2EditorForm, type ProductPickerOption } from "./site-editor-form";
@@ -18,6 +20,7 @@ export const metadata: Metadata = {
 
 export default async function SiteEditorPage() {
   const { restaurant } = await getCurrentRestaurant();
+  const gate = await getFeatureGate(restaurant, "customDomain");
   // skipRedis pour toujours voir la dernière sauvegarde dans l'éditeur
   const payload = await loadSiteV2(restaurant.id, { skipRedis: true });
 
@@ -95,14 +98,22 @@ export default async function SiteEditorPage() {
         }
       />
 
-      <SiteV2EditorForm
-        restaurantId={restaurantId}
-        initialConfig={config}
-        initialEnabled={enabled}
-        initialSlug={slug}
-        plan={plan}
-        productOptions={productOptions}
-      />
+      <PlanLock
+        allowed={gate.allowed}
+        requiredPlan={gate.requiredPlan}
+        requiredPlanName={gate.requiredPlanName}
+        title="Le site vitrine est inclus dans les offres supérieures"
+        description="Un mini-site web éditorial généré depuis ta carte (infos pratiques, branding, plats). Disponible selon ton plan."
+      >
+        <SiteV2EditorForm
+          restaurantId={restaurantId}
+          initialConfig={config}
+          initialEnabled={enabled}
+          initialSlug={slug}
+          plan={plan}
+          productOptions={productOptions}
+        />
+      </PlanLock>
     </div>
   );
 }

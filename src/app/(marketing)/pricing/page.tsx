@@ -24,7 +24,7 @@ const FEATURE_ROWS: Array<{
   { key: "rouletteGame", label: "Jeu roulette d'avis Google" },
   { key: "popups", label: "Pop-ups événements" },
   { key: "maxTeamMembers", label: "Membres d'équipe" },
-  { key: "customDomain", label: "Domaine personnalisé" },
+  { key: "customDomain", label: "Site vitrine (mini-site)" },
   { key: "smsMarketing", label: "SMS marketing" },
   { key: "removeBranding", label: 'Retirer "Propulsé par Ruliz"' },
 ];
@@ -218,7 +218,7 @@ function bulletPoints(plan: PlanConfig): string[] {
   if (f.advancedStats) pts.push("Statistiques avancées");
   if (f.rouletteGame) pts.push("Jeu roulette d'avis Google");
   if (f.popups) pts.push("Pop-ups événements");
-  if (f.customDomain) pts.push("Domaine personnalisé");
+  if (f.customDomain) pts.push("Site vitrine (mini-site)");
   if (f.smsMarketing) pts.push("SMS marketing");
   if (f.removeBranding) pts.push('Sans "Propulsé par Ruliz"');
   if (plan.id === "pro") pts.unshift("14 jours d'essai gratuit");

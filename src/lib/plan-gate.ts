@@ -105,7 +105,7 @@ const FEATURE_LABELS: Partial<Record<keyof PlanFeatures, string>> = {
   smsMarketing: "Le module SMS",
   iaTranslation: "La traduction automatique",
   advancedStats: "Les statistiques avancées",
-  customDomain: "Le domaine personnalisé",
+  customDomain: "L'accès au site vitrine",
 };
 
 type AssertResult =
@@ -189,17 +189,23 @@ export async function getFeatureUsage() {
 export async function getFeatureGate(
   restaurant: RestaurantPlanInfo & { userId: number },
   feature: keyof PlanFeatures,
-): Promise<{ allowed: boolean; requiredPlan: Plan; requiredPlanName: string }> {
+): Promise<{
+  allowed: boolean;
+  requiredPlan: Plan | null;
+  requiredPlanName: string | null;
+}> {
   const features = await effectiveFeaturesOf(restaurant);
   const allowed = featureAllowed(features[feature]);
   const config = await getPlanConfig();
+  // Plan le moins cher qui inclut la feature → cible du CTA. null si AUCUN
+  // plan ne l'inclut (on ne propose alors pas d'upgrade trompeur).
   const minPlan =
     (["freemium", "pro", "premium"] as Plan[]).find((p) =>
       canUseFeatureInConfig(config, p, feature),
-    ) ?? "premium";
+    ) ?? null;
   return {
     allowed,
     requiredPlan: minPlan,
-    requiredPlanName: config[minPlan].name,
+    requiredPlanName: minPlan ? config[minPlan].name : null,
   };
 }
