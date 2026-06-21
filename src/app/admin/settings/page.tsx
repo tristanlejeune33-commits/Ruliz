@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import {
   CheckCircle2,
   Database,
-  Globe,
   Key,
   MessageSquare,
   Settings,
@@ -108,9 +107,6 @@ export default async function AdminSettingsPage() {
     },
   ];
 
-  const env = process.env.NODE_ENV;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "non configuré";
-
   return (
     <div className="space-y-6">
       <PageHero
@@ -210,85 +206,8 @@ export default async function AdminSettingsPage() {
       {/* === Gestion des plans (matrice plan × fonctionnalité) === */}
       <PlansEditor initial={planInitial} />
 
-      {/* === INFOS BUILD === */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Build & runtime</CardTitle>
-          <CardDescription>
-            Méta-données de l&apos;instance qui sert ce dashboard.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-3 sm:grid-cols-2">
-            <Info label="Environnement" value={env} mono />
-            <Info
-              label="Version Node"
-              value={process.version ?? " "}
-              mono
-            />
-            <Info
-              label="App URL"
-              value={appUrl}
-              mono
-              icon={<Globe className="size-3.5" strokeWidth={1.75} />}
-            />
-            <Info
-              label="Plateforme"
-              value={`${process.platform} ${process.arch}`}
-              mono
-            />
-          </dl>
-        </CardContent>
-      </Card>
-
       {/* === Cleanup images orphelines R2 === */}
       <R2CleanupCard />
-
-      {/* === Roadmap admin === */}
-      <Card className="border-dashed">
-        <CardHeader>
-          <CardTitle className="text-[var(--text-secondary)]">
-            Roadmap admin
-          </CardTitle>
-          <CardDescription>
-            Améliorations prévues sur cette page pour l&apos;instant ces
-            paramètres sont configurables uniquement via les variables
-            d&apos;environnement Railway.
-            <ul className="mt-2 list-inside list-disc space-y-0.5">
-              <li>Édition des templates email (Resend) confirmation client, notification admin</li>
-              <li>Liste des langues activées globalement</li>
-            </ul>
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    </div>
-  );
-}
-
-function Info({
-  label,
-  value,
-  mono,
-  icon,
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3">
-      <dt className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]">
-        {label}
-      </dt>
-      <dd
-        className={`mt-1 flex items-center gap-1.5 text-sm ${
-          mono ? "font-mono" : ""
-        } break-all text-[var(--text-primary)]`}
-      >
-        {icon}
-        {value}
-      </dd>
     </div>
   );
 }
