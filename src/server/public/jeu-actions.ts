@@ -20,8 +20,19 @@ const DISPOSABLE_EMAIL_DOMAINS = new Set([
   "discard.email", "mailsac.com", "burnermail.io", "tmpmail.org",
 ]);
 
-/** Nombre max de participations par IP sur 24h (anti-abus depuis un réseau). */
-const MAX_PER_IP_24H = 5;
+/**
+ * Anti-bot : max participations par IP sur 60s. Généreux → un humain ne soumet
+ * pas 20 formulaires en 1 min, mais une tablée sur le même WiFi n'est pas gênée.
+ */
+const MAX_PER_IP_60S = 20;
+
+/**
+ * Plafond journalier par IP. Volontairement HAUT (50) pour ne pas bloquer un
+ * resto où beaucoup de clients partagent le même WiFi, tout en posant un mur
+ * contre l'abus massif depuis une seule connexion. Le vrai garde-fou reste la
+ * dédup email + téléphone VALIDE.
+ */
+const MAX_PER_IP_24H = 50;
 
 /**
  * Server action pour enregistrer une participation au jeu roulette.
@@ -113,14 +124,14 @@ export async function submitParticipation(
     };
   }
 
-  // 1. Anti-bot : rafale max 5 participations / IP / 60s (bloque les scripts
-  //    qui spamment l'action, sans gêner une tablée qui joue chacun son tour).
+  // 1. Anti-bot : rafale max MAX_PER_IP_60S participations / IP / 60s (bloque
+  //    les scripts qui spamment, sans gêner une tablée sur le même WiFi).
   if (redis && ip) {
     try {
       const key = `roulette:rl:${jeuBigId.toString()}:${ip}`;
       const count = await redis.incr(key);
       if (count === 1) await redis.expire(key, 60);
-      if (count > 5) {
+      if (count > MAX_PER_IP_60S) {
         return {
           ok: false,
           error: "Trop de tentatives. Patiente une minute puis réessaie.",
@@ -131,10 +142,8 @@ export async function submitParticipation(
     }
   }
 
-  // 2. Plafond : max MAX_PER_IP_24H participations par IP / jeu / 24h.
-  //    ⚠️ En WiFi partagé (resto), plusieurs clients ont la même IP → ce
-  //    plafond peut bloquer des joueurs légitimes au-delà du seuil. La dédup
-  //    email + téléphone (numéro VALIDE) reste le garde-fou principal.
+  // 2. Plafond journalier : max MAX_PER_IP_24H participations par IP / jeu / 24h
+  //    (mur anti-abus massif ; assez haut pour le WiFi partagé d'un resto).
   if (ip) {
     const ipCount = await prisma.jeuParticipation.count({
       where: { jeuId: jeuBigId, ip, participatedAt: { gte: since } },
