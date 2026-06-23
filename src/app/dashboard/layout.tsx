@@ -147,15 +147,30 @@ export default async function DashboardLayout({
     !acting?.isImpersonating; // pas de tour en mode SAV admin
 
   // Lang du panel : cookie ruliz_panel_lang explicite > langue native du resto
-  // (auto-détectée au signup) > FR. Le restaurateur voit ainsi son panel dans
-  // sa langue par défaut, sans avoir à toucher au sélecteur.
+  // actif > langue de l'utilisateur (définie au signup via géoloc) > FR. Le
+  // restaurateur voit ainsi son panel dans sa langue par défaut sans toucher
+  // au sélecteur — y compris pendant l'onboarding (pas encore de resto actif).
   const langCookie = cookieStore.get(PANEL_LANG_COOKIE)?.value;
   const nativeLang = activeRestaurant?.langueNative;
+  let userLang: string | null = null;
+  if (userId && !isSupportedLang(langCookie) && !isSupportedLang(nativeLang)) {
+    try {
+      const u = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { langueNative: true },
+      });
+      userLang = u?.langueNative ?? null;
+    } catch {
+      // colonne absente / DB indispo → fallback fr
+    }
+  }
   const panelLang: SupportedLang = isSupportedLang(langCookie)
     ? langCookie
     : isSupportedLang(nativeLang)
       ? nativeLang
-      : "fr";
+      : isSupportedLang(userLang)
+        ? userLang
+        : "fr";
 
   // Affiché en mode SAV nom + email du user impersonné
   const impersonatedTargetName =

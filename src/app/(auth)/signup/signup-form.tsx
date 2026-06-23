@@ -197,7 +197,7 @@ export function SignupForm({
             render={({ field }) => (
               <FormItem>
                 <label htmlFor="signup-nom" style={LABEL_STYLE}>
-                  <T>Nom</T>
+                  <T>Nom de famille</T>
                 </label>
                 <FormControl>
                   <input
@@ -259,7 +259,7 @@ export function SignupForm({
                   id="signup-password"
                   type="password"
                   autoComplete="new-password"
-                  placeholder="8 caractères minimum"
+                  placeholder={t("8 caractères minimum")}
                   style={INPUT_STYLE}
                   {...field}
                   onFocus={focusFx}
