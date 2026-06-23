@@ -226,8 +226,12 @@ export function Roulette({
     setStep("countdown");
   };
 
-  const lancerLaRoue = async () => {
-    if (!chosenAction) return;
+  // Tire le lot CÔTÉ SERVEUR (source de vérité : c'est ce lot qui est
+  // enregistré et dont le stock est décrémenté). Renvoie le label gagné pour
+  // que la roue atterrisse EXACTEMENT dessus (sinon la roue affichait un lot
+  // aléatoire différent de celui réellement gagné/décrémenté).
+  const lancerLaRoue = async (): Promise<string | null> => {
+    if (!chosenAction) return null;
     setSubmitting(true);
     const res = await submitParticipation({
       jeuId: jeu.id,
@@ -243,10 +247,10 @@ export function Roulette({
     if (!res.ok) {
       setErrorMsg(res.error);
       setStep("error");
-      return;
+      return null;
     }
     setLotGagne(res.lotGagne);
-    setStep("victory");
+    return res.lotGagne;
   };
 
   return (
@@ -364,6 +368,7 @@ export function Roulette({
                   <WheelStep
                     lots={jeu.lots}
                     onSpin={lancerLaRoue}
+                    onResult={() => setStep("victory")}
                     submitting={submitting}
                   />
                 </motion.div>
@@ -882,10 +887,14 @@ function CountdownStep({
 function WheelStep({
   lots,
   onSpin,
+  onResult,
   submitting,
 }: {
   lots: Array<{ label: string; probabilite: number; imageUrl?: string }>;
-  onSpin: () => void;
+  /** Tire le lot côté serveur et renvoie son label (null si erreur). */
+  onSpin: () => Promise<string | null>;
+  /** Appelé quand l'animation est terminée → révèle la victoire. */
+  onResult: () => void;
   submitting: boolean;
 }) {
   const [phase, setPhase] = useState<"idle" | "spinning" | "stopped">("idle");
@@ -906,21 +915,27 @@ function WheelStep({
     return copies;
   }, [lots]);
 
-  const handleSpin = () => {
+  const handleSpin = async () => {
     if (phase !== "idle" || submitting) return;
     setPhase("spinning");
-    // On choisit un index "final" arbitraire dans la dernière copie (la wheel
-    // s'arrêtera dessus visuellement, mais le SERVEUR détermine le vrai lot
-    // dans `onSpin`). Pour donner un bel effet, on va simuler un lot aléatoire.
-    const randomLot = Math.floor(Math.random() * lots.length);
-    const finalReelIdx = (REPETITIONS - 1) * lots.length + randomLot;
-    setFinalIdx(finalReelIdx);
+    // 1. Le SERVEUR tire le lot AVANT d'animer (c'est lui qui enregistre et
+    //    décrémente le stock). La roue doit atterrir sur CE lot.
+    const wonLabel = await onSpin();
+    if (wonLabel == null) {
+      // Erreur (jeu terminé, déjà joué…) → le parent a basculé sur "error".
+      setPhase("idle");
+      return;
+    }
+    // 2. Index du lot gagné dans la liste affichée → la roue s'arrête dessus.
+    let idx = lots.findIndex((l) => l.label === wonLabel);
+    if (idx < 0) idx = 0; // sécurité (lot absent de la liste cachée)
+    setFinalIdx((REPETITIONS - 1) * lots.length + idx);
 
-    // Au bout de 3.5s on déclenche le submit serveur
+    // 3. Fin de l'animation (3.5s) → on révèle la victoire (même lot).
     setTimeout(() => {
       setPhase("stopped");
-      onSpin();
-    }, 3500);
+      onResult();
+    }, 3600);
   };
 
   if (lots.length === 0) {
@@ -1060,7 +1075,7 @@ function WheelStep({
 
       <button
         type="button"
-        onClick={handleSpin}
+        onClick={() => void handleSpin()}
         disabled={phase !== "idle" || submitting}
         className="rounded-full px-10 py-3 text-lg font-bold uppercase tracking-wide text-white transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60"
         style={{
