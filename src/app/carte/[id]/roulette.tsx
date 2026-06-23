@@ -900,9 +900,11 @@ function WheelStep({
   const [phase, setPhase] = useState<
     "idle" | "spinning" | "landing" | "stopped"
   >("idle");
-  // Lot actuellement affiché au centre (façon machine à sous) + lot gagné.
+  // Lot actuellement affiché au centre (façon machine à sous) pendant le spin.
   const [displayIdx, setDisplayIdx] = useState(0);
-  const [wonIdx, setWonIdx] = useState<number | null>(null);
+  // Label EXACT du lot gagné renvoyé par le serveur (source de vérité pour
+  // l'affichage final → garantit que ce qu'on voit = stats = stock).
+  const [wonLabel, setWonLabel] = useState<string | null>(null);
 
   const WINDOW_HEIGHT = 150; // px — hauteur de la fenêtre du slot
 
@@ -921,24 +923,22 @@ function WheelStep({
     // 1. Le défilement démarre TOUT DE SUITE (effet ci-dessus) → visible direct,
     //    pendant que le serveur tire le lot.
     setPhase("spinning");
-    const wonLabel = await onSpin();
-    if (wonLabel == null) {
+    const serverLabel = await onSpin();
+    if (serverLabel == null) {
       // Erreur (jeu terminé, déjà joué…) → le parent a basculé sur "error".
       setPhase("idle");
       return;
     }
-    // 2. On connaît le lot gagné → décélération puis arrêt PILE dessus.
-    let won = lots.findIndex((l) => l.label === wonLabel);
-    if (won < 0) won = 0; // sécurité (lot absent de la liste cachée)
-    setWonIdx(won);
+    // 2. Le serveur fait foi → on mémorise le label exact gagné. L'affichage
+    //    final utilisera CE label (pas un index qui pourrait ne pas matcher).
+    setWonLabel(serverLabel);
     setPhase("landing");
-    // Continue de cycler de plus en plus lentement, puis s'arrête sur le lot.
+    // Continue de cycler de plus en plus lentement, puis s'arrête.
     const decel = [120, 150, 190, 240, 310, 410, 540, 700];
     let step = 0;
     const tick = () => {
       if (step >= decel.length) {
-        setDisplayIdx(won); // arrêt exact sur le lot gagné
-        setPhase("stopped");
+        setPhase("stopped"); // l'affichage bascule sur le lot gagné (cf. rendu)
         onResult();
         return;
       }
@@ -958,10 +958,22 @@ function WheelStep({
     );
   }
 
-  const current = lots[displayIdx] ?? lots[0]!;
-  const currentEmoji = extractEmoji(current.label) ?? "🎁";
-  const currentText = removeEmoji(current.label);
-  const currentHasImage = !!current.imageUrl;
+  // Lot gagné (serveur = vérité). Retrouvé dans la liste pour récupérer son
+  // image ; sinon synthétisé à partir du label (au cas où la liste cachée
+  // diffère). Quand la roue est arrêtée, c'est CE lot qu'on affiche.
+  const wonLot =
+    wonLabel != null
+      ? lots.find((l) => l.label === wonLabel) ?? {
+          label: wonLabel,
+          probabilite: 0,
+          imageUrl: undefined as string | undefined,
+        }
+      : null;
+  const shown =
+    phase === "stopped" && wonLot ? wonLot : lots[displayIdx] ?? lots[0]!;
+  const shownEmoji = extractEmoji(shown.label) ?? "🎁";
+  const shownText = removeEmoji(shown.label);
+  const shownHasImage = !!shown.imageUrl;
 
   return (
     <div className="relative flex flex-col items-center gap-5 py-4">
@@ -991,32 +1003,32 @@ function WheelStep({
           style={{ height: `${WINDOW_HEIGHT}px` }}
         >
           <motion.div
-            key={displayIdx}
+            key={phase === "stopped" ? "won" : displayIdx}
             initial={{ y: phase === "idle" ? 0 : 55, opacity: phase === "idle" ? 1 : 0.2 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.12, ease: "easeOut" }}
             className="flex flex-col items-center justify-center gap-2 px-4 text-center text-black"
           >
-            {currentHasImage ? (
+            {shownHasImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={current.imageUrl}
+                src={shown.imageUrl}
                 alt=""
                 className="size-16 rounded-lg object-cover"
               />
             ) : (
-              <span className="text-5xl">{currentEmoji}</span>
+              <span className="text-5xl">{shownEmoji}</span>
             )}
             <span
               className="text-balance text-lg font-bold leading-tight text-black"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              {currentText}
+              {shownText}
             </span>
           </motion.div>
 
           {/* Halo de victoire quand la roue s'arrête sur le lot gagné */}
-          {phase === "stopped" && wonIdx === displayIdx && (
+          {phase === "stopped" && (
             <motion.div
               className="pointer-events-none absolute inset-0 rounded-[16px] ring-4 ring-[#FF9B4A]"
               initial={{ opacity: 0 }}
