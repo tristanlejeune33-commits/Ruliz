@@ -42,8 +42,6 @@ const schema = z.object({
   /** ISO 8601 ou chaîne vide */
   dateDebut: z.string(),
   dateFin: z.string(),
-  /** Stock total de lots à distribuer (0 = illimité). */
-  maxLots: z.number().int().min(0).max(1_000_000),
   lots: z
     .array(
       z.object({
@@ -51,6 +49,8 @@ const schema = z.object({
         probabilite: z.number().int().min(1).max(100),
         /** URL d'image/logo du lot (uploaded via R2 ou collé). Vide = pas de logo. */
         imageUrl: z.string().max(500).optional().or(z.literal("")),
+        /** Stock de ce lot (0 = illimité). */
+        maxWins: z.number().int().min(0).max(1_000_000),
       }),
     )
     .min(1)
@@ -66,13 +66,17 @@ interface JeuFormProps {
     nom: string;
     actif: boolean;
     cta: string;
-    lots: Array<{ label: string; probabilite: number }>;
+    lots: Array<{
+      label: string;
+      probabilite: number;
+      imageUrl?: string;
+      maxWins?: number;
+    }>;
     requireGoogleReview: boolean;
     autoPopup: boolean;
     autoPopupDelaySec: number;
     dateDebut: string;
     dateFin: string;
-    maxLots: number;
   } | null;
 }
 
@@ -80,12 +84,13 @@ const DEFAULT_LOTS: Array<{
   label: string;
   probabilite: number;
   imageUrl?: string;
+  maxWins: number;
 }> = [
-  { label: "☕ Café offert", probabilite: 40, imageUrl: "" },
-  { label: "🍰 Dessert offert", probabilite: 25, imageUrl: "" },
-  { label: "🍹 Apéritif maison", probabilite: 20, imageUrl: "" },
-  { label: "💸 -10% sur ta prochaine note", probabilite: 10, imageUrl: "" },
-  { label: "🎁 Menu offert pour 2", probabilite: 5, imageUrl: "" },
+  { label: "☕ Café offert", probabilite: 40, imageUrl: "", maxWins: 0 },
+  { label: "🍰 Dessert offert", probabilite: 25, imageUrl: "", maxWins: 0 },
+  { label: "🍹 Apéritif maison", probabilite: 20, imageUrl: "", maxWins: 0 },
+  { label: "💸 -10% sur ta prochaine note", probabilite: 10, imageUrl: "", maxWins: 0 },
+  { label: "🎁 Menu offert pour 2", probabilite: 5, imageUrl: "", maxWins: 0 },
 ];
 
 /**
@@ -119,8 +124,15 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
           autoPopupDelaySec: jeu.autoPopupDelaySec ?? 3,
           dateDebut: jeu.dateDebut ?? "",
           dateFin: jeu.dateFin ?? "",
-          maxLots: jeu.maxLots ?? 0,
-          lots: jeu.lots.length > 0 ? jeu.lots : DEFAULT_LOTS,
+          lots:
+            jeu.lots.length > 0
+              ? jeu.lots.map((l) => ({
+                  label: l.label,
+                  probabilite: l.probabilite,
+                  imageUrl: l.imageUrl ?? "",
+                  maxWins: l.maxWins ?? 0,
+                }))
+              : DEFAULT_LOTS,
         }
       : {
           nom: "Roulette des avis",
@@ -131,7 +143,6 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
           autoPopupDelaySec: 3,
           dateDebut: "",
           dateFin: "",
-          maxLots: 0,
           lots: DEFAULT_LOTS,
         },
   });
@@ -192,7 +203,6 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
         cta: values.cta,
         lots: values.lots,
         require_google_review: values.requireGoogleReview,
-        max_lots: values.maxLots,
       },
     });
   };
@@ -420,33 +430,6 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                 />
               </div>
             </div>
-
-            {/* STOCK : nombre maximum de lots à distribuer */}
-            <FormField
-              control={form.control}
-              name="maxLots"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre maximum de lots à gagner</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={0}
-                      value={field.value}
-                      onChange={(e) =>
-                        field.onChange(Math.max(0, Number(e.target.value) || 0))
-                      }
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    Stock total de lots distribuables. Une fois ce nombre de
-                    gagnants atteint, le jeu se ferme automatiquement.{" "}
-                    <strong>0 = illimité.</strong>
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 
@@ -458,7 +441,9 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                 <CardDescription>
                   La somme des probabilités doit faire <strong>100%</strong>.
                   Tu peux mettre des emojis dans le label (ex : « 🎁 Café offert »).
-                  Maximum 12 lots.
+                  La colonne <strong>Stock</strong> limite le nombre de fois où
+                  un lot peut être gagné (<strong>0 = illimité</strong>) : une
+                  fois épuisé, ce lot n&apos;est plus tiré. Maximum 12 lots.
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -499,7 +484,7 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                   key={f.id}
                   className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/30 p-3"
                 >
-                  <div className="grid grid-cols-[1fr_80px_40px] gap-2 sm:grid-cols-[1fr_100px_40px]">
+                  <div className="grid grid-cols-[1fr_64px_64px_40px] gap-2 sm:grid-cols-[1fr_84px_84px_40px]">
                     <FormField
                       control={form.control}
                       name={`lots.${i}.label`}
@@ -530,6 +515,30 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                                 field.onChange(Number(e.target.value) || 0)
                               }
                               placeholder="%"
+                              title="Probabilité (%)"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name={`lots.${i}.maxWins`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={field.value}
+                              onChange={(e) =>
+                                field.onChange(
+                                  Math.max(0, Number(e.target.value) || 0),
+                                )
+                              }
+                              placeholder="Stock"
+                              title="Stock de ce lot (0 = illimité)"
                             />
                           </FormControl>
                           <FormMessage />
@@ -546,6 +555,16 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                     >
                       <Trash2 className="size-3.5" />
                     </Button>
+                  </div>
+                  <div className="mt-1 grid grid-cols-[1fr_64px_64px_40px] gap-2 sm:grid-cols-[1fr_84px_84px_40px]">
+                    <span />
+                    <span className="text-center text-[9px] uppercase tracking-wider text-[var(--text-tertiary)]">
+                      Proba %
+                    </span>
+                    <span className="text-center text-[9px] uppercase tracking-wider text-[var(--text-tertiary)]">
+                      Stock
+                    </span>
+                    <span />
                   </div>
 
                   {/* Sélecteur d'emoji NATIF utilise le picker système
@@ -608,7 +627,9 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
               type="button"
               variant="ghost"
               size="sm"
-              onClick={() => append({ label: "", probabilite: 5 })}
+              onClick={() =>
+                append({ label: "", probabilite: 5, imageUrl: "", maxWins: 0 })
+              }
               disabled={fields.length >= 12}
               className="mt-3"
             >

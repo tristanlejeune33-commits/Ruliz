@@ -15,15 +15,15 @@ const lotSchema = z.object({
   label: z.string().min(1).max(100),
   probabilite: z.number().int().min(1).max(100),
   imageUrl: z.string().max(500).optional().or(z.literal("")),
+  /** Stock de CE lot (0 / absent = illimité). Une fois atteint, ce lot n'est
+   *  plus tirable (les autres continuent). */
+  maxWins: z.number().int().min(0).max(1_000_000).optional(),
 });
 
 const configSchema = z.object({
   cta: z.string().min(1).max(255),
   lots: z.array(lotSchema).min(1).max(12),
   require_google_review: z.boolean(),
-  /** Stock total de lots à distribuer (0 / absent = illimité). Une fois atteint,
-   *  le jeu ne distribue plus de lot. */
-  max_lots: z.number().int().min(0).max(1_000_000).optional(),
 });
 
 const upsertJeuSchema = z.object({
@@ -166,9 +166,8 @@ const participateSchema = z.object({
 
 interface JeuConfig {
   cta?: string;
-  lots: Array<{ label: string; probabilite: number }>;
+  lots: Array<{ label: string; probabilite: number; maxWins?: number }>;
   require_google_review?: boolean;
-  max_lots?: number;
 }
 
 function pickWeightedLot(lots: JeuConfig["lots"]): JeuConfig["lots"][number] | null {
@@ -210,12 +209,25 @@ export async function spinRoulette(input: unknown): Promise<
     return { ok: false, error: "Configuration de jeu invalide" };
   }
 
-  // Stock de lots : si un maximum est défini et déjà atteint, le jeu est clos.
-  if (config.max_lots && config.max_lots > 0) {
-    const distributed = await prisma.jeuParticipation.count({
+  // Stock PAR LOT : on exclut du tirage les lots dont le quota est atteint.
+  // Les autres lots restent gagnables. Si tout est épuisé, le jeu est clos.
+  let available = config.lots;
+  if (config.lots.some((l) => (l.maxWins ?? 0) > 0)) {
+    const counts = await prisma.jeuParticipation.groupBy({
+      by: ["lotGagne"],
       where: { jeuId: big },
+      _count: { _all: true },
     });
-    if (distributed >= config.max_lots) {
+    const wonByLabel = new Map<string, number>();
+    for (const c of counts) {
+      if (c.lotGagne) wonByLabel.set(c.lotGagne, c._count._all);
+    }
+    available = config.lots.filter((l) => {
+      const max = l.maxWins ?? 0;
+      if (max <= 0) return true; // illimité
+      return (wonByLabel.get(l.label) ?? 0) < max;
+    });
+    if (available.length === 0) {
       return {
         ok: false,
         error:
@@ -224,9 +236,11 @@ export async function spinRoulette(input: unknown): Promise<
     }
   }
 
-  const winning = pickWeightedLot(config.lots);
+  const winning = pickWeightedLot(available);
   if (!winning) return { ok: false, error: "Aucun lot disponible" };
 
+  // Index dans la liste COMPLÈTE (la roue affiche tous les lots) : `winning`
+  // est une référence issue de config.lots, donc l'égalité de référence marche.
   const lotIndex = config.lots.findIndex((l) => l === winning);
 
   // Persistence asynchrone (best-effort, ne bloque pas la réponse)
