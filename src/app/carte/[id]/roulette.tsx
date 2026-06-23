@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Loader2, Star, X } from "lucide-react";
 import { toast } from "sonner";
@@ -900,28 +900,26 @@ function WheelStep({
   const [phase, setPhase] = useState<
     "idle" | "spinning" | "landing" | "stopped"
   >("idle");
-  const [finalIdx, setFinalIdx] = useState<number | null>(null);
+  // Lot actuellement affiché au centre (façon machine à sous) + lot gagné.
+  const [displayIdx, setDisplayIdx] = useState(0);
+  const [wonIdx, setWonIdx] = useState<number | null>(null);
 
-  // Hauteur d'un slot doit être en sync avec la hauteur réelle
-  const SLOT_HEIGHT = 80; // px
-  const VISIBLE_SLOTS = 3; // on en montre 3 (centre + haut/bas masqués par fade)
-  const REPETITIONS = 8; // nb de tours complets avant l'arrêt
+  const WINDOW_HEIGHT = 150; // px — hauteur de la fenêtre du slot
 
-  // Piste : on duplique les lots REPETITIONS fois + un index final
-  const reelItems = useMemo(() => {
-    if (lots.length === 0) return [] as typeof lots;
-    const copies: typeof lots = [];
-    for (let i = 0; i < REPETITIONS; i++) {
-      copies.push(...lots);
-    }
-    return copies;
-  }, [lots]);
+  // Défilement rapide pendant "spinning" : on cycle l'affichage → il y a
+  // TOUJOURS un lot visible au centre (jamais d'écran blanc).
+  useEffect(() => {
+    if (phase !== "spinning") return;
+    const id = setInterval(() => {
+      setDisplayIdx((i) => (i + 1) % Math.max(1, lots.length));
+    }, 90);
+    return () => clearInterval(id);
+  }, [phase, lots.length]);
 
   const handleSpin = async () => {
     if (phase !== "idle" || submitting) return;
-    // 1. La roue tourne EN CONTINU immédiatement (boucle déclarative en valeur
-    //    simple → NON réinitialisée par les re-renders), pendant que le serveur
-    //    tire le lot. Aucun temps mort visuel.
+    // 1. Le défilement démarre TOUT DE SUITE (effet ci-dessus) → visible direct,
+    //    pendant que le serveur tire le lot.
     setPhase("spinning");
     const wonLabel = await onSpin();
     if (wonLabel == null) {
@@ -929,17 +927,27 @@ function WheelStep({
       setPhase("idle");
       return;
     }
-    // 2. On connaît le lot gagné → la roue décélère et s'arrête PILE dessus.
-    let idx = lots.findIndex((l) => l.label === wonLabel);
-    if (idx < 0) idx = 0; // sécurité (lot absent de la liste cachée)
-    setFinalIdx((REPETITIONS - 1) * lots.length + idx);
+    // 2. On connaît le lot gagné → décélération puis arrêt PILE dessus.
+    let won = lots.findIndex((l) => l.label === wonLabel);
+    if (won < 0) won = 0; // sécurité (lot absent de la liste cachée)
+    setWonIdx(won);
     setPhase("landing");
-    // 3. Fin de la décélération (timeout garanti, indépendant de l'animation)
-    //    → on révèle la victoire (même lot).
-    setTimeout(() => {
-      setPhase("stopped");
-      onResult();
-    }, 3100);
+    // Continue de cycler de plus en plus lentement, puis s'arrête sur le lot.
+    const decel = [120, 150, 190, 240, 310, 410, 540, 700];
+    let step = 0;
+    const tick = () => {
+      if (step >= decel.length) {
+        setDisplayIdx(won); // arrêt exact sur le lot gagné
+        setPhase("stopped");
+        onResult();
+        return;
+      }
+      setDisplayIdx((i) => (i + 1) % Math.max(1, lots.length));
+      const d = decel[step] ?? 300;
+      step += 1;
+      window.setTimeout(tick, d);
+    };
+    window.setTimeout(tick, decel[0]);
   };
 
   if (lots.length === 0) {
@@ -950,14 +958,10 @@ function WheelStep({
     );
   }
 
-  const reelHeight = SLOT_HEIGHT * VISIBLE_SLOTS;
-  // Période d'un cycle complet de lots (pour la boucle de défilement).
-  const period = lots.length * SLOT_HEIGHT;
-  // Translate-Y final : centre le lot gagné (finalIdx) dans la fenêtre.
-  const targetY =
-    finalIdx !== null
-      ? -(finalIdx * SLOT_HEIGHT) + ((VISIBLE_SLOTS - 1) / 2) * SLOT_HEIGHT
-      : 0;
+  const current = lots[displayIdx] ?? lots[0]!;
+  const currentEmoji = extractEmoji(current.label) ?? "🎁";
+  const currentText = removeEmoji(current.label);
+  const currentHasImage = !!current.imageUrl;
 
   return (
     <div className="relative flex flex-col items-center gap-5 py-4">
@@ -980,99 +984,47 @@ function WheelStep({
           ◀
         </span>
 
-        {/* Fenêtre du slot overflow hidden, force text-black pour les lots */}
+        {/* Fenêtre slot : UN seul lot affiché au centre, qui défile (machine à
+            sous). Toujours un lot visible → jamais d'écran blanc. */}
         <div
-          className="relative mx-auto w-[260px] overflow-hidden rounded-[16px] border-2 border-[#FF9B4A] bg-white/95 text-black shadow-2xl md:w-[300px]"
-          style={{ height: `${reelHeight}px` }}
+          className="relative mx-auto flex w-[260px] items-center justify-center overflow-hidden rounded-[16px] border-2 border-[#FF9B4A] bg-white text-black shadow-2xl md:w-[300px]"
+          style={{ height: `${WINDOW_HEIGHT}px` }}
         >
-          {/* Fade haut + bas pour effet 3D */}
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[80px] bg-gradient-to-b from-white/95 via-white/40 to-transparent"
-            aria-hidden
-          />
-          <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[80px] bg-gradient-to-t from-white/95 via-white/40 to-transparent"
-            aria-hidden
-          />
-
-          {/* Ligne centrale orange (indicateur de gain) */}
-          <div
-            className="pointer-events-none absolute inset-x-2 top-1/2 z-[5] h-[2px] -translate-y-1/2 bg-gradient-to-r from-transparent via-[#FF9B4A] to-transparent"
-            aria-hidden
-          />
-
-          {/* Le reel qui scrolle. Boucle en VALEUR SIMPLE (y: -period) répétée
-              → Framer compare les valeurs, donc un re-render (ex: submitting)
-              ne réinitialise PAS l'animation. Puis décélération vers targetY. */}
           <motion.div
-            animate={{
-              y:
-                phase === "spinning"
-                  ? -period
-                  : phase === "landing" || phase === "stopped"
-                    ? targetY
-                    : 0,
-            }}
-            transition={
-              phase === "spinning"
-                ? {
-                    duration: Math.max(0.5, lots.length * 0.14),
-                    ease: "linear",
-                    repeat: Infinity,
-                  }
-                : phase === "landing"
-                  ? { duration: 3, ease: [0.16, 0.85, 0.32, 1] }
-                  : { duration: 0 }
-            }
-            className="absolute inset-x-0 top-0 flex flex-col"
+            key={displayIdx}
+            initial={{ y: phase === "idle" ? 0 : 55, opacity: phase === "idle" ? 1 : 0.2 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.12, ease: "easeOut" }}
+            className="flex flex-col items-center justify-center gap-2 px-4 text-center text-black"
           >
-            {reelItems.map((lot, i) => {
-              const emoji = extractEmoji(lot.label) ?? "🎁";
-              const text = removeEmoji(lot.label);
-              const hasImage = !!lot.imageUrl;
-              const isWinning = i === finalIdx && phase === "stopped";
-              return (
-                <div
-                  key={i}
-                  className="flex shrink-0 items-center justify-center gap-3 px-4 text-center text-black"
-                  style={{ height: `${SLOT_HEIGHT}px` }}
-                >
-                  <motion.div
-                    animate={
-                      isWinning
-                        ? {
-                            scale: [1, 1.12, 1],
-                            color: ["#000", "#FF9B4A", "#000"],
-                          }
-                        : {}
-                    }
-                    transition={{
-                      duration: 0.6,
-                      repeat: isWinning ? 3 : 0,
-                    }}
-                    className="flex items-center gap-3 text-black"
-                  >
-                    {hasImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={lot.imageUrl}
-                        alt=""
-                        className="size-12 rounded-md object-cover md:size-14"
-                      />
-                    ) : (
-                      <span className="text-3xl md:text-4xl">{emoji}</span>
-                    )}
-                    <span
-                      className="text-balance text-base font-bold leading-tight text-black md:text-lg"
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      {text}
-                    </span>
-                  </motion.div>
-                </div>
-              );
-            })}
+            {currentHasImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={current.imageUrl}
+                alt=""
+                className="size-16 rounded-lg object-cover"
+              />
+            ) : (
+              <span className="text-5xl">{currentEmoji}</span>
+            )}
+            <span
+              className="text-balance text-lg font-bold leading-tight text-black"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              {currentText}
+            </span>
           </motion.div>
+
+          {/* Halo de victoire quand la roue s'arrête sur le lot gagné */}
+          {phase === "stopped" && wonIdx === displayIdx && (
+            <motion.div
+              className="pointer-events-none absolute inset-0 rounded-[16px] ring-4 ring-[#FF9B4A]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 1, 0.3, 1] }}
+              transition={{ duration: 1.1 }}
+              aria-hidden
+            />
+          )}
         </div>
       </div>
 
