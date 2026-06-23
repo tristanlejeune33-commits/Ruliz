@@ -4,7 +4,7 @@ import { useEffect, useRef, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, Save, Sun, Moon, MapPin } from "lucide-react";
+import { Loader2, Save, Sun, Moon, MapPin, Type } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -106,6 +106,7 @@ const schema = z.object({
   theme: z.enum(["light", "dark"]),
   fontStyle: z.enum(["modern", "editorial", "elegant"]),
   showMap: z.boolean(),
+  showName: z.boolean(),
   couleurPrimaire: optHex,
   couleurSecondaire: optHex,
   couleurFond: optHex,
@@ -633,6 +634,35 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                           <p className="text-xs text-[var(--text-muted)]">
                             Nécessite une adresse renseignée dans l&apos;onglet
                             Infos. Désactivé par défaut.
+                          </p>
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="showName"
+                  render={({ field }) => (
+                    <FormItem className="mt-3 flex items-center justify-between gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-4">
+                      <div className="flex items-start gap-3">
+                        <Type className="mt-0.5 size-5 shrink-0 text-[var(--text-muted)]" />
+                        <div className="space-y-1">
+                          <FormLabel className="cursor-pointer">
+                            Afficher le nom du restaurant
+                          </FormLabel>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Le nom s&apos;affiche en grand sous le logo sur la
+                            carte digitale. Désactive si ton logo contient déjà
+                            le nom. Activé par défaut.
                           </p>
                         </div>
                       </div>

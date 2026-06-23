@@ -124,6 +124,8 @@ const restaurantSchema = z.object({
   fontStyle: z.enum(["modern", "editorial", "elegant"]).optional(),
   // Affichage de la carte Google Maps sur la carte publique (opt-in)
   showMap: z.boolean().optional(),
+  // Affichage du nom du restaurant dans l'en-tête de la carte (default true)
+  showName: z.boolean().optional(),
   // Colors
   couleurPrimaire: optHex,
   couleurSecondaire: optHex,
@@ -283,6 +285,7 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         theme: data.theme ?? "light",
         fontStyle: data.fontStyle ?? "editorial",
         showMap: data.showMap ?? false,
+        showName: data.showName ?? true,
         couleurPrimaire: empty(data.couleurPrimaire),
         couleurSecondaire: empty(data.couleurSecondaire),
         couleurFond: empty(data.couleurFond),
@@ -364,6 +367,19 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
     } catch (e) {
       console.warn(
         "[updateRestaurant] raw SQL update failed for column \"show_map\":",
+        e instanceof Error ? e.message : e,
+      );
+    }
+    // show_name : booléen → param séparé (idem show_map).
+    try {
+      await prisma.$executeRawUnsafe(
+        `UPDATE "restaurants" SET "show_name" = $1 WHERE "id" = $2`,
+        data.showName ?? true,
+        bigId,
+      );
+    } catch (e) {
+      console.warn(
+        "[updateRestaurant] raw SQL update failed for column \"show_name\":",
         e instanceof Error ? e.message : e,
       );
     }

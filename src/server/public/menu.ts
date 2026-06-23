@@ -36,6 +36,8 @@ export type PublicMenu = {
     couleurCategorie: string | null;
     /** Afficher la carte Google Maps dans le footer (opt-in restaurateur). */
     showMap: boolean;
+    /** Afficher le nom du restaurant dans l'en-tête (default true). */
+    showName: boolean;
     ville: string | null;
     pays: string | null;
     adresse: string | null;
@@ -174,6 +176,7 @@ export async function getPublicMenu(
         couleurTexteTitre: true,
         couleurCategorie: true,
         showMap: true,
+        showName: true,
         ville: true,
         pays: true,
         adresse: true,
@@ -514,6 +517,7 @@ export async function getPublicMenu(
       couleurTexteTitre: restaurant.couleurTexteTitre,
       couleurCategorie: restaurant.couleurCategorie,
       showMap: restaurant.showMap ?? false,
+      showName: restaurant.showName ?? true,
       ville: restaurant.ville,
       pays: restaurant.pays,
       adresse: restaurant.adresse,

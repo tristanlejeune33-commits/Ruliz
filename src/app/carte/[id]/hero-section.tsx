@@ -101,16 +101,22 @@ function Welcome({ restaurant, theme }: HeroSectionProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
       >
-        <h1
-          id="anchor"
-          className="mb-[10px] mt-[60px] text-[36px] font-bold leading-tight tracking-tight md:mt-[40px] md:text-[44px] lg:mt-[30px] lg:text-[52px] xl:mt-[20px] xl:text-[58px]"
-          style={{
-            color: theme.title,
-            fontFamily: "var(--font-display)",
-          }}
-        >
-          {restaurant.nom}
-        </h1>
+        {restaurant.showName ? (
+          <h1
+            id="anchor"
+            className="mb-[10px] mt-[60px] text-[36px] font-bold leading-tight tracking-tight md:mt-[40px] md:text-[44px] lg:mt-[30px] lg:text-[52px] xl:mt-[20px] xl:text-[58px]"
+            style={{
+              color: theme.title,
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {restaurant.nom}
+          </h1>
+        ) : (
+          // Nom masqué par le restaurateur : on garde l'ancre de scroll + un
+          // peu d'espace pour ne pas coller la description au logo.
+          <div id="anchor" className="mt-[40px]" aria-hidden />
+        )}
         {restaurant.description && (
           <p
             className="mx-auto max-w-[640px] text-base font-light leading-relaxed lg:text-[17px]"

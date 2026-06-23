@@ -617,6 +617,14 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "show_map" BOOLEAN NOT NULL DEFAULT FALSE;
     `);
 
+    // === Restaurant — affichage du nom sur /carte/[id] ===
+    // Default TRUE : le nom est affiché par défaut. Le restaurateur peut le
+    // masquer (ex: nom déjà présent dans le logo/bannière).
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "show_name" BOOLEAN NOT NULL DEFAULT TRUE;
+    `);
+
     // === Panel auto-translate cache ===
     // Cache à vie des traductions du panel client/admin (sidebar, pages,
     // formulaires, etc.). Quand un user change la lang vers EN/ES/etc., le

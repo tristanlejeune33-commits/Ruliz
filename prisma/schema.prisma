@@ -263,6 +263,12 @@ model Restaurant {
    * restaurateur l'active depuis /dashboard/restaurant.
    */
   showMap                  Boolean   @default(false) @map("show_map")
+  /**
+   * Afficher le nom du restaurant dans l'en-tête de la carte publique
+   * `/carte/[id]`. Default true. Le restaurateur peut le masquer (ex: le nom
+   * est déjà dans le logo / la bannière).
+   */
+  showName                 Boolean   @default(true) @map("show_name")
   // ----- Réseaux sociaux -----
   facebookUrl              String?   @map("facebook_url")
   instagramUrl             String?   @map("instagram_url")

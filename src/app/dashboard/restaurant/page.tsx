@@ -151,6 +151,7 @@ export default async function RestaurantPage() {
           theme: (data.theme as "light" | "dark") ?? "light",
           fontStyle: (data.fontStyle as "modern" | "editorial" | "elegant") ?? "editorial",
           showMap: (data as { showMap?: boolean }).showMap ?? false,
+          showName: (data as { showName?: boolean }).showName ?? true,
           couleurPrimaire: data.couleurPrimaire ?? "#4870e0",
           couleurSecondaire: data.couleurSecondaire ?? "",
           couleurFond: data.couleurFond ?? "",
