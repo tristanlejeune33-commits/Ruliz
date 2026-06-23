@@ -174,6 +174,11 @@ export function MenuEditor({
     if (!activeCategorieId && tree[0]) {
       setActiveCategorieId(tree[0].id);
     }
+    // Le serveur a poussé un nouvel arbre (après TOUTE mutation : drag&drop,
+    // toggle, suppression, déplacement…). L'iframe d'aperçu a son propre cycle
+    // de vie → on bump sa key pour la forcer à recharger avec le contenu à jour.
+    // (Avant, seuls les modals "Enregistrer" rechargeaient l'aperçu.)
+    setPreviewKey((k) => k + 1);
   }
 
   /**
