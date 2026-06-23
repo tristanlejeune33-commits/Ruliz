@@ -61,6 +61,21 @@ export const viewport: Viewport = {
   ],
 };
 
+/**
+ * Patch anti-crash React ↔ Google Translate.
+ *
+ * Quand le navigateur traduit la page (Google Translate / extension), il
+ * réécrit le DOM (enveloppe le texte dans des <font>), déplaçant des nœuds que
+ * React croit toujours à leur place. Au prochain re-render, React appelle
+ * removeChild/insertBefore sur un nœud qui n'est plus enfant du parent attendu
+ * → "NotFoundError: node is not a child of this node" → page blanche.
+ *
+ * On rend ces deux méthodes NULL-SAFE : si le nœud n'est pas (plus) enfant du
+ * parent, on no-op gracieusement au lieu de throw. Correctif standard et
+ * éprouvé. Exécuté avant l'hydratation (script inline en tête de <body>).
+ */
+const NODE_PATCH = `(function(){if(typeof Node!=="function"||!Node.prototype)return;var r=Node.prototype.removeChild;Node.prototype.removeChild=function(c){if(c&&c.parentNode!==this){return c;}return r.apply(this,arguments);};var i=Node.prototype.insertBefore;Node.prototype.insertBefore=function(n,ref){if(ref&&ref.parentNode!==this){return n;}return i.apply(this,arguments);};})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -69,6 +84,7 @@ export default function RootLayout({
   return (
     <html lang="fr" translate="no" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <script dangerouslySetInnerHTML={{ __html: NODE_PATCH }} />
         <ThemeProvider
           attribute="data-theme"
           defaultTheme="dark"
