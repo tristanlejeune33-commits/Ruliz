@@ -1,0 +1,4 @@
+prenom,nom,telephone,email,anniversaire,opt_in_sms
+Marc,Dupont,+33612345678,marc.dupont@email.fr,1985-04-23,oui
+Sophie,Martin,0698765432,,1990-11-02,oui
+Karim,,+33700112233,karim@email.fr,,non

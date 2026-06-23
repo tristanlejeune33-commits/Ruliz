@@ -12,6 +12,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Upload,
   UserPlus,
   Users,
 } from "lucide-react";
@@ -46,6 +47,7 @@ import {
   deleteClient,
   updateClient,
 } from "@/server/dashboard/clients-actions";
+import { ImportClientsDialog } from "./import-clients-dialog";
 
 interface Client {
   id: string;
@@ -121,16 +123,27 @@ export function ClientsManager({
           </div>
         </div>
 
-        <ClientFormDialog
-          restaurantId={restaurantId}
-          mode="create"
-          trigger={
-            <Button type="button" size="sm">
-              <UserPlus className="size-3.5" />
-              Ajouter un client
-            </Button>
-          }
-        />
+        <div className="flex items-center gap-2">
+          <ImportClientsDialog
+            restaurantId={restaurantId}
+            trigger={
+              <Button type="button" size="sm" variant="outline">
+                <Upload className="size-3.5" />
+                Importer
+              </Button>
+            }
+          />
+          <ClientFormDialog
+            restaurantId={restaurantId}
+            mode="create"
+            trigger={
+              <Button type="button" size="sm">
+                <UserPlus className="size-3.5" />
+                Ajouter un client
+              </Button>
+            }
+          />
+        </div>
       </div>
 
       {/* Table / Liste */}

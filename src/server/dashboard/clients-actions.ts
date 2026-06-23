@@ -273,6 +273,149 @@ export async function updateClient(input: unknown): Promise<ActionResult> {
   }
 }
 
+// ============================================================
+// IMPORT EN MASSE (CSV)
+// ============================================================
+
+const importRowSchema = z.object({
+  prenom: z.string().max(100).optional(),
+  nom: z.string().max(100).optional(),
+  telephone: z.string().max(40),
+  email: z.string().max(255).optional(),
+  anniversaire: z.string().max(40).optional(),
+  optInSms: z.boolean().optional(),
+});
+
+const importClientsSchema = z.object({
+  restaurantId: z.string(),
+  rows: z.array(importRowSchema).min(1).max(2000),
+});
+
+/**
+ * Importe une liste de clients (parsée depuis un CSV côté client).
+ *
+ * - Téléphone obligatoire et normalisé en E.164 (les lignes invalides sont
+ *   ignorées et rapportées).
+ * - Email invalide → vidé (on n'échoue pas la ligne pour autant).
+ * - Dédoublonnage sur le téléphone (numéros déjà présents = ignorés).
+ * - Source = "manual" (comme un ajout à la main → exploitable en SMS).
+ */
+export async function importClients(
+  input: unknown,
+): Promise<ActionResult<{ imported: number; skipped: number; errors: string[] }>> {
+  await ensureRuntimeSchema();
+  const parsed = importClientsSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error:
+        parsed.error.issues[0]?.message ??
+        "Fichier invalide (vérifie le format du modèle).",
+    };
+  }
+
+  let bigId: bigint;
+  try {
+    bigId = BigInt(parsed.data.restaurantId);
+  } catch {
+    return { ok: false, error: "Identifiant restaurant invalide" };
+  }
+
+  const owned = await assertRestaurantOwner(bigId);
+  if (!owned) return { ok: false, error: "Accès refusé" };
+
+  // Téléphones déjà en base → dédoublonnage.
+  const existingRows = (await prisma.$queryRawUnsafe(
+    `SELECT telephone FROM base_clients WHERE restaurant_id = $1 AND telephone IS NOT NULL`,
+    bigId,
+  )) as Array<{ telephone: string | null }>;
+  const seen = new Set(existingRows.map((r) => r.telephone).filter(Boolean));
+
+  const toInsert: Array<{
+    restaurantId: bigint;
+    prenom: string | null;
+    nom: string | null;
+    email: string | null;
+    telephone: string;
+    anniversaire: Date | null;
+    source: string;
+    optInSms: boolean;
+  }> = [];
+  const errors: string[] = [];
+  let skipped = 0;
+
+  parsed.data.rows.forEach((row, i) => {
+    const ligne = i + 2; // +1 (index→1-based) +1 (ligne d'en-tête CSV)
+    const tel = (row.telephone ?? "").trim();
+    if (!tel) {
+      skipped += 1;
+      if (errors.length < 10) errors.push(`Ligne ${ligne} : téléphone manquant.`);
+      return;
+    }
+    const normalized = normalizeInternationalPhone(tel);
+    if (!normalized.ok) {
+      skipped += 1;
+      if (errors.length < 10)
+        errors.push(`Ligne ${ligne} : ${normalized.error} (« ${tel} »).`);
+      return;
+    }
+    if (seen.has(normalized.value)) {
+      skipped += 1; // déjà en base ou doublon dans le fichier
+      return;
+    }
+    seen.add(normalized.value);
+
+    // Email : on garde s'il est plausible, sinon on vide (sans bloquer).
+    const emailRaw = (row.email ?? "").trim();
+    const email = /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(emailRaw) ? emailRaw : null;
+
+    // Anniversaire : accepte YYYY-MM-DD ou DD/MM/YYYY.
+    let anniversaire: Date | null = null;
+    const anniRaw = (row.anniversaire ?? "").trim();
+    if (anniRaw) {
+      const fr = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(anniRaw);
+      const iso = fr ? `${fr[3]}-${fr[2]}-${fr[1]}` : anniRaw;
+      const d = new Date(iso);
+      if (!Number.isNaN(d.getTime())) anniversaire = d;
+    }
+
+    toInsert.push({
+      restaurantId: bigId,
+      prenom: (row.prenom ?? "").trim() || null,
+      nom: (row.nom ?? "").trim() || null,
+      email,
+      telephone: normalized.value,
+      anniversaire,
+      source: "manual",
+      optInSms: row.optInSms ?? true,
+    });
+  });
+
+  if (toInsert.length === 0) {
+    return {
+      ok: false,
+      error:
+        errors.length > 0
+          ? errors.join(" ")
+          : "Aucun nouveau client à importer (tous déjà présents ou invalides).",
+    };
+  }
+
+  try {
+    await prisma.baseClient.createMany({ data: toInsert });
+  } catch (err) {
+    console.error("[clients] importClients failed:", err);
+    return { ok: false, error: "Import échoué côté serveur." };
+  }
+
+  revalidatePath("/dashboard/clients");
+  revalidatePath("/dashboard/sms");
+  return {
+    ok: true,
+    data: { imported: toInsert.length, skipped, errors },
+  };
+}
+
 export async function deleteClient(input: {
   restaurantId: string;
   id: string;
