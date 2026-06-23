@@ -6,6 +6,22 @@ import { revalidateTag, revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { SUPPORTED_LANGS } from "@/lib/langs";
+import { normalizeInternationalPhone } from "@/lib/brevo";
+
+/** Domaines d'emails jetables/temporaires les plus courants → refusés. */
+const DISPOSABLE_EMAIL_DOMAINS = new Set([
+  "mailinator.com", "yopmail.com", "yopmail.fr", "yopmail.net",
+  "guerrillamail.com", "guerrillamail.info", "sharklasers.com",
+  "10minutemail.com", "10minutemail.net", "temp-mail.org", "tempmail.com",
+  "tempmailo.com", "trashmail.com", "getnada.com", "nada.email",
+  "throwawaymail.com", "maildrop.cc", "mailnesia.com", "dispostable.com",
+  "fakeinbox.com", "jetable.org", "tempinbox.com", "mohmal.com",
+  "emailondeck.com", "spam4.me", "mailcatch.com", "moakt.com", "tmail.ws",
+  "discard.email", "mailsac.com", "burnermail.io", "tmpmail.org",
+]);
+
+/** Nombre max de participations par IP sur 24h (anti-abus depuis un réseau). */
+const MAX_PER_IP_24H = 5;
 
 /**
  * Server action pour enregistrer une participation au jeu roulette.
@@ -76,6 +92,27 @@ export async function submitParticipation(
   const email = data.email.toLowerCase();
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
+  // 0a. VALIDITÉ du téléphone : doit être un vrai numéro (FR ou international).
+  //     On le normalise (E.164, chiffres seuls) pour le stockage + la dédup.
+  const phoneCheck = normalizeInternationalPhone(data.telephone);
+  if (!phoneCheck.ok) {
+    return {
+      ok: false,
+      error: "Numéro de téléphone invalide (ex : 06 12 34 56 78 ou +33 6 12 …).",
+    };
+  }
+  const phone = phoneCheck.value; // chiffres E.164, ex: 33612345678
+
+  // 0b. VALIDITÉ de l'email : format OK (zod) + on refuse les emails jetables.
+  const emailDomain = email.split("@")[1] ?? "";
+  if (DISPOSABLE_EMAIL_DOMAINS.has(emailDomain)) {
+    return {
+      ok: false,
+      error:
+        "Merci d'utiliser une adresse email permanente (les emails jetables ne sont pas acceptés).",
+    };
+  }
+
   // 1. Anti-bot : rafale max 5 participations / IP / 60s (bloque les scripts
   //    qui spamment l'action, sans gêner une tablée qui joue chacun son tour).
   if (redis && ip) {
@@ -94,7 +131,24 @@ export async function submitParticipation(
     }
   }
 
-  // 2. 1 participation par EMAIL / jeu / 24h.
+  // 2. Plafond : max MAX_PER_IP_24H participations par IP / jeu / 24h.
+  //    ⚠️ En WiFi partagé (resto), plusieurs clients ont la même IP → ce
+  //    plafond peut bloquer des joueurs légitimes au-delà du seuil. La dédup
+  //    email + téléphone (numéro VALIDE) reste le garde-fou principal.
+  if (ip) {
+    const ipCount = await prisma.jeuParticipation.count({
+      where: { jeuId: jeuBigId, ip, participatedAt: { gte: since } },
+    });
+    if (ipCount >= MAX_PER_IP_24H) {
+      return {
+        ok: false,
+        error:
+          "Trop de participations depuis ce réseau aujourd'hui. Réessaie demain.",
+      };
+    }
+  }
+
+  // 3. 1 participation par EMAIL / jeu / 24h.
   const dupEmail = await prisma.jeuParticipation.findFirst({
     where: { jeuId: jeuBigId, email, participatedAt: { gte: since } },
     select: { id: true },
@@ -103,10 +157,9 @@ export async function submitParticipation(
     return { ok: false, error: "Vous avez déjà participé. Réessayez demain !" };
   }
 
-  // 3. 1 participation par TÉLÉPHONE (chiffres seuls → insensible au format) /
-  //    jeu / 24h. Un numéro est bien plus dur à multiplier qu'un email jetable.
-  const phoneDigits = data.telephone.replace(/\D/g, "");
-  if (phoneDigits.length >= 5) {
+  // 4. 1 participation par TÉLÉPHONE (chiffres seuls → insensible au format) /
+  //    jeu / 24h. Un numéro VALIDE est bien plus dur à multiplier qu'un email.
+  if (phone.length >= 5) {
     try {
       const dupPhone = await prisma.$queryRawUnsafe<Array<{ id: bigint }>>(
         `SELECT id FROM "jeu_participations"
@@ -115,7 +168,7 @@ export async function submitParticipation(
            AND participated_at >= $3
          LIMIT 1`,
         jeuBigId,
-        phoneDigits,
+        phone,
         since,
       );
       if (dupPhone.length > 0) {
@@ -156,7 +209,7 @@ export async function submitParticipation(
       prenom: data.prenom,
       nom: data.nom,
       naissance: data.naissance || null,
-      telephone: data.telephone,
+      telephone: phone,
       email,
       actionSociale: data.actionSociale,
       ip,
@@ -171,8 +224,8 @@ export async function submitParticipation(
       update: {},
       create: {
         restaurantId: jeu.restaurantId,
-        email: data.email.toLowerCase(),
-        telephone: data.telephone,
+        email,
+        telephone: phone,
         prenom: data.prenom,
         nom: data.nom,
         anniversaire: frenchDateToDate(data.naissance),
