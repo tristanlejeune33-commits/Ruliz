@@ -49,8 +49,8 @@ const schema = z.object({
         probabilite: z.number().int().min(1).max(100),
         /** URL d'image/logo du lot (uploaded via R2 ou collé). Vide = pas de logo. */
         imageUrl: z.string().max(500).optional().or(z.literal("")),
-        /** Stock de ce lot (0 = illimité). */
-        maxWins: z.number().int().min(0).max(1_000_000),
+        /** Stock de ce lot. Vide/absent = illimité ; 0 = épuisé (masqué) ; N = N gains. */
+        maxWins: z.number().int().min(0).max(1_000_000).optional(),
       }),
     )
     .min(1)
@@ -84,13 +84,14 @@ const DEFAULT_LOTS: Array<{
   label: string;
   probabilite: number;
   imageUrl?: string;
-  maxWins: number;
+  maxWins?: number;
 }> = [
-  { label: "☕ Café offert", probabilite: 40, imageUrl: "", maxWins: 0 },
-  { label: "🍰 Dessert offert", probabilite: 25, imageUrl: "", maxWins: 0 },
-  { label: "🍹 Apéritif maison", probabilite: 20, imageUrl: "", maxWins: 0 },
-  { label: "💸 -10% sur ta prochaine note", probabilite: 10, imageUrl: "", maxWins: 0 },
-  { label: "🎁 Menu offert pour 2", probabilite: 5, imageUrl: "", maxWins: 0 },
+  // Pas de maxWins → stock illimité par défaut.
+  { label: "☕ Café offert", probabilite: 40, imageUrl: "" },
+  { label: "🍰 Dessert offert", probabilite: 25, imageUrl: "" },
+  { label: "🍹 Apéritif maison", probabilite: 20, imageUrl: "" },
+  { label: "💸 -10% sur ta prochaine note", probabilite: 10, imageUrl: "" },
+  { label: "🎁 Menu offert pour 2", probabilite: 5, imageUrl: "" },
 ];
 
 /**
@@ -130,7 +131,8 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                   label: l.label,
                   probabilite: l.probabilite,
                   imageUrl: l.imageUrl ?? "",
-                  maxWins: l.maxWins ?? 0,
+                  // undefined = illimité (on ne force plus 0).
+                  maxWins: l.maxWins,
                 }))
               : DEFAULT_LOTS,
         }
@@ -442,8 +444,10 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                   La somme des probabilités doit faire <strong>100%</strong>.
                   Tu peux mettre des emojis dans le label (ex : « 🎁 Café offert »).
                   La colonne <strong>Stock</strong> limite le nombre de fois où
-                  un lot peut être gagné (<strong>0 = illimité</strong>) : une
-                  fois épuisé, ce lot n&apos;est plus tiré. Maximum 12 lots.
+                  un lot peut être gagné : <strong>vide = illimité</strong>,{" "}
+                  <strong>0 = épuisé</strong> (masqué), <strong>N</strong> = N
+                  gains. Une fois épuisé, le lot n&apos;est plus tiré ni affiché.
+                  Maximum 12 lots.
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -531,14 +535,18 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                             <Input
                               type="number"
                               min={0}
-                              value={field.value}
-                              onChange={(e) =>
+                              value={field.value ?? ""}
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                // Vide = illimité (undefined). 0 = épuisé.
                                 field.onChange(
-                                  Math.max(0, Number(e.target.value) || 0),
-                                )
-                              }
-                              placeholder="Stock"
-                              title="Stock de ce lot (0 = illimité)"
+                                  v === ""
+                                    ? undefined
+                                    : Math.max(0, Math.floor(Number(v) || 0)),
+                                );
+                              }}
+                              placeholder="∞"
+                              title="Stock de ce lot — vide = illimité, 0 = épuisé, N = N gains"
                             />
                           </FormControl>
                           <FormMessage />
@@ -628,7 +636,7 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
               variant="ghost"
               size="sm"
               onClick={() =>
-                append({ label: "", probabilite: 5, imageUrl: "", maxWins: 0 })
+                append({ label: "", probabilite: 5, imageUrl: "" })
               }
               disabled={fields.length >= 12}
               className="mt-3"

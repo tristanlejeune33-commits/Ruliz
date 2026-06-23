@@ -632,6 +632,46 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "reservation_url" TEXT;
     `);
 
+    // === Migration one-shot : sémantique du stock par lot (jeux) ===
+    // Avant : maxWins = 0 signifiait « illimité ». Désormais : vide/absent =
+    // illimité, et 0 = épuisé (lot masqué). Pour ne pas faire disparaître les
+    // lots existants enregistrés à 0 (= illimité sous l'ancienne règle), on
+    // retire UNE SEULE FOIS la clé maxWins des lots où elle vaut 0.
+    // Garde-fou via _ruliz_migrations → ne s'exécute jamais deux fois (sinon
+    // un 0 explicite "épuisé" futur serait effacé).
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "_ruliz_migrations" (
+        "name" TEXT PRIMARY KEY,
+        "applied_at" TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+    `);
+    const migName = "maxwins_0_to_unlimited_v1";
+    const alreadyDone = (await prisma.$queryRawUnsafe(
+      `SELECT 1 FROM "_ruliz_migrations" WHERE "name" = $1 LIMIT 1`,
+      migName,
+    )) as Array<unknown>;
+    if (alreadyDone.length === 0) {
+      await prisma.$executeRawUnsafe(`
+        UPDATE "jeux"
+        SET "config_json" = jsonb_set(
+          "config_json",
+          '{lots}',
+          COALESCE((
+            SELECT jsonb_agg(
+              CASE WHEN (elem->>'maxWins') = '0' THEN elem - 'maxWins' ELSE elem END
+            )
+            FROM jsonb_array_elements("config_json"->'lots') AS elem
+          ), '[]'::jsonb)
+        )
+        WHERE jsonb_typeof("config_json"->'lots') = 'array';
+      `);
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "_ruliz_migrations" ("name") VALUES ($1)
+         ON CONFLICT ("name") DO NOTHING`,
+        migName,
+      );
+    }
+
     // === Panel auto-translate cache ===
     // Cache à vie des traductions du panel client/admin (sidebar, pages,
     // formulaires, etc.). Quand un user change la lang vers EN/ES/etc., le

@@ -267,8 +267,11 @@ export async function getPublicMenu(
   // Un lot dont le quota (maxWins) est atteint est retiré de la roue (sinon le
   // client verrait — et pourrait gagner — un lot épuisé). Si tous les lots sont
   // épuisés, la roulette n'est pas affichée du tout.
+  // Sémantique stock : maxWins absent/null = illimité ; 0 = épuisé (masqué) ;
+  // N = N gains max. On ne déclenche le comptage que si au moins un lot a un
+  // stock défini.
   let availableLots = jeuConfig?.lots ?? [];
-  if (jeuRow && availableLots.some((l) => (l.maxWins ?? 0) > 0)) {
+  if (jeuRow && availableLots.some((l) => l.maxWins != null)) {
     const counts = await prisma.jeuParticipation.groupBy({
       by: ["lotGagne"],
       where: { jeuId: jeuRow.id },
@@ -279,9 +282,8 @@ export async function getPublicMenu(
       if (c.lotGagne) wonByLabel.set(c.lotGagne, c._count._all);
     }
     availableLots = availableLots.filter((l) => {
-      const max = l.maxWins ?? 0;
-      if (max <= 0) return true; // illimité
-      return (wonByLabel.get(l.label) ?? 0) < max;
+      if (l.maxWins == null) return true; // illimité
+      return (wonByLabel.get(l.label) ?? 0) < l.maxWins; // 0 → toujours exclu
     });
   }
 

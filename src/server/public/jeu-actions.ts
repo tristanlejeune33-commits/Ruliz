@@ -86,10 +86,10 @@ export async function submitParticipation(
   const config = (jeu.configJson as unknown as ConfigShape | null) ?? null;
   const lots = config?.lots ?? [];
 
-  // Stock PAR LOT : on exclut du tirage les lots dont le quota (maxWins) est
-  // atteint. Les autres restent gagnables. Si tout est épuisé → jeu terminé.
+  // Stock PAR LOT : maxWins absent/null = illimité ; 0 = épuisé ; N = N gains.
+  // On exclut du tirage les lots épuisés ; si tout est épuisé → jeu terminé.
   let available = lots;
-  if (lots.some((l) => (l.maxWins ?? 0) > 0)) {
+  if (lots.some((l) => l.maxWins != null)) {
     const counts = await prisma.jeuParticipation.groupBy({
       by: ["lotGagne"],
       where: { jeuId: jeuBigId },
@@ -100,9 +100,8 @@ export async function submitParticipation(
       if (c.lotGagne) wonByLabel.set(c.lotGagne, c._count._all);
     }
     available = lots.filter((l) => {
-      const max = l.maxWins ?? 0;
-      if (max <= 0) return true;
-      return (wonByLabel.get(l.label) ?? 0) < max;
+      if (l.maxWins == null) return true; // illimité
+      return (wonByLabel.get(l.label) ?? 0) < l.maxWins; // 0 → toujours exclu
     });
     if (available.length === 0) {
       return {
@@ -156,7 +155,7 @@ export async function submitParticipation(
 
   // Stock limité → on purge le cache de la carte pour que la roue retire
   // immédiatement un lot devenu épuisé (sinon visible jusqu'à 60s via le cache).
-  if (lots.some((l) => (l.maxWins ?? 0) > 0)) {
+  if (lots.some((l) => l.maxWins != null)) {
     revalidateTag("public-menu");
     if (redis) {
       const keys = SUPPORTED_LANGS.map(
