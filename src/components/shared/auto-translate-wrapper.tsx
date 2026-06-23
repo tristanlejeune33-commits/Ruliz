@@ -2,7 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import { usePanelLang } from "./panel-lang-context";
-import { translatePanelBatch } from "@/server/dashboard/translate-panel-actions";
+import {
+  getPanelTranslations,
+  translatePanelBatch,
+} from "@/server/dashboard/translate-panel-actions";
 
 // v4 : bump après le fix « le dico preloaded d'une langue (ex: PT) était
 // appliqué — et caché — pour les AUTRES langues lors d'un changement en place »
@@ -70,6 +73,12 @@ export function AutoTranslateWrapper({
   useEffect(() => {
     preloadedRef.current = preloaded;
     preloadedLangRef.current = preloadedLang;
+  });
+  // Cache du dico complet d'une langue chargé en UNE requête (getPanelTranslations)
+  // → évite N appels serveur chaîne par chaîne au changement de langue.
+  const serverDictRef = useRef<{ lang: string; dict: Record<string, string> }>({
+    lang: "",
+    dict: {},
   });
 
   useEffect(() => {
@@ -172,7 +181,22 @@ export function AutoTranslateWrapper({
 
       if (textNodesByText.size === 0) return;
 
-      // 2) Check localStorage cache + collect missing
+      // Charge TOUT le cache DB de la langue en UNE seule requête (rapide), au
+      // lieu de N appels chaîne par chaîne. Mémorisé tant qu'on reste sur la
+      // même langue → un changement de drapeau devient quasi-instantané.
+      if (serverDictRef.current.lang !== lang) {
+        try {
+          const dict = await getPanelTranslations(lang);
+          if (cancelled) return;
+          serverDictRef.current = { lang, dict };
+        } catch {
+          serverDictRef.current = { lang, dict: {} };
+        }
+      }
+      const serverDict =
+        serverDictRef.current.lang === lang ? serverDictRef.current.dict : {};
+
+      // 2) Check caches (injecté serveur > dico langue > localStorage) + collecte
       const fromCache: Record<string, string> = {};
       const toFetch: string[] = [];
 
@@ -185,6 +209,20 @@ export function AutoTranslateWrapper({
           fromCache[text] = pre;
           try {
             localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${lang}:${text}`, pre);
+          } catch {
+            // storage plein → pas grave
+          }
+          continue;
+        }
+        // 0bis) Dico complet de la langue chargé en une requête.
+        const fromServer = serverDict[text];
+        if (fromServer) {
+          fromCache[text] = fromServer;
+          try {
+            localStorage.setItem(
+              `${LOCAL_STORAGE_PREFIX}${lang}:${text}`,
+              fromServer,
+            );
           } catch {
             // storage plein → pas grave
           }

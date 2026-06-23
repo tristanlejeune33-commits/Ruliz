@@ -44,7 +44,7 @@ export default async function AdminLayout({
     panelLang === "fr" ? {} : await getPanelTranslations(panelLang);
 
   return (
-    <PanelLangProvider initialLang={panelLang}>
+    <PanelLangProvider initialLang={panelLang} refreshOnChange={false}>
       <AutoTranslateWrapper preloaded={preloadedTranslations} preloadedLang={panelLang}>
         <AppShell
           user={{ name: session.user.name, email: session.user.email }}

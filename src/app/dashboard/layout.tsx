@@ -199,7 +199,7 @@ export default async function DashboardLayout({
       : { name: session.user.name, email: session.user.email };
 
   return (
-    <PanelLangProvider initialLang={panelLang}>
+    <PanelLangProvider initialLang={panelLang} refreshOnChange={false}>
      <AutoTranslateWrapper preloaded={preloadedTranslations} preloadedLang={panelLang}>
       {acting?.isImpersonating && acting.impersonatedUser && (
         <ImpersonationBanner
