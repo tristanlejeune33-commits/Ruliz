@@ -45,7 +45,7 @@ export default async function AdminLayout({
 
   return (
     <PanelLangProvider initialLang={panelLang}>
-      <AutoTranslateWrapper preloaded={preloadedTranslations}>
+      <AutoTranslateWrapper preloaded={preloadedTranslations} preloadedLang={panelLang}>
         <AppShell
           user={{ name: session.user.name, email: session.user.email }}
           scope="admin"

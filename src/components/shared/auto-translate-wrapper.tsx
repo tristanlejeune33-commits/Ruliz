@@ -4,10 +4,11 @@ import { useEffect, useRef } from "react";
 import { usePanelLang } from "./panel-lang-context";
 import { translatePanelBatch } from "@/server/dashboard/translate-panel-actions";
 
-// v3 : bump après le fix « réponse conversationnelle du modèle cachée à la
-// place d'une traduction » (ex: "I appreciate your message, but…" affiché sur
-// un nom de resto). Invalide les caches client pollués des versions <= v2.
-const LOCAL_STORAGE_PREFIX = "ruliz_t_v3_";
+// v4 : bump après le fix « le dico preloaded d'une langue (ex: PT) était
+// appliqué — et caché — pour les AUTRES langues lors d'un changement en place »
+// (cause de « portugais partout » + « ça ne traduit plus »). Invalide les
+// caches client pollués des versions <= v3.
+const LOCAL_STORAGE_PREFIX = "ruliz_t_v4_";
 
 /**
  * Wrapper qui auto-traduit TOUS les text nodes du DOM enfant.
@@ -46,21 +47,29 @@ let isApplyingTranslations = false;
 export function AutoTranslateWrapper({
   children,
   preloaded = {},
+  preloadedLang = "fr",
 }: {
   children: React.ReactNode;
   /** Dictionnaire {sourceFR: traduit} injecté par le serveur (cache DB) pour
-   *  la langue courante → appliqué sans aller-retour réseau. */
+   *  la langue `preloadedLang` → appliqué sans aller-retour réseau. */
   preloaded?: Record<string, string>;
+  /** Langue pour laquelle `preloaded` a été calculé côté serveur. On ne
+   *  l'applique QUE si elle correspond à la langue courante (sinon, lors d'un
+   *  changement de langue en place, on appliquerait — et cacherait — le dico
+   *  de l'ancienne langue pour la nouvelle). */
+  preloadedLang?: string;
 }) {
   const { lang } = usePanelLang();
   const containerRef = useRef<HTMLDivElement>(null);
   // Map node → original FR text (pour retraduire si on rebascule en FR)
   const originalTextsRef = useRef<WeakMap<Text, string>>(new WeakMap());
-  // Réf au dico injecté (évite de remettre l'effet en deps → pas de re-run).
+  // Réfs au dico injecté + sa langue (évite de remettre l'effet en deps).
   // Mis à jour dans un effet (interdit d'écrire une ref pendant le render).
   const preloadedRef = useRef(preloaded);
+  const preloadedLangRef = useRef(preloadedLang);
   useEffect(() => {
     preloadedRef.current = preloaded;
+    preloadedLangRef.current = preloadedLang;
   });
 
   useEffect(() => {
@@ -167,9 +176,11 @@ export function AutoTranslateWrapper({
       const fromCache: Record<string, string> = {};
       const toFetch: string[] = [];
 
+      // N'utilise le dico injecté QUE s'il correspond à la langue courante.
+      const usePreloaded = preloadedLangRef.current === lang;
       for (const text of textNodesByText.keys()) {
         // 0) Dictionnaire injecté par le serveur (instantané, pas de réseau).
-        const pre = preloadedRef.current[text];
+        const pre = usePreloaded ? preloadedRef.current[text] : undefined;
         if (pre) {
           fromCache[text] = pre;
           try {

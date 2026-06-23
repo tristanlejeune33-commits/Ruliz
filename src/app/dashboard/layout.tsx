@@ -200,7 +200,7 @@ export default async function DashboardLayout({
 
   return (
     <PanelLangProvider initialLang={panelLang}>
-     <AutoTranslateWrapper preloaded={preloadedTranslations}>
+     <AutoTranslateWrapper preloaded={preloadedTranslations} preloadedLang={panelLang}>
       {acting?.isImpersonating && acting.impersonatedUser && (
         <ImpersonationBanner
           targetName={impersonatedTargetName ?? acting.impersonatedUser.email}
