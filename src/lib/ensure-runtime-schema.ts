@@ -653,6 +653,14 @@ export async function ensureRuntimeSchema(): Promise<void> {
       DELETE FROM "panel_translations_cache"
       WHERE LENGTH("translated") > LENGTH("source_text") * 3 + 40;
     `);
+    // Purge des noms de langues mis en cache par erreur : un sélecteur de langue
+    // affiche toujours le nom NATIF (« Deutsch », « Français »…), jamais traduit.
+    // Le modèle les avait traduits (ex: tout en « Português ») → on nettoie pour
+    // que l'injection serveur ne les repropose plus.
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM "panel_translations_cache"
+      WHERE "source_text" IN ('Français', 'English', 'Español', 'Deutsch', 'Italiano', 'Português', '中文');
+    `);
 
     // === QR codes — libellé nommable (« Table 5 », « Vitrine »…) ===
     // Permet au resto d'identifier chaque QR et de l'imprimer avec son nom.

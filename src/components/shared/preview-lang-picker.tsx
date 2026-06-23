@@ -84,7 +84,11 @@ export function PreviewLangPicker() {
               rounded
               className="mr-2"
             />
-            {l.name}
+            {/* Nom natif de la langue : JAMAIS auto-traduit (un sélecteur de
+                langue affiche toujours « Deutsch », « Français »… tels quels).
+                Sinon l'AutoTranslateWrapper les traduit tous (ex: tout en
+                « Português » quand le panel est en PT). */}
+            <span data-no-translate>{l.name}</span>
             {lang === l.code && (
               <span className="ml-auto text-xs text-[var(--text-muted)]">
                 ●
