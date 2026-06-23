@@ -198,6 +198,33 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                 />
                 <FormField
                   control={form.control}
+                  name="showName"
+                  render={({ field }) => (
+                    <FormItem className="flex items-center justify-between gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-4 md:col-span-2">
+                      <div className="flex items-start gap-3">
+                        <Type className="mt-0.5 size-5 shrink-0 text-[var(--text-muted)]" />
+                        <div className="space-y-1">
+                          <FormLabel className="cursor-pointer">
+                            Afficher le nom sur la carte digitale
+                          </FormLabel>
+                          <p className="text-xs text-[var(--text-muted)]">
+                            Le nom s&apos;affiche en grand sous le logo. Désactive
+                            si ton logo contient déjà le nom. Activé par défaut.
+                          </p>
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
                   name="description"
                   render={({ field }) => (
                     <FormItem className="md:col-span-2">
@@ -634,35 +661,6 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                           <p className="text-xs text-[var(--text-muted)]">
                             Nécessite une adresse renseignée dans l&apos;onglet
                             Infos. Désactivé par défaut.
-                          </p>
-                        </div>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="showName"
-                  render={({ field }) => (
-                    <FormItem className="mt-3 flex items-center justify-between gap-4 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/50 p-4">
-                      <div className="flex items-start gap-3">
-                        <Type className="mt-0.5 size-5 shrink-0 text-[var(--text-muted)]" />
-                        <div className="space-y-1">
-                          <FormLabel className="cursor-pointer">
-                            Afficher le nom du restaurant
-                          </FormLabel>
-                          <p className="text-xs text-[var(--text-muted)]">
-                            Le nom s&apos;affiche en grand sous le logo sur la
-                            carte digitale. Désactive si ton logo contient déjà
-                            le nom. Activé par défaut.
                           </p>
                         </div>
                       </div>
