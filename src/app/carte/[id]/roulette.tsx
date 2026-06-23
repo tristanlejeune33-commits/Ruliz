@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { motion, AnimatePresence, useAnimationControls } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Loader2, Star, X } from "lucide-react";
 import { toast } from "sonner";
 import confetti from "canvas-confetti";
@@ -901,9 +901,6 @@ function WheelStep({
     "idle" | "spinning" | "landing" | "stopped"
   >("idle");
   const [finalIdx, setFinalIdx] = useState<number | null>(null);
-  // Contrôle IMPÉRATIF de l'animation : insensible aux re-renders (sinon la
-  // boucle se réinitialisait à chaque changement d'état → roue figée/blanche).
-  const controls = useAnimationControls();
 
   // Hauteur d'un slot doit être en sync avec la hauteur réelle
   const SLOT_HEIGHT = 80; // px
@@ -922,45 +919,27 @@ function WheelStep({
 
   const handleSpin = async () => {
     if (phase !== "idle" || submitting) return;
-    // 1. La roue tourne EN CONTINU immédiatement (boucle impérative), pendant
-    //    que le serveur tire le lot → aucun temps mort visuel.
+    // 1. La roue tourne EN CONTINU immédiatement (boucle déclarative en valeur
+    //    simple → NON réinitialisée par les re-renders), pendant que le serveur
+    //    tire le lot. Aucun temps mort visuel.
     setPhase("spinning");
-    const period = lots.length * SLOT_HEIGHT;
-    void controls.start({
-      y: [0, -period],
-      transition: {
-        duration: Math.max(0.5, lots.length * 0.14),
-        ease: "linear",
-        repeat: Infinity,
-      },
-    });
-
     const wonLabel = await onSpin();
     if (wonLabel == null) {
       // Erreur (jeu terminé, déjà joué…) → le parent a basculé sur "error".
-      controls.stop();
-      controls.set({ y: 0 });
       setPhase("idle");
       return;
     }
-
-    // 2. On connaît le lot gagné → décélération qui s'arrête PILE dessus.
+    // 2. On connaît le lot gagné → la roue décélère et s'arrête PILE dessus.
     let idx = lots.findIndex((l) => l.label === wonLabel);
     if (idx < 0) idx = 0; // sécurité (lot absent de la liste cachée)
-    const reelIdx = (REPETITIONS - 1) * lots.length + idx;
-    setFinalIdx(reelIdx);
+    setFinalIdx((REPETITIONS - 1) * lots.length + idx);
     setPhase("landing");
-    const target =
-      -(reelIdx * SLOT_HEIGHT) + ((VISIBLE_SLOTS - 1) / 2) * SLOT_HEIGHT;
-    // Interrompt la boucle et anime depuis la position courante jusqu'au lot.
-    await controls.start({
-      y: target,
-      transition: { duration: 3, ease: [0.16, 0.85, 0.32, 1] },
-    });
-
-    // 3. Arrêt → on révèle la victoire (même lot).
-    setPhase("stopped");
-    onResult();
+    // 3. Fin de la décélération (timeout garanti, indépendant de l'animation)
+    //    → on révèle la victoire (même lot).
+    setTimeout(() => {
+      setPhase("stopped");
+      onResult();
+    }, 3100);
   };
 
   if (lots.length === 0) {
@@ -971,9 +950,14 @@ function WheelStep({
     );
   }
 
-  // Hauteur de la fenêtre du slot (le translate-Y final est calculé dans
-  // handleSpin et appliqué via `controls`).
   const reelHeight = SLOT_HEIGHT * VISIBLE_SLOTS;
+  // Période d'un cycle complet de lots (pour la boucle de défilement).
+  const period = lots.length * SLOT_HEIGHT;
+  // Translate-Y final : centre le lot gagné (finalIdx) dans la fenêtre.
+  const targetY =
+    finalIdx !== null
+      ? -(finalIdx * SLOT_HEIGHT) + ((VISIBLE_SLOTS - 1) / 2) * SLOT_HEIGHT
+      : 0;
 
   return (
     <div className="relative flex flex-col items-center gap-5 py-4">
@@ -1017,10 +1001,29 @@ function WheelStep({
             aria-hidden
           />
 
-          {/* Le reel qui scrolle — animation pilotée impérativement (controls). */}
+          {/* Le reel qui scrolle. Boucle en VALEUR SIMPLE (y: -period) répétée
+              → Framer compare les valeurs, donc un re-render (ex: submitting)
+              ne réinitialise PAS l'animation. Puis décélération vers targetY. */}
           <motion.div
-            initial={{ y: 0 }}
-            animate={controls}
+            animate={{
+              y:
+                phase === "spinning"
+                  ? -period
+                  : phase === "landing" || phase === "stopped"
+                    ? targetY
+                    : 0,
+            }}
+            transition={
+              phase === "spinning"
+                ? {
+                    duration: Math.max(0.5, lots.length * 0.14),
+                    ease: "linear",
+                    repeat: Infinity,
+                  }
+                : phase === "landing"
+                  ? { duration: 3, ease: [0.16, 0.85, 0.32, 1] }
+                  : { duration: 0 }
+            }
             className="absolute inset-x-0 top-0 flex flex-col"
           >
             {reelItems.map((lot, i) => {
