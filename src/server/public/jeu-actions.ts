@@ -64,20 +64,69 @@ export async function submitParticipation(
     return { ok: false, error: "Ce jeu n'est plus actif." };
   }
 
-  // Anti-spam : 1 participation par email par jeu sur 24h
-  const recent = await prisma.jeuParticipation.findFirst({
-    where: {
-      jeuId: jeuBigId,
-      email: data.email.toLowerCase(),
-      participatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-    },
+  // === Anti-triche ===
+  // IP du joueur — le plus fiable d'abord (cf-connecting-ip derrière Cloudflare).
+  const headersList = await headers();
+  const ip =
+    headersList.get("cf-connecting-ip") ??
+    headersList.get("x-real-ip") ??
+    headersList.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    null;
+
+  const email = data.email.toLowerCase();
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  // 1. Anti-bot : rafale max 5 participations / IP / 60s (bloque les scripts
+  //    qui spamment l'action, sans gêner une tablée qui joue chacun son tour).
+  if (redis && ip) {
+    try {
+      const key = `roulette:rl:${jeuBigId.toString()}:${ip}`;
+      const count = await redis.incr(key);
+      if (count === 1) await redis.expire(key, 60);
+      if (count > 5) {
+        return {
+          ok: false,
+          error: "Trop de tentatives. Patiente une minute puis réessaie.",
+        };
+      }
+    } catch {
+      // Redis indispo → on ne bloque pas (best-effort)
+    }
+  }
+
+  // 2. 1 participation par EMAIL / jeu / 24h.
+  const dupEmail = await prisma.jeuParticipation.findFirst({
+    where: { jeuId: jeuBigId, email, participatedAt: { gte: since } },
     select: { id: true },
   });
-  if (recent) {
-    return {
-      ok: false,
-      error: "Vous avez déjà participé. Réessayez demain !",
-    };
+  if (dupEmail) {
+    return { ok: false, error: "Vous avez déjà participé. Réessayez demain !" };
+  }
+
+  // 3. 1 participation par TÉLÉPHONE (chiffres seuls → insensible au format) /
+  //    jeu / 24h. Un numéro est bien plus dur à multiplier qu'un email jetable.
+  const phoneDigits = data.telephone.replace(/\D/g, "");
+  if (phoneDigits.length >= 5) {
+    try {
+      const dupPhone = await prisma.$queryRawUnsafe<Array<{ id: bigint }>>(
+        `SELECT id FROM "jeu_participations"
+         WHERE jeu_id = $1
+           AND regexp_replace(COALESCE(telephone, ''), '\\D', '', 'g') = $2
+           AND participated_at >= $3
+         LIMIT 1`,
+        jeuBigId,
+        phoneDigits,
+        since,
+      );
+      if (dupPhone.length > 0) {
+        return {
+          ok: false,
+          error: "Ce numéro a déjà participé. Réessayez demain !",
+        };
+      }
+    } catch (err) {
+      console.warn("[jeu] vérif téléphone échouée:", err);
+    }
   }
 
   // Tirage du lot avec les probabilités
@@ -101,12 +150,6 @@ export async function submitParticipation(
 
   const lotGagne = pickLot(available);
 
-  // Récupère l'IP (best-effort, derrière un proxy/CDN)
-  const headersList = await headers();
-  const forwarded = headersList.get("x-forwarded-for");
-  const ip =
-    forwarded?.split(",")[0]?.trim() ?? headersList.get("x-real-ip") ?? null;
-
   await prisma.jeuParticipation.create({
     data: {
       jeuId: jeuBigId,
@@ -114,7 +157,7 @@ export async function submitParticipation(
       nom: data.nom,
       naissance: data.naissance || null,
       telephone: data.telephone,
-      email: data.email.toLowerCase(),
+      email,
       actionSociale: data.actionSociale,
       ip,
       lotGagne,
