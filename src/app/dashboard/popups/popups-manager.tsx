@@ -8,7 +8,7 @@ import { fr } from "date-fns/locale";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2, MoreHorizontal, Plus, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, Loader2, MoreHorizontal, Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { FAB } from "@/components/ui/fab";
@@ -41,6 +41,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "@/components/shared/image-uploader";
 import { Badge } from "@/components/ui/badge";
+import { popupsConflict } from "@/lib/popup-overlap";
 import {
   deletePopup,
   togglePopupActif,
@@ -199,6 +200,11 @@ export function PopupsManager({ restaurantId, popups }: PopupsManagerProps) {
         <PopupDialog
           restaurantId={restaurantId}
           popup={editing === "new" ? null : editing}
+          others={
+            editing === "new"
+              ? popups
+              : popups.filter((p) => p.id !== editing.id)
+          }
           onClose={() => setEditing(null)}
           onSaved={() => router.refresh()}
         />
@@ -244,11 +250,14 @@ const DAYS_OF_WEEK = [
 function PopupDialog({
   restaurantId,
   popup,
+  others,
   onClose,
   onSaved,
 }: {
   restaurantId: string;
   popup: PopupRow | null;
+  /** Autres pop-ups du resto (pour détecter les chevauchements). */
+  others: PopupRow[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -271,7 +280,39 @@ function PopupDialog({
     },
   });
 
+  // Détection live des chevauchements avec les autres pop-ups ACTIFS.
+  const watched = form.watch();
+  const conflicts =
+    watched.actif === false
+      ? []
+      : others
+          .filter((o) => o.actif)
+          .filter((o) =>
+            popupsConflict(
+              {
+                dateDebut: watched.dateDebut || null,
+                dateFin: watched.dateFin || null,
+                joursActifs: watched.joursActifs || null,
+                heureDebut: watched.heureDebut || null,
+                heureFin: watched.heureFin || null,
+              },
+              {
+                dateDebut: o.dateDebut,
+                dateFin: o.dateFin,
+                joursActifs: o.joursActifs,
+                heureDebut: o.heureDebut,
+                heureFin: o.heureFin,
+              },
+            ),
+          );
+
   const onSubmit = (values: Values) => {
+    if (values.actif && conflicts.length > 0) {
+      toast.error(
+        `Chevauchement avec « ${conflicts[0]?.titre ?? "un autre pop-up"} ». Un seul pop-up peut être actif à la fois — ajuste les dates, jours ou horaires.`,
+      );
+      return;
+    }
     startTransition(async () => {
       const res = await upsertPopup({
         restaurantId,
@@ -492,11 +533,27 @@ function PopupDialog({
                   </FormItem>
                 )}
               />
+              {conflicts.length > 0 && (
+                <div className="flex items-start gap-2.5 rounded-md border border-[var(--neon-danger)]/40 bg-[var(--neon-danger-soft)] p-3 text-xs text-[var(--neon-danger)]">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
+                  <div>
+                    <p className="font-semibold">
+                      Chevauchement détecté avec{" "}
+                      {conflicts.map((c) => `« ${c.titre ?? "Sans titre"} »`).join(", ")}
+                    </p>
+                    <p className="mt-0.5 opacity-90">
+                      Deux pop-ups ne peuvent pas être actifs au même moment.
+                      Ajuste les dates, les jours ou les horaires (ou désactive
+                      l&apos;autre) pour pouvoir enregistrer.
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-end gap-3">
                 <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
                   Annuler
                 </Button>
-                <Button type="submit" disabled={pending}>
+                <Button type="submit" disabled={pending || conflicts.length > 0}>
                   {pending ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
                   Enregistrer
                 </Button>

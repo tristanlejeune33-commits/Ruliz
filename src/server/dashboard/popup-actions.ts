@@ -5,6 +5,7 @@ import { z } from "zod";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
 import { prisma } from "@/lib/db";
 import { assertFeature } from "@/lib/plan-gate";
+import { popupsConflict } from "@/lib/popup-overlap";
 
 export type ActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -63,6 +64,59 @@ export async function upsertPopup(input: unknown): Promise<ActionResult<{ id: st
 
   const restaurant = await assertRestaurantOwner(restoBigId);
   if (!restaurant) return { ok: false, error: "Accès refusé" };
+
+  // Garde anti-chevauchement : un seul pop-up peut être actif à un instant
+  // donné. On refuse d'enregistrer un pop-up ACTIF dont la programmation
+  // recoupe celle d'un autre pop-up actif du même resto.
+  if (data.actif) {
+    const selfId = bigOrNull(data.id);
+    const others = await prisma.popup.findMany({
+      where: {
+        restaurantId: restoBigId,
+        actif: true,
+        ...(selfId ? { id: { not: selfId } } : {}),
+      },
+      select: {
+        titre: true,
+        dateDebut: true,
+        dateFin: true,
+        joursActifs: true,
+        heureDebut: true,
+        heureFin: true,
+      } as never,
+    });
+    const candidate = {
+      dateDebut: data.dateDebut,
+      dateFin: data.dateFin,
+      joursActifs: data.joursActifs,
+      heureDebut: emptyToNull(data.heureDebut),
+      heureFin: emptyToNull(data.heureFin),
+    };
+    const clash = (
+      others as unknown as Array<{
+        titre: string | null;
+        dateDebut: Date | null;
+        dateFin: Date | null;
+        joursActifs: number | null;
+        heureDebut: string | null;
+        heureFin: string | null;
+      }>
+    ).find((o) =>
+      popupsConflict(candidate, {
+        dateDebut: o.dateDebut ? o.dateDebut.toISOString() : null,
+        dateFin: o.dateFin ? o.dateFin.toISOString() : null,
+        joursActifs: o.joursActifs,
+        heureDebut: o.heureDebut,
+        heureFin: o.heureFin,
+      }),
+    );
+    if (clash) {
+      return {
+        ok: false,
+        error: `Ce pop-up chevauche « ${clash.titre ?? "un autre pop-up"} » sur la même période. Un seul pop-up peut être actif à la fois : ajuste les dates, jours ou horaires (ou désactive l'autre).`,
+      };
+    }
+  }
 
   const payload = {
     titre: data.titre,
