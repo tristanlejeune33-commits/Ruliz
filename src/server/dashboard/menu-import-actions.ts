@@ -543,7 +543,15 @@ export async function importMenuFromImage(input: {
     ],
     buildSystemPrompt(langLabel),
   );
-  if (!result.ok) return { ok: false, error: result.error };
+  if (!result.ok) {
+    // Un PDF complexe (scanné, multi-colonnes, vectoriel exotique) peut faire
+    // échouer l'extraction : on oriente vers le chemin le plus fiable.
+    const hint =
+      source.kind === "document"
+        ? " Si le PDF est scanné ou complexe, utilise plutôt l'onglet « Coller le texte »."
+        : "";
+    return { ok: false, error: `${result.error}${hint}` };
+  }
 
   return persistImportedMenu(restoBigId, result.data, input.remplacerExistant ?? false);
 }

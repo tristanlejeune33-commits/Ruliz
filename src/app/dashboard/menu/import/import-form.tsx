@@ -134,7 +134,8 @@ export function ImportMenuForm({
                   restaurantId={restaurantId}
                   kind="produit"
                   aspect="3/4"
-                  label="Choisir la photo du menu"
+                  label="Choisir la photo ou le PDF du menu"
+                  acceptPdf
                 />
               </CardContent>
             </Card>

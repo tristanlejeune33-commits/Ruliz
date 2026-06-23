@@ -23,6 +23,7 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const MAX_BYTES = 5 * 1024 * 1024;
+const DOC_MAX_BYTES = 8 * 1024 * 1024; // PDF (import de carte)
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -56,6 +57,9 @@ export async function POST(req: Request) {
   // l'utilisateur remplace une image existante. On la supprime après l'upload
   // de la nouvelle pour ne pas laisser de déchets dans R2 (delete on replace).
   const previousUrl = form.get("previousUrl");
+  // Le formulaire d'import de carte autorise explicitement le PDF (extraction
+  // serveur via Anthropic). Les autres uploaders restent image-only.
+  const allowDocument = form.get("allowDocument") === "1";
 
   if (!(file instanceof File)) {
     return NextResponse.json({ error: "Fichier manquant" }, { status: 400 });
@@ -66,14 +70,22 @@ export async function POST(req: Request) {
   if (!["logo", "banniere", "produit", "qrcode", "boutique"].includes(kind)) {
     return NextResponse.json({ error: "Type d'image inconnu" }, { status: 400 });
   }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json({ error: "L'image dépasse 5 MB" }, { status: 400 });
-  }
-  if (!ALLOWED_TYPES.has(file.type)) {
-    return NextResponse.json(
-      { error: `Type d'image non supporté (${file.type})` },
-      { status: 400 },
-    );
+
+  const isPdf = allowDocument && file.type === "application/pdf";
+  if (isPdf) {
+    if (file.size > DOC_MAX_BYTES) {
+      return NextResponse.json({ error: "Le PDF dépasse 8 MB" }, { status: 400 });
+    }
+  } else {
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json({ error: "L'image dépasse 5 MB" }, { status: 400 });
+    }
+    if (!ALLOWED_TYPES.has(file.type)) {
+      return NextResponse.json(
+        { error: `Type non supporté (${file.type})` },
+        { status: 400 },
+      );
+    }
   }
 
   let key: string;

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { ClipboardPaste, ImagePlus, Link2, Loader2, Upload, X } from "lucide-react";
+import { ClipboardPaste, FileText, ImagePlus, Link2, Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,9 +21,18 @@ interface ImageUploaderProps {
   label?: string;
   /** Désactive l'écoute du paste (utile si plusieurs uploaders sur la même page) */
   enablePaste?: boolean;
+  /** Autorise l'upload d'un PDF (import de carte uniquement). Pas de compression,
+   *  aperçu document, limite 8 Mo. */
+  acceptPdf?: boolean;
 }
 
 const MAX_BYTES = 5 * 1024 * 1024; // 5 MB
+const PDF_MAX_BYTES = 8 * 1024 * 1024; // 8 MB
+
+/** Vrai si l'URL pointe vers un PDF (extension, en ignorant la query). */
+function isPdfUrl(url: string): boolean {
+  return /\.pdf(?:[?#]|$)/i.test(url);
+}
 
 export function ImageUploader({
   value,
@@ -34,6 +43,7 @@ export function ImageUploader({
   className,
   label = "Choisir une image",
   enablePaste = true,
+  acceptPdf = false,
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -44,6 +54,50 @@ export function ImageUploader({
   const [pasteHint, setPasteHint] = useState(false);
 
   async function handleFile(file: File) {
+    // === Chemin PDF (import de carte) : pas de compression, upload brut ===
+    const isPdf =
+      acceptPdf &&
+      (file.type === "application/pdf" || /\.pdf$/i.test(file.name));
+    if (isPdf) {
+      if (file.size > PDF_MAX_BYTES) {
+        toast.error("Le PDF dépasse 8 MB.");
+        return;
+      }
+      setPending(true);
+      try {
+        const fd = new FormData();
+        fd.append("file", file);
+        if (restaurantId) fd.append("restaurantId", restaurantId);
+        fd.append("kind", kind);
+        fd.append("allowDocument", "1");
+        if (value) fd.append("previousUrl", value);
+
+        const res = await fetch("/api/upload-direct", {
+          method: "POST",
+          body: fd,
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok || !json?.publicUrl) {
+          const msg =
+            typeof json?.error === "string"
+              ? json.error
+              : "Upload du PDF impossible. Colle une URL à la place.";
+          toast.error(msg);
+          setShowUrlInput(true);
+          return;
+        }
+        onChange(json.publicUrl);
+        toast.success("PDF importé.");
+      } catch (err) {
+        console.error(err);
+        toast.error("Erreur réseau. Colle une URL à la place.");
+        setShowUrlInput(true);
+      } finally {
+        setPending(false);
+      }
+      return;
+    }
+
     if (file.size > MAX_BYTES) {
       toast.error("L'image dépasse 5 MB.");
       return;
@@ -169,7 +223,11 @@ export function ImageUploader({
     e.stopPropagation();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("image/")) {
+    if (
+      file &&
+      (file.type.startsWith("image/") ||
+        (acceptPdf && file.type === "application/pdf"))
+    ) {
       void handleFile(file);
     }
   };
@@ -195,7 +253,9 @@ export function ImageUploader({
       <input
         ref={inputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/avif"
+        accept={`image/jpeg,image/png,image/webp,image/avif${
+          acceptPdf ? ",application/pdf" : ""
+        }`}
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -223,7 +283,30 @@ export function ImageUploader({
         )}
         style={{ aspectRatio: aspect }}
       >
-        {value ? (
+        {value && isPdfUrl(value) ? (
+          <>
+            <div className="flex size-full flex-col items-center justify-center gap-2 px-4 text-center">
+              <FileText className="size-10 text-[var(--accent)]" />
+              <p className="text-xs font-medium text-[var(--text-primary)]">
+                PDF importé
+              </p>
+              <p className="max-w-full truncate text-[10px] text-[var(--text-muted)]">
+                Prêt à être analysé
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                onChange(null);
+                setUrlDraft("");
+              }}
+              className="absolute right-2 top-2 rounded-md bg-black/60 p-1 text-white hover:bg-black/80"
+              aria-label="Retirer le PDF"
+            >
+              <X className="size-3.5" />
+            </button>
+          </>
+        ) : value ? (
           <>
             <Image
               src={value}
