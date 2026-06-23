@@ -289,6 +289,34 @@ async function fetchMenuSource(url: string): Promise<MenuSource> {
 
 // === Appel Anthropic + parsing commun ======================================
 
+/**
+ * Extrait un objet JSON d'une réponse texte, tolérant aux préambules / fences
+ * markdown / commentaires que le modèle ajoute parfois malgré la consigne.
+ * Stratégie : parse direct → sinon strip des fences → sinon découpe du premier
+ * `{` au dernier `}`. Renvoie `undefined` si rien d'exploitable.
+ */
+function extractJson(text: string): unknown {
+  const candidates: string[] = [];
+  const trimmed = text.trim();
+  candidates.push(trimmed);
+  // Sans fences ```json ... ```
+  candidates.push(trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, ""));
+  // Sous-chaîne du premier { au dernier }
+  const first = trimmed.indexOf("{");
+  const last = trimmed.lastIndexOf("}");
+  if (first !== -1 && last > first) {
+    candidates.push(trimmed.slice(first, last + 1));
+  }
+  for (const c of candidates) {
+    try {
+      return JSON.parse(c);
+    } catch {
+      // candidat suivant
+    }
+  }
+  return undefined;
+}
+
 async function callAnthropicForMenu(
   content: Anthropic.MessageParam["content"],
   systemPrompt: string,
@@ -302,7 +330,10 @@ async function callAnthropicForMenu(
   try {
     response = await client.messages.create({
       model: VISION_MODEL,
-      max_tokens: 4096,
+      // 8192 : un menu complet (catégories + produits + allergènes/vignettes)
+      // dépasse souvent 4096 tokens → la réponse était tronquée → JSON invalide
+      // ("Réponse non-JSON"). On laisse de la marge.
+      max_tokens: 8192,
       temperature: 0,
       system: systemPrompt,
       messages: [{ role: "user", content }],
@@ -316,18 +347,32 @@ async function callAnthropicForMenu(
     };
   }
 
-  const block = response.content.find((c) => c.type === "text");
-  if (!block || block.type !== "text") {
+  // Concatène TOUS les blocs texte (au cas où la réponse est segmentée).
+  const rawText = response.content
+    .filter((c): c is Anthropic.TextBlock => c.type === "text")
+    .map((c) => c.text)
+    .join("")
+    .trim();
+  if (!rawText) {
     return { ok: false, error: "Pas de réponse texte d'Anthropic." };
   }
 
-  // Strip un éventuel fenced markdown au cas où
-  const raw = block.text.trim().replace(/^```(?:json)?\s*|\s*```$/g, "");
+  // Si la réponse a été tronquée (max_tokens atteint), le JSON est incomplet :
+  // message clair plutôt qu'un "non-JSON" cryptique.
+  if (response.stop_reason === "max_tokens") {
+    return {
+      ok: false,
+      error:
+        "Menu trop volumineux pour être analysé en une fois. Importe-le en deux fois (ex: entrées/plats puis desserts/boissons) ou utilise l'onglet « Coller le texte ».",
+    };
+  }
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
+  const parsed = extractJson(rawText);
+  if (parsed === undefined) {
+    console.warn(
+      "[menu-import] réponse non-JSON (extrait):",
+      rawText.slice(0, 300),
+    );
     return {
       ok: false,
       error: "Réponse Anthropic non-JSON. Réessaie avec un menu plus lisible.",
