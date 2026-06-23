@@ -76,8 +76,7 @@ export function FiltersBar({
 
   return (
     <div
-      className="sticky z-20 -mx-4 border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 px-4 py-3 backdrop-blur-xl lg:-mx-6 lg:px-6"
-      style={{ top: "calc(var(--h-mobile-topbar) + env(safe-area-inset-top))" }}
+      className="-mx-4 border-y border-[var(--border-subtle)] bg-[var(--bg-primary)]/85 px-4 py-3 lg:-mx-6 lg:px-6"
     >
       <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         {/* Period switcher SegmentedControl mobile-first (44px touch + scroll-snap si > 4) */}
