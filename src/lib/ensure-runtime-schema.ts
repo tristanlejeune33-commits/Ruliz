@@ -638,6 +638,13 @@ export async function ensureRuntimeSchema(): Promise<void> {
       CREATE INDEX IF NOT EXISTS "idx_panel_trad_created"
         ON "panel_translations_cache" ("created_at");
     `);
+    // Purge des entrées polluées : réponses conversationnelles du modèle
+    // ("I appreciate your message, but…") cachées par erreur à la place d'une
+    // traduction. Une vraie traduction reste proche de la longueur source.
+    await prisma.$executeRawUnsafe(`
+      DELETE FROM "panel_translations_cache"
+      WHERE LENGTH("translated") > LENGTH("source_text") * 3 + 40;
+    `);
 
     // === QR codes — libellé nommable (« Table 5 », « Vitrine »…) ===
     // Permet au resto d'identifier chaque QR et de l'imprimer avec son nom.

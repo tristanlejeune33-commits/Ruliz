@@ -24,18 +24,18 @@ import { getAnthropic } from "@/server/translation/anthropic";
  *   - Une fois cachées : gratuit pour la vie du SaaS
  */
 
-const SYSTEM_PROMPT = `You are a professional UI translator for a French SaaS dashboard.
-Translate the following French interface text to {target_language_full_name}.
+const SYSTEM_PROMPT = `You are a machine translation engine for a French SaaS dashboard UI.
+Translate the input text to {target_language_full_name}.
 
-Strict rules:
-- Keep the same tone (professional but friendly, tutoiement style if applicable)
-- Keep technical terms in original form ONLY if they are commonly used internationally
-  (e.g. "QR code" stays "QR code", but "tableau de bord" → "dashboard")
-- Keep emoji untouched
-- Keep brand names untouched ("Ruliz", "Stripe", etc.)
-- Keep variable placeholders untouched (e.g. {{nom}}, {count}, %s)
-- Match the EXACT length when possible (UI constraint)
-- Output ONLY the translated text, no preamble, no quotes, no explanation`;
+ABSOLUTE rules (no exceptions):
+- Output ONLY the translation. NEVER add commentary, preamble, quotes, or notes.
+- NEVER ask a question. NEVER converse. You are a function: input → translation.
+- If the input is a PROPER NOUN, brand, person/restaurant name, an email, a URL,
+  or is already NOT in French (or not translatable), return it EXACTLY UNCHANGED.
+- If you are unsure, return the input UNCHANGED. Do not explain.
+- Keep emoji, numbers, currency symbols and placeholders ({{nom}}, {count}, %s) untouched.
+- Keep brand names untouched ("Ruliz", "Stripe", "QR code", etc.).
+- Keep the same tone (professional, friendly, tutoiement) and a similar length.`;
 
 const LANG_LABELS: Record<SupportedLang, string> = {
   fr: "French",
@@ -49,6 +49,32 @@ const LANG_LABELS: Record<SupportedLang, string> = {
 
 function hashText(text: string): string {
   return crypto.createHash("sha256").update(text).digest("hex");
+}
+
+/**
+ * Détecte une réponse qui n'EST PAS une traduction : refus conversationnel du
+ * modèle ("I appreciate your message, but…"), question, explication. Une vraie
+ * traduction reste proche de la longueur source ; une réponse parasite est
+ * disproportionnée. On filtre aussi quelques tournures conversationnelles.
+ */
+function looksLikeBadTranslation(source: string, output: string): boolean {
+  if (!output) return true;
+  if (output.length > source.length * 3 + 40) return true;
+  const lower = output.toLowerCase();
+  const tells = [
+    "i appreciate",
+    "could you please",
+    "doesn't appear",
+    "does not appear",
+    "i'll translate",
+    "i will translate",
+    "provide the actual",
+    "the actual french",
+    "following the rules",
+    "je traduirai",
+    "pourriez-vous",
+  ];
+  return tells.some((t) => lower.includes(t));
 }
 
 type TranslateResult =
@@ -87,7 +113,11 @@ export async function translatePanelString(
       lang,
     );
     if (cached && cached.length > 0 && cached[0]) {
-      return { ok: true, text: cached[0].translated };
+      // Ignore une entrée polluée (réponse conversationnelle cachée par erreur
+      // avant ce fix) → on retombe sur une re-traduction propre ci-dessous.
+      if (!looksLikeBadTranslation(text, cached[0].translated)) {
+        return { ok: true, text: cached[0].translated };
+      }
     }
   } catch (err) {
     console.warn("[translatePanel] cache lookup failed:", err);
@@ -122,7 +152,14 @@ export async function translatePanelString(
       return { ok: false, error: "no_text_in_response" };
     }
 
-    const translated = block.text.trim();
+    let translated = block.text.trim();
+
+    // Garde-fou : si le modèle a « conversé » au lieu de traduire (nom propre,
+    // texte non-FR…), on garde le texte ORIGINAL et on le cache tel quel
+    // (translated == source) pour ne pas re-appeler l'IA à chaque fois.
+    if (looksLikeBadTranslation(text, translated)) {
+      translated = text;
+    }
 
     // 3) Cache result
     try {

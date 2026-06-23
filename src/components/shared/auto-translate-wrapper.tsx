@@ -4,10 +4,10 @@ import { useEffect, useRef } from "react";
 import { usePanelLang } from "./panel-lang-context";
 import { translatePanelBatch } from "@/server/dashboard/translate-panel-actions";
 
-// v2 : bump après le fix « traduction bloquée sur la langue précédente ».
-// Invalide les caches client potentiellement pollués (textes déjà traduits
-// mis en cache à tort pendant la période du bug ES→autre langue).
-const LOCAL_STORAGE_PREFIX = "ruliz_t_v2_";
+// v3 : bump après le fix « réponse conversationnelle du modèle cachée à la
+// place d'une traduction » (ex: "I appreciate your message, but…" affiché sur
+// un nom de resto). Invalide les caches client pollués des versions <= v2.
+const LOCAL_STORAGE_PREFIX = "ruliz_t_v3_";
 
 /**
  * Wrapper qui auto-traduit TOUS les text nodes du DOM enfant.
