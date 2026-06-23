@@ -112,11 +112,7 @@ const restaurantSchema = z.object({
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]).optional(),
   // IANA timezone (validated min-only — Intl.DateTimeFormat valide en runtime)
   timezone: z.string().max(64).optional(),
-  // Horaires customisés
-  lunchStart: z.string().max(5).optional(),
-  lunchEnd: z.string().max(5).optional(),
-  dinnerStart: z.string().max(5).optional(),
-  dinnerEnd: z.string().max(5).optional(),
+  // Happy Hour uniquement (midi/soir dérivés de horairesService).
   happyHourStart: z.string().max(5).optional(),
   happyHourEnd: z.string().max(5).optional(),
   // Theme
@@ -222,30 +218,22 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
   // Important : on autorise les valeurs vides (null) si l'user a délibérément
   // vidé le champ. Pas de fallback automatique sur la valeur par défaut
   // (sinon impossible de "ne pas avoir" d'happy hour par exemple).
-  const lunchStart = empty(data.lunchStart);
-  const lunchEnd = empty(data.lunchEnd);
-  const dinnerStart = empty(data.dinnerStart);
-  const dinnerEnd = empty(data.dinnerEnd);
+  // Happy Hour : seule plage encore éditée (midi/soir des catégories sont
+  // dérivés de horairesService → on ne touche plus lunch/dinner ici).
   const happyHourStart = empty(data.happyHourStart);
   const happyHourEnd = empty(data.happyHourEnd);
   try {
     await prisma.$executeRawUnsafe(
       `UPDATE "restaurants" SET
-         "lunch_start" = $2, "lunch_end" = $3,
-         "dinner_start" = $4, "dinner_end" = $5,
-         "happy_hour_start" = $6, "happy_hour_end" = $7
+         "happy_hour_start" = $2, "happy_hour_end" = $3
        WHERE "id" = $1`,
       bigId,
-      lunchStart,
-      lunchEnd,
-      dinnerStart,
-      dinnerEnd,
       happyHourStart,
       happyHourEnd,
     );
     console.log(
-      `[updateRestaurant] horaires raw SQL OK for resto ${bigId.toString()}`,
-      { lunchStart, lunchEnd, dinnerStart, dinnerEnd, happyHourStart, happyHourEnd },
+      `[updateRestaurant] happy hour raw SQL OK for resto ${bigId.toString()}`,
+      { happyHourStart, happyHourEnd },
     );
   } catch (err) {
     console.error(
@@ -277,10 +265,6 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         deviseDefault: empty(data.deviseDefault) ?? "€",
         langueNative: data.langueNative ?? "fr",
         timezone: data.timezone || "Europe/Paris",
-        lunchStart,
-        lunchEnd,
-        dinnerStart,
-        dinnerEnd,
         happyHourStart,
         happyHourEnd,
         theme: data.theme ?? "light",
@@ -322,10 +306,6 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
       ["devise_default", empty(data.deviseDefault) ?? "€"],
       ["langue_native", data.langueNative ?? "fr"],
       ["timezone", data.timezone || "Europe/Paris"],
-      ["lunch_start", lunchStart],
-      ["lunch_end", lunchEnd],
-      ["dinner_start", dinnerStart],
-      ["dinner_end", dinnerEnd],
       ["happy_hour_start", happyHourStart],
       ["happy_hour_end", happyHourEnd],
       ["theme", data.theme ?? "light"],

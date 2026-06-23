@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import type { SupportedLang } from "@/lib/langs";
 import { isCategorieVisibleNow, getRestaurantLocalParts } from "@/lib/schedule";
+import { isHorairesService } from "@/lib/horaires-service";
 import { getPlanConfig } from "@/lib/plan-config";
 import type { Plan } from "@/lib/plans";
 
@@ -189,10 +190,7 @@ export async function getPublicMenu(
         siteWeb: true,
         googleReviewUrl: true,
         plan: true,
-        lunchStart: true,
-        lunchEnd: true,
-        dinnerStart: true,
-        dinnerEnd: true,
+        horairesService: true,
         happyHourStart: true,
         happyHourEnd: true,
       },
@@ -370,19 +368,25 @@ export async function getPublicMenu(
     },
   });
 
-  // Filtre par créneau d'affichage (carte midi/soir/happy hour/custom)
-  // Une catégorie sans schedule_type est "always" → toujours visible.
-  // On passe les horaires customisés du resto pour que "lunch"/"dinner"/
-  // "happy_hour" résolvent les heures depuis sa config.
+  // Filtre par créneau d'affichage (carte midi/soir/happy hour/custom).
+  // Source UNIQUE des horaires : `horairesService` (grille 7 jours). On en
+  // dérive les fenêtres midi/soir DU JOUR COURANT pour les créneaux "lunch"/
+  // "dinner". Le happy hour vient de sa plage dédiée (happyHourStart/End).
+  // restoTimezone est déjà extrait plus haut (avant le filtre popup).
+  const hs = isHorairesService(restaurant.horairesService)
+    ? restaurant.horairesService
+    : null;
+  const { isoDay } = getRestaurantLocalParts(restoTimezone);
+  const today = hs ? hs[isoDay - 1] : null; // hs ordonné lun→dim (idx 0 = lun)
+  const openToday = today && !today.closed ? today : null;
   const restoHours = {
-    lunchStart: restaurant.lunchStart,
-    lunchEnd: restaurant.lunchEnd,
-    dinnerStart: restaurant.dinnerStart,
-    dinnerEnd: restaurant.dinnerEnd,
+    lunchStart: openToday?.midi?.start ?? null,
+    lunchEnd: openToday?.midi?.end ?? null,
+    dinnerStart: openToday?.soir?.start ?? null,
+    dinnerEnd: openToday?.soir?.end ?? null,
     happyHourStart: restaurant.happyHourStart,
     happyHourEnd: restaurant.happyHourEnd,
   };
-  // restoTimezone est déjà extrait plus haut (avant le filtre popup).
 
   const categoriesRaw = allCategoriesRaw.filter((cat) =>
     isCategorieVisibleNow(

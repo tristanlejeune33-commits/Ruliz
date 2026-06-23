@@ -96,11 +96,8 @@ const schema = z.object({
   langueNative: z.enum(["fr", "en", "es", "de", "it", "pt", "zh"]),
   /** Fuseau horaire IANA (ex: "Europe/Paris", "Pacific/Auckland"). */
   timezone: z.string().max(64),
-  // Horaires de service (presets pour les créneaux de catégories)
-  lunchStart: z.string().max(5),
-  lunchEnd: z.string().max(5),
-  dinnerStart: z.string().max(5),
-  dinnerEnd: z.string().max(5),
+  // Happy Hour (plage unique) — créneau "happy hour" des catégories.
+  // Midi/soir des catégories sont désormais dérivés de horairesService.
   happyHourStart: z.string().max(5),
   happyHourEnd: z.string().max(5),
   theme: z.enum(["light", "dark"]),
@@ -337,14 +334,53 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                         />
                       </FormControl>
                       <FormDescription className="text-[10px]">
-                        Pour chaque jour, active les services et saisis tes
-                        heures. Affiché sur ton mini-site vitrine et utilisé
-                        pour générer les créneaux Schema.org SEO.
+                        Source unique de tes horaires : affichés sur le
+                        mini-site vitrine, utilisés pour les créneaux midi/soir
+                        des catégories sur la carte, et pour le SEO Schema.org.
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
+                {/* Happy Hour : une plage unique (chaque jour), intégrée au
+                    même bloc. Pilote le créneau « Happy Hour » des catégories. */}
+                <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)]/40 p-3 md:col-span-2">
+                  <p className="mb-2 text-sm font-medium">🍹 Happy Hour</p>
+                  <p className="mb-3 text-[10px] text-[var(--text-muted)]">
+                    Plage horaire (tous les jours) utilisée pour le créneau
+                    « Happy Hour » dans l&apos;éditeur de menu. Laisse vide si
+                    tu n&apos;en proposes pas.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <FormField
+                      control={form.control}
+                      name="happyHourStart"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Début</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="happyHourEnd"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Fin</FormLabel>
+                          <FormControl>
+                            <Input type="time" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
                 <FormField
                   control={form.control}
                   name="deviseDefault"
@@ -437,115 +473,6 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                     </FormItem>
                   )}
                 />
-              </CardContent>
-            </Card>
-
-            {/* HORAIRES DE SERVICE utilisés pour les créneaux carte midi/soir/HH */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Horaires de service</CardTitle>
-                <CardDescription>
-                  Définit les horaires utilisés pour les créneaux d&apos;affichage
-                  des catégories (carte midi, carte soir, happy hour). Tu peux
-                  ensuite cocher l&apos;un de ces créneaux dans l&apos;éditeur
-                  de menu pour qu&apos;une catégorie n&apos;apparaisse que
-                  pendant ces horaires.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="mb-2 text-sm font-medium">☀️ Service du midi</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name="lunchStart"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Début</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="lunchEnd"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Fin</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <p className="mb-2 text-sm font-medium">🌙 Service du soir</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name="dinnerStart"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Début</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="dinnerEnd"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Fin</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <p className="mb-2 text-sm font-medium">🍹 Happy Hour</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name="happyHourStart"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Début</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="happyHourEnd"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs">Fin</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>

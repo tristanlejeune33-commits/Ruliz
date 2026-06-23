@@ -243,6 +243,12 @@ model Restaurant {
   happyHourStart           String?   @default("18:00") @map("happy_hour_start") @db.VarChar(5)
   happyHourEnd             String?   @default("19:00") @map("happy_hour_end") @db.VarChar(5)
   /**
+   * Horaires de service structurés 7 jours (JSONB). Source unique des horaires :
+   * site vitrine + créneaux midi/soir des catégories sur la carte.
+   * Cf. src/lib/horaires-service.ts pour le format.
+   */
+  horairesService          Json?     @map("horaires_service")
+  /**
    * Nom de l'expéditeur affiché sur les SMS envoyés par ce restaurant.
    * Brevo : max 11 caractères alphanumériques (pas d'espace, pas d'accent).
    * Si null → fallback sur BREVO_SMS_SENDER global (Ruliz).

@@ -140,12 +140,8 @@ export default async function RestaurantPage() {
           timezone:
             (data as { timezone?: string }).timezone ?? "Europe/Paris",
           // String vide si null en DB (au lieu de forcer la valeur par défaut)
-          // → permet à l'user de "vider" un horaire pour signaler qu'il n'a
-          // pas ce créneau de service (pas de lunch / pas de happy hour).
-          lunchStart: data.lunchStart ?? "",
-          lunchEnd: data.lunchEnd ?? "",
-          dinnerStart: data.dinnerStart ?? "",
-          dinnerEnd: data.dinnerEnd ?? "",
+          // Happy Hour : plage unique conservée (les créneaux midi/soir des
+          // catégories sont dérivés de horairesService).
           happyHourStart: data.happyHourStart ?? "",
           happyHourEnd: data.happyHourEnd ?? "",
           theme: (data.theme as "light" | "dark") ?? "light",
