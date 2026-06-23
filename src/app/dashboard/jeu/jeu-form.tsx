@@ -42,6 +42,8 @@ const schema = z.object({
   /** ISO 8601 ou chaîne vide */
   dateDebut: z.string(),
   dateFin: z.string(),
+  /** Stock total de lots à distribuer (0 = illimité). */
+  maxLots: z.number().int().min(0).max(1_000_000),
   lots: z
     .array(
       z.object({
@@ -70,6 +72,7 @@ interface JeuFormProps {
     autoPopupDelaySec: number;
     dateDebut: string;
     dateFin: string;
+    maxLots: number;
   } | null;
 }
 
@@ -116,6 +119,7 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
           autoPopupDelaySec: jeu.autoPopupDelaySec ?? 3,
           dateDebut: jeu.dateDebut ?? "",
           dateFin: jeu.dateFin ?? "",
+          maxLots: jeu.maxLots ?? 0,
           lots: jeu.lots.length > 0 ? jeu.lots : DEFAULT_LOTS,
         }
       : {
@@ -127,6 +131,7 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
           autoPopupDelaySec: 3,
           dateDebut: "",
           dateFin: "",
+          maxLots: 0,
           lots: DEFAULT_LOTS,
         },
   });
@@ -187,6 +192,7 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
         cta: values.cta,
         lots: values.lots,
         require_google_review: values.requireGoogleReview,
+        max_lots: values.maxLots,
       },
     });
   };
@@ -414,6 +420,33 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                 />
               </div>
             </div>
+
+            {/* STOCK : nombre maximum de lots à distribuer */}
+            <FormField
+              control={form.control}
+              name="maxLots"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nombre maximum de lots à gagner</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={field.value}
+                      onChange={(e) =>
+                        field.onChange(Math.max(0, Number(e.target.value) || 0))
+                      }
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    Stock total de lots distribuables. Une fois ce nombre de
+                    gagnants atteint, le jeu se ferme automatiquement.{" "}
+                    <strong>0 = illimité.</strong>
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 

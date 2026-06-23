@@ -27,6 +27,7 @@ interface JeuConfig {
   cta?: string;
   lots: Array<{ label: string; probabilite: number }>;
   require_google_review?: boolean;
+  max_lots?: number;
 }
 
 export default async function JeuPage() {
@@ -87,6 +88,7 @@ export default async function JeuPage() {
                       autoPopupDelaySec: jeu.autoPopupDelaySec ?? 3,
                       dateDebut: jeu.dateDebut?.toISOString() ?? "",
                       dateFin: jeu.dateFin?.toISOString() ?? "",
+                      maxLots: config?.max_lots ?? 0,
                     }
                   : null
               }
@@ -103,6 +105,25 @@ export default async function JeuPage() {
                 <CardTitle className="text-3xl tabular-nums">
                   {jeu?._count.participations ?? 0}
                 </CardTitle>
+                {config?.max_lots && config.max_lots > 0 && (
+                  <p className="text-xs text-[var(--text-muted)]">
+                    <span className="font-medium text-[var(--text-secondary)]">
+                      {Math.max(
+                        0,
+                        config.max_lots - (jeu?._count.participations ?? 0),
+                      )}
+                    </span>{" "}
+                    lot
+                    {config.max_lots - (jeu?._count.participations ?? 0) > 1
+                      ? "s"
+                      : ""}{" "}
+                    restant
+                    {config.max_lots - (jeu?._count.participations ?? 0) > 1
+                      ? "s"
+                      : ""}{" "}
+                    sur {config.max_lots}
+                  </p>
+                )}
                 {jeu && jeu._count.participations > 0 && (
                   <Button asChild variant="outline" size="sm" className="w-full">
                     <Link href="/dashboard/jeu/participations">

@@ -21,6 +21,9 @@ const configSchema = z.object({
   cta: z.string().min(1).max(255),
   lots: z.array(lotSchema).min(1).max(12),
   require_google_review: z.boolean(),
+  /** Stock total de lots à distribuer (0 / absent = illimité). Une fois atteint,
+   *  le jeu ne distribue plus de lot. */
+  max_lots: z.number().int().min(0).max(1_000_000).optional(),
 });
 
 const upsertJeuSchema = z.object({
@@ -165,6 +168,7 @@ interface JeuConfig {
   cta?: string;
   lots: Array<{ label: string; probabilite: number }>;
   require_google_review?: boolean;
+  max_lots?: number;
 }
 
 function pickWeightedLot(lots: JeuConfig["lots"]): JeuConfig["lots"][number] | null {
@@ -204,6 +208,20 @@ export async function spinRoulette(input: unknown): Promise<
   const config = jeu.configJson as unknown as JeuConfig | null;
   if (!config?.lots?.length) {
     return { ok: false, error: "Configuration de jeu invalide" };
+  }
+
+  // Stock de lots : si un maximum est défini et déjà atteint, le jeu est clos.
+  if (config.max_lots && config.max_lots > 0) {
+    const distributed = await prisma.jeuParticipation.count({
+      where: { jeuId: big },
+    });
+    if (distributed >= config.max_lots) {
+      return {
+        ok: false,
+        error:
+          "Tous les lots ont déjà été gagnés, le jeu est terminé. Reviens bientôt !",
+      };
+    }
   }
 
   const winning = pickWeightedLot(config.lots);
