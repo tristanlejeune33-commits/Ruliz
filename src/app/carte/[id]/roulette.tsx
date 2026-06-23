@@ -908,22 +908,25 @@ function WheelStep({
 
   const WINDOW_HEIGHT = 150; // px — hauteur de la fenêtre du slot
 
-  // Défilement rapide pendant "spinning" : on cycle l'affichage → il y a
-  // TOUJOURS un lot visible au centre (jamais d'écran blanc).
+  // Défilement rapide pendant "spinning". displayIdx s'incrémente SANS modulo :
+  // la `key` change donc à chaque tick → l'animation rejoue même s'il ne reste
+  // qu'UN seul lot (jamais figé, jamais blanc). Le modulo est appliqué à
+  // l'affichage uniquement.
   useEffect(() => {
     if (phase !== "spinning") return;
-    const id = setInterval(() => {
-      setDisplayIdx((i) => (i + 1) % Math.max(1, lots.length));
-    }, 90);
+    const id = setInterval(() => setDisplayIdx((i) => i + 1), 90);
     return () => clearInterval(id);
-  }, [phase, lots.length]);
+  }, [phase]);
 
   const handleSpin = async () => {
     if (phase !== "idle" || submitting) return;
-    // 1. Le défilement démarre TOUT DE SUITE (effet ci-dessus) → visible direct,
-    //    pendant que le serveur tire le lot.
+    // 1. Le défilement démarre TOUT DE SUITE (effet ci-dessus) → visible direct.
     setPhase("spinning");
-    const serverLabel = await onSpin();
+    // On attend le serveur ET un minimum de spin visible (≥ 1,4 s) en parallèle.
+    const [serverLabel] = await Promise.all([
+      onSpin(),
+      new Promise<void>((resolve) => window.setTimeout(resolve, 1400)),
+    ]);
     if (serverLabel == null) {
       // Erreur (jeu terminé, déjà joué…) → le parent a basculé sur "error".
       setPhase("idle");
@@ -942,7 +945,7 @@ function WheelStep({
         onResult();
         return;
       }
-      setDisplayIdx((i) => (i + 1) % Math.max(1, lots.length));
+      setDisplayIdx((i) => i + 1);
       const d = decel[step] ?? 300;
       step += 1;
       window.setTimeout(tick, d);
@@ -970,7 +973,9 @@ function WheelStep({
         }
       : null;
   const shown =
-    phase === "stopped" && wonLot ? wonLot : lots[displayIdx] ?? lots[0]!;
+    phase === "stopped" && wonLot
+      ? wonLot
+      : lots[displayIdx % lots.length] ?? lots[0]!;
   const shownEmoji = extractEmoji(shown.label) ?? "🎁";
   const shownText = removeEmoji(shown.label);
   const shownHasImage = !!shown.imageUrl;
