@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath, revalidateTag } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 import { assertRestaurantOwner } from "@/lib/active-restaurant";
@@ -452,6 +453,27 @@ async function persistImportedMenu(
       console.warn("[menu-import] redis purge failed:", err);
     }
   }
+
+  // Pré-traduction : on traduit toute la carte importée dans les 7 langues en
+  // arrière-plan (après la réponse), pour qu'aucun client ne voie une carte
+  // partielle « mot par mot » au 1er scan dans une autre langue.
+  after(async () => {
+    try {
+      const { translateRestaurantMenu } = await import(
+        "@/server/translation/service"
+      );
+      await translateRestaurantMenu({ restaurantId: restoBigId });
+      revalidateTag("public-menu");
+      if (redis) {
+        const keys = SUPPORTED_LANGS.map(
+          (l) => `carte:${restoBigId.toString()}:${l}`,
+        );
+        await redis.del(...keys).catch(() => null);
+      }
+    } catch (err) {
+      console.warn("[menu-import] pré-traduction échouée:", err);
+    }
+  });
 
   return {
     ok: true,

@@ -34,6 +34,11 @@ export const metadata: Metadata = {
     shortcut: "/brand/logo-mark.png",
     apple: "/brand/logo-mark.png",
   },
+  // Désactive l'auto-traduction du navigateur (Google Translate) : on gère la
+  // traduction nous-mêmes (carte server-side + AutoTranslateWrapper panel).
+  // Google Translate réécrit le DOM (balises <font>) → React plante avec
+  // "removeChild: node is not a child of this node" (crash page Mon resto).
+  other: { google: "notranslate" },
 };
 
 /**
@@ -62,7 +67,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" translate="no" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider
           attribute="data-theme"
