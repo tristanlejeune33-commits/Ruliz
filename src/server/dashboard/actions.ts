@@ -138,6 +138,7 @@ const restaurantSchema = z.object({
   tiktokUrl: z.string().max(500).optional().or(z.literal("")),
   siteWeb: z.string().max(500).optional().or(z.literal("")),
   googleReviewUrl: z.string().max(500).optional().or(z.literal("")),
+  reservationUrl: z.string().max(500).optional().or(z.literal("")),
   logoUrl: z.string().max(500).optional().or(z.literal("")),
   banniereUrl: z.string().max(500).optional().or(z.literal("")),
 });
@@ -296,6 +297,7 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
         tiktokUrl: empty(data.tiktokUrl),
         siteWeb: empty(data.siteWeb),
         googleReviewUrl: empty(data.googleReviewUrl),
+        reservationUrl: empty(data.reservationUrl),
         logoUrl: empty(data.logoUrl),
         banniereUrl: empty(data.banniereUrl),
       },
@@ -338,6 +340,7 @@ export async function updateRestaurant(input: unknown): Promise<ActionResult> {
       ["tiktok_url", empty(data.tiktokUrl)],
       ["site_web", empty(data.siteWeb)],
       ["google_review_url", empty(data.googleReviewUrl)],
+      ["reservation_url", empty(data.reservationUrl)],
       ["logo_url", empty(data.logoUrl)],
       ["banniere_url", empty(data.banniereUrl)],
     ];

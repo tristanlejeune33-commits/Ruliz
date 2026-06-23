@@ -625,6 +625,13 @@ export async function ensureRuntimeSchema(): Promise<void> {
         ADD COLUMN IF NOT EXISTS "show_name" BOOLEAN NOT NULL DEFAULT TRUE;
     `);
 
+    // === Restaurant — lien de réservation (CTA "Réserver" du mini-site) ===
+    // Saisi dans l'onglet Réseaux des infos du restaurant.
+    await prisma.$executeRawUnsafe(`
+      ALTER TABLE "restaurants"
+        ADD COLUMN IF NOT EXISTS "reservation_url" TEXT;
+    `);
+
     // === Panel auto-translate cache ===
     // Cache à vie des traductions du panel client/admin (sidebar, pages,
     // formulaires, etc.). Quand un user change la lang vers EN/ES/etc., le

@@ -117,6 +117,7 @@ const schema = z.object({
   tiktokUrl: z.string().max(500),
   siteWeb: z.string().max(500),
   googleReviewUrl: z.string().max(500),
+  reservationUrl: z.string().max(500),
   logoUrl: z.string().max(500),
   banniereUrl: z.string().max(500),
 });
@@ -800,6 +801,23 @@ export function RestaurantForm({ restaurant }: RestaurantFormProps) {
                       <FormControl>
                         <Input placeholder="https://…" {...field} />
                       </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="reservationUrl"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Lien de réservation (site web)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://… (TheFork, Zenchef, formulaire…)" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Alimente le bouton « Réserver » de ton mini-site vitrine.
+                        Laisse vide pour masquer le bouton.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

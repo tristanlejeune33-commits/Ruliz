@@ -275,6 +275,9 @@ model Restaurant {
   tiktokUrl                String?   @map("tiktok_url")
   siteWeb                  String?   @map("site_web")
   googleReviewUrl          String?   @map("google_review_url")
+  /** Lien de réservation (TheFork, Zenchef, formulaire…) — CTA "Réserver" du
+   *  mini-site vitrine. Saisi dans l'onglet Réseaux des infos du restaurant. */
+  reservationUrl           String?   @map("reservation_url")
   createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz()
 
   user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -162,6 +162,8 @@ export default async function RestaurantPage() {
           tiktokUrl: data.tiktokUrl ?? "",
           siteWeb: data.siteWeb ?? "",
           googleReviewUrl: data.googleReviewUrl ?? "",
+          reservationUrl:
+            (data as { reservationUrl?: string | null }).reservationUrl ?? "",
           logoUrl: data.logoUrl ?? "",
           banniereUrl: data.banniereUrl ?? "",
         }}

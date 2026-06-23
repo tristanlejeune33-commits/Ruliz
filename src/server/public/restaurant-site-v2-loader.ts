@@ -239,6 +239,7 @@ export async function loadSiteV2(
     tiktokUrl: string | null;
     siteWeb: string | null;
     googleReviewUrl: string | null;
+    reservationUrl: string | null;
     deviseDefault: string | null;
     statut: string;
     plan: string;
@@ -271,6 +272,7 @@ export async function loadSiteV2(
       tiktok_url          AS "tiktokUrl",
       site_web            AS "siteWeb",
       google_review_url   AS "googleReviewUrl",
+      reservation_url     AS "reservationUrl",
       devise_default      AS "deviseDefault",
       statut,
       plan,
@@ -450,8 +452,9 @@ export async function loadSiteV2(
     hours = parseHoursOuverture(resto.horairesOuverture);
   }
 
-  // Reservation URL : config v2 > restaurant.siteWeb (peu probable mais fallback) > null
-  const reservationUrl = v2?.reservationUrl ?? null;
+  // Reservation URL : config v2 (éditeur de site) > champ Réseaux des infos
+  // resto (reservation_url) > null.
+  const reservationUrl = v2?.reservationUrl ?? resto.reservationUrl ?? null;
 
   const config: RestaurantConfig = {
     restaurantName,
