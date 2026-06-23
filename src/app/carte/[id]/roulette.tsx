@@ -897,7 +897,9 @@ function WheelStep({
   onResult: () => void;
   submitting: boolean;
 }) {
-  const [phase, setPhase] = useState<"idle" | "spinning" | "stopped">("idle");
+  const [phase, setPhase] = useState<
+    "idle" | "spinning" | "landing" | "stopped"
+  >("idle");
   const [finalIdx, setFinalIdx] = useState<number | null>(null);
 
   // Hauteur d'un slot doit être en sync avec la hauteur réelle
@@ -917,25 +919,26 @@ function WheelStep({
 
   const handleSpin = async () => {
     if (phase !== "idle" || submitting) return;
+    // 1. La roue tourne EN CONTINU tout de suite (boucle), pendant que le
+    //    serveur tire le lot → aucun temps mort visuel.
     setPhase("spinning");
-    // 1. Le SERVEUR tire le lot AVANT d'animer (c'est lui qui enregistre et
-    //    décrémente le stock). La roue doit atterrir sur CE lot.
     const wonLabel = await onSpin();
     if (wonLabel == null) {
       // Erreur (jeu terminé, déjà joué…) → le parent a basculé sur "error".
       setPhase("idle");
       return;
     }
-    // 2. Index du lot gagné dans la liste affichée → la roue s'arrête dessus.
+    // 2. On connaît le lot gagné → la roue décélère et s'arrête dessus.
     let idx = lots.findIndex((l) => l.label === wonLabel);
     if (idx < 0) idx = 0; // sécurité (lot absent de la liste cachée)
     setFinalIdx((REPETITIONS - 1) * lots.length + idx);
+    setPhase("landing");
 
-    // 3. Fin de l'animation (3.5s) → on révèle la victoire (même lot).
+    // 3. Fin de la décélération → on révèle la victoire (même lot).
     setTimeout(() => {
       setPhase("stopped");
       onResult();
-    }, 3600);
+    }, 3100);
   };
 
   if (lots.length === 0) {
@@ -1001,14 +1004,29 @@ function WheelStep({
 
           {/* Le reel qui scrolle */}
           <motion.div
-            animate={{ y: phase === "idle" ? 0 : targetY }}
+            animate={
+              phase === "spinning"
+                ? // Boucle continue : on défile d'exactement une période (la
+                  // piste est périodique → raccord invisible) en linéaire,
+                  // répété à l'infini tant que le serveur n'a pas répondu.
+                  { y: [0, -(lots.length * SLOT_HEIGHT)] }
+                : phase === "landing" || phase === "stopped"
+                  ? { y: targetY }
+                  : { y: 0 }
+            }
             transition={
               phase === "spinning"
                 ? {
-                    duration: 3.5,
-                    ease: [0.16, 0.85, 0.32, 1], // cubic ease-out (decelerate)
+                    duration: Math.max(0.45, lots.length * 0.12),
+                    ease: "linear",
+                    repeat: Infinity,
                   }
-                : { duration: 0 }
+                : phase === "landing"
+                  ? {
+                      duration: 3,
+                      ease: [0.16, 0.85, 0.32, 1], // décélération cubic-out
+                    }
+                  : { duration: 0 }
             }
             className="absolute inset-x-0 top-0 flex flex-col"
           >
@@ -1066,11 +1084,9 @@ function WheelStep({
       <p className="text-center text-sm font-medium opacity-90">
         {phase === "idle"
           ? "Appuie pour lancer la roue"
-          : phase === "spinning"
+          : phase === "spinning" || phase === "landing"
             ? "🎲 Tirage en cours…"
-            : submitting
-              ? "Validation…"
-              : "🎉"}
+            : "🎉"}
       </p>
 
       <button
@@ -1088,10 +1104,10 @@ function WheelStep({
             phase === "idle" ? "pulse-cta 2s ease-in-out infinite" : undefined,
         }}
       >
-        {submitting ? (
-          <Loader2 className="size-5 animate-spin" />
-        ) : phase === "spinning" ? (
+        {phase === "spinning" || phase === "landing" ? (
           "..."
+        ) : submitting ? (
+          <Loader2 className="size-5 animate-spin" />
         ) : (
           "Lancer la roue"
         )}
