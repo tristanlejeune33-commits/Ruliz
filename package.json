@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"prisma/**/*.ts\"",
     "typecheck": "tsc --noEmit",
+    "extract:i18n": "node scripts/extract-ui-strings.mjs",
     "db:generate": "prisma generate",
     "db:migrate": "dotenv -e .env.local -e .env -- prisma migrate dev",
     "db:deploy": "dotenv -e .env.local -e .env -- prisma migrate deploy",

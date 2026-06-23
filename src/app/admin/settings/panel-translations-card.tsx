@@ -45,12 +45,11 @@ export function PanelTranslationsCard() {
           <div>
             <CardTitle>Pré-traduire le panel</CardTitle>
             <CardDescription className="mt-1">
-              Traduit toutes les chaînes d&apos;interface déjà rencontrées vers
-              les 7 langues et remplit le cache. Ensuite, les restaurateurs
-              étrangers voient leur panel traduit instantanément, sans aucun
-              temps de chargement. Astuce : navigue d&apos;abord dans tout le
-              panel (au moins une fois dans une langue étrangère) pour que les
-              textes soient collectés, puis lance la pré-traduction.
+              Traduit l&apos;intégralité des textes d&apos;interface du panel
+              (catalogue extrait automatiquement du code) vers les 7 langues et
+              remplit le cache. Un seul clic suffit — aucune navigation manuelle
+              préalable nécessaire. Ensuite, les restaurateurs étrangers voient
+              leur panel traduit instantanément, sans aucun temps de chargement.
             </CardDescription>
           </div>
         </div>

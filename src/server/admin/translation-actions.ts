@@ -12,6 +12,7 @@ import {
 } from "@/server/translation/anthropic";
 import { translateRestaurantMenu } from "@/server/translation/service";
 import { translatePanelBatch } from "@/server/dashboard/translate-panel-actions";
+import { PANEL_STRINGS } from "@/lib/panel-strings-catalog.generated";
 
 export type AdminActionResult<T = unknown> =
   | { ok: true; data?: T }
@@ -111,11 +112,10 @@ export async function adminRetranslateRestaurant(
  * page, le serveur injecte le dico complet (cf. getPanelTranslations) et tout
  * s'affiche traduit instantanément — plus aucun « chargement ».
  *
- * Source des chaînes : toutes les `source_text` distinctes déjà en cache (peu
- * importe la langue). Il n'existe pas de registre central de tous les textes UI
- * (l'auto-traduction les collecte au fil de la navigation) : ce bouton complète
- * donc la matrice pour ce qui a DÉJÀ été vu au moins une fois dans une langue.
- * Conseil : naviguer une fois dans le panel (toutes les pages) puis cliquer ici.
+ * Source des chaînes : le CATALOGUE statique `PANEL_STRINGS` (extrait du code
+ * par scripts/extract-ui-strings.mjs) ∪ toutes les `source_text` déjà en cache.
+ * Couverture quasi-complète SANS navigation manuelle préalable : un seul clic
+ * traduit tout le panel dans les 7 langues.
  *
  * Le travail tourne en arrière-plan (`after`) : l'action rend la main tout de
  * suite avec le nombre de chaînes à couvrir. Les hits cache sont gratuits, seuls
@@ -134,24 +134,21 @@ export async function warmAllPanelTranslations(): Promise<
     };
   }
 
-  // Toutes les chaînes source distinctes connues (toutes langues confondues).
-  let sources: string[] = [];
+  // Catalogue statique du code + chaînes déjà en cache (toutes langues).
+  const set = new Set<string>(PANEL_STRINGS);
   try {
     const rows = await prisma.$queryRawUnsafe<Array<{ source_text: string }>>(
       `SELECT DISTINCT source_text FROM "panel_translations_cache" LIMIT 5000`,
     );
-    sources = rows.map((r) => r.source_text).filter(Boolean);
+    for (const r of rows) if (r.source_text) set.add(r.source_text);
   } catch (err) {
-    console.error("[admin.warmPanel] sources query failed:", err);
-    return { ok: false, error: "Lecture du cache impossible" };
+    // Pas bloquant : on traduit au moins le catalogue.
+    console.warn("[admin.warmPanel] cache distinct query failed:", err);
   }
+  const sources = [...set];
 
   if (sources.length === 0) {
-    return {
-      ok: false,
-      error:
-        "Aucune chaîne en cache. Navigue d'abord dans le panel dans une langue étrangère, puis relance.",
-    };
+    return { ok: false, error: "Catalogue de chaînes vide." };
   }
 
   const targetLangs = SUPPORTED_LANGS.filter((l) => l !== "fr");
