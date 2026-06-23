@@ -34,7 +34,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ImageUploader } from "@/components/shared/image-uploader";
-import { slugify } from "@/lib/slugify";
 import type { RestaurantConfig } from "@/features/restaurant-site-v2/types";
 import {
   getSiteV2QrDataUrl,
@@ -77,7 +76,6 @@ export interface ProductPickerOption {
  */
 
 const schema = z.object({
-  slug: z.string().max(64).optional(),
   tagline: z.string().max(255).optional(),
   established: z
     .number()
@@ -169,7 +167,6 @@ export function SiteV2EditorForm({
   const form = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: {
-      slug: initialSlug ?? "",
       tagline: initialConfig?.tagline ?? "",
       established:
         initialConfig?.established ?? new Date().getFullYear(),
@@ -243,7 +240,6 @@ export function SiteV2EditorForm({
         testimonials: values.testimonials,
         reservationUrl: blank(values.reservationUrl) ?? "",
         options: values.options,
-        slug: values.slug?.trim() || undefined,
       };
 
       const res = await saveSiteV2Config(payload);
@@ -268,12 +264,6 @@ export function SiteV2EditorForm({
         toast.error(res.error);
       }
     });
-  };
-
-  const handleAutoSlug = () => {
-    const tagline = form.getValues("tagline") ?? "";
-    const base = slugify(tagline.slice(0, 30) || `resto-${restaurantId}`);
-    form.setValue("slug", base, { shouldDirty: true });
   };
 
   const handleDownloadQr = () => {
@@ -406,37 +396,6 @@ export function SiteV2EditorForm({
             </div>
           </div>
         )}
-
-        {/* URL personnalisée */}
-        <Card>
-          <CardHeader>
-            <CardTitle>URL personnalisée</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Field label="Slug (vide = utilise l'ID numérique)">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--text-muted)]">/site/</span>
-                <Input
-                  {...form.register("slug")}
-                  placeholder="le-tire-bouchon"
-                  maxLength={64}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAutoSlug}
-                >
-                  Auto
-                </Button>
-              </div>
-            </Field>
-            <p className="mt-2 text-xs text-[var(--text-muted)]">
-              Plus joli à partager. <code>le-tire-bouchon</code> →{" "}
-              <code>/site/le-tire-bouchon</code>.
-            </p>
-          </CardContent>
-        </Card>
 
         {/* Identité éditoriale */}
         <Card>
