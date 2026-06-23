@@ -45,13 +45,23 @@ let isApplyingTranslations = false;
 
 export function AutoTranslateWrapper({
   children,
+  preloaded = {},
 }: {
   children: React.ReactNode;
+  /** Dictionnaire {sourceFR: traduit} injecté par le serveur (cache DB) pour
+   *  la langue courante → appliqué sans aller-retour réseau. */
+  preloaded?: Record<string, string>;
 }) {
   const { lang } = usePanelLang();
   const containerRef = useRef<HTMLDivElement>(null);
   // Map node → original FR text (pour retraduire si on rebascule en FR)
   const originalTextsRef = useRef<WeakMap<Text, string>>(new WeakMap());
+  // Réf au dico injecté (évite de remettre l'effet en deps → pas de re-run).
+  // Mis à jour dans un effet (interdit d'écrire une ref pendant le render).
+  const preloadedRef = useRef(preloaded);
+  useEffect(() => {
+    preloadedRef.current = preloaded;
+  });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -158,6 +168,17 @@ export function AutoTranslateWrapper({
       const toFetch: string[] = [];
 
       for (const text of textNodesByText.keys()) {
+        // 0) Dictionnaire injecté par le serveur (instantané, pas de réseau).
+        const pre = preloadedRef.current[text];
+        if (pre) {
+          fromCache[text] = pre;
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${lang}:${text}`, pre);
+          } catch {
+            // storage plein → pas grave
+          }
+          continue;
+        }
         const cacheKey = `${LOCAL_STORAGE_PREFIX}${lang}:${text}`;
         try {
           const cached = localStorage.getItem(cacheKey);

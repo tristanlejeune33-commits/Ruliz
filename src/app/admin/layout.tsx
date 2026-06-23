@@ -36,9 +36,16 @@ export default async function AdminLayout({
     ? langCookie
     : "fr";
 
+  // Pré-charge les traductions déjà connues → application instantanée.
+  const { getPanelTranslations } = await import(
+    "@/server/dashboard/translate-panel-actions"
+  );
+  const preloadedTranslations =
+    panelLang === "fr" ? {} : await getPanelTranslations(panelLang);
+
   return (
     <PanelLangProvider initialLang={panelLang}>
-      <AutoTranslateWrapper>
+      <AutoTranslateWrapper preloaded={preloadedTranslations}>
         <AppShell
           user={{ name: session.user.name, email: session.user.email }}
           scope="admin"

@@ -188,6 +188,39 @@ export async function translatePanelString(
 }
 
 /**
+ * Récupère TOUTES les traductions en cache pour une langue (source → traduit).
+ * Injectée côté serveur dans le layout du panel → l'AutoTranslateWrapper les
+ * applique INSTANTANÉMENT au chargement, sans aller-retour réseau par string
+ * (fini le « ça charge à l'ouverture »). Renvoie {} en fr ou si erreur.
+ */
+export async function getPanelTranslations(
+  lang: string,
+): Promise<Record<string, string>> {
+  if (!isSupportedLang(lang) || lang === "fr") return {};
+  try {
+    await ensureRuntimeSchema();
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{ source_text: string; translated: string }>
+    >(
+      `SELECT source_text, translated FROM "panel_translations_cache"
+       WHERE lang = $1 LIMIT 5000`,
+      lang,
+    );
+    const dict: Record<string, string> = {};
+    for (const r of rows) {
+      // On ignore les "traductions == source" (noms propres) : inutile à
+      // injecter, et ça évite de gonfler le payload.
+      if (r.translated && r.translated !== r.source_text) {
+        dict[r.source_text] = r.translated;
+      }
+    }
+    return dict;
+  } catch {
+    return {};
+  }
+}
+
+/**
  * Traduit un batch en parallèle (1 call Anthropic par string, max 20 en concurrence).
  * Utilisé pour pré-warm le cache d'une page.
  */

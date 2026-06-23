@@ -172,6 +172,14 @@ export default async function DashboardLayout({
         ? userLang
         : "fr";
 
+  // Pré-charge les traductions déjà connues pour cette langue → appliquées
+  // instantanément côté client (pas de « chargement » à l'ouverture).
+  const { getPanelTranslations } = await import(
+    "@/server/dashboard/translate-panel-actions"
+  );
+  const preloadedTranslations =
+    panelLang === "fr" ? {} : await getPanelTranslations(panelLang);
+
   // Affiché en mode SAV nom + email du user impersonné
   const impersonatedTargetName =
     acting?.isImpersonating && acting.impersonatedUser
@@ -192,7 +200,7 @@ export default async function DashboardLayout({
 
   return (
     <PanelLangProvider initialLang={panelLang}>
-     <AutoTranslateWrapper>
+     <AutoTranslateWrapper preloaded={preloadedTranslations}>
       {acting?.isImpersonating && acting.impersonatedUser && (
         <ImpersonationBanner
           targetName={impersonatedTargetName ?? acting.impersonatedUser.email}

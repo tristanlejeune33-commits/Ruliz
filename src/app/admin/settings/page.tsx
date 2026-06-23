@@ -16,6 +16,7 @@ import { getPlanConfig } from "@/lib/plan-config";
 import { SmsPacksEditor } from "./sms-packs-editor";
 import { PlansEditor } from "./plans-editor";
 import { R2CleanupCard } from "./r2-cleanup-card";
+import { PanelTranslationsCard } from "./panel-translations-card";
 
 export const metadata: Metadata = {
   title: "Paramètres système Admin Ruliz",
@@ -205,6 +206,9 @@ export default async function AdminSettingsPage() {
 
       {/* === Gestion des plans (matrice plan × fonctionnalité) === */}
       <PlansEditor initial={planInitial} />
+
+      {/* === Pré-traduction du panel (cache 7 langues) === */}
+      <PanelTranslationsCard />
 
       {/* === Cleanup images orphelines R2 === */}
       <R2CleanupCard />
