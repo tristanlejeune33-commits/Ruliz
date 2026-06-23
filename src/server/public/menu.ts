@@ -256,17 +256,47 @@ export async function getPublicMenu(
       label: string;
       probabilite: number;
       imageUrl?: string;
+      /** Stock de CE lot (0 / absent = illimité). */
+      maxWins?: number;
     }>;
     require_google_review?: boolean;
   };
   const jeuConfig = (jeuRow?.configJson as unknown as JeuConfigShape | null) ?? null;
+
+  // Stock PAR LOT : on n'affiche sur la roue QUE les lots encore disponibles.
+  // Un lot dont le quota (maxWins) est atteint est retiré de la roue (sinon le
+  // client verrait — et pourrait gagner — un lot épuisé). Si tous les lots sont
+  // épuisés, la roulette n'est pas affichée du tout.
+  let availableLots = jeuConfig?.lots ?? [];
+  if (jeuRow && availableLots.some((l) => (l.maxWins ?? 0) > 0)) {
+    const counts = await prisma.jeuParticipation.groupBy({
+      by: ["lotGagne"],
+      where: { jeuId: jeuRow.id },
+      _count: { _all: true },
+    });
+    const wonByLabel = new Map<string, number>();
+    for (const c of counts) {
+      if (c.lotGagne) wonByLabel.set(c.lotGagne, c._count._all);
+    }
+    availableLots = availableLots.filter((l) => {
+      const max = l.maxWins ?? 0;
+      if (max <= 0) return true; // illimité
+      return (wonByLabel.get(l.label) ?? 0) < max;
+    });
+  }
+
   const jeu =
-    jeuRow && jeuConfig?.lots && jeuConfig.lots.length > 0
+    jeuRow && availableLots.length > 0
       ? {
           id: jeuRow.id.toString(),
-          cta: jeuConfig.cta ?? "",
-          lots: jeuConfig.lots,
-          requireGoogleReview: jeuConfig.require_google_review ?? false,
+          cta: jeuConfig?.cta ?? "",
+          // On retire maxWins du payload public (info interne au resto).
+          lots: availableLots.map((l) => ({
+            label: l.label,
+            probabilite: l.probabilite,
+            imageUrl: l.imageUrl,
+          })),
+          requireGoogleReview: jeuConfig?.require_google_review ?? false,
           autoPopup: jeuRow.autoPopup ?? false,
           autoPopupDelaySec: jeuRow.autoPopupDelaySec ?? 3,
         }

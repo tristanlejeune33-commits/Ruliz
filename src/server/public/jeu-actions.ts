@@ -2,7 +2,10 @@
 
 import { z } from "zod";
 import { headers } from "next/headers";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/db";
+import { redis } from "@/lib/redis";
+import { SUPPORTED_LANGS } from "@/lib/langs";
 
 /**
  * Server action pour enregistrer une participation au jeu roulette.
@@ -78,11 +81,39 @@ export async function submitParticipation(
   }
 
   // Tirage du lot avec les probabilités
-  type LotConfig = { label: string; probabilite: number };
+  type LotConfig = { label: string; probabilite: number; maxWins?: number };
   type ConfigShape = { lots?: LotConfig[] };
   const config = (jeu.configJson as unknown as ConfigShape | null) ?? null;
   const lots = config?.lots ?? [];
-  const lotGagne = pickLot(lots);
+
+  // Stock PAR LOT : on exclut du tirage les lots dont le quota (maxWins) est
+  // atteint. Les autres restent gagnables. Si tout est épuisé → jeu terminé.
+  let available = lots;
+  if (lots.some((l) => (l.maxWins ?? 0) > 0)) {
+    const counts = await prisma.jeuParticipation.groupBy({
+      by: ["lotGagne"],
+      where: { jeuId: jeuBigId },
+      _count: { _all: true },
+    });
+    const wonByLabel = new Map<string, number>();
+    for (const c of counts) {
+      if (c.lotGagne) wonByLabel.set(c.lotGagne, c._count._all);
+    }
+    available = lots.filter((l) => {
+      const max = l.maxWins ?? 0;
+      if (max <= 0) return true;
+      return (wonByLabel.get(l.label) ?? 0) < max;
+    });
+    if (available.length === 0) {
+      return {
+        ok: false,
+        error:
+          "Tous les lots ont déjà été gagnés, le jeu est terminé. Reviens bientôt !",
+      };
+    }
+  }
+
+  const lotGagne = pickLot(available);
 
   // Récupère l'IP (best-effort, derrière un proxy/CDN)
   const headersList = await headers();
@@ -122,6 +153,18 @@ export async function submitParticipation(
     .catch(() => {
       // BaseClient peut déjà avoir l'email on ignore l'erreur
     });
+
+  // Stock limité → on purge le cache de la carte pour que la roue retire
+  // immédiatement un lot devenu épuisé (sinon visible jusqu'à 60s via le cache).
+  if (lots.some((l) => (l.maxWins ?? 0) > 0)) {
+    revalidateTag("public-menu");
+    if (redis) {
+      const keys = SUPPORTED_LANGS.map(
+        (l) => `carte:${jeu.restaurantId.toString()}:${l}`,
+      );
+      await redis.del(...keys).catch(() => null);
+    }
+  }
 
   return { ok: true, lotGagne };
 }
