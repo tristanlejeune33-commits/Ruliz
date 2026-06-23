@@ -167,6 +167,27 @@ export function Roulette({
       toast.error("Merci de remplir tous les champs obligatoires.");
       return;
     }
+    // Date de naissance : obligatoire, format JJ/MM/AAAA.
+    const dateRe = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const dm = dateRe.exec(form.naissance.trim());
+    if (!dm) {
+      toast.error("Date de naissance obligatoire (format JJ/MM/AAAA).");
+      return;
+    }
+    const day = Number(dm[1]);
+    const month = Number(dm[2]);
+    const year = Number(dm[3]);
+    if (
+      day < 1 ||
+      day > 31 ||
+      month < 1 ||
+      month > 12 ||
+      year < 1900 ||
+      year > new Date().getFullYear()
+    ) {
+      toast.error("Date de naissance invalide.");
+      return;
+    }
     // Email validation : regex stricte (RFC 5322 simplifiée)
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
     if (!emailRe.test(form.email.trim())) {
@@ -492,13 +513,15 @@ function FormStep({
             onChange={(v) => setForm((f) => ({ ...f, nom: v }))}
           />
         </div>
-        {/* Date de naissance : non validée côté serveur → explicitement
-            facultative pour ne pas alourdir le parcours. */}
+        {/* Date de naissance : obligatoire, format JJ/MM/AAAA auto (slashes
+            insérés au fil de la frappe). */}
         <FormInput
           name="naissance"
-          placeholder="Date de naissance (facultatif)"
+          placeholder="Date de naissance (JJ/MM/AAAA)"
           value={form.naissance}
-          onChange={(v) => setForm((f) => ({ ...f, naissance: v }))}
+          onChange={(v) => setForm((f) => ({ ...f, naissance: formatBirthDate(v) }))}
+          inputMode="numeric"
+          maxLength={10}
         />
         <FormInput
           name="telephone"
@@ -638,6 +661,17 @@ function formatPhoneFR(input: string): string {
     groups.push(cleaned.slice(i, i + 2));
   }
   return groups.join(" ").trim();
+}
+
+/**
+ * Formate une date de naissance au fil de la frappe : insère les `/`
+ * automatiquement → JJ/MM/AAAA. L'utilisateur ne tape que des chiffres.
+ */
+function formatBirthDate(input: string): string {
+  const d = input.replace(/\D/g, "").slice(0, 8); // JJMMAAAA
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
 }
 
 // ---------------------------------------------------------------------------

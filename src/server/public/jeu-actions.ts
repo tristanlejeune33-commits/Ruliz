@@ -22,7 +22,9 @@ const ParticipationInput = z.object({
   jeuId: z.string(),
   prenom: z.string().min(1).max(100),
   nom: z.string().min(1).max(100),
-  naissance: z.string().max(20).optional(),
+  naissance: z
+    .string()
+    .regex(/^\d{2}\/\d{2}\/\d{4}$/, "Date de naissance obligatoire (JJ/MM/AAAA)"),
   telephone: z.string().min(5).max(20),
   email: z.email(),
   actionSociale: z.enum(["facebook", "instagram", "google_review"]),
@@ -112,6 +114,8 @@ export async function submitParticipation(
         email: data.email.toLowerCase(),
         telephone: data.telephone,
         prenom: data.prenom,
+        nom: data.nom,
+        anniversaire: frenchDateToDate(data.naissance),
         source: "jeu_roulette",
       },
     })
@@ -120,6 +124,14 @@ export async function submitParticipation(
     });
 
   return { ok: true, lotGagne };
+}
+
+/** Convertit "JJ/MM/AAAA" en Date (null si invalide). */
+function frenchDateToDate(s: string): Date | null {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s.trim());
+  if (!m) return null;
+  const d = new Date(`${m[3]}-${m[2]}-${m[1]}T00:00:00Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 /** Pioche un lot selon les probabilités. Si total > 100, on normalise. */
