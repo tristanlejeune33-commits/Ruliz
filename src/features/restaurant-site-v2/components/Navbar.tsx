@@ -46,7 +46,7 @@ export function Navbar({ config }: NavbarProps) {
             ) : (
               <Monogram name={config.restaurantName} />
             )}
-            <span>{config.restaurantName}</span>
+            <span data-no-translate>{config.restaurantName}</span>
           </Link>
 
           <div className="rs2-nav-links">

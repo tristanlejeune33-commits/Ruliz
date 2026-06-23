@@ -20,8 +20,7 @@ interface HeroSplitProps {
  *   3+ mots → premier mot / reste italique
  */
 export function HeroSplit({ config }: HeroSplitProps) {
-  const photoSrc =
-    config.heroImage ?? config.bannerUrl ?? "";
+  const photoSrc = config.heroImage ?? config.bannerUrl ?? null;
 
   // Split title — first word on line 1, rest italic on line 2
   const words = config.restaurantName.trim().split(/\s+/);
@@ -39,7 +38,7 @@ export function HeroSplit({ config }: HeroSplitProps) {
           <span className="rs2-eyebrow">Restaurant</span>
         </div>
 
-        <h1 className="rs2-display rs2-hero-title">
+        <h1 className="rs2-display rs2-hero-title" data-no-translate>
           {line1}
           {line2 && (
             <>
@@ -69,9 +68,12 @@ export function HeroSplit({ config }: HeroSplitProps) {
       </div>
 
       <div className="rs2-hero-photo">
-        {photoSrc && (
-          <Photo src={photoSrc} alt={`${config.restaurantName} — ${config.tagline}`} priority />
-        )}
+        <Photo
+          src={photoSrc}
+          alt={`${config.restaurantName} — ${config.tagline}`}
+          priority
+          fallbackLabel={config.restaurantName}
+        />
         <div className="rs2-hero-scroll" aria-hidden>
           <div className="bar" />
           <span>Scroll</span>

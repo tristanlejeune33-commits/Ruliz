@@ -19,8 +19,8 @@ export interface MenuTeaserItem {
   name: string;
   /** Pré-formatté côté serveur ("18 €", "—" si null/dégustation). */
   price: string;
-  /** URL image (R2 ou Unsplash en démo). */
-  image: string;
+  /** URL image R2. `null` = pas d'image → placeholder neutre (jamais de fausse photo). */
+  image: string | null;
 }
 
 /** Un avis client manuel — distinct des avis Google API. */
@@ -76,7 +76,8 @@ export interface RestaurantConfig {
     title: string;
     /** Paragraphes ; <p>{p}</p> chacun. Drop-cap sur premier en preset editorial. */
     body: string[];
-    image: string;
+    /** Image R2/bannière. `null` = placeholder neutre (jamais de fausse photo). */
+    image: string | null;
     /** Optionnel — "— Camille L., cheffe & propriétaire" */
     signature?: string;
   };

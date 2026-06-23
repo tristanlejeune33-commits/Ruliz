@@ -1,13 +1,16 @@
 /* eslint-disable @next/next/no-img-element */
 
 interface PhotoProps {
-  src: string;
+  /** URL image. `null`/`undefined`/vide → placeholder neutre (jamais de fausse photo). */
+  src: string | null | undefined;
   alt: string;
   /** Mode de chargement — par défaut lazy sauf hero. */
   priority?: boolean;
   className?: string;
   /** Pour les Ken Burns / animations CSS internes au parent. */
   animateKenBurns?: boolean;
+  /** Texte (initiales) affiché dans le placeholder quand pas d'image. */
+  fallbackLabel?: string;
 }
 
 /**
@@ -27,7 +30,24 @@ export function Photo({
   priority = false,
   className = "",
   animateKenBurns = false,
+  fallbackLabel,
 }: PhotoProps) {
+  // Pas d'image → placeholder neutre (surface + initiales). On n'affiche
+  // jamais une fausse photo de stock ni une image cassée.
+  if (!src) {
+    const initials = (fallbackLabel ?? "")
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => w[0])
+      .slice(0, 2)
+      .join("")
+      .toUpperCase();
+    return (
+      <div className={`rs2-photo-empty ${className}`.trim()} role="img" aria-label={alt}>
+        {initials ? <span className="rs2-photo-empty-mark">{initials}</span> : null}
+      </div>
+    );
+  }
   const cls = animateKenBurns ? `${className} rs2-photo-kb`.trim() : className;
   return (
     <img

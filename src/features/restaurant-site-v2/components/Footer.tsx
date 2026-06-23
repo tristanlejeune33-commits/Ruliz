@@ -40,7 +40,9 @@ export function Footer({ config }: FooterProps) {
       <div className="rs2-container">
         <div className="rs2-footer-grid">
           <div className="rs2-footer-brand">
-            <h3 className="rs2-display">{config.restaurantName}</h3>
+            <h3 className="rs2-display" data-no-translate>
+              {config.restaurantName}
+            </h3>
             <p>{config.tagline}</p>
             <p style={{ marginTop: 12, fontSize: 13 }}>
               {config.city} · Depuis {config.established}
@@ -125,7 +127,9 @@ export function Footer({ config }: FooterProps) {
         </div>
 
         <div className="rs2-footer-bottom">
-          <span>© {year} {config.restaurantName}</span>
+          <span data-no-translate>
+            © {year} {config.restaurantName}
+          </span>
           <a
             href="https://ruliz-panel.fr"
             target="_blank"

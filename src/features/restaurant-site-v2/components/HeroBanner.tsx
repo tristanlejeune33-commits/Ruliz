@@ -56,7 +56,7 @@ export function HeroBanner({ config }: HeroBannerProps) {
               />
             </div>
           ) : (
-            <h1 className="rs2-display rs2-hero-banner-title">
+            <h1 className="rs2-display rs2-hero-banner-title" data-no-translate>
               {config.restaurantName}
             </h1>
           )}

@@ -28,7 +28,11 @@ export function About({ config, sectionNum }: AboutProps) {
         <div className={`rs2-about${reversed ? " reverse" : ""}`}>
           <Reveal index={0}>
             <div className="rs2-about-photo">
-              <Photo src={config.about.image} alt={config.about.title} />
+              <Photo
+                src={config.about.image}
+                alt={config.about.title}
+                fallbackLabel={config.restaurantName}
+              />
             </div>
           </Reveal>
 

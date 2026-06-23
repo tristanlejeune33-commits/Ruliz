@@ -133,7 +133,10 @@ export function RestaurantSite({ config }: RestaurantSiteProps) {
   // Numérotation dynamique des sections — labels visuels
   let n = 0;
   const aboutNum = ++n;
-  const menuNum = ++n;
+  // Section Menu masquée tant qu'il n'y a aucun vrai produit (pas de plats
+  // fictifs « À venir » ni de fausses photos).
+  const hasMenuItems = config.menuTeaser.items.length > 0;
+  const menuNum = hasMenuItems ? ++n : 0;
   const galleryNum = config.options.showGallery ? ++n : 0;
   const testimonialsNum =
     config.options.showTestimonials && (config.testimonials?.length ?? 0) > 0
@@ -157,7 +160,7 @@ export function RestaurantSite({ config }: RestaurantSiteProps) {
 
       <About config={config} sectionNum={aboutNum} />
 
-      <MenuTeaser config={config} sectionNum={menuNum} />
+      {menuNum > 0 && <MenuTeaser config={config} sectionNum={menuNum} />}
 
       {galleryNum > 0 && <Gallery config={config} sectionNum={galleryNum} />}
 

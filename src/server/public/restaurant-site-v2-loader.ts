@@ -395,33 +395,21 @@ export async function loadSiteV2(
             resto.description ??
               "Notre maison vous accueille pour partager le meilleur de la cuisine de saison, dans un cadre soigné.",
           ],
-    image:
-      v2?.about?.image ??
-      resto.banniereUrl ??
-      "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+    // Pas de fausse photo : la bannière du resto si dispo, sinon null
+    // (placeholder neutre côté composant). On n'injecte JAMAIS d'image stock.
+    image: v2?.about?.image ?? resto.banniereUrl ?? null,
     signature: v2?.about?.signature,
   };
 
-  // Menu teaser
+  // Menu teaser — uniquement les VRAIS produits. Pas d'image stock, pas de
+  // padding "À venir" : si le resto n'a rien, la section ne s'affiche pas.
   const menuTeaserItems: MenuTeaserItem[] = produits.map((p, idx) => ({
     num: idx + 1,
     name: p.titre,
     // Devise du resto = source de vérité (un resto = une devise), comme la carte.
     price: formatPrice(p.prix, resto.deviseDefault),
-    image:
-      p.imageUrl ??
-      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80",
+    image: p.imageUrl ?? null,
   }));
-  // Si moins de 4 produits, on padding pour atteindre 4 placeholders
-  while (menuTeaserItems.length < 4) {
-    menuTeaserItems.push({
-      num: menuTeaserItems.length + 1,
-      name: "À venir",
-      price: "—",
-      image:
-        "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=900&q=80",
-    });
-  }
   const menuTeaser = {
     title: v2?.menuTeaser?.title ?? "Une carte vivante, tenue avec soin.",
     items: menuTeaserItems,

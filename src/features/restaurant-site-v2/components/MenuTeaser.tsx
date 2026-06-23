@@ -43,7 +43,11 @@ export function MenuTeaser({ config, sectionNum }: MenuTeaserProps) {
             <Reveal key={`${item.num}-${item.name}`} index={i}>
               <article className="rs2-menu-item">
                 <div className="rs2-menu-photo">
-                  <Photo src={item.image} alt={item.name} />
+                  <Photo
+                    src={item.image}
+                    alt={item.name}
+                    fallbackLabel={config.restaurantName}
+                  />
                 </div>
                 <span className="rs2-menu-num">
                   {String(item.num).padStart(2, "0")} — Plat
