@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { headers } from "next/headers";
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { redis } from "@/lib/redis";
 import { SUPPORTED_LANGS } from "@/lib/langs";
@@ -86,30 +86,17 @@ export async function submitParticipation(
   const config = (jeu.configJson as unknown as ConfigShape | null) ?? null;
   const lots = config?.lots ?? [];
 
-  // Stock PAR LOT : maxWins absent/null = illimité ; 0 = épuisé ; N = N gains.
-  // On exclut du tirage les lots épuisés ; si tout est épuisé → jeu terminé.
-  let available = lots;
-  if (lots.some((l) => l.maxWins != null)) {
-    const counts = await prisma.jeuParticipation.groupBy({
-      by: ["lotGagne"],
-      where: { jeuId: jeuBigId },
-      _count: { _all: true },
-    });
-    const wonByLabel = new Map<string, number>();
-    for (const c of counts) {
-      if (c.lotGagne) wonByLabel.set(c.lotGagne, c._count._all);
-    }
-    available = lots.filter((l) => {
-      if (l.maxWins == null) return true; // illimité
-      return (wonByLabel.get(l.label) ?? 0) < l.maxWins; // 0 → toujours exclu
-    });
-    if (available.length === 0) {
-      return {
-        ok: false,
-        error:
-          "Tous les lots ont déjà été gagnés, le jeu est terminé. Reviens bientôt !",
-      };
-    }
+  // Stock PAR LOT = quantité RESTANTE stockée dans le lot (maxWins) :
+  //   null/absent = illimité ; 0 = épuisé (exclu) ; N = N restants.
+  // Le stock est décrémenté à chaque gain (cf. plus bas). On exclut du tirage
+  // les lots épuisés ; si tout est épuisé → jeu terminé.
+  const available = lots.filter((l) => l.maxWins == null || l.maxWins > 0);
+  if (lots.length > 0 && available.length === 0) {
+    return {
+      ok: false,
+      error:
+        "Tous les lots ont déjà été gagnés, le jeu est terminé. Reviens bientôt !",
+    };
   }
 
   const lotGagne = pickLot(available);
@@ -153,10 +140,24 @@ export async function submitParticipation(
       // BaseClient peut déjà avoir l'email on ignore l'erreur
     });
 
-  // Stock limité → on purge le cache de la carte pour que la roue retire
-  // immédiatement un lot devenu épuisé (sinon visible jusqu'à 60s via le cache).
-  if (lots.some((l) => l.maxWins != null)) {
+  // Décrémente le stock du lot gagné (s'il est fini) directement dans la config
+  // du jeu → le nombre affiché côté resto baisse, et le lot disparaît à 0.
+  const won = lotGagne ? lots.find((l) => l.label === lotGagne) : undefined;
+  if (won && won.maxWins != null && won.maxWins > 0) {
+    const newLots = lots.map((l) =>
+      l === won ? { ...l, maxWins: (l.maxWins ?? 0) - 1 } : l,
+    );
+    try {
+      await prisma.jeu.update({
+        where: { id: jeuBigId },
+        data: { configJson: { ...config, lots: newLots } as never },
+      });
+    } catch (err) {
+      console.warn("[jeu] décrément stock échoué:", err);
+    }
+    // Purge des caches : carte publique (tag + Redis) + page resto.
     revalidateTag("public-menu");
+    revalidatePath(`/dashboard/jeu`);
     if (redis) {
       const keys = SUPPORTED_LANGS.map(
         (l) => `carte:${jeu.restaurantId.toString()}:${l}`,

@@ -443,11 +443,11 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                 <CardDescription>
                   La somme des probabilités doit faire <strong>100%</strong>.
                   Tu peux mettre des emojis dans le label (ex : « 🎁 Café offert »).
-                  La colonne <strong>Stock</strong> limite le nombre de fois où
-                  un lot peut être gagné : <strong>vide = illimité</strong>,{" "}
-                  <strong>0 = épuisé</strong> (masqué), <strong>N</strong> = N
-                  gains. Une fois épuisé, le lot n&apos;est plus tiré ni affiché.
-                  Maximum 12 lots.
+                  La colonne <strong>Stock</strong> = quantité restante :{" "}
+                  <strong>vide = illimité</strong>, <strong>0 = épuisé</strong>{" "}
+                  (masqué), <strong>N</strong> = N restants. Le stock{" "}
+                  <strong>diminue à chaque gain</strong> ; à 0, le lot
+                  n&apos;est plus tiré ni affiché. Maximum 12 lots.
                 </CardDescription>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -546,7 +546,7 @@ export function JeuForm({ restaurantId, jeu }: JeuFormProps) {
                                 );
                               }}
                               placeholder="∞"
-                              title="Stock de ce lot — vide = illimité, 0 = épuisé, N = N gains"
+                              title="Stock restant — vide = illimité, 0 = épuisé. Diminue à chaque gain."
                             />
                           </FormControl>
                           <FormMessage />
