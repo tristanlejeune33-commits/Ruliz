@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   Cake,
+  Download,
   Mail,
   Pencil,
   Phone,
@@ -66,6 +67,53 @@ interface ClientsManagerProps {
   initialClients: Client[];
 }
 
+/** Échappe un champ CSV (guillemets + délimiteur + retours ligne). */
+function csvCell(value: string | null | undefined): string {
+  const s = (value ?? "").toString();
+  return /[",;\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/** Génère un CSV (même format que le modèle d'import) et déclenche le download. */
+function exportClientsCsv(clients: Client[]): void {
+  const header = [
+    "prenom",
+    "nom",
+    "telephone",
+    "email",
+    "anniversaire",
+    "opt_in_sms",
+    "source",
+  ];
+  const lines = [header.join(",")];
+  for (const c of clients) {
+    lines.push(
+      [
+        csvCell(c.prenom),
+        csvCell(c.nom),
+        // Préfixe + pour garder le format E.164 (Excel sinon le mange)
+        csvCell(c.telephone ? `+${c.telephone}` : ""),
+        csvCell(c.email),
+        csvCell(c.anniversaire ? c.anniversaire.slice(0, 10) : ""),
+        c.optInSms ? "oui" : "non",
+        csvCell(c.source),
+      ].join(","),
+    );
+  }
+  // BOM UTF-8 pour qu'Excel lise correctement les accents.
+  const blob = new Blob(["﻿" + lines.join("\r\n")], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  const stamp = new Date().toISOString().slice(0, 10);
+  a.download = `clients-${stamp}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function ClientsManager({
   restaurantId,
   initialClients,
@@ -124,6 +172,24 @@ export function ClientsManager({
         </div>
 
         <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              if (filtered.length === 0) {
+                toast.error("Aucun client à exporter.");
+                return;
+              }
+              exportClientsCsv(filtered);
+              toast.success(
+                `${filtered.length} client${filtered.length > 1 ? "s" : ""} exporté${filtered.length > 1 ? "s" : ""}.`,
+              );
+            }}
+          >
+            <Download className="size-3.5" />
+            Exporter
+          </Button>
           <ImportClientsDialog
             restaurantId={restaurantId}
             trigger={
