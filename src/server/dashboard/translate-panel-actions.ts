@@ -227,6 +227,7 @@ export async function getPanelTranslations(
 export async function translatePanelBatch(
   texts: string[],
   lang: string,
+  concurrency = 20,
 ): Promise<Record<string, string>> {
   if (!isSupportedLang(lang) || lang === "fr") {
     const result: Record<string, string> = {};
@@ -234,7 +235,6 @@ export async function translatePanelBatch(
     return result;
   }
 
-  const concurrency = 20;
   const result: Record<string, string> = {};
   const queue = [...texts];
 

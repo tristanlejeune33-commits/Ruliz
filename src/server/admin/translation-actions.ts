@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -166,56 +165,62 @@ export async function getPanelWarmStatus(): Promise<
   return { ok: true, data: { total, perLang, done } };
 }
 
-export async function warmAllPanelTranslations(): Promise<
-  AdminActionResult<{ strings: number; langs: number }>
+/**
+ * Traduit UN PETIT LOT de chaînes manquantes, puis rend la main. Le client
+ * rappelle cette action en boucle jusqu'à `done: true`.
+ *
+ * Pourquoi pas un gros job `after()` ? Parce qu'il se faisait tuer au bout de
+ * ~2 min et que 20 appels parallèles × 6 langues saturaient le rate-limit
+ * Anthropic (429 → backoff → blocage). Ici : courtes requêtes, concurrence
+ * modérée, et les chaînes en échec restent "manquantes" → reprises au lot
+ * suivant. Jamais bloqué, reprend toujours là où il en était.
+ */
+export async function warmPanelChunk(): Promise<
+  AdminActionResult<{ done: boolean; remaining: number; processed: number }>
 > {
   const isAdmin = await assertAdmin();
   if (!isAdmin) return { ok: false, error: "Accès admin requis" };
 
   if (!getAnthropic()) {
-    return {
-      ok: false,
-      error: "ANTHROPIC_API_KEY manquante côté serveur.",
-    };
-  }
-
-  // Catalogue statique du code + chaînes déjà en cache (toutes langues).
-  const set = new Set<string>(PANEL_STRINGS);
-  try {
-    const rows = await prisma.$queryRawUnsafe<Array<{ source_text: string }>>(
-      `SELECT DISTINCT source_text FROM "panel_translations_cache" LIMIT 5000`,
-    );
-    for (const r of rows) if (r.source_text) set.add(r.source_text);
-  } catch (err) {
-    // Pas bloquant : on traduit au moins le catalogue.
-    console.warn("[admin.warmPanel] cache distinct query failed:", err);
-  }
-  const sources = [...set];
-
-  if (sources.length === 0) {
-    return { ok: false, error: "Catalogue de chaînes vide." };
+    return { ok: false, error: "ANTHROPIC_API_KEY manquante côté serveur." };
   }
 
   const targetLangs = SUPPORTED_LANGS.filter((l) => l !== "fr");
+  // Nombre de chaînes traitées PAR LANGUE et par appel. Toutes les langues
+  // progressent ensemble. ~40 × 6 = 240 traductions/lot (≈ quelques secondes).
+  const PER_LANG = 40;
+  const CONCURRENCY = 10;
 
-  // Lancement en arrière-plan : on ne bloque pas la requête HTTP.
-  after(async () => {
-    console.log(
-      `[admin.warmPanel] start: ${sources.length} chaînes × ${targetLangs.length} langues`,
-    );
-    for (const lang of targetLangs) {
+  let remaining = 0;
+  let processed = 0;
+
+  for (const lang of targetLangs) {
+    let cached = new Set<string>();
+    try {
+      const rows = await prisma.$queryRawUnsafe<Array<{ source_text: string }>>(
+        `SELECT source_text FROM "panel_translations_cache" WHERE lang = $1`,
+        lang,
+      );
+      cached = new Set(rows.map((r) => r.source_text));
+    } catch {
+      // cache illisible → on retente plus tard
+    }
+    const missing = PANEL_STRINGS.filter((s) => !cached.has(s));
+    remaining += missing.length;
+    const slice = missing.slice(0, PER_LANG);
+    if (slice.length > 0) {
       try {
-        await translatePanelBatch(sources, lang);
-        console.log(`[admin.warmPanel] ${lang} ✓`);
+        await translatePanelBatch(slice, lang, CONCURRENCY);
+        processed += slice.length;
       } catch (err) {
-        console.warn(`[admin.warmPanel] ${lang} failed:`, err);
+        console.warn(`[admin.warmChunk] ${lang} batch failed:`, err);
       }
     }
-    console.log("[admin.warmPanel] done");
-  });
+  }
 
+  const stillRemaining = Math.max(0, remaining - processed);
   return {
     ok: true,
-    data: { strings: sources.length, langs: targetLangs.length },
+    data: { done: stillRemaining === 0, remaining: stillRemaining, processed },
   };
 }
