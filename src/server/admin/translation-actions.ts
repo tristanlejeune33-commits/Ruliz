@@ -121,6 +121,51 @@ export async function adminRetranslateRestaurant(
  * suite avec le nombre de chaînes à couvrir. Les hits cache sont gratuits, seuls
  * les manquants appellent Anthropic Haiku.
  */
+/**
+ * Avancement de la pré-traduction : combien de chaînes du catalogue sont déjà
+ * en cache, par langue. Permet de savoir si « Pré-traduire tout » est fini.
+ */
+export async function getPanelWarmStatus(): Promise<
+  AdminActionResult<{
+    total: number;
+    perLang: Array<{ lang: string; count: number }>;
+    done: boolean;
+  }>
+> {
+  const isAdmin = await assertAdmin();
+  if (!isAdmin) return { ok: false, error: "Accès admin requis" };
+
+  const total = PANEL_STRINGS.length;
+  const targetLangs = SUPPORTED_LANGS.filter((l) => l !== "fr");
+
+  let counts = new Map<string, number>();
+  try {
+    const rows = await prisma.$queryRawUnsafe<
+      Array<{ lang: string; c: bigint }>
+    >(
+      `SELECT lang, COUNT(DISTINCT source_text) AS c
+       FROM "panel_translations_cache"
+       WHERE lang = ANY($1::text[])
+       GROUP BY lang`,
+      targetLangs as unknown as string[],
+    );
+    counts = new Map(rows.map((r) => [r.lang, Number(r.c)]));
+  } catch (err) {
+    console.error("[admin.warmStatus] query failed:", err);
+    return { ok: false, error: "Lecture du cache impossible" };
+  }
+
+  // On plafonne l'affichage au total du catalogue (le cache peut contenir des
+  // chaînes en plus, collectées au fil de la navigation).
+  const perLang = targetLangs.map((lang) => ({
+    lang,
+    count: Math.min(total, counts.get(lang) ?? 0),
+  }));
+  const done = perLang.every((p) => p.count >= total);
+
+  return { ok: true, data: { total, perLang, done } };
+}
+
 export async function warmAllPanelTranslations(): Promise<
   AdminActionResult<{ strings: number; langs: number }>
 > {
