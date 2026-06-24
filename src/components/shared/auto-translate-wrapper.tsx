@@ -116,63 +116,46 @@ export function AutoTranslateWrapper({
     let cancelled = false;
 
     const translatePage = async () => {
-      // 0) Restaure d'abord les textes ORIGINAUX (français) avant de traduire.
-      // Sinon, en passant d'une langue à une autre (ex: ES → EN), on collecte
-      // le texte DÉJÀ traduit (espagnol) et on l'envoie à Anthropic avec la
-      // consigne « traduis du français » → il le renvoie tel quel → l'UI reste
-      // BLOQUÉE sur la langue précédente ("ça a traduit que en espagnol").
-      // On repart donc toujours du français source.
-      isApplyingTranslations = true;
-      const restoreWalker = document.createTreeWalker(
-        scanRoot,
-        NodeFilter.SHOW_TEXT,
-      );
-      let restoreNode: Text | null;
-      while ((restoreNode = restoreWalker.nextNode() as Text | null)) {
-        const original = originalTextsRef.current.get(restoreNode);
-        if (original != null) restoreNode.nodeValue = original;
-      }
-      isApplyingTranslations = false;
-
-      // 1) Collecte les text nodes éligibles
+      // 1) Collecte : on indexe par le TEXTE FR ORIGINAL de chaque node
+      //    (mémorisé au 1er passage), JAMAIS par la valeur affichée — qui peut
+      //    déjà être dans une autre langue. Sinon, au 2e changement de langue
+      //    (ex: ES → EN), on chercherait la traduction du texte ESPAGNOL →
+      //    introuvable → la langue reste bloquée. L'application écrase la valeur
+      //    courante, donc pas besoin de « restaurer » au préalable.
       const textNodesByText = new Map<string, Text[]>();
-      const walker = document.createTreeWalker(
-        scanRoot,
-        NodeFilter.SHOW_TEXT,
-        {
-          acceptNode(node) {
-            const text = node.nodeValue?.trim() ?? "";
-            // Filtre les nodes vides ou non pertinents
-            if (text.length < 2) return NodeFilter.FILTER_REJECT;
-            // Évite les nodes dans <script>, <style>, <code>, etc.
-            const parent = node.parentElement;
-            if (!parent) return NodeFilter.FILTER_REJECT;
-            const tag = parent.tagName.toLowerCase();
-            if (["script", "style", "code", "pre", "noscript", "textarea"].includes(tag)) {
-              return NodeFilter.FILTER_REJECT;
-            }
-            // Évite les nodes opt-out
-            if (parent.closest("[data-no-translate]")) {
-              return NodeFilter.FILTER_REJECT;
-            }
-            // Évite les chaînes purement numériques / symbol
-            if (/^[\d\s.,€$%/+\-*()[\]{}|]*$/.test(text)) {
-              return NodeFilter.FILTER_REJECT;
-            }
-            return NodeFilter.FILTER_ACCEPT;
-          },
+      const walker = document.createTreeWalker(scanRoot, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+          const parent = node.parentElement;
+          if (!parent) return NodeFilter.FILTER_REJECT;
+          const tag = parent.tagName.toLowerCase();
+          if (["script", "style", "code", "pre", "noscript", "textarea"].includes(tag)) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          if (parent.closest("[data-no-translate]")) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          // On juge sur le FR original (si connu), sinon la valeur courante.
+          const fr = (
+            originalTextsRef.current.get(node as Text) ??
+            node.nodeValue ??
+            ""
+          ).trim();
+          if (fr.length < 2) return NodeFilter.FILTER_REJECT;
+          if (/^[\d\s.,€$%/+\-*()[\]{}|]*$/.test(fr)) return NodeFilter.FILTER_REJECT;
+          return NodeFilter.FILTER_ACCEPT;
         },
-      );
+      });
 
       let current: Text | null;
       while ((current = walker.nextNode() as Text | null)) {
-        const trimmed = current.nodeValue?.trim() ?? "";
-        if (!trimmed) continue;
-
-        // Garde la version originale pour pouvoir restaurer
-        if (!originalTextsRef.current.has(current)) {
-          originalTextsRef.current.set(current, current.nodeValue ?? "");
+        // FR original : mémorisé, sinon la valeur courante (1er passage = FR).
+        let fr = originalTextsRef.current.get(current);
+        if (fr == null) {
+          fr = current.nodeValue ?? "";
+          originalTextsRef.current.set(current, fr);
         }
+        const trimmed = fr.trim();
+        if (!trimmed) continue;
 
         const list = textNodesByText.get(trimmed);
         if (list) list.push(current);
