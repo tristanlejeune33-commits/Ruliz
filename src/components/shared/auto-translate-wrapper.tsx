@@ -181,9 +181,44 @@ export function AutoTranslateWrapper({
 
       if (textNodesByText.size === 0) return;
 
-      // Charge TOUT le cache DB de la langue en UNE seule requête (rapide), au
-      // lieu de N appels chaîne par chaîne. Mémorisé tant qu'on reste sur la
-      // même langue → un changement de drapeau devient quasi-instantané.
+      // 2) CACHE LOCAL D'ABORD (100% synchrone, AUCUN réseau) : dico injecté
+      //    par le serveur > localStorage. Si tout est en cache → instantané.
+      const fromCache: Record<string, string> = {};
+      const toFetch: string[] = [];
+      const usePreloaded = preloadedLangRef.current === lang;
+      for (const text of textNodesByText.keys()) {
+        const pre = usePreloaded ? preloadedRef.current[text] : undefined;
+        if (pre) {
+          fromCache[text] = pre;
+          try {
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${lang}:${text}`, pre);
+          } catch {
+            // storage plein → pas grave
+          }
+          continue;
+        }
+        try {
+          const cached = localStorage.getItem(
+            `${LOCAL_STORAGE_PREFIX}${lang}:${text}`,
+          );
+          if (cached !== null) {
+            fromCache[text] = cached;
+            continue;
+          }
+        } catch {
+          // ignore
+        }
+        toFetch.push(text);
+      }
+
+      // 3) Applique le cache local IMMÉDIATEMENT.
+      applyTranslations(textNodesByText, fromCache);
+      // Tout était en cache local → terminé, aucun aller-retour serveur.
+      if (toFetch.length === 0) return;
+      if (cancelled) return;
+
+      // 4) Manquants : on charge TOUT le cache DB de la langue en UNE requête
+      //    (au lieu de N), mémorisé par langue. On applique les correspondances.
       if (serverDictRef.current.lang !== lang) {
         try {
           const dict = await getPanelTranslations(lang);
@@ -195,61 +230,29 @@ export function AutoTranslateWrapper({
       }
       const serverDict =
         serverDictRef.current.lang === lang ? serverDictRef.current.dict : {};
-
-      // 2) Check caches (injecté serveur > dico langue > localStorage) + collecte
-      const fromCache: Record<string, string> = {};
-      const toFetch: string[] = [];
-
-      // N'utilise le dico injecté QUE s'il correspond à la langue courante.
-      const usePreloaded = preloadedLangRef.current === lang;
-      for (const text of textNodesByText.keys()) {
-        // 0) Dictionnaire injecté par le serveur (instantané, pas de réseau).
-        const pre = usePreloaded ? preloadedRef.current[text] : undefined;
-        if (pre) {
-          fromCache[text] = pre;
+      const fromServer: Record<string, string> = {};
+      const stillMissing: string[] = [];
+      for (const text of toFetch) {
+        const t = serverDict[text];
+        if (t) {
+          fromServer[text] = t;
           try {
-            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${lang}:${text}`, pre);
+            localStorage.setItem(`${LOCAL_STORAGE_PREFIX}${lang}:${text}`, t);
           } catch {
             // storage plein → pas grave
           }
-          continue;
+        } else {
+          stillMissing.push(text);
         }
-        // 0bis) Dico complet de la langue chargé en une requête.
-        const fromServer = serverDict[text];
-        if (fromServer) {
-          fromCache[text] = fromServer;
-          try {
-            localStorage.setItem(
-              `${LOCAL_STORAGE_PREFIX}${lang}:${text}`,
-              fromServer,
-            );
-          } catch {
-            // storage plein → pas grave
-          }
-          continue;
-        }
-        const cacheKey = `${LOCAL_STORAGE_PREFIX}${lang}:${text}`;
-        try {
-          const cached = localStorage.getItem(cacheKey);
-          if (cached !== null) {
-            fromCache[text] = cached;
-            continue;
-          }
-        } catch {
-          // ignore
-        }
-        toFetch.push(text);
       }
+      applyTranslations(textNodesByText, fromServer);
 
-      // 3) Apply cached translations immédiatement
-      applyTranslations(textNodesByText, fromCache);
-
-      // 4) Fetch missing translations (batch)
-      if (toFetch.length === 0) return;
+      // 5) Reste vraiment absent du cache → Anthropic (rare si pré-traduit).
+      if (stillMissing.length === 0) return;
       if (cancelled) return;
 
       try {
-        const fetched = await translatePanelBatch(toFetch, lang);
+        const fetched = await translatePanelBatch(stillMissing, lang);
         if (cancelled) return;
 
         // Cache localStorage — MAIS jamais une traduction == source.
